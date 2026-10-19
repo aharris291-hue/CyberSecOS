@@ -1,0 +1,33 @@
+<Application x:Class="CyberSecOS.Desktop.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:CyberSecOS.Core.ViewModels;assembly=CyberSecOS.Core"
+             xmlns:views="clr-namespace:CyberSecOS.Desktop.Views"
+             xmlns:conv="clr-namespace:CyberSecOS.Desktop.Converters"
+             ShutdownMode="OnMainWindowClose">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="Themes/Dark.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+
+            <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
+            <conv:InverseBoolToVisibilityConverter x:Key="InverseBoolToVisibility" />
+            <conv:NotEmptyToVisibilityConverter x:Key="NotEmptyToVisibility" />
+            <conv:LessonStatusLabelConverter x:Key="StatusLabel" />
+            <conv:LessonStatusBrushConverter x:Key="StatusBrush" />
+            <conv:PlainTextConverter x:Key="PlainText" />
+            <conv:InverseBoolConverter x:Key="InverseBool" />
+            <conv:ChartSeriesConverter x:Key="ChartSeries" />
+            <conv:ChartAxisConverter x:Key="ChartAxis" />
+
+            <!-- Each page view model is rendered by its view (view-model-first navigation). -->
+            <DataTemplate DataType="{x:Type vm:DashboardViewModel}"><views:DashboardView /></DataTemplate>
+            <DataTemplate DataType="{x:Type vm:LoginViewModel}"><views:LoginView /></DataTemplate>
+            <DataTemplate DataType="{x:Type vm:ProfileViewModel}"><views:ProfileView /></DataTemplate>
+            <DataTemplate DataType="{x:Type vm:CoursesViewModel}"><views:CoursesView /></DataTemplate>
+            <DataTemplate DataType="{x:Type vm:LessonViewModel}"><views:LessonView /></DataTemplate>
+            <DataTemplate DataType="{x:Type vm:ProgressViewModel}"><views:ProgressView /></DataTemplate>
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>
