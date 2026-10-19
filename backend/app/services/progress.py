@@ -49,3 +49,32 @@ def record_quiz_result(db: Session, user: User, lesson: Lesson, result: QuizResu
     # Rough time-on-task: about one minute per question.
     log_activity(db, user, ActivityKind.QUIZ, max(1, result.total), lesson)
     return progress
+
+
+def mark_theory_read(db: Session, user: User, lesson: Lesson, minutes: int | None) -> LessonProgress:
+    progress = get_or_create_progress(db, user, lesson)
+    if progress.theory_completed_at is None:
+        progress.theory_completed_at = utcnow()
+        log_activity(db, user, ActivityKind.THEORY, minutes or lesson.theory_minutes, lesson)
+    _refresh_status(progress)
+    return progress
+
+
+def complete_lab(db: Session, user: User, lesson: Lesson, notes: str | None, minutes: int | None) -> LessonProgress:
+    progress = get_or_create_progress(db, user, lesson)
+    if notes is not None:
+        progress.lab_notes = notes
+    if progress.lab_completed_at is None:
+        progress.lab_completed_at = utcnow()
+        log_activity(db, user, ActivityKind.LAB, minutes or lesson.lab_minutes, lesson)
+    _refresh_status(progress)
+    return progress
+
+
+def reopen_lab(db: Session, user: User, lesson: Lesson) -> LessonProgress:
+    """Undo a lab completion (e.g. marked by mistake). The logged study time is kept."""
+    progress = get_or_create_progress(db, user, lesson)
+    progress.lab_completed_at = None
+    progress.completed_at = None
+    _refresh_status(progress)
+    return progress

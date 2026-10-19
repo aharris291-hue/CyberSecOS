@@ -61,6 +61,25 @@ public sealed class CyberSecApiClient : ICyberSecApi
     public Task<QuizResult> SubmitQuizAsync(int lessonId, QuizSubmission submission, CancellationToken ct = default) =>
         SendAsync<QuizResult>(HttpMethod.Post, $"api/lessons/{lessonId}/quiz", submission, ct);
 
+    public Task<LessonProgress> MarkTheoryReadAsync(int lessonId, CancellationToken ct = default) =>
+        SendAsync<LessonProgress>(HttpMethod.Post, $"api/lessons/{lessonId}/theory", null, ct);
+
+    public Task<LessonProgress> CompleteLabAsync(int lessonId, LabRequest request, CancellationToken ct = default) =>
+        SendAsync<LessonProgress>(HttpMethod.Post, $"api/lessons/{lessonId}/lab", request, ct);
+
+    public Task<LessonProgress> ReopenLabAsync(int lessonId, CancellationToken ct = default) =>
+        SendAsync<LessonProgress>(HttpMethod.Delete, $"api/lessons/{lessonId}/lab", null, ct);
+
+    public Task<ProgressSummary> GetProgressAsync(CancellationToken ct = default) =>
+        SendAsync<ProgressSummary>(HttpMethod.Get, $"api/progress?tz_offset_minutes={LocalOffsetMinutes()}", null, ct);
+
+    public async Task<IReadOnlyList<DailyMinutes>> GetDailyActivityAsync(int days, CancellationToken ct = default) =>
+        await SendAsync<List<DailyMinutes>>(
+            HttpMethod.Get, $"api/progress/activity?days={days}&tz_offset_minutes={LocalOffsetMinutes()}", null, ct).ConfigureAwait(false);
+
+    /// <summary>Lets the server bucket study days and streaks in the learner's own time zone.</summary>
+    internal static int LocalOffsetMinutes() => (int)TimeZoneInfo.Local.GetUtcOffset(DateTime.Now).TotalMinutes;
+
     private async Task<T> SendAsync<T>(HttpMethod method, string path, object? body, CancellationToken ct)
     {
         using var request = new HttpRequestMessage(method, path);

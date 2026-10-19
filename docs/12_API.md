@@ -47,3 +47,25 @@ Security rules:
 | GET | `/api/courses/{slug}` | Course with its lesson summaries and per-lesson `status` |
 | GET | `/api/lessons/{id}` | Full lesson (all six standard sections), quiz questions without answers, mapped certification objectives, the learner's progress and previous/next lesson ids |
 | POST | `/api/lessons/{id}/quiz` | `{answers: [index or null, ...]}` in question order → score, `passed`, and per-question `correct_index` and `explanation`. 422 if the answer count is wrong |
+
+## Progress tracking
+
+| Method | Path | Description |
+|---|---|---|
+| POST | `/api/lessons/{id}/theory` | Optional `{minutes}`; marks theory read and logs theory time once |
+| POST | `/api/lessons/{id}/lab` | `{notes?, minutes?}` (minutes 1-600, default the lesson's estimate); marks the lab done and logs lab time once. Calling again only updates notes |
+| DELETE | `/api/lessons/{id}/lab` | Reopens a lab marked done by mistake (logged time is kept) |
+| GET | `/api/progress` | Totals, this week vs goal, per-course progress, certification readiness, recent activity and the recommended next lesson |
+| GET | `/api/progress/activity?days=30` | Daily theory/lab/quiz minutes for the last N days (1-365) |
+
+`/api/progress` endpoints accept `tz_offset_minutes` (the learner's UTC offset,
+-840 to 840) so days, weeks and streaks follow the learner's calendar. The
+desktop client sends it automatically.
+
+Definitions:
+- **Completed lesson:** lab done and quiz passed (70%+).
+- **Streak:** consecutive days with any logged study time; today counts once studied, and the streak survives until the end of today.
+- **Week:** Monday 00:00 to now, in the learner's time zone; goal is `weekly_goal_hours` from the profile.
+- **Hands-on percent:** lab minutes / all logged minutes; the target is 80%.
+- **Certification readiness:** objectives covered by at least one completed lesson / all objectives for that exam.
+- **Next lesson:** the first in-progress lesson in course order, otherwise the first not started.

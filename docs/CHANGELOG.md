@@ -22,3 +22,9 @@
 - Idempotent YAML seeding at startup; content standards enforced by tests (`13_CONTENT_GUIDE.md`).
 - Quiz grading with a 70% pass mark, explanations and recorded attempts.
 - Desktop: course catalog and lesson pages with an interactive quiz.
+
+### Progress tracking
+- Theory read and lab completion with notes and actual minutes; lessons complete when the lab is done and the quiz is passed.
+- `/api/progress`: totals, hands-on share, streaks, weekly goal, per-course progress, certification readiness, recent activity, next lesson.
+- `/api/progress/activity`: daily study minutes, bucketed in the learner's time zone.
+- Desktop: lesson progress checklist, lab notes and completion, and a Progress page.

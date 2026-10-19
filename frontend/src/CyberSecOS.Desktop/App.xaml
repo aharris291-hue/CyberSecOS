@@ -24,6 +24,7 @@
             <DataTemplate DataType="{x:Type vm:ProfileViewModel}"><views:ProfileView /></DataTemplate>
             <DataTemplate DataType="{x:Type vm:CoursesViewModel}"><views:CoursesView /></DataTemplate>
             <DataTemplate DataType="{x:Type vm:LessonViewModel}"><views:LessonView /></DataTemplate>
+            <DataTemplate DataType="{x:Type vm:ProgressViewModel}"><views:ProgressView /></DataTemplate>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

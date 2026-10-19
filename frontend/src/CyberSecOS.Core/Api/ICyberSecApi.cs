@@ -21,4 +21,10 @@ public interface ICyberSecApi
     Task<CourseDetail> GetCourseAsync(string slug, CancellationToken ct = default);
     Task<LessonDetail> GetLessonAsync(int lessonId, CancellationToken ct = default);
     Task<QuizResult> SubmitQuizAsync(int lessonId, QuizSubmission submission, CancellationToken ct = default);
+
+    Task<LessonProgress> MarkTheoryReadAsync(int lessonId, CancellationToken ct = default);
+    Task<LessonProgress> CompleteLabAsync(int lessonId, LabRequest request, CancellationToken ct = default);
+    Task<LessonProgress> ReopenLabAsync(int lessonId, CancellationToken ct = default);
+    Task<ProgressSummary> GetProgressAsync(CancellationToken ct = default);
+    Task<IReadOnlyList<DailyMinutes>> GetDailyActivityAsync(int days, CancellationToken ct = default);
 }

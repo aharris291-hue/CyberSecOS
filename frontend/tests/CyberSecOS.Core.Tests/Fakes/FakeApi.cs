@@ -27,6 +27,12 @@ public sealed class FakeApi : ICyberSecApi
     public Func<int, LessonDetail> Lesson { get; set; } = id => Samples.Lesson(id);
     public Func<int, QuizSubmission, QuizResult> Quiz { get; set; } = (_, s) => Samples.Grade(s, correctIndex: 1);
 
+    public Func<int, LessonProgress> TheoryRead { get; set; } = _ => Samples.Progress(LessonStatuses.InProgress, theory: true);
+    public Func<int, LabRequest, LessonProgress> Lab { get; set; } = (_, _) => Samples.Progress(LessonStatuses.InProgress, lab: true);
+    public Func<int, LessonProgress> Reopen { get; set; } = _ => Samples.Progress(LessonStatuses.InProgress);
+    public Func<ProgressSummary> Progress { get; set; } = Samples.Summary;
+    public Func<int, IReadOnlyList<DailyMinutes>> Daily { get; set; } = Samples.Daily;
+
     public static TokenResponse Token(UserProfile user) => new("token-123", "bearer", 3600, user);
 
     public static ApiException Error(HttpStatusCode code, string message) => new(code, message);
@@ -44,6 +50,12 @@ public sealed class FakeApi : ICyberSecApi
     public Task<LessonDetail> GetLessonAsync(int lessonId, CancellationToken ct = default) => Run(() => Lesson(lessonId));
     public Task<QuizResult> SubmitQuizAsync(int lessonId, QuizSubmission submission, CancellationToken ct = default) =>
         Run(() => Quiz(lessonId, submission), submission);
+
+    public Task<LessonProgress> MarkTheoryReadAsync(int lessonId, CancellationToken ct = default) => Run(() => TheoryRead(lessonId), $"theory:{lessonId}");
+    public Task<LessonProgress> CompleteLabAsync(int lessonId, LabRequest request, CancellationToken ct = default) => Run(() => Lab(lessonId, request), request);
+    public Task<LessonProgress> ReopenLabAsync(int lessonId, CancellationToken ct = default) => Run(() => Reopen(lessonId), $"reopen:{lessonId}");
+    public Task<ProgressSummary> GetProgressAsync(CancellationToken ct = default) => Run(Progress);
+    public Task<IReadOnlyList<DailyMinutes>> GetDailyActivityAsync(int days, CancellationToken ct = default) => Run(() => Daily(days));
 
     private Task<T> Run<T>(Func<T> handler, object? request = null)
     {

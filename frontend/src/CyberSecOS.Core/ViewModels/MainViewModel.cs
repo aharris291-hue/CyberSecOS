@@ -25,6 +25,7 @@ public sealed partial class MainViewModel : ObservableObject
     public ObservableCollection<NavigationItem> NavigationItems { get; } =
     [
         new("Courses", "\uE82D", typeof(CoursesViewModel)),
+        new("Progress", "\uE9D2", typeof(ProgressViewModel)),
         new("Profile", "\uE77B", typeof(ProfileViewModel)),
     ];
 

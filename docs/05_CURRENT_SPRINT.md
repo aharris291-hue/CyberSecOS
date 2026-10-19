@@ -20,5 +20,5 @@ Priority:
 | 3 | Login | Done |
 | 4 | Dashboard | Not started |
 | 5 | Course Engine | Done (built before Dashboard, which needs content and progress to display) |
-| 6 | Progress Tracking | Not started |
+| 6 | Progress Tracking | Done |
 | 7 | Testing | Ongoing with every feature |

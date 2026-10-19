@@ -44,6 +44,7 @@ public partial class App : Application
         services.AddTransient<ProfileViewModel>();
         services.AddTransient<CoursesViewModel>();
         services.AddTransient<LessonViewModel>();
+        services.AddTransient<ProgressViewModel>();
         return services.BuildServiceProvider();
     }
 

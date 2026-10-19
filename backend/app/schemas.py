@@ -170,3 +170,93 @@ class QuizResultOut(BaseModel):
     pass_mark: int
     results: list[QuestionResultOut]
     lesson_status: str
+
+
+# --- Progress --------------------------------------------------------------
+
+
+class TheoryRequest(BaseModel):
+    minutes: int | None = Field(default=None, ge=1, le=600)
+
+
+class LabRequest(BaseModel):
+    notes: str | None = Field(default=None, max_length=20000)
+    minutes: int | None = Field(default=None, ge=1, le=600)
+
+
+class ProgressTotals(BaseModel):
+    total_lessons: int
+    completed_lessons: int
+    in_progress_lessons: int
+    completion_percent: int
+    labs_completed: int
+    quizzes_passed: int
+    quiz_attempts: int
+    average_quiz_score: int | None
+    theory_minutes: int
+    lab_minutes: int
+    quiz_minutes: int
+    total_minutes: int
+    hands_on_percent: int | None
+    current_streak_days: int
+    longest_streak_days: int
+
+
+class CourseProgress(BaseModel):
+    slug: str
+    title: str
+    domain: str
+    total_lessons: int
+    completed_lessons: int
+    percent: int
+
+
+class CertificationProgress(BaseModel):
+    id: str
+    name: str
+    exam_code: str
+    objectives_total: int
+    objectives_with_content: int
+    objectives_mastered: int
+    readiness_percent: int
+
+
+class ActivityOut(BaseModel):
+    kind: str
+    minutes: int
+    lesson_id: int | None
+    lesson_title: str | None
+    created_at: datetime
+
+
+class DailyMinutes(BaseModel):
+    date: str
+    theory_minutes: int
+    lab_minutes: int
+    quiz_minutes: int
+    total_minutes: int
+
+
+class WeekProgress(BaseModel):
+    week_start: str
+    minutes: int
+    goal_minutes: int
+    goal_percent: int
+
+
+class NextLesson(BaseModel):
+    id: int
+    title: str
+    course_title: str
+    status: str
+    theory_minutes: int
+    lab_minutes: int
+
+
+class ProgressSummary(BaseModel):
+    totals: ProgressTotals
+    week: WeekProgress
+    courses: list[CourseProgress]
+    certifications: list[CertificationProgress]
+    recent_activity: list[ActivityOut]
+    next_lesson: NextLesson | None

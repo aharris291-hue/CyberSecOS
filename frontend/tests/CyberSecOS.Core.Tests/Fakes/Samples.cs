@@ -42,4 +42,26 @@ public static class Samples
         return new QuizResult(score, correct, results.Count, score >= 70, 70, results,
             score >= 70 ? LessonStatuses.InProgress : LessonStatuses.InProgress);
     }
+
+    public static ProgressSummary Summary() => new(
+        new ProgressTotals(12, 3, 2, 25, 4, 3, 5, 88, 36, 160, 12, 208, 77, 4, 6),
+        new WeekProgress("2026-10-19", 150, 600, 25),
+        [
+            new CourseProgress("networking", "Networking Foundations", "Networking", 3, 2, 67),
+            new CourseProgress("windows", "Windows Security", "Windows Security", 2, 1, 50),
+        ],
+        [
+            new CertificationProgress("secplus", "CompTIA Security+", "SY0-701", 28, 14, 7, 25),
+            new CertificationProgress("sc900", "Microsoft SC-900", "SC-900", 4, 3, 1, 25),
+        ],
+        [
+            new ActivityEntry("lab", 48, 10, "The TCP Handshake", new DateTime(2026, 10, 19, 20, 0, 0)),
+            new ActivityEntry("theory", 12, 10, "The TCP Handshake", new DateTime(2026, 10, 19, 19, 0, 0)),
+        ],
+        new NextLesson(11, "Ports, Services and DNS", "Networking Foundations", LessonStatuses.NotStarted, 10, 50));
+
+    public static IReadOnlyList<DailyMinutes> Daily(int days) =>
+        Enumerable.Range(0, days)
+            .Select(i => new DailyMinutes(new DateOnly(2026, 10, 1).AddDays(i).ToString("yyyy-MM-dd"), i, 4 * i, 0, 5 * i))
+            .ToList();
 }

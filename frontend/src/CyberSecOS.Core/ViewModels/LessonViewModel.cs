@@ -33,7 +33,45 @@ public sealed partial class LessonViewModel : PageViewModel, IPageViewModel
     private LessonDetail? _lesson;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ProgressChecklist), nameof(IsLabCompleted), nameof(IsTheoryCompleted))]
     private LessonProgress? _progress;
+
+    [ObservableProperty]
+    private string _labNotes = string.Empty;
+
+    /// <summary>Minutes actually spent on the lab; blank uses the lesson estimate.</summary>
+    [ObservableProperty]
+    private string _labMinutes = string.Empty;
+
+    public bool IsTheoryCompleted => Progress?.TheoryCompleted == true;
+
+    public bool IsLabCompleted => Progress?.LabCompleted == true;
+
+    /// <summary>What is left before the lesson counts as complete.</summary>
+    public string ProgressChecklist
+    {
+        get
+        {
+            if (Progress is null)
+            {
+                return string.Empty;
+            }
+            if (Progress.Status == LessonStatuses.Completed)
+            {
+                return "Lesson complete.";
+            }
+            var remaining = new List<string>();
+            if (!Progress.LabCompleted)
+            {
+                remaining.Add("complete the practical exercise");
+            }
+            if (!Progress.QuizPassed)
+            {
+                remaining.Add("pass the quiz");
+            }
+            return "To finish this lesson: " + string.Join(" and ", remaining) + ".";
+        }
+    }
 
     public ObservableCollection<QuizQuestionViewModel> Questions { get; } = [];
 
@@ -79,6 +117,7 @@ public sealed partial class LessonViewModel : PageViewModel, IPageViewModel
     {
         Lesson = lesson;
         Progress = lesson.Progress;
+        LabNotes = lesson.Progress.LabNotes ?? string.Empty;
         QuizResult = null;
         Questions.Clear();
         for (var i = 0; i < lesson.Questions.Count; i++)
@@ -110,6 +149,49 @@ public sealed partial class LessonViewModel : PageViewModel, IPageViewModel
             }
             await RefreshProgressAsync();
         });
+    }
+
+    [RelayCommand]
+    private async Task MarkTheoryReadAsync()
+    {
+        if (Lesson is not null)
+        {
+            await RunAsync(async () => Progress = await _api.MarkTheoryReadAsync(Lesson.Id));
+        }
+    }
+
+    [RelayCommand]
+    private async Task CompleteLabAsync()
+    {
+        if (Lesson is null)
+        {
+            return;
+        }
+        int? minutes = null;
+        if (!string.IsNullOrWhiteSpace(LabMinutes))
+        {
+            if (!int.TryParse(LabMinutes, out var parsed) || parsed is < 1 or > 600)
+            {
+                ErrorMessage = "Lab time must be a whole number of minutes between 1 and 600.";
+                return;
+            }
+            minutes = parsed;
+        }
+        var notes = string.IsNullOrWhiteSpace(LabNotes) ? null : LabNotes;
+        await RunAsync(async () =>
+        {
+            Progress = await _api.CompleteLabAsync(Lesson.Id, new LabRequest(notes, minutes));
+            StatusMessage = Progress.Status == LessonStatuses.Completed ? "Lesson complete. Nice work." : "Lab recorded.";
+        });
+    }
+
+    [RelayCommand]
+    private async Task ReopenLabAsync()
+    {
+        if (Lesson is not null)
+        {
+            await RunAsync(async () => Progress = await _api.ReopenLabAsync(Lesson.Id));
+        }
     }
 
     [RelayCommand]
