@@ -37,3 +37,8 @@
 - End-to-end learner journey test; malformed server responses surface as friendly errors.
 - CI runs on pull requests and pushes to `main` only, avoiding duplicate runs.
 - Test inventory in `14_TESTING.md`.
+
+### Windows build
+- CI publishes a self-contained Windows build (`CyberSecOS-windows` artifact) with the backend and a `Start CyberSecOS.bat` launcher.
+- The login screen re-checks the server when you press Sign in, so starting the API late no longer needs an app restart.
+- Quick start guide: `15_WINDOWS_QUICKSTART.md`.

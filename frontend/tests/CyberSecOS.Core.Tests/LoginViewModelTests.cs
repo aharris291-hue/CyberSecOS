@@ -48,6 +48,37 @@ public class LoginViewModelTests
     }
 
     [Fact]
+    public async Task SubmitRetriesWhenServerWasOfflineAtStartup()
+    {
+        _api.AuthStatus = () => throw new CyberSecOS.Core.Api.ApiException(null, "Cannot reach the CyberSecOS server.");
+        await _vm.OnNavigatedToAsync();
+        Assert.Contains("Cannot reach", _vm.ErrorMessage);
+
+        _api.AuthStatus = () => new AuthStatus(true);
+        _vm.Username = "adam";
+        _vm.Password = "Correct-Horse-42";
+        await _vm.SubmitCommand.ExecuteAsync(null);
+
+        Assert.True(_session.IsSignedIn);
+    }
+
+    [Fact]
+    public async Task OfflineStartupOnFreshInstallSwitchesToSetupBeforeSubmitting()
+    {
+        _api.AuthStatus = () => throw new CyberSecOS.Core.Api.ApiException(null, "Cannot reach the CyberSecOS server.");
+        await _vm.OnNavigatedToAsync();
+
+        _api.AuthStatus = () => new AuthStatus(false);
+        _vm.Username = "adam";
+        _vm.Password = "Correct-Horse-42";
+        await _vm.SubmitCommand.ExecuteAsync(null);
+
+        Assert.True(_vm.IsFirstRun);
+        Assert.False(_session.IsSignedIn);
+        Assert.DoesNotContain(_api.Calls, c => c is RegisterRequest or LoginRequest);
+    }
+
+    [Fact]
     public async Task SuccessfulLoginSignsIn()
     {
         _vm.Username = " adam ";

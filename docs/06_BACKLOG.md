@@ -34,5 +34,5 @@ Low Priority
 | Render lesson Markdown richly in the desktop app | Medium | Not started |
 | Invalidate existing sessions after a password change | Medium | Not started |
 | UI tests for XAML views and chart converters on Windows | Medium | Not started |
-| Start the backend automatically from the desktop app | Medium | Not started |
+| Start the backend automatically from the desktop app | Medium | Partly done: `Start CyberSecOS.bat` launcher in the Windows build; a single installer is not started |
 | Data backup and export (PDF progress report) | Low | Not started |

@@ -31,3 +31,19 @@ jobs:
           dotnet-version: "9.0.x"
       - run: dotnet build CyberSecOS.sln --configuration Release
       - run: dotnet test CyberSecOS.sln --configuration Release --no-build
+      - name: Package Windows build
+        shell: pwsh
+        run: |
+          $out = "../dist/CyberSecOS"
+          dotnet publish src/CyberSecOS.Desktop/CyberSecOS.Desktop.csproj -c Release -r win-x64 --self-contained true `
+            -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=none -o "$out/app"
+          New-Item -ItemType Directory "$out/backend" | Out-Null
+          Copy-Item -Recurse ../backend/app "$out/backend/app"
+          Copy-Item ../backend/requirements.txt "$out/backend/"
+          Copy-Item "../scripts/Start CyberSecOS.bat" "$out/"
+          Copy-Item ../docs/15_WINDOWS_QUICKSTART.md "$out/README.md"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: CyberSecOS-windows
+          path: dist/
+          retention-days: 30

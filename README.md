@@ -15,6 +15,11 @@ requirements and [`docs/10_DEVELOPMENT.md`](docs/10_DEVELOPMENT.md) to run it.
 
 ## Quick start
 
+**Just want to try it on Windows?** See [`docs/15_WINDOWS_QUICKSTART.md`](docs/15_WINDOWS_QUICKSTART.md)
+for the downloadable build.
+
+From source:
+
 ```bash
 # 1. API
 cd backend
@@ -36,4 +41,5 @@ dotnet run --project src/CyberSecOS.Desktop
 | `docs/12_API.md` | REST API reference |
 | `docs/13_CONTENT_GUIDE.md` | Writing lessons and the content schema |
 | `docs/14_TESTING.md` | Test suites and coverage |
+| `docs/15_WINDOWS_QUICKSTART.md` | Download and run the Windows build |
 | `docs/CHANGELOG.md` | What changed, feature by feature |

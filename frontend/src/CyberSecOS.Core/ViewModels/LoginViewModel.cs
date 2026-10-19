@@ -45,9 +45,11 @@ public sealed partial class LoginViewModel : PageViewModel, IPageViewModel
 
     public string SubmitLabel => IsFirstRun ? "Create account" : "Sign in";
 
+    private bool _statusLoaded;
+
     public async Task OnNavigatedToAsync()
     {
-        await RunAsync(async () => IsFirstRun = !(await _api.GetAuthStatusAsync()).Registered);
+        _statusLoaded = await RunAsync(async () => IsFirstRun = !(await _api.GetAuthStatusAsync()).Registered);
     }
 
     private bool CanSubmit() => !string.IsNullOrWhiteSpace(Username) && Password.Length > 0;
@@ -55,6 +57,21 @@ public sealed partial class LoginViewModel : PageViewModel, IPageViewModel
     [RelayCommand(CanExecute = nameof(CanSubmit))]
     private async Task SubmitAsync()
     {
+        // The server may not have been running when the page opened; check again before submitting.
+        if (!_statusLoaded)
+        {
+            await OnNavigatedToAsync();
+            if (!_statusLoaded)
+            {
+                return;
+            }
+            if (IsFirstRun)
+            {
+                // The form was showing sign-in fields; let the learner fill in the setup fields first.
+                return;
+            }
+        }
+
         if (IsFirstRun && Validate() is { } problem)
         {
             ErrorMessage = problem;
