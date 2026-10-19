@@ -14,10 +14,16 @@
             <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
             <conv:InverseBoolToVisibilityConverter x:Key="InverseBoolToVisibility" />
             <conv:NotEmptyToVisibilityConverter x:Key="NotEmptyToVisibility" />
+            <conv:LessonStatusLabelConverter x:Key="StatusLabel" />
+            <conv:LessonStatusBrushConverter x:Key="StatusBrush" />
+            <conv:PlainTextConverter x:Key="PlainText" />
+            <conv:InverseBoolConverter x:Key="InverseBool" />
 
             <!-- Each page view model is rendered by its view (view-model-first navigation). -->
             <DataTemplate DataType="{x:Type vm:LoginViewModel}"><views:LoginView /></DataTemplate>
             <DataTemplate DataType="{x:Type vm:ProfileViewModel}"><views:ProfileView /></DataTemplate>
+            <DataTemplate DataType="{x:Type vm:CoursesViewModel}"><views:CoursesView /></DataTemplate>
+            <DataTemplate DataType="{x:Type vm:LessonViewModel}"><views:LessonView /></DataTemplate>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

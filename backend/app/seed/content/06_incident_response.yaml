@@ -1,0 +1,92 @@
+slug: incident-response
+title: Incident Response
+domain: Incident Response
+order: 6
+description: >
+  When an alert turns out to be real, the SOC runs incident response. Learn the
+  lifecycle and practise triaging and documenting a phishing incident.
+lessons:
+  - slug: ir-phishing-triage
+    title: The Incident Response Lifecycle and Phishing Triage
+    order: 1
+    difficulty: beginner
+    summary: Apply the NIST lifecycle to a phishing alert, from analysis to a written report.
+    theory_minutes: 12
+    lab_minutes: 55
+    objectives: ["secplus:4.8", "cysa:3.2", "cysa:3.3", "cysa:4.2", "sc200:3"]
+    learning_objectives:
+      - Describe the phases of the NIST incident response lifecycle
+      - Analyse a suspicious email's headers, links and attachments safely
+      - Decide on containment actions and write an incident report
+    theory: |
+      NIST SP 800-61 describes four phases: **Preparation**; **Detection and Analysis**;
+      **Containment, Eradication and Recovery**; and **Post-Incident Activity** (lessons
+      learned). CompTIA lists them in more steps (preparation, detection, analysis,
+      containment, eradication, recovery, lessons learned), but the flow is the same.
+
+      Phishing is the most common incident a junior analyst handles. Triage questions:
+      Is the sender who they claim to be? Check the **Return-Path**, **Received** chain and
+      **SPF/DKIM/DMARC** results in the headers. Where do links really go? Expand them without
+      clicking, and check reputation. What is the attachment? Hash it and check, or detonate it
+      in a sandbox. Who else received it, and did anyone click?
+
+      **Containment** for phishing usually means purging the email from all mailboxes,
+      blocking the sender and URLs, and resetting credentials for anyone who entered them.
+      Everything is recorded with timestamps; a clear **incident report** (summary, timeline,
+      impact, actions, recommendations) is a deliverable employers look for.
+    examples:
+      - title: Header red flags
+        body: |
+          From: "IT Support" <support@yourcompany.com>
+          Return-Path: <bounce@mail-yourcompany-support.xyz>
+          Authentication-Results: spf=fail; dkim=none; dmarc=fail
+          The display name and From look internal, but the infrastructure is not.
+      - title: Incident report skeleton
+        body: |
+          Summary | Timeline (UTC) | Affected users and systems | Indicators |
+          Actions taken | Root cause | Recommendations
+    exercise:
+      title: Triage a phishing email end to end
+      environment: Your computer; a sample phishing .eml from a public phishing-analysis training set
+      tools: [Text editor, MXToolbox header analyzer, URLScan.io, VirusTotal (hash search)]
+      steps:
+        - Download a sample phishing email (.eml) from a public phishing-analysis training repository; do not open attachments.
+        - Open the .eml in a text editor and record From, Return-Path, Reply-To, Subject and the Received chain.
+        - Paste the headers into MXToolbox's header analyzer and record the SPF, DKIM and DMARC results.
+        - Extract every URL, defang them (hxxp, [.]) and submit them to URLScan.io; note the final landing page.
+        - If there is an attachment, extract it inside a VM, hash it and search the hash on VirusTotal.
+        - Decide verdict (malicious, suspicious, benign) and list the containment actions you would take.
+        - Write an incident report using the skeleton from the examples, mapping each step to its NIST phase.
+      deliverable: A one-page phishing incident report with IOCs, verdict and containment actions.
+    expected_outcome: >
+      You can take a reported email from first look to a defensible verdict and a report a
+      SOC lead would accept.
+    quiz:
+      - prompt: Which NIST phase includes purging malicious emails and blocking URLs?
+        options:
+          - Preparation
+          - Detection and Analysis
+          - Containment, Eradication and Recovery
+          - Post-Incident Activity
+        answer: 2
+        explanation: Removing the threat and limiting spread is containment and eradication.
+      - prompt: An email shows `spf=fail` and `dmarc=fail`. This suggests
+        options:
+          - The email was encrypted
+          - The sending server was not authorised to send for that domain
+          - The recipient's mailbox is full
+          - The attachment is safe
+        answer: 1
+        explanation: SPF and DMARC failures mean the message did not come from the domain's authorised infrastructure.
+      - prompt: Why defang URLs (hxxp, [.]) in reports?
+        options:
+          - To make them shorter
+          - To prevent accidental clicks and auto-linking
+          - It is required by SMTP
+          - To hide them from the SIEM
+        answer: 1
+        explanation: Defanged indicators cannot be clicked by mistake.
+      - prompt: What is the main output of the post-incident phase?
+        options: [A new firewall, Lessons learned and improvements, Deleted logs, A password reset]
+        answer: 1
+        explanation: Post-incident activity captures lessons learned to improve preparation.

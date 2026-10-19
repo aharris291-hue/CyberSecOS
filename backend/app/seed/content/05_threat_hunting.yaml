@@ -1,0 +1,89 @@
+slug: threat-hunting
+title: Threat Hunting
+domain: Threat Hunting
+order: 5
+description: >
+  Hunting assumes a breach and looks for attackers that alerts missed. Learn to
+  form hypotheses from MITRE ATT&CK and test them with data.
+lessons:
+  - slug: hunt-attack-persistence
+    title: Hypothesis-Driven Hunting for Persistence
+    order: 1
+    difficulty: intermediate
+    summary: Use MITRE ATT&CK to hunt for Run key and scheduled task persistence.
+    theory_minutes: 12
+    lab_minutes: 55
+    objectives: ["cysa:1.4", "cysa:3.1", "sc200:4"]
+    learning_objectives:
+      - Explain the difference between alert triage and proactive threat hunting
+      - Navigate MITRE ATT&CK tactics, techniques and procedures
+      - Build and test a hunting hypothesis for a persistence technique
+    theory: |
+      **Threat hunting** is the proactive search for adversaries that evaded automated
+      detection. It starts from a **hypothesis**, such as "an attacker has established
+      persistence using registry Run keys on a workstation", and uses data to prove or disprove it.
+
+      **MITRE ATT&CK** is a knowledge base of adversary behaviour. **Tactics** are the goal
+      (Persistence, Lateral Movement, Exfiltration), **techniques** are how the goal is
+      achieved (T1547.001 Registry Run Keys, T1053.005 Scheduled Task), and **procedures** are
+      specific real-world implementations. Mapping your hunts and detections to ATT&CK shows
+      coverage and gaps.
+
+      A practical hunt loop: pick a technique relevant to your environment; list the data that
+      would reveal it (Sysmon 13 for registry writes, Security 4698 for scheduled task creation);
+      search for it; **stack** the results (count by value) to find rare outliers; investigate
+      outliers; and finally turn what worked into an automated detection.
+    examples:
+      - title: Hypothesis written down
+        body: |
+          Hypothesis: A workstation has malware persisting via HKCU\...\CurrentVersion\Run (T1547.001).
+          Data: Sysmon event 13, Autoruns output.
+          Method: Stack Run key values across hosts; investigate any value seen on only one host.
+      - title: Stacking scheduled tasks in KQL
+        body: |
+          SecurityEvent
+          | where EventID == 4698
+          | extend Task = tostring(parse_xml(EventData).EventData.Data[1]["#text"])
+          | summarize Hosts = dcount(Computer) by Task
+          | order by Hosts asc
+    exercise:
+      title: Plant persistence, then hunt it
+      environment: Windows VM with Sysmon installed (from the Windows Security course)
+      tools: [Autoruns, Sysmon, PowerShell, MITRE ATT&CK Navigator]
+      steps:
+        - Read ATT&CK techniques T1547.001 and T1053.005 and note the data sources each lists.
+        - Plant benign persistence with `reg add HKCU\Software\Microsoft\Windows\CurrentVersion\Run /v Updater /d "C:\Windows\System32\notepad.exe"`.
+        - Create a scheduled task with `schtasks /create /tn "SysCheck" /tr notepad.exe /sc onlogon`.
+        - Write a hypothesis, data sources and method for each technique before you search.
+        - Find the registry write in Sysmon event 13 and the task creation in Security event 4698 (enable Other Object Access auditing if needed).
+        - Run Sysinternals Autoruns, hide Microsoft entries, and confirm both items appear.
+        - Remove both persistence items and mark the two techniques in an ATT&CK Navigator layer.
+      deliverable: A hunt report with hypothesis, data, queries, findings and an ATT&CK layer screenshot.
+    expected_outcome: >
+      You can turn an ATT&CK technique into a testable hypothesis, find the evidence, and
+      document a repeatable hunt.
+    quiz:
+      - prompt: What distinguishes threat hunting from alert triage?
+        options:
+          - Hunting only happens after an alert
+          - Hunting proactively searches for threats that did not trigger alerts
+          - Hunting is fully automated
+          - Hunting only uses antivirus
+        answer: 1
+        explanation: Hunting assumes compromise and looks for what detections missed.
+      - prompt: In ATT&CK, "Persistence" is a
+        options: [Technique, Tactic, Procedure, Software]
+        answer: 1
+        explanation: Tactics are the adversary's goals; techniques are how they achieve them.
+      - prompt: What does "stacking" mean in hunting?
+        options:
+          - Running many tools at once
+          - Counting occurrences of values to surface rare outliers
+          - Deleting duplicate logs
+          - Encrypting data
+        answer: 1
+        explanation: Rare values across many hosts are often the most interesting.
+      - prompt: Which Windows Security event records a scheduled task being created?
+        options: ["4688", "4698", "4720", "1102"]
+        answer: 1
+        explanation: 4698 is "A scheduled task was created".

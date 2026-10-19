@@ -1,0 +1,241 @@
+slug: networking-foundations
+title: Networking Foundations for SOC Analysts
+domain: Networking
+order: 1
+description: >
+  How data moves across a network and what normal versus malicious traffic
+  looks like in a packet capture. Every later SOC skill builds on this.
+lessons:
+  - slug: net-osi-tcpip
+    title: The OSI and TCP/IP Models and the TCP Handshake
+    order: 1
+    difficulty: beginner
+    summary: Map traffic to network layers and read a TCP three-way handshake in Wireshark.
+    theory_minutes: 12
+    lab_minutes: 48
+    objectives: ["secplus:4.9", "cysa:1.1"]
+    learning_objectives:
+      - Name the seven OSI layers and the four TCP/IP layers and map common protocols to them
+      - Explain the TCP three-way handshake and the role of SYN, ACK, FIN and RST flags
+      - Distinguish TCP from UDP and say when each is used
+      - Filter a packet capture in Wireshark to isolate a single conversation
+    theory: |
+      Networks are described in layers so that each problem can be reasoned about on its own.
+      The OSI model has seven layers: Physical, Data Link, Network, Transport, Session,
+      Presentation and Application. The TCP/IP model used on real networks compresses these
+      into four: Link, Internet (IP), Transport (TCP/UDP) and Application (HTTP, DNS, SMB...).
+
+      As an analyst you mostly work at three layers. The **Network layer** gives you source and
+      destination IP addresses, which tell you *who* is talking. The **Transport layer** gives you
+      ports and flags, which tell you *which service* and *what state* the conversation is in. The
+      **Application layer** tells you *what was said*.
+
+      TCP is connection-oriented. Before any data flows, the client sends **SYN**, the server
+      answers **SYN-ACK**, and the client confirms with **ACK**. A connection ends with **FIN**
+      exchanges, or abruptly with **RST**. UDP has no handshake: it simply sends datagrams, which
+      makes it fast (DNS, VoIP, streaming) but easy to spoof.
+
+      Why this matters in a SOC: a burst of SYNs with no completed handshakes suggests a port scan
+      or SYN flood; RSTs from many ports suggest closed ports being probed; a completed handshake
+      to an unusual external IP is worth a closer look.
+    examples:
+      - title: A normal handshake in Wireshark
+        body: |
+          No.  Source         Destination    Protocol Info
+          1    10.0.0.15      93.184.216.34  TCP      51544 → 443 [SYN] Seq=0
+          2    93.184.216.34  10.0.0.15      TCP      443 → 51544 [SYN, ACK] Seq=0 Ack=1
+          3    10.0.0.15      93.184.216.34  TCP      51544 → 443 [ACK] Seq=1 Ack=1
+          The client picked an ephemeral source port (51544) and connected to HTTPS (443).
+      - title: Useful Wireshark display filters
+        body: |
+          tcp.flags.syn == 1 && tcp.flags.ack == 0   # connection attempts only
+          ip.addr == 10.0.0.15                       # everything to/from one host
+          tcp.stream eq 4                            # one TCP conversation
+          udp.port == 53                             # DNS traffic
+    exercise:
+      title: Capture and dissect your own handshake
+      environment: Your own computer, or a Windows/Linux VM, with Wireshark installed
+      tools: [Wireshark]
+      steps:
+        - Install Wireshark (wireshark.org) and start a capture on your active network interface.
+        - In a browser, visit http://neverssl.com and then https://example.com, then stop the capture.
+        - Apply the filter `tcp.flags.syn == 1 && tcp.flags.ack == 0` and note each server you connected to.
+        - Right-click one SYN packet, choose Follow > TCP Stream, and identify the SYN, SYN-ACK and ACK packets.
+        - For the neverssl.com stream, find the HTTP GET request and the server's response code.
+        - Apply `udp.port == 53` and find the DNS query and answer that preceded each connection.
+        - Fill in a table with columns Layer, Field, Value for one packet (MAC, IP, port, protocol).
+      deliverable: A short note with your layer table, screenshots of the handshake, and the DNS answer for example.com.
+    expected_outcome: >
+      You can open any capture, isolate a single TCP conversation, point to the three handshake
+      packets, and explain which layer each header field belongs to.
+    quiz:
+      - prompt: At which OSI layer do TCP and UDP operate?
+        options: [Network, Transport, Session, Data Link]
+        answer: 1
+        explanation: TCP and UDP are Transport layer (layer 4) protocols; IP is the Network layer.
+      - prompt: What is the correct order of the TCP three-way handshake?
+        options: ["SYN, ACK, SYN-ACK", "SYN, SYN-ACK, ACK", "ACK, SYN, FIN", "SYN, FIN, ACK"]
+        answer: 1
+        explanation: The client sends SYN, the server replies SYN-ACK, the client completes with ACK.
+      - prompt: Many SYN packets to different ports from one host, with no completed handshakes, most likely indicate
+        options: [A file download, Normal web browsing, A port scan, A DNS lookup]
+        answer: 2
+        explanation: Half-open connections across many ports are the signature of a SYN (stealth) scan.
+      - prompt: Which protocol is connectionless and commonly used by DNS queries?
+        options: [TCP, UDP, ICMP, ARP]
+        answer: 1
+        explanation: DNS queries normally use UDP port 53; TCP is used for large responses and zone transfers.
+
+  - slug: net-ports-protocols
+    title: Ports, Services and DNS
+    order: 2
+    difficulty: beginner
+    summary: Recognise common services by port, enumerate a host with Nmap and read DNS traffic.
+    theory_minutes: 10
+    lab_minutes: 50
+    objectives: ["secplus:2.2", "secplus:4.3", "cysa:1.3"]
+    learning_objectives:
+      - Identify the well-known ports for the services a SOC sees daily
+      - Explain how DNS resolution works and which record types matter in investigations
+      - Run an Nmap service scan against a lab host and interpret the results
+    theory: |
+      A port identifies a service on a host. Ports 0-1023 are well-known: 22 SSH, 25 SMTP,
+      53 DNS, 80 HTTP, 443 HTTPS, 445 SMB, 3389 RDP. Every open port is part of the **attack
+      surface**; exposed SMB and RDP are among the most abused entry points on the internet.
+
+      **DNS** turns names into addresses. A client asks its resolver, which walks root, TLD and
+      authoritative servers and caches the answer for the record's TTL. Record types you will
+      meet: A/AAAA (address), CNAME (alias), MX (mail), TXT (free text, also abused for data
+      exfiltration), and PTR (reverse lookup).
+
+      Attackers use DNS because it is almost always allowed out. Very long or random-looking
+      subdomains, high volumes of TXT queries, and lookups of newly registered domains are
+      classic indicators of tunnelling or malware command and control.
+
+      **Nmap** is the standard tool for discovering hosts and services. A SOC analyst uses it to
+      verify what is really exposed, for example when an alert names a port you do not expect.
+      Only scan systems you own or are authorised to test.
+    examples:
+      - title: Nmap service and version scan
+        body: |
+          $ nmap -sV -p- 192.168.56.101
+          PORT     STATE SERVICE VERSION
+          22/tcp   open  ssh     OpenSSH 8.9p1 Ubuntu
+          80/tcp   open  http    Apache httpd 2.4.52
+          3306/tcp open  mysql   MySQL 8.0.36
+          A database port open to the network is a finding to report.
+      - title: Suspicious DNS pattern
+        body: |
+          query TXT  a9f3k2m1q8.data.badexample.net
+          query TXT  b7d2n4p0x5.data.badexample.net
+          query TXT  c1e8r6t3z9.data.badexample.net
+          High-entropy subdomains with repeated TXT lookups suggest DNS tunnelling.
+    exercise:
+      title: Enumerate a lab host and trace its DNS
+      environment: VirtualBox host-only network with an Ubuntu Server VM (target) and your machine or a Kali VM
+      tools: [Nmap, dig, tcpdump]
+      steps:
+        - Create an Ubuntu Server VM on a host-only network and install openssh-server and apache2.
+        - From your scanning machine run `nmap -sn 192.168.56.0/24` to discover live hosts.
+        - Run `nmap -sV -p- <target>` and record every open port, service and version.
+        - Stop apache2 on the target, rescan port 80, and note how the state changes.
+        - On the target run `sudo tcpdump -n -i any port 53` while running `dig example.com A`, `dig example.com MX` and `dig -x 8.8.8.8`.
+        - Identify the query, the answer and the TTL for each lookup in the tcpdump output.
+      deliverable: A one-page exposure report listing open ports, services, versions and which ones should not be exposed.
+    expected_outcome: >
+      You can name a service from its port, produce and explain an Nmap service scan, and
+      read DNS queries and answers directly from captured traffic.
+    quiz:
+      - prompt: Which port does RDP use by default?
+        options: ["22", "445", "3389", "8080"]
+        answer: 2
+        explanation: Remote Desktop Protocol listens on TCP 3389.
+      - prompt: Which DNS record type is most often abused to carry exfiltrated data?
+        options: [A, MX, TXT, PTR]
+        answer: 2
+        explanation: TXT records hold arbitrary text, which makes them convenient for tunnelling data.
+      - prompt: What does `nmap -sV` add to a scan?
+        options: [OS detection, Service and version detection, UDP scanning, Script scanning only]
+        answer: 1
+        explanation: -sV probes open ports to identify the service and its version.
+      - prompt: SMB, often targeted by worms and ransomware, uses which port?
+        options: ["139 only", "445", "53", "1433"]
+        answer: 1
+        explanation: Modern SMB runs directly over TCP 445.
+
+  - slug: net-traffic-analysis
+    title: Finding Malicious Traffic in a Packet Capture
+    order: 3
+    difficulty: intermediate
+    summary: Triage a real malware pcap and extract indicators of compromise.
+    theory_minutes: 12
+    lab_minutes: 60
+    objectives: ["secplus:2.4", "cysa:1.2", "cysa:1.3"]
+    learning_objectives:
+      - Use Wireshark statistics to find the busiest and most unusual conversations
+      - Recognise beaconing, suspicious downloads and cleartext credentials
+      - Extract indicators of compromise (IPs, domains, file hashes) from a capture
+    theory: |
+      Analysing a capture is a funnel: start wide, then narrow. **Statistics > Conversations**
+      and **Statistics > Protocol Hierarchy** show who talked the most and over what. Unusual
+      protocols, internal hosts talking directly to the internet over odd ports, or one host
+      generating most of the traffic are good starting points.
+
+      **Beaconing** is malware checking in with its command-and-control server at regular
+      intervals. In a capture it appears as many small, similarly sized connections to the same
+      destination spaced evenly in time. **Suspicious downloads** show as HTTP requests for
+      executables or scripts, often with mismatched file extensions or from bare IP addresses.
+
+      Your output is a list of **indicators of compromise (IOCs)**: malicious IPs, domains,
+      URLs and file hashes. These feed blocking, SIEM searches and threat-intelligence sharing.
+      Always record the timestamp and the infected internal host with each IOC.
+    examples:
+      - title: Beaconing visible in conversation timing
+        body: |
+          Time       Source       Destination     Length
+          10:00:00   10.1.1.23    185.0.2.10:8080  312
+          10:01:00   10.1.1.23    185.0.2.10:8080  311
+          10:02:00   10.1.1.23    185.0.2.10:8080  312
+          Same host, same destination, same size, exactly 60 seconds apart.
+      - title: Exporting a downloaded file for hashing
+        body: |
+          File > Export Objects > HTTP > select invoice.exe > Save
+          $ sha256sum invoice.exe
+          The hash can be checked on VirusTotal without uploading the file.
+    exercise:
+      title: Triage a malware traffic exercise
+      environment: An isolated analysis VM (no shared folders); never run extracted files
+      tools: [Wireshark, sha256sum or Get-FileHash, VirusTotal (hash search only)]
+      steps:
+        - Download a beginner exercise pcap from malware-traffic-analysis.net into your analysis VM (archives use the password documented on the site).
+        - Open Statistics > Protocol Hierarchy and Statistics > Conversations and note the top talkers.
+        - Identify the infected internal host (IP, MAC and hostname from DHCP or NBNS traffic).
+        - Filter `http.request` and list every requested URL; flag executables, scripts and requests to bare IPs.
+        - Look for beaconing by sorting conversations to one destination by time.
+        - Export any downloaded files with File > Export Objects > HTTP and hash them; search the hashes on VirusTotal.
+        - Write a timeline of what happened, from first suspicious request to last C2 contact.
+      deliverable: An IOC table (type, value, first seen, related host) and a five-line incident timeline.
+    expected_outcome: >
+      Given an unfamiliar capture you can identify the victim host, the malicious
+      infrastructure and the payload, and hand off a usable IOC list.
+    quiz:
+      - prompt: Evenly spaced, similarly sized connections from one host to the same external IP most likely indicate
+        options: [Software updates, Beaconing to a C2 server, A port scan, DNS caching]
+        answer: 1
+        explanation: Regular, uniform check-ins are the hallmark of command-and-control beaconing.
+      - prompt: Which Wireshark feature lets you save a file transferred over HTTP?
+        options: [Follow TCP Stream, Export Objects > HTTP, Expert Information, Decode As]
+        answer: 1
+        explanation: Export Objects reassembles transferred files so you can hash them.
+      - prompt: Why search a file's hash on VirusTotal instead of uploading the file?
+        options:
+          - Hashes are faster to type
+          - Uploading may share sensitive or targeted samples publicly and tip off the attacker
+          - VirusTotal does not accept uploads
+          - Hashes reveal the attacker's identity
+        answer: 1
+        explanation: Uploads become available to other users; a hash lookup reveals nothing new.
+      - prompt: Which of these is an indicator of compromise?
+        options: [A firewall vendor name, The SHA-256 of a malicious payload, The OSI model, A user's job title]
+        answer: 1
+        explanation: File hashes, malicious domains, IPs and URLs are classic IOCs.

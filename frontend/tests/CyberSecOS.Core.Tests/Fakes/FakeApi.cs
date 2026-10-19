@@ -21,6 +21,12 @@ public sealed class FakeApi : ICyberSecApi
         u => Adam with { DisplayName = u.DisplayName ?? Adam.DisplayName, TargetRole = u.TargetRole ?? Adam.TargetRole, WeeklyGoalHours = u.WeeklyGoalHours ?? Adam.WeeklyGoalHours };
     public Action<PasswordChange> ChangePassword { get; set; } = _ => { };
 
+    public Func<IReadOnlyList<Certification>> Certifications { get; set; } = () => [];
+    public Func<IReadOnlyList<CourseSummary>> Courses { get; set; } = () => [Samples.Course("networking", 1), Samples.Course("windows", 2)];
+    public Func<string, CourseDetail> Course { get; set; } = slug => Samples.CourseDetail(slug);
+    public Func<int, LessonDetail> Lesson { get; set; } = id => Samples.Lesson(id);
+    public Func<int, QuizSubmission, QuizResult> Quiz { get; set; } = (_, s) => Samples.Grade(s, correctIndex: 1);
+
     public static TokenResponse Token(UserProfile user) => new("token-123", "bearer", 3600, user);
 
     public static ApiException Error(HttpStatusCode code, string message) => new(code, message);
@@ -31,6 +37,13 @@ public sealed class FakeApi : ICyberSecApi
     public Task<UserProfile> GetProfileAsync(CancellationToken ct = default) => Run(Profile);
     public Task<UserProfile> UpdateProfileAsync(ProfileUpdate update, CancellationToken ct = default) => Run(() => UpdateProfile(update), update);
     public Task ChangePasswordAsync(PasswordChange change, CancellationToken ct = default) => Run<object?>(() => { ChangePassword(change); return null; }, change);
+
+    public Task<IReadOnlyList<Certification>> GetCertificationsAsync(CancellationToken ct = default) => Run(Certifications);
+    public Task<IReadOnlyList<CourseSummary>> GetCoursesAsync(CancellationToken ct = default) => Run(Courses);
+    public Task<CourseDetail> GetCourseAsync(string slug, CancellationToken ct = default) => Run(() => Course(slug), slug);
+    public Task<LessonDetail> GetLessonAsync(int lessonId, CancellationToken ct = default) => Run(() => Lesson(lessonId));
+    public Task<QuizResult> SubmitQuizAsync(int lessonId, QuizSubmission submission, CancellationToken ct = default) =>
+        Run(() => Quiz(lessonId, submission), submission);
 
     private Task<T> Run<T>(Func<T> handler, object? request = null)
     {

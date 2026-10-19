@@ -42,6 +42,8 @@ public partial class App : Application
         // Pages are transient so each visit loads fresh data.
         services.AddTransient<LoginViewModel>();
         services.AddTransient<ProfileViewModel>();
+        services.AddTransient<CoursesViewModel>();
+        services.AddTransient<LessonViewModel>();
         return services.BuildServiceProvider();
     }
 

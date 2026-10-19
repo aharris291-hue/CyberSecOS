@@ -37,3 +37,13 @@ Security rules:
 | GET | `/api/users/me` | Current profile |
 | PATCH | `/api/users/me` | Any of `display_name`, `target_role`, `weekly_goal_hours` (1-80) |
 | POST | `/api/users/me/password` | `{current_password, new_password}` → 204 |
+
+## Course engine
+
+| Method | Path | Description |
+|---|---|---|
+| GET | `/api/certifications` | Certifications in priority order, with objectives |
+| GET | `/api/courses` | Courses in order with `lesson_count`, `completed_lessons`, `total_minutes` |
+| GET | `/api/courses/{slug}` | Course with its lesson summaries and per-lesson `status` |
+| GET | `/api/lessons/{id}` | Full lesson (all six standard sections), quiz questions without answers, mapped certification objectives, the learner's progress and previous/next lesson ids |
+| POST | `/api/lessons/{id}/quiz` | `{answers: [index or null, ...]}` in question order → score, `passed`, and per-question `correct_index` and `explanation`. 422 if the answer count is wrong |

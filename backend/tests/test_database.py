@@ -18,7 +18,7 @@ EXPECTED_TABLES = {
 }
 
 
-def _lesson(course: Course, slug: str = "l1") -> Lesson:
+def _lesson(course: Course, slug: str = "test-l1") -> Lesson:
     return Lesson(
         slug=slug,
         course=course,
@@ -41,7 +41,7 @@ def test_startup_creates_all_tables(client):
 
 
 def test_lesson_round_trips_json_fields(db):
-    course = Course(slug="c", title="C", domain="Networking", description="d", order=1)
+    course = Course(slug="test-c", title="C", domain="Networking", description="d", order=1)
     lesson = _lesson(course)
     lesson.questions.append(QuizQuestion(order=1, prompt="p", options=["a", "b"], correct_index=1, explanation="e"))
     db.add(course)
@@ -62,7 +62,7 @@ def test_usernames_are_unique(db):
 
 
 def test_one_progress_row_per_user_and_lesson(db):
-    course = Course(slug="c", title="C", domain="Networking", description="d", order=1)
+    course = Course(slug="test-c", title="C", domain="Networking", description="d", order=1)
     lesson = _lesson(course)
     user = User(username="adam", password_hash="x", display_name="A")
     db.add_all([course, user])
@@ -74,12 +74,13 @@ def test_one_progress_row_per_user_and_lesson(db):
 
 
 def test_deleting_course_cascades_to_lessons_and_questions(db):
-    course = Course(slug="c", title="C", domain="Networking", description="d", order=1)
+    course = Course(slug="test-c", title="C", domain="Networking", description="d", order=1)
     lesson = _lesson(course)
     lesson.questions.append(QuizQuestion(order=1, prompt="p", options=["a", "b"], correct_index=0, explanation="e"))
     db.add(course)
     db.commit()
+    lesson_id = lesson.id
     db.delete(course)
     db.commit()
-    assert db.query(Lesson).count() == 0
-    assert db.query(QuizQuestion).count() == 0
+    assert db.query(Lesson).filter_by(id=lesson_id).count() == 0
+    assert db.query(QuizQuestion).filter_by(lesson_id=lesson_id).count() == 0

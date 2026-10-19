@@ -46,6 +46,21 @@ public sealed class CyberSecApiClient : ICyberSecApi
     public Task ChangePasswordAsync(PasswordChange change, CancellationToken ct = default) =>
         SendAsync<object?>(HttpMethod.Post, "api/users/me/password", change, ct);
 
+    public async Task<IReadOnlyList<Certification>> GetCertificationsAsync(CancellationToken ct = default) =>
+        await SendAsync<List<Certification>>(HttpMethod.Get, "api/certifications", null, ct).ConfigureAwait(false);
+
+    public async Task<IReadOnlyList<CourseSummary>> GetCoursesAsync(CancellationToken ct = default) =>
+        await SendAsync<List<CourseSummary>>(HttpMethod.Get, "api/courses", null, ct).ConfigureAwait(false);
+
+    public Task<CourseDetail> GetCourseAsync(string slug, CancellationToken ct = default) =>
+        SendAsync<CourseDetail>(HttpMethod.Get, $"api/courses/{Uri.EscapeDataString(slug)}", null, ct);
+
+    public Task<LessonDetail> GetLessonAsync(int lessonId, CancellationToken ct = default) =>
+        SendAsync<LessonDetail>(HttpMethod.Get, $"api/lessons/{lessonId}", null, ct);
+
+    public Task<QuizResult> SubmitQuizAsync(int lessonId, QuizSubmission submission, CancellationToken ct = default) =>
+        SendAsync<QuizResult>(HttpMethod.Post, $"api/lessons/{lessonId}/quiz", submission, ct);
+
     private async Task<T> SendAsync<T>(HttpMethod method, string path, object? body, CancellationToken ct)
     {
         using var request = new HttpRequestMessage(method, path);

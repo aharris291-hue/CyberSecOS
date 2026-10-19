@@ -1,0 +1,97 @@
+slug: detection-engineering
+title: Detection Engineering
+domain: Detection Engineering
+order: 7
+description: >
+  Detection engineers turn attacker behaviour into reliable alerts. Learn to
+  write, test and tune portable detection rules with Sigma.
+lessons:
+  - slug: de-sigma-rules
+    title: Writing and Testing Sigma Rules
+    order: 1
+    difficulty: intermediate
+    summary: Write a Sigma rule for encoded PowerShell, convert it to KQL and tune false positives.
+    theory_minutes: 12
+    lab_minutes: 55
+    objectives: ["secplus:4.4", "cysa:1.5", "sc200:2"]
+    learning_objectives:
+      - Describe the detection engineering lifecycle
+      - Write a Sigma rule with logsource, detection and condition sections
+      - Convert a Sigma rule to a SIEM query and tune it against real data
+    theory: |
+      A good detection is **specific** (few false positives), **robust** (hard to evade with
+      trivial changes) and **documented** (an analyst knows what to do when it fires). The
+      lifecycle is: research a technique, identify the telemetry, write the logic, test it
+      against both malicious and normal activity, deploy, and tune as false positives appear.
+
+      **Sigma** is an open, vendor-neutral format for detections, written in YAML. A rule has a
+      `logsource` (product and category, for example windows / process_creation), a `detection`
+      section with named selections, and a `condition` combining them. Tools like **sigma-cli**
+      (pySigma) convert rules to KQL, Splunk SPL or Elastic queries, so one rule serves many SIEMs.
+
+      Tuning is part of the job. Rather than deleting a noisy rule, add a filter for the known
+      benign case (a specific management tool's path or parent process) and record why. Each
+      rule should carry ATT&CK tags so coverage can be measured.
+    examples:
+      - title: A Sigma rule
+        body: |
+          title: Encoded PowerShell Command Line
+          status: experimental
+          logsource:
+            product: windows
+            category: process_creation
+          detection:
+            selection:
+              Image|endswith: '\powershell.exe'
+              CommandLine|contains:
+                - ' -enc '
+                - ' -EncodedCommand '
+            condition: selection
+          level: medium
+          tags: [attack.execution, attack.t1059.001]
+      - title: Converting to KQL
+        body: |
+          pip install sigma-cli
+          sigma plugin install microsoft365defender
+          sigma convert -t microsoft365defender encoded_powershell.yml
+    exercise:
+      title: Build, test and tune a detection
+      environment: Python 3 on your computer, plus the Windows VM with Sysmon from earlier
+      tools: [sigma-cli, PowerShell, Sysmon]
+      steps:
+        - Install sigma-cli with pip and install a backend plugin (for example microsoft365defender or splunk).
+        - Write the encoded PowerShell rule from the examples in a file and validate it with `sigma check`.
+        - Convert it with `sigma convert` and read the generated query.
+        - In your Windows VM, run an encoded command and a normal PowerShell command; confirm your logic matches only the encoded one using Get-WinEvent against Sysmon event 1.
+        - Evade your own rule by using `-e` instead of `-enc` and confirm it is missed.
+        - Improve the rule to catch abbreviations (for example `|re` with a regular expression or more contains values) and retest.
+        - Add a filter section for one benign case, document it in the description, and add ATT&CK tags.
+      deliverable: The final Sigma rule, its converted query, and a test log showing true positive, evasion attempt and fixed result.
+    expected_outcome: >
+      You can author a portable detection, prove it fires on the behaviour and not on normal
+      use, and harden it against simple evasions.
+    quiz:
+      - prompt: In a Sigma rule, which section states which logs the rule applies to?
+        options: [detection, condition, logsource, falsepositives]
+        answer: 2
+        explanation: logsource defines the product, category or service the rule targets.
+      - prompt: What is the main advantage of writing detections in Sigma?
+        options:
+          - It runs faster than KQL
+          - One rule can be converted for many different SIEMs
+          - It replaces the need for logs
+          - It blocks attacks automatically
+        answer: 1
+        explanation: Sigma is vendor-neutral and converted to each platform's query language.
+      - prompt: A rule fires constantly on a legitimate backup tool. The best first response is
+        options:
+          - Delete the rule
+          - Add a documented filter for that specific benign case
+          - Disable logging on the server
+          - Raise the rule's severity
+        answer: 1
+        explanation: Targeted, documented exclusions keep coverage while removing noise.
+      - prompt: A detection that misses `-e` but catches `-enc` lacks
+        options: [Specificity, Robustness, Documentation, A severity level]
+        answer: 1
+        explanation: Robust detections survive trivial variations by the attacker.

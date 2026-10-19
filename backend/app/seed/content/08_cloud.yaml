@@ -1,0 +1,92 @@
+slug: cloud-security
+title: Cloud Security Operations
+domain: Cloud Security
+order: 8
+description: >
+  Identity is the new perimeter. Learn the shared responsibility model and how to
+  investigate cloud sign-ins with Microsoft Entra ID logs.
+lessons:
+  - slug: cloud-identity-signins
+    title: Shared Responsibility and Investigating Cloud Sign-ins
+    order: 1
+    difficulty: beginner
+    summary: Understand who secures what in the cloud and investigate risky Entra ID sign-ins.
+    theory_minutes: 12
+    lab_minutes: 50
+    objectives: ["secplus:3.1", "secplus:4.6", "sc900:1", "sc900:2", "sc200:1"]
+    learning_objectives:
+      - Explain the shared responsibility model for IaaS, PaaS and SaaS
+      - Describe Zero Trust and why identity is central to cloud security
+      - Investigate sign-in logs for password spraying, impossible travel and MFA fatigue
+    theory: |
+      In the cloud, security is shared. The provider always secures the physical data centre
+      and hypervisor. In **IaaS** you still secure the OS, apps and data; in **PaaS** you secure
+      apps, data and identities; in **SaaS** you mainly secure identities, data and
+      configuration. Misconfiguration and stolen credentials, not provider failures, cause most
+      cloud breaches.
+
+      **Zero Trust** means "never trust, always verify": every request is authenticated,
+      authorised and evaluated using signals such as user, device, location and risk.
+      **Microsoft Entra ID** (formerly Azure AD) provides identity, **MFA** and **Conditional
+      Access** policies that enforce these decisions.
+
+      Entra **sign-in logs** are where cloud identity attacks show up. **Password spraying**
+      is one or two passwords tried against many accounts from the same IPs. **Impossible
+      travel** is the same account signing in from distant locations within minutes. **MFA
+      fatigue** is a flood of MFA prompts until a tired user approves one. Result codes such as
+      50126 (invalid credentials) and 50074 (MFA required) help you read what happened.
+    examples:
+      - title: Password spray in KQL
+        body: |
+          SigninLogs
+          | where TimeGenerated > ago(1d) and ResultType == "50126"
+          | summarize Accounts = dcount(UserPrincipalName), Attempts = count() by IPAddress
+          | where Accounts > 10
+          | order by Accounts desc
+      - title: Shared responsibility at a glance
+        body: |
+          Layer          IaaS       PaaS       SaaS
+          Data           Customer   Customer   Customer
+          Identities     Customer   Customer   Customer
+          Application    Customer   Customer   Provider
+          OS             Customer   Provider   Provider
+          Physical       Provider   Provider   Provider
+    exercise:
+      title: Investigate sign-ins in a Microsoft 365 developer tenant
+      environment: >
+        A free Microsoft 365 Developer Program tenant or Azure free account (Entra ID P2 trial
+        enables risk reports), or the Log Analytics demo workspace's SigninLogs table
+      tools: [Microsoft Entra admin center, KQL]
+      steps:
+        - Create two test users in your tenant and enable MFA for one of them.
+        - Sign in as each user from a browser, then deliberately fail three sign-ins with a wrong password.
+        - Open Entra admin center > Monitoring > Sign-in logs and find your failed and successful attempts; record result codes.
+        - Add a filter by IP address and by application; identify which sign-ins satisfied MFA.
+        - Create a Conditional Access policy in report-only mode that requires MFA for all users, and view its report-only result on a new sign-in.
+        - Write the password-spray KQL query from the examples and run it in Log Analytics or the demo workspace.
+        - Fill in the shared responsibility table for a web app on a VM versus the same app on App Service.
+      deliverable: Screenshots of the sign-in investigation, your Conditional Access report-only result, and the completed responsibility table.
+    expected_outcome: >
+      You can explain who is responsible for each cloud layer and investigate common identity
+      attacks from sign-in logs.
+    quiz:
+      - prompt: In SaaS, which of these is always the customer's responsibility?
+        options: [Physical security, Hypervisor patching, User identities and access, Application code]
+        answer: 2
+        explanation: Customers always own their data, identities and access configuration.
+      - prompt: Many accounts failing with the same password from one IP is
+        options: [Impossible travel, Password spraying, MFA fatigue, Session hijacking]
+        answer: 1
+        explanation: Spraying tries a few common passwords against many accounts to avoid lockouts.
+      - prompt: The core principle of Zero Trust is
+        options:
+          - Trust everything inside the corporate network
+          - Never trust, always verify every request
+          - Use only one password
+          - Block all cloud services
+        answer: 1
+        explanation: Zero Trust evaluates every access request regardless of network location.
+      - prompt: Which Entra feature enforces "require MFA when signing in from outside the country"?
+        options: [Conditional Access, Sign-in logs, Password writeback, Groups]
+        answer: 0
+        explanation: Conditional Access policies apply conditions and controls such as MFA.

@@ -1,0 +1,94 @@
+slug: siem-fundamentals
+title: SIEM Fundamentals
+domain: SIEM
+order: 4
+description: >
+  The SIEM is the SOC analyst's main workspace. Learn how logs are collected,
+  normalised and searched, using KQL in Microsoft Sentinel.
+lessons:
+  - slug: siem-kql-basics
+    title: Searching Logs with KQL
+    order: 1
+    difficulty: beginner
+    summary: Write KQL queries to filter, aggregate and visualise security events.
+    theory_minutes: 12
+    lab_minutes: 50
+    objectives: ["secplus:4.4", "sc900:3", "sc200:1", "cysa:1.3"]
+    learning_objectives:
+      - Explain what a SIEM does from collection to alerting
+      - Write KQL queries using where, project, summarize and render
+      - Turn a manual search into a reusable query that answers an investigation question
+    theory: |
+      A **SIEM** (Security Information and Event Management) collects logs from endpoints,
+      servers, network devices and cloud services, **normalises** them into common fields,
+      stores them for search, and runs **analytics rules** that raise alerts. Microsoft
+      Sentinel, Splunk and Elastic are the common platforms; the concepts transfer.
+
+      Microsoft Sentinel and Defender use **KQL** (Kusto Query Language). A query starts with a
+      table and pipes rows through operators:
+
+      - `where` filters rows, `project` chooses columns, `extend` adds computed columns
+      - `summarize count() by Field` aggregates, `bin(TimeGenerated, 1h)` buckets time
+      - `order by`, `top`, and `render timechart` present the result
+
+      Good queries always bound **time** first (`where TimeGenerated > ago(24h)`), because it
+      is the cheapest filter. Then filter on the most selective field, then aggregate. Saving
+      a query that answers a recurring question is the first step toward an analytics rule.
+    examples:
+      - title: Failed sign-ins by account
+        body: |
+          SecurityEvent
+          | where TimeGenerated > ago(1d)
+          | where EventID == 4625
+          | summarize Failures = count() by TargetAccount, IpAddress
+          | where Failures > 10
+          | order by Failures desc
+      - title: Logons over time
+        body: |
+          SecurityEvent
+          | where TimeGenerated > ago(7d) and EventID == 4624
+          | summarize count() by bin(TimeGenerated, 1h)
+          | render timechart
+    exercise:
+      title: Answer investigation questions in a live KQL environment
+      environment: >
+        The free Microsoft Log Analytics demo workspace (aka.ms/lademo, requires a Microsoft
+        account) or a Microsoft Sentinel trial workspace
+      tools: [KQL, Log Analytics]
+      steps:
+        - Open the demo workspace and run `SecurityEvent | take 10` to see the available columns.
+        - Write a query that counts events by EventID over the last 24 hours and lists the top 10.
+        - Write a query that finds accounts with more than 10 failed logons (EventID 4625) in a day.
+        - For the top account, list the source IPs and the first and last failure times using min() and max().
+        - Check whether any of those IPs also produced a successful 4624 logon.
+        - Chart logon volume per hour for the last 7 days with render timechart and describe any spike.
+        - Save your best query with a descriptive name and a comment explaining what it detects.
+      deliverable: Five working KQL queries with one sentence each on what they answer.
+    expected_outcome: >
+      You can open an unfamiliar SIEM table and write time-bounded, aggregated KQL to answer
+      who, what, when and from where.
+    quiz:
+      - prompt: Which KQL operator aggregates rows, for example counting events per user?
+        options: [project, where, summarize, extend]
+        answer: 2
+        explanation: summarize performs aggregations such as count(), dcount() and max().
+      - prompt: Why should a query filter on time first?
+        options:
+          - KQL requires it
+          - Time filters are the cheapest way to cut the data scanned
+          - It sorts the results
+          - It removes duplicates
+        answer: 1
+        explanation: Logs are partitioned by time, so a time bound reduces the work dramatically.
+      - prompt: What does "normalisation" mean in a SIEM?
+        options:
+          - Deleting old logs
+          - Mapping different log formats into common field names
+          - Encrypting logs at rest
+          - Sending alerts by email
+        answer: 1
+        explanation: Normalised fields let one query cover many data sources.
+      - prompt: Which KQL line keeps only failed Windows logons?
+        options: ["| where EventID == 4624", "| where EventID == 4625", "| project EventID", "| summarize 4625"]
+        answer: 1
+        explanation: 4625 is the failed logon event.

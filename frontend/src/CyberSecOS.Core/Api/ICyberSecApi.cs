@@ -15,4 +15,10 @@ public interface ICyberSecApi
     Task<UserProfile> GetProfileAsync(CancellationToken ct = default);
     Task<UserProfile> UpdateProfileAsync(ProfileUpdate update, CancellationToken ct = default);
     Task ChangePasswordAsync(PasswordChange change, CancellationToken ct = default);
+
+    Task<IReadOnlyList<Certification>> GetCertificationsAsync(CancellationToken ct = default);
+    Task<IReadOnlyList<CourseSummary>> GetCoursesAsync(CancellationToken ct = default);
+    Task<CourseDetail> GetCourseAsync(string slug, CancellationToken ct = default);
+    Task<LessonDetail> GetLessonAsync(int lessonId, CancellationToken ct = default);
+    Task<QuizResult> SubmitQuizAsync(int lessonId, QuizSubmission submission, CancellationToken ct = default);
 }

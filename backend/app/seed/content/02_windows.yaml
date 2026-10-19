@@ -1,0 +1,166 @@
+slug: windows-security
+title: Windows Security Monitoring
+domain: Windows Security
+order: 2
+description: >
+  Windows endpoints are where most enterprise attacks land. Learn the event logs
+  and telemetry that reveal logons, privilege use and malicious processes.
+lessons:
+  - slug: win-event-logs
+    title: Windows Security Event Logs
+    order: 1
+    difficulty: beginner
+    summary: Read and filter the Security log for logons, failures, new accounts and privilege use.
+    theory_minutes: 12
+    lab_minutes: 48
+    objectives: ["secplus:4.9", "cysa:1.3", "sc200:1"]
+    learning_objectives:
+      - Name the key Security event IDs a SOC analyst uses daily
+      - Interpret logon types in event 4624
+      - Query events with Event Viewer and PowerShell Get-WinEvent
+    theory: |
+      Windows records security-relevant activity in the **Security** event log. A handful of
+      event IDs cover most investigations:
+
+      - **4624** successful logon, **4625** failed logon, **4634/4647** logoff
+      - **4672** special privileges assigned (an administrator-equivalent logon)
+      - **4688** process creation (enable command-line auditing to see arguments)
+      - **4720** user account created, **4728/4732** user added to a privileged group
+      - **1102** the audit log was cleared, which is almost always suspicious
+
+      Event 4624 includes a **Logon Type**: 2 interactive (at the keyboard), 3 network (SMB,
+      for example), 4 batch, 5 service, 7 unlock, 10 RemoteInteractive (RDP). Many type 3 or 10
+      logons from an unexpected source, especially right after a run of 4625 failures, point
+      to brute force or lateral movement.
+
+      Event Viewer is fine for browsing, but **Get-WinEvent** with a filter hashtable is how you
+      search quickly and repeatably, and it is the same thinking you will later apply in a SIEM.
+    examples:
+      - title: Failed logons in the last 24 hours
+        body: |
+          Get-WinEvent -FilterHashtable @{LogName='Security'; Id=4625; StartTime=(Get-Date).AddDays(-1)} |
+            Select-Object TimeCreated, @{n='User';e={$_.Properties[5].Value}}, @{n='Source';e={$_.Properties[19].Value}}
+      - title: Reading a 4624 event
+        body: |
+          Logon Type:          10
+          Account Name:        jsmith
+          Source Network Address: 203.0.113.45
+          An RDP logon from an external address deserves immediate review.
+    exercise:
+      title: Generate and hunt your own security events
+      environment: A Windows 10/11 or Windows Server evaluation VM where you are administrator
+      tools: [Event Viewer, PowerShell, auditpol]
+      steps:
+        - Run `auditpol /get /category:*` and enable success and failure auditing for Logon and Process Creation if they are off.
+        - Lock the VM and sign in with a wrong password three times, then sign in correctly.
+        - Create a local user with `net user labuser P@ssw0rd-Lab1 /add` and add it to Administrators with `net localgroup administrators labuser /add`.
+        - Open Event Viewer > Windows Logs > Security and find the 4625, 4624, 4720 and 4732 events you caused.
+        - Write a Get-WinEvent command that lists only your failed logons with time and account name.
+        - Write a second command that lists 4688 events for the last hour and find the `net.exe` executions.
+        - Remove the lab user with `net user labuser /delete` and confirm event 4726 was logged.
+      deliverable: The two PowerShell queries and a table mapping each action you took to its event ID.
+    expected_outcome: >
+      You can reproduce attacker-like actions, find the exact events they generate, and query
+      them from PowerShell without browsing manually.
+    quiz:
+      - prompt: Which event ID records a failed logon?
+        options: ["4624", "4625", "4672", "4720"]
+        answer: 1
+        explanation: 4625 is "An account failed to log on".
+      - prompt: Logon type 10 in event 4624 means
+        options: [Interactive console logon, Network logon, RemoteInteractive (RDP), Service logon]
+        answer: 2
+        explanation: Type 10 is RemoteInteractive, used by Remote Desktop.
+      - prompt: Why is event 1102 almost always investigated?
+        options:
+          - It means a user changed their password
+          - It records the security audit log being cleared, a common anti-forensics step
+          - It is generated at every reboot
+          - It shows a new printer was installed
+        answer: 1
+        explanation: Clearing the Security log destroys evidence, so attackers often do it.
+      - prompt: Which event shows a user being added to a security-enabled local group such as Administrators?
+        options: ["4688", "4732", "4634", "4647"]
+        answer: 1
+        explanation: 4732 is "A member was added to a security-enabled local group".
+
+  - slug: win-sysmon-powershell
+    title: Process Telemetry with Sysmon and Suspicious PowerShell
+    order: 2
+    difficulty: intermediate
+    summary: Deploy Sysmon and detect encoded PowerShell and suspicious parent-child processes.
+    theory_minutes: 12
+    lab_minutes: 55
+    objectives: ["secplus:4.4", "secplus:2.4", "cysa:1.2", "sc200:2"]
+    learning_objectives:
+      - Explain what Sysmon adds beyond the built-in Security log
+      - Recognise suspicious parent-child process relationships
+      - Decode and assess an encoded PowerShell command
+    theory: |
+      **Sysmon** (System Monitor, from Microsoft Sysinternals) is a free driver and service that
+      writes rich telemetry to *Microsoft-Windows-Sysmon/Operational*. Key events: **1** process
+      creation with full command line and hashes, **3** network connection, **11** file created,
+      **13** registry value set, **22** DNS query. A community configuration such as
+      SwiftOnSecurity's filters out noise.
+
+      Attackers love **living off the land**: using built-in tools like PowerShell, certutil,
+      mshta and rundll32 so that nothing new needs to be installed. Context is what separates
+      malicious from normal. **Parent-child relationships** are a strong signal: Word or Excel
+      spawning PowerShell, or PowerShell spawned by a service binary, is rarely legitimate.
+
+      PowerShell's `-EncodedCommand` (often shortened to `-enc` or `-e`) accepts a Base64
+      UTF-16LE script. Administrators rarely use it interactively; malware uses it to hide
+      download cradles such as `IEX (New-Object Net.WebClient).DownloadString(...)`. Decoding
+      the string is the first step of triage.
+    examples:
+      - title: Suspicious Sysmon event 1
+        body: |
+          ParentImage: C:\Program Files\Microsoft Office\root\Office16\WINWORD.EXE
+          Image:       C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+          CommandLine: powershell.exe -nop -w hidden -enc SQBFAFgAIAAoAE4AZQB3AC0ATwBi...
+      - title: Decoding an encoded command
+        body: |
+          $b64 = 'SQBFAFgAIAAoAE4AZQB3AC0ATwBiAGoAZQBjAHQAIABOAGUAdAAuAFcAZQBiAEMAbABpAGUAbgB0ACkA'
+          [Text.Encoding]::Unicode.GetString([Convert]::FromBase64String($b64))
+          # IEX (New-Object Net.WebClient)
+    exercise:
+      title: Install Sysmon and catch an encoded command
+      environment: Windows evaluation VM, isolated from your home network
+      tools: [Sysmon, PowerShell, Event Viewer]
+      steps:
+        - Download Sysmon from Microsoft Sysinternals and the SwiftOnSecurity sysmon-config XML.
+        - Install with `sysmon64.exe -accepteula -i sysmonconfig-export.xml` and confirm the Sysmon/Operational log exists.
+        - Encode a harmless command, for example `$c = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes('Get-Date; whoami'))`.
+        - Run `powershell.exe -NoProfile -EncodedCommand $c` to simulate an attacker technique.
+        - Find the Sysmon event 1 for that execution and record ParentImage, CommandLine and Hashes.
+        - Decode the Base64 from the event back to plain text with PowerShell.
+        - Write a Get-WinEvent query that returns Sysmon event 1 entries whose CommandLine contains `-enc` or `-EncodedCommand`.
+      deliverable: Screenshot of the event, the decoded command, and your detection query.
+    expected_outcome: >
+      You have working endpoint telemetry, can explain why a given process chain is
+      suspicious, and can decode and search for encoded PowerShell.
+    quiz:
+      - prompt: Which Sysmon event ID records process creation?
+        options: ["1", "3", "11", "22"]
+        answer: 0
+        explanation: Sysmon event 1 is ProcessCreate, including command line and hashes.
+      - prompt: Which parent-child pair is most suspicious?
+        options:
+          - explorer.exe starting chrome.exe
+          - services.exe starting svchost.exe
+          - winword.exe starting powershell.exe
+          - explorer.exe starting notepad.exe
+        answer: 2
+        explanation: Office applications spawning a shell is a common sign of a malicious macro.
+      - prompt: What encoding does PowerShell -EncodedCommand expect?
+        options: [Hex, Base64 of UTF-16LE text, ROT13, Base64 of ASCII text]
+        answer: 1
+        explanation: The script is UTF-16LE (Unicode) text encoded as Base64.
+      - prompt: '"Living off the land" means attackers'
+        options:
+          - Only attack agricultural companies
+          - Use tools already present on the system to avoid detection
+          - Physically break into buildings
+          - Use only zero-day exploits
+        answer: 1
+        explanation: Built-in binaries such as PowerShell or certutil blend in with normal administration.

@@ -10,7 +10,8 @@ from fastapi import FastAPI
 from . import __version__
 from .config import Settings
 from .database import create_db_engine, create_session_factory, init_db
-from .routers import auth, users
+from .routers import auth, courses, users
+from .services.seed import seed_database
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -23,6 +24,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         init_db(engine)
         app.state.engine = engine
         app.state.session_factory = create_session_factory(engine)
+        if settings.seed_content:
+            with app.state.session_factory() as session:
+                seed_database(session)
         try:
             yield
         finally:
@@ -37,5 +41,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     app.include_router(auth.router)
     app.include_router(users.router)
+    app.include_router(courses.router)
 
     return app

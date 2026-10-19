@@ -23,6 +23,7 @@ public class ShellTests
     {
         nameof(LoginViewModel) => new LoginViewModel(_api, _session),
         nameof(ProfileViewModel) => new ProfileViewModel(_api, _session),
+        nameof(CoursesViewModel) => new CoursesViewModel(_api, _navigation, _session),
         _ => throw new InvalidOperationException(type.Name),
     };
 
@@ -49,6 +50,17 @@ public class ShellTests
     }
 
     [Fact]
+    public void SelectingNavigationItemChangesPage()
+    {
+        _shell.Start();
+        _session.SignIn(FakeApi.Token(FakeApi.Adam));
+
+        _shell.SelectedItem = _shell.NavigationItems.Single(i => i.PageType == typeof(ProfileViewModel));
+
+        Assert.IsType<ProfileViewModel>(_shell.CurrentPage);
+    }
+
+    [Fact]
     public void SignOutReturnsToLoginAndDropsToken()
     {
         _shell.Start();
@@ -66,9 +78,9 @@ public class ShellTests
     {
         _shell.Start();
         _session.SignIn(FakeApi.Token(FakeApi.Adam));
-        _api.Profile = () => throw FakeApi.Error(HttpStatusCode.Unauthorized, "Not authenticated");
+        _api.Courses = () => throw FakeApi.Error(HttpStatusCode.Unauthorized, "Not authenticated");
 
-        await ((ProfileViewModel)_shell.CurrentPage!).OnNavigatedToAsync();
+        await ((IPageViewModel)_shell.CurrentPage!).OnNavigatedToAsync();
 
         Assert.False(_shell.IsSignedIn);
         Assert.IsType<LoginViewModel>(_shell.CurrentPage);
