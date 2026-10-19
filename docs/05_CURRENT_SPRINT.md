@@ -16,7 +16,7 @@ Priority:
 | # | Item | Status |
 |---|---|---|
 | 1 | Project Structure | Done |
-| 2 | Database | Not started |
+| 2 | Database | Done |
 | 3 | Login | Not started |
 | 4 | Dashboard | Not started |
 | 5 | Course Engine | Not started |

@@ -22,3 +22,13 @@ def settings(tmp_path: Path) -> Settings:
 def client(settings: Settings) -> TestClient:
     with TestClient(create_app(settings)) as test_client:
         yield test_client
+
+
+@pytest.fixture()
+def db(client: TestClient):
+    """A session bound to the same database the app under test uses."""
+    session = client.app.state.session_factory()
+    try:
+        yield session
+    finally:
+        session.close()
