@@ -1,12 +1,23 @@
 <Application x:Class="CyberSecOS.Desktop.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:CyberSecOS.Core.ViewModels;assembly=CyberSecOS.Core"
+             xmlns:views="clr-namespace:CyberSecOS.Desktop.Views"
+             xmlns:conv="clr-namespace:CyberSecOS.Desktop.Converters"
              ShutdownMode="OnMainWindowClose">
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="Themes/Dark.xaml" />
             </ResourceDictionary.MergedDictionaries>
+
+            <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
+            <conv:InverseBoolToVisibilityConverter x:Key="InverseBoolToVisibility" />
+            <conv:NotEmptyToVisibilityConverter x:Key="NotEmptyToVisibility" />
+
+            <!-- Each page view model is rendered by its view (view-model-first navigation). -->
+            <DataTemplate DataType="{x:Type vm:LoginViewModel}"><views:LoginView /></DataTemplate>
+            <DataTemplate DataType="{x:Type vm:ProfileViewModel}"><views:ProfileView /></DataTemplate>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

@@ -10,6 +10,7 @@ from fastapi import FastAPI
 from . import __version__
 from .config import Settings
 from .database import create_db_engine, create_session_factory, init_db
+from .routers import auth, users
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -33,5 +34,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.get("/api/health", tags=["system"])
     def health() -> dict[str, str]:
         return {"status": "ok", "version": __version__}
+
+    app.include_router(auth.router)
+    app.include_router(users.router)
 
     return app

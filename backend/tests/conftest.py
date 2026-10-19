@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 import pytest
@@ -7,6 +8,9 @@ from fastapi.testclient import TestClient
 
 from app.config import Settings
 from app.main import create_app
+
+# Fast hashing keeps the suite quick; production uses the bcrypt default cost.
+os.environ.setdefault("CYBERSECOS_BCRYPT_ROUNDS", "4")
 
 
 @pytest.fixture()
@@ -32,3 +36,16 @@ def db(client: TestClient):
         yield session
     finally:
         session.close()
+
+
+PASSWORD = "Correct-Horse-42"
+
+
+@pytest.fixture()
+def auth_headers(client: TestClient) -> dict[str, str]:
+    """Register the learner and return a bearer header for them."""
+    response = client.post(
+        "/api/auth/register", json={"username": "adam", "password": PASSWORD, "display_name": "Adam"}
+    )
+    assert response.status_code == 201, response.text
+    return {"Authorization": f"Bearer {response.json()['access_token']}"}

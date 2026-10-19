@@ -17,7 +17,7 @@ Priority:
 |---|---|---|
 | 1 | Project Structure | Done |
 | 2 | Database | Done |
-| 3 | Login | Not started |
+| 3 | Login | Done |
 | 4 | Dashboard | Not started |
 | 5 | Course Engine | Not started |
 | 6 | Progress Tracking | Not started |
