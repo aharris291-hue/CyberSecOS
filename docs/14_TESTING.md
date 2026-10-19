@@ -1,0 +1,40 @@
+# Testing
+
+Definition of Done (`07_DEFINITION_OF_DONE.md`) requires tests for every
+feature and a passing build. CI (`.github/workflows/ci.yml`) runs both suites on
+every pull request and on pushes to `main`.
+
+## Backend (PyTest, `backend/tests`)
+
+| File | Covers |
+|---|---|
+| `test_health.py` | App starts, health endpoint |
+| `test_database.py` | Tables, JSON columns, unique constraints, cascades |
+| `test_auth.py` | First-run registration, single-account rule, password policy, hashing, login, lockout, token tampering and expiry |
+| `test_users.py` | Profile read/update and password change |
+| `test_content_standards.py` | Every lesson has the six required sections, valid quizzes, certification mapping, 20/80 split, every focus domain and certification covered |
+| `test_seed.py` | Seeding and idempotent re-seeding that keeps progress |
+| `test_quiz_grading.py` | Scoring, rounding, pass mark, unanswered questions |
+| `test_courses_api.py` | Catalog, lesson detail without answers, quiz submission |
+| `test_progress.py` | Theory/lab/quiz state machine, summary, streaks, week, time zones, readiness |
+| `test_dashboard.py` | Dashboard payload for new and active learners |
+| `test_learner_journey.py` | End-to-end: sign up, study a lesson, see it on the dashboard |
+
+Each test gets a fresh SQLite database in a temp directory. bcrypt uses a low
+cost factor in tests only (`CYBERSECOS_BCRYPT_ROUNDS=4`).
+
+## Desktop (xUnit, `frontend/tests/CyberSecOS.Core.Tests`)
+
+View models and the API client are tested without WPF:
+
+- `ApiClientTests`: snake_case JSON, bearer header, error mapping, offline server, malformed responses.
+- `LoginViewModelTests`, `ShellTests`, `ProfileViewModelTests`: first-run vs sign-in, validation, navigation, sign-out, expired sessions.
+- `CoursesViewModelTests`, `LessonViewModelTests`: catalog, lesson sections, quiz selection, grading and retry.
+- `ProgressTrackingTests`: theory/lab commands, checklist, Progress page.
+- `DashboardViewModelTests`: tiles, chart data, next lesson, empty state.
+
+`Fakes/FakeApi` is an in-memory `ICyberSecApi`; `Fakes/StubHttpHandler` fakes HTTP.
+
+## Not yet automated
+
+- XAML views and LiveCharts2 converters (need a Windows UI test runner; see backlog).

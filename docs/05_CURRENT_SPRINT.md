@@ -21,4 +21,6 @@ Priority:
 | 4 | Dashboard | Done |
 | 5 | Course Engine | Done (built before Dashboard, which needs content and progress to display) |
 | 6 | Progress Tracking | Done |
-| 7 | Testing | Ongoing with every feature |
+| 7 | Testing | Done: 124 PyTest + 68 xUnit tests, CI on Ubuntu and Windows (`14_TESTING.md`) |
+
+Sprint goal met: Phase 1 (Login, Dashboard, Progress Tracking) is complete.

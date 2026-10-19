@@ -1,11 +1,11 @@
 # Product Roadmap
 
-Phase 1 - Core Application
+Phase 1 - Core Application (complete)
 - Login
 - Dashboard
 - Progress Tracking
 
-Phase 2 - Learning System
+Phase 2 - Learning System (foundation built in Phase 1: course engine, 12 lessons, quizzes)
 - Courses
 - Lessons
 - Quizzes

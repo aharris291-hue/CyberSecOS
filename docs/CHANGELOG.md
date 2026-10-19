@@ -1,6 +1,6 @@
 # Changelog
 
-## Phase 1 - Core Application (in progress)
+## Phase 1 - Core Application (complete)
 
 ### Project structure
 - Monorepo with `backend/` (FastAPI) and `frontend/` (WPF, MVVM) per the architecture document.
@@ -32,3 +32,8 @@
 ### Dashboard
 - `GET /api/dashboard` returns everything the home screen needs in one call.
 - Desktop dashboard (new home page): greeting, up-next lesson, headline stats, weekly goal, and LiveCharts2 charts for daily study time, theory vs hands-on, progress by domain and certification readiness.
+
+### Testing
+- End-to-end learner journey test; malformed server responses surface as friendly errors.
+- CI runs on pull requests and pushes to `main` only, avoiding duplicate runs.
+- Test inventory in `14_TESTING.md`.

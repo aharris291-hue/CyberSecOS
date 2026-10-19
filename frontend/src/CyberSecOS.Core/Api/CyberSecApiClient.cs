@@ -119,7 +119,16 @@ public sealed class CyberSecApiClient : ICyberSecApi
             {
                 return default!;
             }
-            var result = await response.Content.ReadFromJsonAsync<T>(JsonOptions, ct).ConfigureAwait(false);
+            T? result;
+            try
+            {
+                result = await response.Content.ReadFromJsonAsync<T>(JsonOptions, ct).ConfigureAwait(false);
+            }
+            catch (JsonException ex)
+            {
+                // Usually a client/server version mismatch; surface it like any other API error.
+                throw new ApiException(response.StatusCode, "The server sent a response this app does not understand.", ex);
+            }
             return result ?? throw new ApiException(response.StatusCode, "The server returned an empty response.");
         }
     }

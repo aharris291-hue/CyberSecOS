@@ -102,4 +102,15 @@ public class ApiClientTests
         Assert.Null(ex.StatusCode);
         Assert.Contains("Cannot reach", ex.Message);
     }
+
+    [Fact]
+    public async Task MalformedResponseBecomesApiException()
+    {
+        var handler = new StubHttpHandler(HttpStatusCode.OK, """{"registered": "not-a-bool"}""");
+        var api = new CyberSecApiClient(handler.CreateClient());
+
+        var ex = await Assert.ThrowsAsync<ApiException>(() => api.GetAuthStatusAsync());
+
+        Assert.Contains("does not understand", ex.Message);
+    }
 }
