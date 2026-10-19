@@ -33,6 +33,8 @@ public sealed class FakeApi : ICyberSecApi
     public Func<ProgressSummary> Progress { get; set; } = Samples.Summary;
     public Func<int, IReadOnlyList<DailyMinutes>> Daily { get; set; } = Samples.Daily;
 
+    public Func<DashboardData> Dashboard { get; set; } = Samples.Dashboard;
+
     public static TokenResponse Token(UserProfile user) => new("token-123", "bearer", 3600, user);
 
     public static ApiException Error(HttpStatusCode code, string message) => new(code, message);
@@ -56,6 +58,8 @@ public sealed class FakeApi : ICyberSecApi
     public Task<LessonProgress> ReopenLabAsync(int lessonId, CancellationToken ct = default) => Run(() => Reopen(lessonId), $"reopen:{lessonId}");
     public Task<ProgressSummary> GetProgressAsync(CancellationToken ct = default) => Run(Progress);
     public Task<IReadOnlyList<DailyMinutes>> GetDailyActivityAsync(int days, CancellationToken ct = default) => Run(() => Daily(days));
+
+    public Task<DashboardData> GetDashboardAsync(CancellationToken ct = default) => Run(Dashboard);
 
     private Task<T> Run<T>(Func<T> handler, object? request = null)
     {

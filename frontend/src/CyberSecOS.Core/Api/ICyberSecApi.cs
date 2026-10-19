@@ -27,4 +27,6 @@ public interface ICyberSecApi
     Task<LessonProgress> ReopenLabAsync(int lessonId, CancellationToken ct = default);
     Task<ProgressSummary> GetProgressAsync(CancellationToken ct = default);
     Task<IReadOnlyList<DailyMinutes>> GetDailyActivityAsync(int days, CancellationToken ct = default);
+
+    Task<DashboardData> GetDashboardAsync(CancellationToken ct = default);
 }

@@ -18,8 +18,11 @@
             <conv:LessonStatusBrushConverter x:Key="StatusBrush" />
             <conv:PlainTextConverter x:Key="PlainText" />
             <conv:InverseBoolConverter x:Key="InverseBool" />
+            <conv:ChartSeriesConverter x:Key="ChartSeries" />
+            <conv:ChartAxisConverter x:Key="ChartAxis" />
 
             <!-- Each page view model is rendered by its view (view-model-first navigation). -->
+            <DataTemplate DataType="{x:Type vm:DashboardViewModel}"><views:DashboardView /></DataTemplate>
             <DataTemplate DataType="{x:Type vm:LoginViewModel}"><views:LoginView /></DataTemplate>
             <DataTemplate DataType="{x:Type vm:ProfileViewModel}"><views:ProfileView /></DataTemplate>
             <DataTemplate DataType="{x:Type vm:CoursesViewModel}"><views:CoursesView /></DataTemplate>

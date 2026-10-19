@@ -28,3 +28,7 @@
 - `/api/progress`: totals, hands-on share, streaks, weekly goal, per-course progress, certification readiness, recent activity, next lesson.
 - `/api/progress/activity`: daily study minutes, bucketed in the learner's time zone.
 - Desktop: lesson progress checklist, lab notes and completion, and a Progress page.
+
+### Dashboard
+- `GET /api/dashboard` returns everything the home screen needs in one call.
+- Desktop dashboard (new home page): greeting, up-next lesson, headline stats, weekly goal, and LiveCharts2 charts for daily study time, theory vs hands-on, progress by domain and certification readiness.

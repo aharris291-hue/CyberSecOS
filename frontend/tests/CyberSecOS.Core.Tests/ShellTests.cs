@@ -24,6 +24,7 @@ public class ShellTests
         nameof(LoginViewModel) => new LoginViewModel(_api, _session),
         nameof(ProfileViewModel) => new ProfileViewModel(_api, _session),
         nameof(CoursesViewModel) => new CoursesViewModel(_api, _navigation, _session),
+        nameof(DashboardViewModel) => new DashboardViewModel(_api, _navigation, _session),
         _ => throw new InvalidOperationException(type.Name),
     };
 
@@ -78,7 +79,7 @@ public class ShellTests
     {
         _shell.Start();
         _session.SignIn(FakeApi.Token(FakeApi.Adam));
-        _api.Courses = () => throw FakeApi.Error(HttpStatusCode.Unauthorized, "Not authenticated");
+        _api.Dashboard = () => throw FakeApi.Error(HttpStatusCode.Unauthorized, "Not authenticated");
 
         await ((IPageViewModel)_shell.CurrentPage!).OnNavigatedToAsync();
 

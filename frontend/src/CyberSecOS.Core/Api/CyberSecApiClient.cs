@@ -77,6 +77,9 @@ public sealed class CyberSecApiClient : ICyberSecApi
         await SendAsync<List<DailyMinutes>>(
             HttpMethod.Get, $"api/progress/activity?days={days}&tz_offset_minutes={LocalOffsetMinutes()}", null, ct).ConfigureAwait(false);
 
+    public Task<DashboardData> GetDashboardAsync(CancellationToken ct = default) =>
+        SendAsync<DashboardData>(HttpMethod.Get, $"api/dashboard?tz_offset_minutes={LocalOffsetMinutes()}", null, ct);
+
     /// <summary>Lets the server bucket study days and streaks in the learner's own time zone.</summary>
     internal static int LocalOffsetMinutes() => (int)TimeZoneInfo.Local.GetUtcOffset(DateTime.Now).TotalMinutes;
 

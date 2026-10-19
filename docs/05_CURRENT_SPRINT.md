@@ -18,7 +18,7 @@ Priority:
 | 1 | Project Structure | Done |
 | 2 | Database | Done |
 | 3 | Login | Done |
-| 4 | Dashboard | Not started |
+| 4 | Dashboard | Done |
 | 5 | Course Engine | Done (built before Dashboard, which needs content and progress to display) |
 | 6 | Progress Tracking | Done |
 | 7 | Testing | Ongoing with every feature |

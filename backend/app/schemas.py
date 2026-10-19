@@ -260,3 +260,18 @@ class ProgressSummary(BaseModel):
     certifications: list[CertificationProgress]
     recent_activity: list[ActivityOut]
     next_lesson: NextLesson | None
+
+
+# --- Dashboard ---------------------------------------------------------------
+
+
+class Dashboard(BaseModel):
+    display_name: str
+    target_role: str
+    totals: ProgressTotals
+    week: WeekProgress
+    next_lesson: NextLesson | None
+    daily_activity: list[DailyMinutes]
+    courses: list[CourseProgress]
+    certifications: list[CertificationProgress]
+    recent_activity: list[ActivityOut]

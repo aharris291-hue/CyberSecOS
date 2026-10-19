@@ -24,13 +24,14 @@ public sealed partial class MainViewModel : ObservableObject
     /// <summary>Pages shown in the side bar once signed in. Order is display order.</summary>
     public ObservableCollection<NavigationItem> NavigationItems { get; } =
     [
+        new("Dashboard", "\uE80F", typeof(DashboardViewModel)),
         new("Courses", "\uE82D", typeof(CoursesViewModel)),
         new("Progress", "\uE9D2", typeof(ProgressViewModel)),
         new("Profile", "\uE77B", typeof(ProfileViewModel)),
     ];
 
     /// <summary>Where the learner lands after signing in.</summary>
-    public Type HomePage { get; init; } = typeof(CoursesViewModel);
+    public Type HomePage { get; init; } = typeof(DashboardViewModel);
 
     [ObservableProperty]
     private object? _currentPage;

@@ -21,7 +21,7 @@ Low Priority
 | Item | Priority | Status |
 |---|---|---|
 | User Profiles | High | Done: single-user account, profile and password change |
-| Dashboard | High | Not started |
+| Dashboard | High | Done: stats, next lesson, weekly goal, LiveCharts2 charts |
 | Learning Engine | High | Done: 8 courses, 12 lessons meeting the education standards |
 | Quiz Engine | High | Done: graded quizzes with explanations, 70% pass mark |
 | Progress Tracking | High | Done: theory/lab/quiz tracking, streaks, weekly goal, per-course progress |

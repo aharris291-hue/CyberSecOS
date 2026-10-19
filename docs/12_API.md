@@ -69,3 +69,9 @@ Definitions:
 - **Hands-on percent:** lab minutes / all logged minutes; the target is 80%.
 - **Certification readiness:** objectives covered by at least one completed lesson / all objectives for that exam.
 - **Next lesson:** the first in-progress lesson in course order, otherwise the first not started.
+
+## Dashboard
+
+| Method | Path | Description |
+|---|---|---|
+| GET | `/api/dashboard?days=14` | One call for the home screen: name and target role, totals, week vs goal, next lesson, daily study minutes for the last `days` (7-90), per-course progress, certification readiness, and the 5 latest activities. Accepts `tz_offset_minutes` |

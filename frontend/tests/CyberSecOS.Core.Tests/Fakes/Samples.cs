@@ -64,4 +64,11 @@ public static class Samples
         Enumerable.Range(0, days)
             .Select(i => new DailyMinutes(new DateOnly(2026, 10, 1).AddDays(i).ToString("yyyy-MM-dd"), i, 4 * i, 0, 5 * i))
             .ToList();
+
+    public static DashboardData Dashboard()
+    {
+        var summary = Summary();
+        return new DashboardData("Adam", "SOC Analyst", summary.Totals, summary.Week, summary.NextLesson,
+            Daily(14), summary.Courses, summary.Certifications, summary.RecentActivity);
+    }
 }
