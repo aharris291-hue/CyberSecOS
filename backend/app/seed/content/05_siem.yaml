@@ -486,3 +486,84 @@ lessons:
         options: [The source is healthy, A collection or parsing problem worth alerting on, Normalisation succeeded, The schema improved]
         answer: 1
         explanation: A silent source usually signals a broken collector or parser, which is why completeness monitoring matters.
+
+  - slug: siem-threat-intel-matching
+    title: Threat Intelligence Matching in the SIEM
+    order: 6
+    difficulty: intermediate
+    summary: Match indicators against your logs with watchlists, context and aging.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.4", "sc200:2", "cysa:1.4"]
+    learning_objectives:
+      - Explain how a SIEM matches threat-intel indicators against log events
+      - Judge indicator quality by context, confidence, recency and scope
+      - Treat a match as a lead to triage, not a verdict, and watch feed health
+    theory: |
+      Threat intelligence only earns its keep once it meets your logs. A SIEM ingests **indicators**
+      of compromise, IP addresses, domains, file hashes and URLs, from one or more feeds, stores
+      them in a **watchlist** or lookup table, and matches them against incoming events, either
+      enriching at ingest or joining at search time. A match raises an alert that an indicator a
+      feed called malicious has just appeared in your environment.
+
+      Quality matters far more than volume. Each indicator should carry **context**, why it is
+      considered bad, a confidence level and its source, so an analyst can weigh a hit. Indicators
+      must also be **aged out**, because a malicious IP reassigned to a content delivery network
+      becomes a false-positive machine if it never expires. And matching must be **scoped** to the
+      right field, matching an external-IP feed only against external addresses, so you do not flag
+      your own hosts. High-confidence, recent, specific indicators are worth far more than a huge
+      stale list, and duplicates across feeds should be collapsed.
+
+      A match is a **lead, not a verdict**. An IP on a feed may be shared hosting; a hash may be a
+      renamed legitimate tool. The analyst confirms before acting. For the SOC the health signals
+      are their own concern: are indicators actually arriving from each feed, what is the
+      false-positive rate per feed, and is matching keeping up with ingest.
+    examples:
+      - title: An indicator with usable context
+        body: |
+          indicator   198.51.100.7  type=ip  confidence=high  source=feedA  reason=known C2  added=2026-10-18
+          Context and a recent date let an analyst weigh the hit instead of guessing.
+      - title: A stale indicator causing noise
+        body: |
+          indicator   203.0.113.9 added 14 months ago, now a CDN edge node
+          Every internal user hitting that CDN now trips the rule, so the indicator must age out.
+    exercise:
+      title: Match a threat-intel feed against sample logs
+      environment: A SIEM or notebook with sample logs and a small indicator feed
+      tools: [A sample indicator feed, sample proxy or DNS logs, a SIEM or notebook, a notes file]
+      steps:
+        - Load a small indicator feed and note the context each indicator carries (type, confidence, source, date).
+        - Match the indicators against the sample logs on the correct field for each indicator type.
+        - For each hit, decide whether it is a real lead or a likely false positive and say why.
+        - Find one indicator that is stale or too broad and propose an aging or scoping rule for it.
+        - Rank the hits by indicator confidence and recency to decide triage order.
+        - Note how you would monitor that each feed is still delivering indicators.
+      deliverable: A short triage note listing the matches, which you would escalate, and one aging or scoping improvement for the feed.
+    expected_outcome: >
+      You can match indicators against logs, judge them by context and recency, treat a
+      hit as a lead to confirm, and keep the feed from generating stale-indicator noise.
+    quiz:
+      - prompt: A SIEM matches threat intelligence by
+        options:
+          - Deleting matching logs
+          - Comparing incoming events against a watchlist of indicators and alerting on a hit
+          - Blocking all traffic
+          - Encrypting the logs
+        answer: 1
+        explanation: Indicators are held in a watchlist and matched against events, raising an alert when one appears.
+      - prompt: Why must indicators be aged out over time?
+        options: [To save keystrokes, Because a stale indicator (like an IP reassigned to a CDN) becomes a false-positive source, To hide them, To block all DNS]
+        answer: 1
+        explanation: Indicators go stale as infrastructure is reassigned, so keeping them forever generates false positives.
+      - prompt: A threat-intel match should be treated as
+        options: [A confirmed incident, A lead to triage and confirm, A reason to ignore the host, A billing event]
+        answer: 1
+        explanation: Feeds carry shared hosting and renamed tools, so a match is a lead the analyst confirms, not a verdict.
+      - prompt: Which indicator is most valuable?
+        options:
+          - An old, low-confidence entry from an unknown source
+          - A high-confidence, recent, specific indicator with context
+          - A broad internal IP range
+          - A duplicate of three other feeds
+        answer: 1
+        explanation: Confidence, recency, specificity and context make an indicator actionable; volume alone does not.
