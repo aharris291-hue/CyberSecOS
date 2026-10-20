@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CyberSecOS.Core.Api;
 using CyberSecOS.Core.Models;
+using CyberSecOS.Core.Text;
 using CyberSecOS.Core.Services;
 
 namespace CyberSecOS.Core.ViewModels;
@@ -28,7 +29,7 @@ public sealed partial class LessonViewModel : PageViewModel, IPageViewModel
     public int LessonId { get; set; }
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(HasPrevious), nameof(HasNext), nameof(TheoryShare), nameof(CertificationTags), nameof(ExerciseSteps))]
+    [NotifyPropertyChangedFor(nameof(HasPrevious), nameof(HasNext), nameof(TheoryShare), nameof(CertificationTags), nameof(ExerciseSteps), nameof(TheoryBlocks))]
     [NotifyCanExecuteChangedFor(nameof(PreviousLessonCommand), nameof(NextLessonCommand))]
     private LessonDetail? _lesson;
 
@@ -78,6 +79,9 @@ public sealed partial class LessonViewModel : PageViewModel, IPageViewModel
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(QuizSummary))]
     private QuizResult? _quizResult;
+
+    /// <summary>Lesson theory parsed into paragraphs of styled runs for rich display.</summary>
+    public IReadOnlyList<MarkdownParagraph> TheoryBlocks => MarkdownText.Parse(Lesson?.Theory);
 
     public IReadOnlyList<NumberedStep> ExerciseSteps =>
         Lesson?.Exercise.Steps.Select((text, i) => new NumberedStep(i + 1, text)).ToList() ?? [];

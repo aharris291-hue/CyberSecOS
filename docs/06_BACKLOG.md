@@ -31,7 +31,7 @@ Low Priority
 | Cyber Range | Low | Phase 6 |
 | Advanced Analytics | Low | Not started |
 | More lessons per course (target 5-10 each) | High | In progress: every course now has at least 2 lessons (26 total); SOC-core domains still short of the 5-10 target |
-| Render lesson Markdown richly in the desktop app | Medium | Not started |
+| Render lesson Markdown richly in the desktop app | Medium | Done: theory shows bold and inline code; paragraphs spaced (Core Markdown parser, unit-tested) |
 | Invalidate existing sessions after a password change | Medium | Not started |
 | UI tests for XAML views and chart converters on Windows | Medium | Not started |
 | Start the backend automatically from the desktop app | Medium | Partly done: `Start CyberSecOS.bat` launcher in the Windows build; a single installer is not started |
