@@ -194,3 +194,99 @@ lessons:
           - Disables logging
         answer: 1
         explanation: Posture management prevents misconfiguration; workload protection detects malicious runtime behaviour.
+  - slug: cloud-workload-storage
+    title: Hardening Cloud Workloads and Storage
+    order: 3
+    difficulty: intermediate
+    summary: Find and fix the misconfigurations that cause most cloud incidents, from public storage and over-broad roles to exposed metadata and leaked secrets.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:3.1", "secplus:4.1", "sc200:1"]
+    learning_objectives:
+      - Explain why misconfiguration, not exploits, drives most cloud breaches
+      - Find and fix public storage, over-broad roles and exposed metadata
+      - Keep secrets out of workloads and enforce safe defaults with guardrails
+    theory: |
+      Most cloud breaches are not clever exploits; they are **misconfigurations**. Under
+      the shared-responsibility model the provider secures the infrastructure, but the
+      customer still configures access, storage and workloads, and small mistakes there
+      are the common cause. The classic one is **public object storage**: a bucket opened
+      to the internet, or made public by a broad default, exposing data with no attacker
+      skill required. Hunting these means checking effective access, not intent, because
+      a resource can be public through an account-wide setting even when its own policy
+      looks fine.
+
+      Identity is the next big surface. Cloud roles are easy to make **over-privileged**,
+      and a wildcard permission (`Action: *`) on a workload is an attacker's dream once
+      they land on it. The principle is least privilege: scope roles to the specific
+      actions and resources needed. A cloud-specific trap is the **instance metadata
+      service** (IMDS): a workload can read its own credentials from a local metadata
+      endpoint, and if the app has a server-side request forgery flaw, an attacker can
+      make it fetch those credentials. Enforcing the hardened version of IMDS closes
+      that path. **Secrets** are another: keys hard-coded in code, images or environment
+      variables leak constantly, so they belong in a managed **secrets vault** and should
+      be short-lived and rotated.
+
+      Doing this by hand does not scale, so cloud security leans on **guardrails**. **Cloud
+      security posture management** (CSPM) continuously scans for these misconfigurations
+      against a benchmark (such as CIS) and flags drift. **Policy-as-code** and
+      **service control policies** prevent whole classes of mistake, for example refusing
+      to create a public bucket at all, which is stronger than finding it after the fact.
+      Safe **defaults** plus continuous scanning beat one-off manual review.
+    examples:
+      - title: Effective access, not the resource policy alone
+        body: |
+          Bucket policy: private
+          Account setting: "block public access" = OFF, ACL grants AllUsers read
+          Effective: PUBLIC. Check the combination, not just the bucket's own policy.
+      - title: Least privilege instead of a wildcard role
+        body: |
+          Over-broad:  Action: s3:*            Resource: *
+          Scoped:      Action: s3:GetObject    Resource: arn:...:bucket/reports/*
+          The scoped role cannot be abused to read or delete everything if stolen.
+    exercise:
+      title: Audit and harden a cloud workload and its storage
+      environment: A cloud account you may safely inspect (a free-tier or lab tenant) or a provided configuration export, plus a document
+      tools: [A cloud console or CLI, a CSPM or benchmark checklist such as CIS, a secrets manager]
+      steps:
+        - Inventory the storage buckets or containers in the scope and determine the effective public/private status of each, not just its own policy.
+        - For any that are effectively public, write the exact change that makes them private and note the account-wide setting that should enforce it.
+        - Pick one workload role and check its permissions; rewrite an over-broad or wildcard permission to least privilege scoped to specific actions and resources.
+        - Check whether the hardened instance metadata service is enforced and explain the server-side request forgery risk if it is not.
+        - Find one place a secret could be hard-coded (code, image, environment variable) and describe moving it to a secrets vault with rotation.
+        - Run the workload against a benchmark checklist (CIS or a CSPM scan) and record at least three findings with their fixes.
+        - Propose one guardrail (policy-as-code or a service control policy) that would prevent one of these misconfigurations from recurring.
+      deliverable: The storage access audit with fixes, a least-privilege role rewrite, the IMDS and secrets findings, a benchmark result with three fixes, and one preventive guardrail.
+    expected_outcome: >
+      You can audit a cloud environment for the misconfigurations that cause most
+      breaches, fix public storage, over-broad roles, exposed metadata and leaked
+      secrets, and propose guardrails that prevent the mistakes from recurring.
+    quiz:
+      - prompt: What causes the majority of cloud security incidents?
+        options:
+          - Zero-day exploits in the hypervisor
+          - Customer misconfiguration of access, storage and workloads
+          - Physical theft of servers
+          - Weak provider data centres
+        answer: 1
+        explanation: Under shared responsibility the customer configures access and resources, and misconfigurations there are the common cause of breaches.
+      - prompt: To decide whether a storage bucket is exposed, you should check
+        options:
+          - Only the bucket's own policy
+          - The effective access from all settings combined, including account-wide controls and ACLs
+          - The number of files in it
+          - Its storage class
+        answer: 1
+        explanation: A bucket can be public through an account setting or ACL even when its own policy looks private, so effective access is what matters.
+      - prompt: Enforcing the hardened instance metadata service (IMDS) mitigates
+        options:
+          - Slow network speeds
+          - An attacker using a server-side request forgery flaw to steal the workload's credentials
+          - High storage costs
+          - Expired TLS certificates
+        answer: 1
+        explanation: Hardened IMDS blocks the SSRF-to-credential-theft path that exposes a workload's role credentials.
+      - prompt: A guardrail such as policy-as-code that refuses to create a public bucket is better than finding one later because it
+        options: [Runs faster, Prevents the whole class of misconfiguration rather than detecting it after exposure, Needs no permissions, Encrypts the data]
+        answer: 1
+        explanation: Preventive guardrails stop the mistake from happening, which is stronger than detecting and remediating it after data is already exposed.

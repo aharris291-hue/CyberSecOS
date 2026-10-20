@@ -26,7 +26,7 @@ progress is kept because lessons are matched by `slug`.
 | 11 | Cloud Security Operations | Cloud Security | 2 |
 | 12 | Governance, Risk and Compliance | Governance, Risk and Compliance | 2 |
 
-12 courses, 32 lessons, about 18% theory and 82% lab time overall. Every course has at least two lessons; eight courses (Networking, Security Foundations, Windows, Linux, SIEM, Vulnerability Management, Incident Response and Detection Engineering) have three.
+12 courses, 36 lessons, about 18% theory and 82% lab time overall. Every course now has at least three lessons.
 
 **Certification coverage:** every objective of all four priority certifications
 (Security+ SY0-701, SC-900, SC-200, CySA+ CS0-003) maps to at least one lesson.
