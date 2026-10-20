@@ -459,3 +459,92 @@ lessons:
           - A cloud provider
         answer: 1
         explanation: ISO 27001 certifies an ISMS built on a repeatable risk-assessment and treatment process.
+
+  - slug: grc-metrics-reporting
+    title: Security Metrics and Reporting to Leadership
+    order: 6
+    difficulty: intermediate
+    summary: Turn security activity into a few honest metrics that help leadership make decisions.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:5.1", "cysa:4.1", "sc900:4"]
+    learning_objectives:
+      - Explain why a security program is measured and reported to leadership
+      - Choose metrics that drive decisions rather than vanity numbers
+      - Present risk to a non-technical audience honestly and in business terms
+    theory: |
+      A security program competes for budget and attention like any other part of a business, and
+      leadership funds what it can **see**. Reporting turns a year of quiet work into something a
+      board can weigh: where risk sits, whether it is going up or down, and what the next investment
+      would buy. Without it, security is invisible until something breaks, which is the worst moment
+      to ask for support. So measuring and reporting is not bureaucracy; it is how the program earns
+      its mandate.
+
+      The skill is choosing metrics that **drive a decision**. A **vanity metric**, the number of
+      attacks blocked, or alerts generated, looks impressive and changes nothing. A useful metric
+      answers a question a leader actually has: **mean time to detect and respond** shows whether the
+      SOC is getting faster, **patch latency** on critical vulnerabilities shows exposure over time,
+      **coverage** (what fraction of assets are monitored or compliant) shows the gaps. A good metric
+      has a target, a trend, and an owner, so it points at an action rather than just describing the
+      past.
+
+      Finally, the audience is usually **non-technical**, so risk is framed in **business terms**:
+      what could happen, how likely, what it would cost, and what reducing it would take. You report
+      honestly, including bad news and uncertainty, because a report that only shows green loses the
+      trust that makes the next request credible. This caps the governance track: the earlier lessons
+      set up policies, risk registers and frameworks, and this lesson is about communicating their
+      state upward so the program is understood and resourced.
+    examples:
+      - title: A vanity metric versus a useful one
+        body: |
+          vanity:  "4.2 million attacks blocked this quarter"
+          useful:  "critical patches now applied in 6 days, down from 21; target is 3"
+          The second has a trend and a target, so it points at a decision; the first just impresses.
+      - title: Risk in business terms
+        body: |
+          "An unpatched internet-facing server could expose customer records; likely within a year without action; remediation is 2 weeks of work."
+          Likelihood, impact and cost-to-fix let a non-technical leader make the call.
+    exercise:
+      title: Build a one-page security report for leadership
+      environment: A scenario with sample security activity data (incidents, patch times, monitoring coverage)
+      tools: [The sample activity data, a notes or document tool]
+      steps:
+        - List the activity data available and separate the vanity numbers from the decision-driving metrics.
+        - Choose three to five metrics to report and give each a target, a trend and an owner.
+        - Write one risk in business terms, stating likelihood, impact and what reducing it would take.
+        - Draft the one-page report with the metrics and the risk, in language a non-technical leader would follow.
+        - Include at least one piece of bad news or uncertainty and explain why hiding it would backfire.
+        - State the single decision or investment you want leadership to make from this report.
+      deliverable: A one-page leadership security report with a handful of decision-driving metrics, one risk in business terms, and a clear ask.
+    expected_outcome: >
+      You can choose security metrics that drive decisions, present risk in business terms to a
+      non-technical audience, and report honestly enough to keep leadership's trust.
+    quiz:
+      - prompt: Why report security metrics to leadership at all?
+        options:
+          - To fill time
+          - Leadership funds what it can see; reporting shows where risk sits and what investment would buy
+          - To confuse the board
+          - Because logs require it
+        answer: 1
+        explanation: Reporting makes the program's risk and progress visible so leadership can resource it.
+      - prompt: Which is a decision-driving metric rather than a vanity metric?
+        options:
+          - Total number of attacks blocked
+          - Mean time to detect and respond, with a target and a trend
+          - Number of alerts generated
+          - Megabytes of logs collected
+        answer: 1
+        explanation: MTTD/MTTR with a target and trend answers a real question and points at action; raw blocked-attack counts do not.
+      - prompt: When presenting risk to a non-technical audience you should
+        options:
+          - Use as much jargon as possible
+          - Frame it in business terms, likelihood, impact and cost to reduce
+          - Only ever show good news
+          - Hide the uncertainty
+        answer: 1
+        explanation: Leaders decide on likelihood, impact and cost; business framing lets them act.
+      - prompt: Why include bad news and uncertainty in a security report?
+        options: [It never should be included, A report that only shows green loses the trust that makes future requests credible, To look weak, Because it is required by law everywhere]
+        answer: 1
+        explanation: Honest reporting, including bad news, preserves the credibility the next ask depends on.
