@@ -87,3 +87,110 @@ lessons:
         options: ["4688", "4698", "4720", "1102"]
         answer: 1
         explanation: 4698 is "A scheduled task was created".
+
+  - slug: hunt-threat-intel-hypothesis
+    title: Threat Intelligence and Hypothesis-Driven Hunting
+    order: 2
+    difficulty: intermediate
+    summary: Turn threat intelligence into a testable hunting hypothesis and hunt for beaconing command-and-control in network logs.
+    theory_minutes: 12
+    lab_minutes: 55
+    objectives: ["cysa:1.4", "cysa:1.2", "sc200:4"]
+    learning_objectives:
+      - Describe threat-intelligence concepts and how they feed hunting
+      - Form a testable, hypothesis-driven hunt from intelligence or a framework
+      - Hunt for beaconing command-and-control using network telemetry
+    theory: |
+      **Threat intelligence** is knowledge about adversaries that makes hunting
+      focused rather than random. It ranges from **strategic** (who targets your
+      sector and why) through **operational** to **tactical** indicators. Analysts
+      rank indicators with the **Pyramid of Pain**: hash values and IP addresses are
+      trivial for an attacker to change, while **tools** and **tactics, techniques
+      and procedures (TTPs)** are costly to change, so hunting for behaviour hurts an
+      adversary far more than blocking one hash. Intelligence is tracked as
+      **indicators of compromise (IOCs)** and TTPs, often framed with the **Diamond
+      Model** (adversary, capability, infrastructure, victim) and mapped to **MITRE
+      ATT&CK**.
+
+      **Hypothesis-driven hunting** starts with a specific, testable statement rather
+      than a tool. A good hypothesis names an expected behaviour, the data that would
+      show it, and what normal looks like: *"an adversary using scheduled beaconing
+      would produce regular, similar-sized outbound connections to a rare external
+      host; proxy and firewall logs would show this; legitimate traffic is bursty and
+      varied."* The hunt then queries that data, separates signal from normal, and
+      ends in one of three outcomes: a finding to escalate, a new detection to hand to
+      engineering, or a documented "nothing found" that still improves coverage.
+
+      **Beaconing** is a common hunt target. Malware that calls home on a timer leaves
+      a statistical fingerprint: low **jitter** (regular intervals), consistent request
+      sizes, and a **rare destination** few other hosts contact. You hunt it by grouping
+      connections per source-destination pair, measuring the regularity of the interval,
+      and ranking by rarity. Because this is behaviour, not a fixed indicator, it finds
+      new infrastructure the threat feeds have never listed, which is the whole point of
+      hunting above the base of the pyramid.
+    examples:
+      - title: A hunt hypothesis written down
+        body: |
+          Hypothesis: a host is beaconing to C2 on a fixed interval.
+          Expect:     regular outbound connections, similar byte sizes, rare destination.
+          Data:       proxy/firewall logs (src, dst, bytes, timestamp).
+          Normal:     human browsing is irregular and hits popular domains.
+          Outcome:    escalate a hit, or hand a "regular-interval" detection to engineering.
+      - title: Ranking a destination by regularity (KQL-style)
+        body: |
+          NetworkConnections
+          | summarize hits = count(), avgBytes = avg(SentBytes),
+                      stdevGap = stdev(datetime_diff('second', TimeGenerated, prev(TimeGenerated)))
+                    by SrcIp, DstIp, bin(TimeGenerated, 1d)
+          | where hits > 50 and stdevGap < 5   // very regular interval = suspicious
+          | order by stdevGap asc
+    exercise:
+      title: Build a threat-intel hypothesis and hunt for beaconing
+      environment: A SIEM or log set with network/proxy connection logs (your Sentinel or ELK lab, or a public PCAP replayed into it); the free MITRE ATT&CK website
+      tools: [SIEM query editor or Zeek, MITRE ATT&CK, a document for the hunt report]
+      steps:
+        - Choose a threat relevant to your lab (for example a commodity loader that beacons to C2) and read its ATT&CK techniques for Command and Control.
+        - Write a one-paragraph hunt hypothesis naming the expected behaviour, the data that would reveal it, and what normal traffic looks like.
+        - Query your network logs to group connections by source and destination and compute how many hits, average size, and how regular the interval is.
+        - Rank destinations by regularity and rarity, and shortlist the most beacon-like source-destination pairs.
+        - Investigate one shortlisted pair: check the destination's reputation and whether the process and host explain the traffic, and decide finding vs benign.
+        - Place your result on the Pyramid of Pain and explain why a behaviour-based hunt is more durable than blocking the single IP.
+        - Write a short hunt report: hypothesis, method, what you found (or did not), and one detection you would hand to engineering.
+      deliverable: The written hypothesis, the query and its ranked output, the investigation decision for one pair, and a hunt report ending in a finding or a proposed detection.
+    expected_outcome: >
+      You can turn threat intelligence into a testable hypothesis, hunt for beaconing
+      behaviour in network logs, and finish a hunt with an escalation or a new detection
+      rather than a dead end.
+    quiz:
+      - prompt: On the Pyramid of Pain, hunting for which is most costly for an adversary to evade?
+        options: [Hash values, IP addresses, Domain names, Tactics, techniques and procedures]
+        answer: 3
+        explanation: TTPs sit at the top; changing behaviour is far harder than swapping a hash or IP.
+      - prompt: A hypothesis-driven hunt begins with
+        options:
+          - Running every tool and seeing what fires
+          - A specific, testable statement about expected behaviour and the data that would show it
+          - Blocking all rare destinations
+          - Waiting for an alert
+        answer: 1
+        explanation: A testable hypothesis guides which data to examine, making hunting proactive and focused.
+      - prompt: Low jitter (very regular intervals) in outbound connections can indicate
+        options: [A software update, Automated C2 beaconing, Faster internet, A DNS cache]
+        answer: 1
+        explanation: Human traffic is irregular; machine-timed beacons show consistent intervals.
+      - prompt: A hunt that finds nothing is still valuable because it
+        options:
+          - Proves the network is unbreakable
+          - Documents coverage and can become a new detection or baseline
+          - Deletes the logs
+          - Replaces threat intelligence
+        answer: 1
+        explanation: A negative result still improves coverage knowledge and can yield a detection or baseline.
+      - prompt: The Diamond Model describes an intrusion in terms of
+        options:
+          - CPU, memory, disk, network
+          - Adversary, capability, infrastructure, victim
+          - People, process, technology, policy
+          - Confidentiality, integrity, availability, safety
+        answer: 1
+        explanation: The Diamond Model's four vertices are adversary, capability, infrastructure and victim.

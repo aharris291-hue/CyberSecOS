@@ -92,3 +92,118 @@ lessons:
         options: ["| where EventID == 4624", "| where EventID == 4625", "| project EventID", "| summarize 4625"]
         answer: 1
         explanation: 4625 is the failed logon event.
+
+  - slug: siem-log-sources-alerting
+    title: Log Sources, Correlation and Alerting
+    order: 2
+    difficulty: intermediate
+    summary: Onboard the right log sources, write a correlation rule, and tune an alert so it fires on real activity without drowning the analyst.
+    theory_minutes: 12
+    lab_minutes: 52
+    objectives: ["secplus:4.4", "sc200:1", "sc200:2", "cysa:1.5"]
+    learning_objectives:
+      - Explain which log sources a SOC needs and what each one reveals
+      - Write a correlation rule that joins events across sources into one alert
+      - Tune alert thresholds and severity to balance detection against false positives
+    theory: |
+      A SIEM is only as good as the logs feeding it. The core **log sources** a SOC
+      onboards are authentication (sign-ins, Kerberos, VPN), endpoint (process
+      creation, PowerShell, Sysmon), network (firewall, proxy, DNS), cloud control
+      plane (Entra ID, CloudTrail), and application logs. Each answers a different
+      question: endpoint logs show *what ran*, authentication logs show *who got in*,
+      network logs show *where traffic went*. Coverage gaps are blind spots, so a
+      SOC tracks **log source health** (is it still arriving, is parsing correct)
+      as carefully as the detections themselves.
+
+      A single event is rarely an incident; **correlation** is what turns noise into
+      signal. A correlation rule joins events across time and source, for example a
+      failed-logon burst **followed by** a success from the same account, or a new
+      process **plus** an outbound connection to a rare destination. SIEMs express
+      this as a scheduled query with a grouping key (user, host, IP) and a time
+      window. Good rules carry context in the alert: the entities involved, the
+      source events, and a mapped **MITRE ATT&CK** technique so the analyst knows
+      what they are looking at.
+
+      Every detection trades **false positives** against **false negatives**.
+      Thresholds that are too tight miss real activity; too loose and analysts get
+      **alert fatigue** and start ignoring the queue. Tuning means raising a
+      threshold, excluding known-good behaviour with an allow list, enriching with
+      asset criticality so a domain controller scores higher than a test VM, and
+      assigning **severity** so the worst alerts surface first. Measuring volume,
+      precision and time-to-triage over time is how a SOC keeps the signal high.
+    examples:
+      - title: A brute-force-then-success correlation (KQL)
+        body: |
+          SigninLogs
+          | where ResultType != 0          // failures
+          | summarize failures = count() by UserPrincipalName, bin(TimeGenerated, 10m)
+          | where failures >= 10
+          | join kind=inner (
+              SigninLogs | where ResultType == 0   // a success
+            ) on UserPrincipalName
+          // Alert: many failures then a success for the same account in 10 minutes
+      - title: An alert tuned for signal
+        body: |
+          Rule: Rare outbound destination from a server
+          Raw:     every server talking to any new IP  -> hundreds/day (noise)
+          Tuned:   exclude known update/CDN ranges; only servers tagged "crown-jewel";
+                   first-seen in 30 days; severity = High if asset is Restricted
+          Result:  a handful of reviewable alerts per day with context attached
+    exercise:
+      title: Onboard a source, write a correlation rule and tune its alert
+      environment: Your SIEM lab from the KQL lesson (Microsoft Sentinel free tier, an ELK stack, or a local log set) with sample authentication and endpoint logs
+      tools: [SIEM query editor, sample log data, a spreadsheet for tuning notes]
+      steps:
+        - List the log sources already arriving in your SIEM and note one question each answers; identify one source you are missing and how you would onboard it.
+        - Pick a multi-step behaviour to detect (for example repeated logon failures followed by a success, or a new process making an outbound connection).
+        - Write a correlation query that joins the events on a grouping key (user, host or IP) within a time window and returns the involved entities.
+        - Run it against the sample data, confirm it fires on the intended activity, and record how many results it produces.
+        - Tune it: add an allow list for known-good behaviour, raise the threshold, and assign a severity based on asset criticality; re-run and compare the before/after counts.
+        - Map the detection to a MITRE ATT&CK technique and write the alert description an analyst would read, naming the entities and the source events.
+        - Write two sentences on how you would measure whether this alert stays useful (volume, precision, time-to-triage) over the next month.
+      deliverable: The correlation query, the before/after result counts from tuning, the ATT&CK mapping, and the analyst-facing alert description.
+    expected_outcome: >
+      You can choose the log sources a detection needs, write a correlation rule that
+      joins events into one contextual alert, and tune it so it fires on real activity
+      without burying the analyst.
+    quiz:
+      - prompt: Why is correlation across sources more useful than alerting on single events?
+        options:
+          - It uses less storage
+          - It joins related events so a multi-step attack becomes one contextual alert
+          - It removes the need for log sources
+          - It disables false positives automatically
+        answer: 1
+        explanation: Correlation links related events (for example failures then a success) into a single, reviewable signal.
+      - prompt: Alert fatigue is best described as
+        options:
+          - A SIEM running out of disk
+          - Analysts ignoring alerts because too many are low-value or false
+          - A rule that never fires
+          - A slow query
+        answer: 1
+        explanation: Too many low-value alerts erode attention, so real ones get missed; tuning reduces this.
+      - prompt: Enriching an alert with asset criticality helps because
+        options:
+          - It makes queries run faster
+          - The same activity on a critical asset can be scored and triaged ahead of a test box
+          - It deletes low-severity logs
+          - It replaces the time window
+        answer: 1
+        explanation: Criticality lets identical behaviour be prioritised by how much the affected asset matters.
+      - prompt: A SOC tracks log source health mainly to
+        options:
+          - Reduce licensing cost
+          - Catch blind spots when a source stops arriving or parses incorrectly
+          - Speed up correlation
+          - Replace ATT&CK mapping
+        answer: 1
+        explanation: A silent or mis-parsed source is an undetected gap in coverage.
+      - prompt: Mapping a detection to a MITRE ATT&CK technique primarily gives the analyst
+        options:
+          - A faster query
+          - Immediate context on what adversary behaviour the alert represents
+          - A lower false-positive rate
+          - More log sources
+        answer: 1
+        explanation: The technique label tells the analyst what the alert means in attacker terms, speeding triage.

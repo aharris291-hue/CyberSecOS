@@ -1,5 +1,12 @@
 # Changelog
 
+## Phase 2 - Deeper SOC content
+
+### A second lesson for every single-lesson course
+- Added one lesson each to SIEM, Threat Hunting, Incident Response, Detection Engineering and Cloud Security, so every course now has at least two lessons (12 courses, 26 lessons).
+- New lessons cover log sources/correlation/alerting, threat-intel hypothesis-driven hunting, incident containment/recovery/lessons-learned, detection testing and ATT&CK coverage mapping, and cloud logging/posture management - the day-to-day SOC skills SC-200 and CySA+ test hardest.
+- All lessons keep the six education-standard sections and the ~18/82 theory/lab split; content-standard and coverage tests still pass (197 backend tests).
+
 ## Phase 2 - Timed practice exams
 
 ### Certification practice exams
