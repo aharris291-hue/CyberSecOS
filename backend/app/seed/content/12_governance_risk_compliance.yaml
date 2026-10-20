@@ -198,3 +198,100 @@ lessons:
         options: [Risk avoidance, Risk acceptance, Risk transference, Risk mitigation]
         answer: 1
         explanation: Acceptance means acknowledging the risk and choosing not to spend more to reduce it.
+  - slug: grc-privacy-data-protection
+    title: Data Privacy, Classification and Regulated Data
+    order: 3
+    difficulty: beginner
+    summary: Learn how privacy differs from security, how to classify and handle regulated data across its lifecycle, and what frameworks like GDPR, HIPAA and PCI DSS require.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:5.4", "secplus:5.5", "sc900:4"]
+    learning_objectives:
+      - Distinguish data privacy from data security and name the key roles
+      - Classify data and apply handling rules across its lifecycle
+      - Map common regulations to concrete controls a SOC supports
+    theory: |
+      **Security** protects data from unauthorised access; **privacy** governs whether
+      collecting and using personal data is appropriate and lawful in the first place.
+      You can be secure yet non-compliant, for example by locking down data you never
+      had the right to collect. Privacy centres on **personal data** (PII) and sensitive
+      categories such as health or payment data. Two roles recur: the **data controller**
+      decides why and how data is processed, and the **data processor** acts on the
+      controller's instructions, a distinction that drives who is accountable.
+
+      Good handling starts with **classification**. Data is labelled by sensitivity (for
+      example public, internal, confidential, restricted), and the label dictates the
+      controls: encryption, who may access it, where it may live, and how long it is
+      kept. That last point is the **data lifecycle**, from creation through use and
+      storage to **retention** and secure **disposal**. Keeping data longer than needed
+      is itself a risk (more to lose in a breach, and often a compliance violation), so
+      **minimisation** and documented retention schedules matter. Techniques like
+      **anonymisation** (irreversible) and **pseudonymisation** or **tokenisation**
+      (reversible with a key) reduce exposure while keeping data useful.
+
+      Regulations turn these ideas into obligations. **GDPR** gives individuals rights
+      over their data (access, deletion) and requires breach notification within tight
+      deadlines; **HIPAA** governs health information; **PCI DSS** sets controls for
+      payment-card data. The SOC rarely writes the policy but **supports** it: detecting
+      and reporting breaches within the required window, protecting classified data with
+      monitoring and **data loss prevention** (DLP), and producing the logs and evidence
+      an audit needs. Knowing which regulation applies to which data tells responders how
+      fast and to whom an incident must be escalated.
+    examples:
+      - title: Classification drives handling
+        body: |
+          Label        Example                      Controls
+          Public       marketing page               no special handling
+          Confidential customer PII                  encrypt, restrict access, log
+          Restricted   cardholder data (PCI DSS)     encrypt, segment, strict audit
+      - title: Privacy is not the same as security
+        body: |
+          Encrypted database of data you had no lawful basis to collect
+          -> secure (well protected) but NOT private/compliant
+          Privacy asks "should we hold this?", security asks "is it protected?"
+    exercise:
+      title: Build a data classification and handling scheme for a scenario
+      environment: A described organisation and the data it holds (invent one, or use your workplace) and a document or spreadsheet
+      tools: [A document or spreadsheet, a reference on GDPR/HIPAA/PCI DSS basics]
+      steps:
+        - List the kinds of data the organisation holds and identify which are personal or regulated (PII, health, payment).
+        - Define a classification scheme of at least four levels and assign each data type a level with a one-line reason.
+        - For each level, write the handling rules (encryption, access, allowed locations, retention period, disposal method).
+        - For one regulated data type, name the applicable regulation and two concrete controls it requires.
+        - Map the lifecycle of one sensitive data type from creation to secure disposal, noting where minimisation applies.
+        - Describe how the SOC would support compliance for this data (monitoring, DLP, breach detection and the notification deadline).
+        - State one thing the organisation should stop collecting or keeping, and why, on privacy grounds.
+      deliverable: The data inventory, a classification scheme with handling rules, a regulation-to-controls mapping, a lifecycle for one data type, and the SOC's compliance-support role.
+    expected_outcome: >
+      You can tell privacy from security, classify data and apply lifecycle handling
+      rules, map regulations such as GDPR, HIPAA and PCI DSS to concrete controls, and
+      explain how a SOC supports compliance through monitoring, DLP and breach reporting.
+    quiz:
+      - prompt: How does data privacy differ from data security?
+        options:
+          - They are the same thing
+          - Privacy governs whether collecting and using personal data is appropriate and lawful; security protects data from unauthorised access
+          - Privacy only applies to encrypted data
+          - Security only applies to personal data
+        answer: 1
+        explanation: You can protect data well (secure) yet still hold or use it unlawfully (not private), so the two are distinct concerns.
+      - prompt: The main purpose of data classification is to
+        options:
+          - Make databases faster
+          - Decide the handling controls (access, encryption, retention) a data type requires
+          - Replace encryption
+          - Count the records
+        answer: 1
+        explanation: A sensitivity label drives the controls applied, so classification is the basis for proportionate handling.
+      - prompt: Keeping personal data longer than needed is discouraged because
+        options:
+          - It uses disk space
+          - It increases breach risk and often violates retention and minimisation requirements
+          - It slows backups
+          - It changes the data's classification
+        answer: 1
+        explanation: More retained data means more to lose and frequently breaches data-minimisation and retention rules.
+      - prompt: In supporting compliance with a regulation like GDPR, the SOC primarily
+        options: [Writes the privacy policy, Detects and reports breaches in time and protects classified data with monitoring and DLP, Sets the company's legal strategy, Chooses which customers to onboard]
+        answer: 1
+        explanation: The SOC operationalises compliance by monitoring, protecting regulated data and meeting breach-notification deadlines, rather than authoring policy.

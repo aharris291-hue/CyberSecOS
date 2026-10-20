@@ -198,3 +198,97 @@ lessons:
         options: [Power loss, Ransomware encrypting the backups too, Slow networks, User error only]
         answer: 1
         explanation: Backups that cannot be altered or reached online survive ransomware that encrypts live data.
+  - slug: arch-zero-trust
+    title: Zero Trust and Identity-Centric Access
+    order: 3
+    difficulty: intermediate
+    summary: Move from a perimeter mindset to zero trust, where every request is verified on identity, device and context, and design least-privilege access with microsegmentation.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:3.1", "secplus:3.2", "secplus:4.6"]
+    learning_objectives:
+      - Explain the zero-trust principles and why the perimeter model fails
+      - Describe the control and data planes and per-request verification
+      - Design least-privilege, identity-centric access with microsegmentation
+    theory: |
+      The old model trusted anything inside the network perimeter, so one foothold let
+      an attacker move freely. **Zero trust** replaces that with **never trust, always
+      verify**: there is no trusted inside, and every request is authenticated and
+      authorised on its own merits. Three principles drive it: **verify explicitly**
+      (check identity, device health and context every time), **least privilege** (grant
+      only the access needed, for only as long as needed), and **assume breach** (design
+      as if an attacker is already present, so you contain blast radius).
+
+      Architecturally, zero trust splits into a **control plane** and a **data plane**.
+      A **policy decision point** evaluates each request against policy, considering the
+      **subject** (user or service identity), the **device** (managed, patched, healthy),
+      and **context** (location, time, sensitivity of the resource). A **policy
+      enforcement point** then allows, blocks or step-ups the request, for example by
+      requiring MFA. Access is **per-session and per-request**, not a one-time gate at
+      login, so a change in risk mid-session can revoke access. Strong **identity** is
+      the new perimeter, which is why phishing-resistant MFA and conditional access sit
+      at the centre.
+
+      On the network, zero trust favours **microsegmentation**: fine-grained zones so a
+      compromise in one workload cannot reach another, enforced by identity rather than
+      IP alone. Remote access shifts from a flat **VPN** that drops users onto the LAN to
+      brokered, per-application access, often delivered as **SASE/ZTNA**. None of this is
+      a single product; it is a design applied in stages, usually starting with the most
+      sensitive applications and the strongest identity controls, then widening coverage.
+    examples:
+      - title: Perimeter trust versus per-request verification
+        body: |
+          Perimeter:  on the VPN -> reach everything on the subnet
+          Zero trust: each request checks identity + device health + context,
+                      then grants only that one app, for that one session
+      - title: A decision the policy engine makes
+        body: |
+          Request: user alice, unmanaged laptop, from new country, to finance app
+          Decision: block (or require managed device + MFA step-up) ->
+                    least privilege + verify explicitly + assume breach
+    exercise:
+      title: Design identity-centric access for a sensitive application
+      environment: A written description of an app and its users (invent one, or use your workplace scenario) and a document or diagram tool
+      tools: [A diagram or document tool, your notes on the earlier network-design lesson]
+      steps:
+        - Pick one sensitive application and list its user groups and the data it holds.
+        - Write the zero-trust principles as rules for this app (verify explicitly, least privilege, assume breach) in your own words.
+        - Define the signals a policy decision point should check for each request (identity, device health, location, resource sensitivity).
+        - Specify at least three access policies, including one that requires an MFA step-up and one that blocks, with the condition for each.
+        - Draw or describe the microsegmentation around the app so a compromise elsewhere cannot reach it.
+        - Replace any flat VPN access in the scenario with brokered per-application access and explain the difference.
+        - State how you would roll this out in stages and what you would monitor to confirm least privilege is working.
+      deliverable: The app and user inventory, the zero-trust rules, the per-request signals, at least three access policies, and a microsegmentation design with a staged rollout.
+    expected_outcome: >
+      You can explain why the perimeter model fails and apply zero-trust principles to a
+      real application, designing per-request verification, least-privilege access and
+      microsegmentation with identity, not network location, as the control point.
+    quiz:
+      - prompt: The core idea of zero trust is
+        options:
+          - Trust everything inside the corporate network
+          - Never trust, always verify every request on its own merits
+          - Replace all passwords with longer passwords
+          - Put every system on one flat network
+        answer: 1
+        explanation: Zero trust removes implicit inside-the-perimeter trust and authenticates and authorises each request individually.
+      - prompt: In a zero-trust architecture, the policy decision point evaluates
+        options:
+          - Only the user's password
+          - Identity, device health and context for each request
+          - Only the source IP address
+          - The time of day alone
+        answer: 1
+        explanation: Decisions combine subject identity, device posture and contextual signals, which is what verify explicitly means in practice.
+      - prompt: Microsegmentation primarily limits
+        options:
+          - How fast the network runs
+          - The blast radius, so a compromise in one workload cannot reach others
+          - The number of users
+          - Password length
+        answer: 1
+        explanation: Fine-grained segmentation contains a breach, supporting the assume-breach principle.
+      - prompt: Compared with a flat VPN, zero-trust network access (ZTNA) provides
+        options: [Access to the whole subnet after login, Brokered per-application access verified per request, A faster perimeter firewall, Shared admin accounts]
+        answer: 1
+        explanation: ZTNA brokers access to specific applications with per-request verification instead of dropping the user onto the internal network.

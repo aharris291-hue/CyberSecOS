@@ -194,3 +194,99 @@ lessons:
           - Confidentiality, integrity, availability, safety
         answer: 1
         explanation: The Diamond Model's four vertices are adversary, capability, infrastructure and victim.
+  - slug: hunt-c2-beaconing
+    title: Hunting Command-and-Control Beaconing
+    order: 3
+    difficulty: intermediate
+    summary: Hunt for the regular callback traffic that malware uses to reach its command-and-control server, separating beacons from noisy-but-benign periodic connections.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["cysa:1.4", "cysa:3.1", "sc200:4"]
+    learning_objectives:
+      - Explain how command-and-control beaconing looks in network telemetry
+      - Hunt for periodic callbacks using interval, jitter and volume
+      - Separate malicious beacons from benign periodic traffic and pivot to the host
+    theory: |
+      Once malware lands, it usually has to **call home** to a command-and-control
+      (**C2**) server for instructions. That callback is often a **beacon**: a small
+      request sent on a regular schedule. The schedule is the tell. Human and most
+      application traffic is bursty and irregular, while a beacon ticks at a near-fixed
+      **interval**, so plotting one host-to-destination pair's connections over time
+      shows an unmistakable heartbeat. Modern implants add **jitter** (randomised delay,
+      say plus or minus 20%) to blur the interval, so hunters look for a tight cluster
+      of intervals rather than one exact number.
+
+      Beyond timing, beacons share traits worth hunting on. The requests are usually
+      **small and uniform** in size, the destination is often **newly registered** or
+      has a **low reputation**, and the traffic may hide in normal-looking **HTTPS**,
+      **DNS** (data smuggled in subdomains) or even a legitimate cloud service used as
+      a redirector. Tooling clues help too: a repeated **JA3/JA3S** TLS fingerprint or
+      an odd **user-agent** can group a family of beacons. No single signal is proof;
+      the hunt combines them, because each one alone has benign look-alikes.
+
+      That is the hard part, **benign periodic traffic**. Software updates, telemetry,
+      certificate checks (OCSP), NTP and monitoring agents all beacon on a schedule.
+      The hunter's job is to **rule those out**: a known software vendor on a known port
+      at a documented cadence is expected, so it is **baselined and allowlisted**, which
+      sharpens the next hunt. What survives the filter (a regular, low-volume callback
+      to an unknown, low-reputation destination from an unexpected process) is the lead
+      to pivot on, moving from the network record to the host to find the process and
+      its persistence.
+    examples:
+      - title: A heartbeat stands out from human traffic
+        body: |
+          Host -> 203.0.113.9  connection times (seconds apart):
+          3601, 3598, 3602, 3600, 3599   -> ~60 min beacon, tiny jitter  SUSPECT
+          Host -> cdn.example  connection times:
+          4, 220, 17, 905, 6             -> irregular, human browsing     NORMAL
+      - title: Rule out the benign before chasing the lead
+        body: |
+          Periodic to vendor-update.example:443  -> known updater, documented  allowlist
+          Periodic to 45.craftreg.xyz:443        -> domain registered 2 days ago, no owner
+          Pivot on the second: which process? what persistence launched it?
+    exercise:
+      title: Hunt a beacon in connection logs and pivot to the host
+      environment: Network connection or proxy logs with timestamps (a sample dataset, SIEM export, or lab capture) and a spreadsheet or notebook
+      tools: [A SIEM or log tool, a spreadsheet for interval analysis, a domain-reputation lookup]
+      steps:
+        - State a hunting hypothesis for C2 beaconing in one sentence (for example, a host is calling an unknown destination on a fixed interval).
+        - Group connections by source host and destination, and for the busiest pairs compute the time gaps between successive connections.
+        - Identify at least one destination whose intervals cluster tightly (allowing for jitter) and note the interval and the typical request size.
+        - Check the destination's age and reputation and confirm whether the volume and uniformity fit a beacon.
+        - Rule out benign periodic traffic by listing which destinations are known updaters, telemetry or monitoring, and allowlist them with a reason.
+        - For the surviving suspect, write the pivot to the host: which process owns the connection and what persistence would you look for.
+        - Record the hunt outcome, including what you would turn into a detection if the lead is confirmed.
+      deliverable: The hypothesis, the interval analysis identifying a suspected beacon, the benign allowlist with reasons, and the host pivot plus a proposed detection.
+    expected_outcome: >
+      You can hunt for command-and-control beaconing by its interval, jitter and volume,
+      separate it from benign periodic traffic, and pivot from a suspicious callback to
+      the host process and its persistence, turning a confirmed lead into a detection.
+    quiz:
+      - prompt: What most distinguishes malware beaconing from normal user web traffic?
+        options:
+          - It always uses plain HTTP
+          - Its connections recur on a near-fixed interval rather than in irregular bursts
+          - It is always a large file transfer
+          - It only happens at night
+        answer: 1
+        explanation: A regular callback interval (even with jitter) is the signature of beaconing, unlike the bursty, irregular pattern of human activity.
+      - prompt: Why do implants add jitter to their beacon interval?
+        options:
+          - To send more data
+          - To randomise the timing so the beacon is harder to spot as perfectly periodic
+          - To reduce CPU usage
+          - To encrypt the traffic
+        answer: 1
+        explanation: Jitter spreads the interval around a value so hunters must look for a tight cluster of intervals rather than one exact number.
+      - prompt: A regular, low-volume callback to a software vendor's documented update endpoint is best treated as
+        options:
+          - An immediate incident
+          - Benign periodic traffic to baseline and allowlist
+          - Proof of C2
+          - A false negative
+        answer: 1
+        explanation: Known, documented periodic traffic is expected and should be ruled out and allowlisted so the hunt focuses on unknown destinations.
+      - prompt: After finding a suspected beacon in network logs, the next step is to
+        options: [Delete the logs, Pivot to the host to find the owning process and its persistence, Reboot the firewall, Lower the destination's CVSS]
+        answer: 1
+        explanation: The network record is the lead; confirming it means moving to the host to identify the process and how it persists.

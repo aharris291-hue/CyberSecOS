@@ -1,5 +1,12 @@
 # Changelog
 
+## Phase 2 - Every course three lessons deep
+
+### A third lesson for the last four two-lesson courses
+- Added one lesson each to Threat Hunting, Security Architecture, Cloud Security and Governance/Risk/Compliance, so all 12 courses now have at least three lessons (36 lessons total).
+- New lessons: hunting command-and-control beaconing (interval, jitter, ruling out benign periodic traffic); zero trust and identity-centric access (per-request verification, least privilege, microsegmentation); hardening cloud workloads and storage (public buckets, over-broad roles, instance metadata, secrets, guardrails); and data privacy, classification and regulated data (GDPR/HIPAA/PCI DSS, lifecycle, DLP).
+- All keep the six education-standard sections and the ~18/82 theory/lab split; content-standard, seeding and coverage tests still pass (257 backend tests).
+
 ## Phase 2 - More SOC-core depth
 
 ### A third lesson for the remediation and response courses
