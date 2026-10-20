@@ -290,3 +290,95 @@ lessons:
         options: [Delete the logs, Pivot to the host to find the owning process and its persistence, Reboot the firewall, Lower the destination's CVSS]
         answer: 1
         explanation: The network record is the lead; confirming it means moving to the host to identify the process and how it persists.
+  - slug: hunt-lolbins-process-lineage
+    title: Hunting Living-off-the-Land and Process Lineage
+    order: 4
+    difficulty: intermediate
+    summary: Hunt for attackers abusing built-in system tools by reading process ancestry and command lines, where the binary is trusted but the behaviour is not.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["cysa:1.4", "cysa:3.1", "sc200:4"]
+    learning_objectives:
+      - Explain living-off-the-land and why signatures miss it
+      - Hunt with parent-child process lineage and command-line context
+      - Separate legitimate admin use from abuse and pivot to a verdict
+    theory: |
+      Modern intruders prefer to **live off the land**, using tools already on the system
+      instead of dropping malware. These **LOLBins** (living-off-the-land binaries) are
+      signed, trusted built-ins such as PowerShell, `wmic`, `rundll32`, `regsvr32`,
+      `mshta`, `certutil` or `bitsadmin`. Because the binary is legitimate, antivirus
+      signatures miss the activity, so the hunt shifts from *what ran* to *how and why it
+      ran*. The behaviour is the signal, not the file.
+
+      The strongest behavioural signal is **process lineage**, the parent-child chain.
+      A document opening is normal; **Word spawning PowerShell**, or an Office app
+      launching `cmd` that launches `certutil` to download a file, is not. Hunters read
+      the tree and ask whether this parent should ever launch this child. **Command-line
+      context** sharpens it: encoded or obfuscated PowerShell (`-enc`), a `certutil`
+      invocation that fetches a URL, or `rundll32` with an unusual export are classic
+      abuse patterns. Enriching with the **user**, the **host role** and the **time**
+      tells you whether it fits that machine's normal work.
+
+      The hard part, again, is that these tools have **legitimate admin uses**. Backup
+      jobs, software deployment and login scripts run the same binaries, so the hunt is
+      about **separating admin from abuse**: known management hosts and service accounts
+      at expected times are baselined, and what remains (an unexpected parent, an encoded
+      command, an office app as the ancestor, a workstation acting like an admin console)
+      is the lead. From there the hunter pivots to the full session to reach a verdict and,
+      if confirmed, turns the pattern into a behavioural detection rather than a file hash.
+    examples:
+      - title: The binary is trusted, the lineage is not
+        body: |
+          Normal:   services.exe -> svchost.exe -> known service
+          Suspect:  winword.exe  -> powershell.exe -enc <base64>   (Office spawning PS)
+          Suspect:  explorer.exe -> certutil.exe -urlcache -f http://... (download)
+      - title: Rule out admin before calling it abuse
+        body: |
+          powershell on JUMP-ADM by svc-deploy at 02:00  -> known deployment, baseline
+          powershell -enc on HR-LAPTOP by a user at 14:00 -> unexpected, pivot and verdict
+    exercise:
+      title: Hunt living-off-the-land abuse in process telemetry
+      environment: Process-creation telemetry with parent-child and command-line fields (EDR or Sysmon/event-log data, a sample set or lab) and a notebook
+      tools: [A SIEM or EDR with process events, a list of common LOLBins, a spreadsheet or notebook]
+      steps:
+        - State a hunting hypothesis for living-off-the-land abuse in one sentence (for example, a trusted binary launched by an unexpected parent).
+        - Query process-creation events for a handful of common LOLBins and include the parent process and full command line.
+        - Pick two results and read their process lineage, deciding whether the parent should legitimately launch that child.
+        - Inspect the command lines for abuse patterns such as encoding, a download flag, or an unusual export, and note what each one does.
+        - Enrich with user, host role and time, and rule out legitimate admin or automation by baselining known management hosts and accounts.
+        - For one surviving suspect, pivot to the rest of that session (what ran before and after) and write a verdict with your reasoning.
+        - Propose a behavioural detection (parent-child plus command-line condition) you would create if the lead is confirmed, not a file hash.
+      deliverable: The hypothesis, the LOLBin query results with lineage, the command-line analysis, the admin baseline, and a verdict plus a proposed behavioural detection.
+    expected_outcome: >
+      You can hunt living-off-the-land activity by reading process lineage and command
+      lines rather than file signatures, separate legitimate administration from abuse,
+      and turn a confirmed pattern into a behavioural detection.
+    quiz:
+      - prompt: Why do antivirus signatures often miss living-off-the-land attacks?
+        options:
+          - The attacks are too small
+          - They abuse legitimate, signed built-in tools, so there is no malicious file to signature
+          - They only run at night
+          - They never touch the disk
+        answer: 1
+        explanation: LOLBins are trusted system binaries, so detection must focus on how they are used, not on a malicious file signature.
+      - prompt: The strongest behavioural signal when hunting LOLBin abuse is
+        options:
+          - The file's size
+          - The parent-child process lineage and command-line context
+          - The binary's icon
+          - The amount of RAM used
+        answer: 1
+        explanation: Whether a parent should launch a given child, plus the command line, reveals abuse of an otherwise trusted tool.
+      - prompt: Word (winword.exe) spawning an encoded PowerShell command is suspicious because
+        options:
+          - PowerShell is malware
+          - An office document should not normally launch an obfuscated scripting process
+          - Word is not signed
+          - PowerShell cannot be encoded
+        answer: 1
+        explanation: The lineage is the anomaly, because a document application launching obfuscated PowerShell is a classic initial-access pattern.
+      - prompt: A confirmed LOLBin abuse pattern is best turned into
+        options: [A single file hash block, A behavioural detection on parent-child plus command line, A firewall rule, A new password policy]
+        answer: 1
+        explanation: Because the binary is legitimate, the durable detection is behavioural (lineage and command line), not a file hash.

@@ -306,3 +306,99 @@ lessons:
         options: [Escalate to IR, Tune the detection, Reimage the host, Notify customers]
         answer: 1
         explanation: Feeding false positives back into tuning stops the same benign activity firing again.
+  - slug: siem-dashboards-metrics
+    title: SOC Dashboards, Metrics and Shift Handover
+    order: 4
+    difficulty: intermediate
+    summary: Turn raw SIEM data into dashboards and metrics the SOC runs on, and hand a shift over cleanly so nothing in flight is dropped.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.4", "sc200:1", "cysa:1.3"]
+    learning_objectives:
+      - Build a dashboard that answers a specific operational question
+      - Define and interpret the core SOC metrics such as MTTD and MTTR
+      - Run a shift handover that carries open work across without loss
+    theory: |
+      A SIEM is only useful if people can see what matters at a glance. A **dashboard**
+      is a saved set of visualisations answering a specific question, such as what is in
+      the alert queue, which detections are noisiest, or where ingestion has stopped. The
+      discipline is to build for a **question and an audience**, not to crowd every chart
+      onto one screen. An analyst's triage dashboard shows the live queue and the newest
+      high-severity alerts; a manager's view shows trend and backlog. A good panel leads
+      to an action, and a dashboard nobody acts on is just decoration.
+
+      SOCs are measured, and the headline numbers are time-based. **MTTD** (mean time to
+      detect) is how long between an attack starting and an alert firing; **MTTR** (mean
+      time to respond, or resolve) is how long from alert to containment or closure.
+      **Dwell time** is how long an adversary was present before detection. **Alert
+      volume** and **false-positive rate** show whether the team is drowning, and tie back
+      to the tuning discipline. Metrics guide improvement, but they can be gamed, so they
+      are read together and in context. Closing alerts fast looks good until you see the
+      ones closed without real investigation.
+
+      A SOC runs continuously, so the **shift handover** is where continuity is won or
+      lost. The outgoing analyst passes on what is **in flight**: open investigations and
+      their current state, alerts deliberately left pending and why, anything suppressed
+      temporarily, and watch items expected on the next shift. A short written handover,
+      backed by a dashboard the next analyst can open, prevents a live incident from
+      stalling at a shift boundary or being worked twice. The same record feeds the
+      lessons-learned loop, because repeated handover items reveal where tuning or
+      automation is overdue.
+    examples:
+      - title: One dashboard, one question, one audience
+        body: |
+          Analyst triage view:  open queue by severity | newest criticals | SLA breaches
+          Manager view:         weekly alert trend | MTTR trend | top noisy rules
+          Each panel should lead to an action; drop panels nobody acts on.
+      - title: A handover note that carries work across
+        body: |
+          Open:     INC-204 phishing, host isolated, awaiting memory capture
+          Pending:  3 medium alerts on HOST-7, likely benign update, confirm AM
+          Suppressed: backup-agent LSASS rule on HOST-DB until 09:00 (ticket #88)
+          Watch:    vendor advisory out; expect scan noise overnight
+    exercise:
+      title: Build a SOC dashboard and write a shift handover
+      environment: A SIEM with sample data (a lab tenant or your earlier SIEM lesson environment) and a document for the handover
+      tools: [A SIEM with dashboard/workbook features, a document for the handover, your notes on SOC metrics]
+      steps:
+        - Choose one operational question and one audience (for example, an analyst triaging the live queue) and list the panels that answer it.
+        - Build the dashboard with at least three panels, each of which leads to a clear action.
+        - Define MTTD, MTTR and dwell time in your own words and identify where in your data each would be measured.
+        - Compute or estimate one metric (for example MTTR) from a sample of alerts and note one way it could be misleading if read alone.
+        - Identify the current noisiest detection from your data and state whether it needs tuning, linking back to false-positive rate.
+        - Write a shift-handover note covering open investigations, pending alerts, temporary suppressions and watch items, each with its current state.
+        - Explain how the next analyst would use your dashboard plus the note to pick up without re-doing work.
+      deliverable: The dashboard definition (panels and their actions), one computed metric with a caveat, and a shift-handover note covering open, pending, suppressed and watch items.
+    expected_outcome: >
+      You can build a SIEM dashboard that drives action for a specific audience, define
+      and interpret the core SOC metrics, and run a shift handover that carries open work
+      across cleanly so investigations are never dropped or duplicated at a boundary.
+    quiz:
+      - prompt: What makes a SOC dashboard effective?
+        options:
+          - It shows every available chart on one screen
+          - Each panel answers a question for a specific audience and leads to an action
+          - It uses the most colours possible
+          - It refreshes once a day
+        answer: 1
+        explanation: Dashboards are built for a question and an audience, and panels that do not drive action are just decoration.
+      - prompt: MTTR (mean time to respond) measures
+        options:
+          - How many alerts fired
+          - The time from an alert to containment or resolution
+          - The number of dashboards
+          - How long logs are retained
+        answer: 1
+        explanation: MTTR tracks how quickly the team acts on an alert, a core responsiveness metric alongside MTTD and dwell time.
+      - prompt: Why can closing alerts quickly be a misleading metric on its own?
+        options:
+          - Fast closure always means good work
+          - Alerts may be closed without real investigation, so speed must be read with quality
+          - It has no downside
+          - It increases dwell time
+        answer: 1
+        explanation: Metrics can be gamed, so a fast close rate must be read alongside whether the alerts were actually investigated.
+      - prompt: The main purpose of a shift handover is to
+        options: [Reset all dashboards, Carry in-flight investigations and watch items across so nothing is dropped or duplicated, Delete old alerts, Change the SIEM schema]
+        answer: 1
+        explanation: A handover preserves continuity across a 24/7 operation by passing open work and context to the next analyst.
