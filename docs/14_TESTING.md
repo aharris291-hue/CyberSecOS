@@ -41,6 +41,20 @@ View models and the API client are tested without WPF:
 
 `Fakes/FakeApi` is an in-memory `ICyberSecApi`; `Fakes/StubHttpHandler` fakes HTTP.
 
+## Converters (xUnit, `frontend/tests/CyberSecOS.Desktop.Tests`)
+
+The WPF value converters depend on `System.Windows` and LiveCharts2 types, so this
+project targets `net9.0-windows` and runs on the Windows CI job (the Linux backend job
+does not build it). Creating the converter outputs needs no display or UI thread, so the
+tests run headless on the CI runner.
+
+- `ConvertersTests`: the pure value converters — visibility from empty/null/bool, the inverse-bool and status-label maps, the Markdown-stripping plain-text converter, enum-name matching, and the exam countdown — plus that each one-way converter's `ConvertBack` throws.
+- `ChartConvertersTests`: `ChartSeriesConverter` mapping `ChartData` to stacked-column, row and pie series (including the empty result for non-chart data and unknown parameters, and that pie drops zero-sum series), and `ChartAxisConverter` building category and value axes (labels, hidden separators, a zero floor and the max-value cap, and the empty-data fallback).
+
+`LessonStatusBrushConverter` resolves an `Application` resource, so it is left to the manual
+view smoke test below rather than the headless suite.
+
 ## Not yet automated
 
-- XAML views and LiveCharts2 converters (need a Windows UI test runner; see backlog).
+- **XAML view rendering.** Instantiating the views themselves needs an STA WPF visual tree, which the headless CI runner does not host reliably, so it stays a manual smoke test on a Windows desktop: run `Start CyberSecOS.bat` (or `dotnet run` the desktop project), then sign in and walk the Dashboard, Courses, a Lesson, Progress, Study Plan and Practice Exams pages, confirming the charts, status badges and countdowns render. The converter logic those views bind to is covered by `CyberSecOS.Desktop.Tests` above.
+- **Single desktop installer** (see backlog).
