@@ -425,3 +425,90 @@ lessons:
         options: [A reboot, A short timeline of what ran, connected and was touched, A screenshot of the desktop, Nothing]
         answer: 1
         explanation: A timeline of process, network and file activity scopes the incident so containment knows what to act on.
+
+  - slug: linux-privilege-escalation
+    title: Detecting Linux Privilege Escalation
+    order: 6
+    difficulty: advanced
+    summary: Find the traces an attacker leaves when escalating from a normal user to root on Linux.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:2.4", "cysa:1.2", "cysa:3.2"]
+    learning_objectives:
+      - Describe the common Linux privilege-escalation routes and what each leaves behind
+      - Read sudo, auth and audit logs for signs of escalation
+      - Separate a legitimate administrative action from an abuse of the same mechanism
+    theory: |
+      An attacker who lands on a Linux host usually arrives as an **unprivileged user** and then
+      works to become **root**. The common routes are well known: abusing **sudo** rights, exploiting
+      a **SUID** binary that runs as its owner, using a misconfigured service or cron job that runs
+      as root, or a kernel exploit. Each route leaves different traces, and knowing them turns a
+      pile of logs into a story.
+
+      Sudo abuse is the most visible. Every sudo invocation is logged with the user, the target
+      user and the command, so a normal account suddenly running `sudo` to spawn a shell, or running
+      a command through a program that can break out to a shell, stands out. **SUID** abuse is
+      quieter: the giveaway is a process whose effective user is root but whose parent chain starts
+      from an ordinary user's session, often through a known breakout binary. A cron or service
+      misconfiguration shows up as a root process launched from a path a normal user can write to.
+
+      The hard part is telling abuse from legitimate administration, because an admin uses the same
+      mechanisms. Context decides: **who** ran it, from **where**, at **what time**, and whether it
+      fits their normal pattern. An admin running `sudo apt upgrade` at midday from their usual host
+      is routine; a web-service account running `sudo` to launch bash at 3am is not. You also look
+      for the **sequence**, enumeration commands, then the escalation attempt, then actions as root,
+      which no routine task produces. This builds on the hardening lesson, which prevented these
+      weaknesses; here the weakness has been used and the job is to find the evidence after the fact.
+    examples:
+      - title: A service account breaking out through sudo
+        body: |
+          sudo: www-data : TTY=pts/1 ; USER=root ; COMMAND=/bin/bash
+          A non-interactive service account using sudo to launch a root shell is escalation, not admin work.
+      - title: A SUID breakout in the process tree
+        body: |
+          parent: bash (uid 1001)  ->  find (euid 0, SUID)  ->  sh (uid 0)
+          A root shell parented off an ordinary user's SUID binary is a classic privilege-escalation chain.
+    exercise:
+      title: Investigate a privilege-escalation incident from sample logs
+      environment: A sample set of Linux logs (sudo/auth log, audit log and a process listing) from a suspect host
+      tools: [Sample auth, sudo and audit logs, a process tree, a notes file]
+      steps:
+        - List the common privilege-escalation routes and name the log or artifact that would show each.
+        - Search the sudo and auth logs for any non-admin account using sudo and note the command it ran.
+        - Find a process whose effective user is root but whose parent chain starts from an ordinary user.
+        - Decide, with reasons, which events are legitimate administration and which are abuse.
+        - Reconstruct the sequence from the first suspicious command to the first action taken as root.
+        - State how the account escalated and what you would collect before the host is changed.
+      deliverable: A privilege-escalation note with the route used, the log evidence, and the reasoning that separates abuse from normal admin.
+    expected_outcome: >
+      You can recognise the common Linux privilege-escalation routes, find their traces in sudo,
+      auth and audit logs, and distinguish an attack from legitimate administrative use.
+    quiz:
+      - prompt: Which of these is a common Linux privilege-escalation route?
+        options:
+          - Reading a public web page
+          - Abusing sudo rights or a SUID binary to run as root
+          - Changing the desktop wallpaper
+          - Sending an email
+        answer: 1
+        explanation: Sudo misconfiguration and SUID binaries are classic routes from an ordinary user to root.
+      - prompt: A SUID-based escalation is best spotted by
+        options:
+          - A process running as root whose parent chain starts from an ordinary user's session
+          - The size of the log file
+          - The hostname
+          - A single failed password
+        answer: 0
+        explanation: A root-effective process parented off a normal user through a breakout binary is the SUID tell.
+      - prompt: What best separates legitimate sudo use from abuse?
+        options:
+          - The colour of the terminal
+          - Context, who ran it, from where, when, and whether it fits their normal pattern
+          - The length of the command
+          - Whether the moon is full
+        answer: 1
+        explanation: Admins and attackers use the same mechanisms, so context and normal patterns decide which it is.
+      - prompt: How does this lesson differ from Linux hardening?
+        options: [It is the same, Hardening prevents the weakness; this finds the evidence after it has been used, It only covers firewalls, It ignores logs]
+        answer: 1
+        explanation: Hardening closes the gaps in advance; detection reconstructs what happened once a gap was exploited.

@@ -418,3 +418,87 @@ lessons:
         options: [A faster CPU, Credential Guard, A larger page file, Disabling logging]
         answer: 1
         explanation: Credential Guard uses virtualisation-based security to keep LSASS secrets out of reach of normal processes.
+
+  - slug: win-lateral-movement
+    title: Detecting Lateral Movement in Windows Logs
+    order: 6
+    difficulty: advanced
+    summary: Spot remote-service, WMI and RDP lateral movement from Windows authentication and service events.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:2.4", "cysa:1.2", "cysa:1.4", "sc200:4"]
+    learning_objectives:
+      - Describe the common Windows lateral-movement techniques and the logs that record them
+      - Read logon types to tell interactive, network and remote-desktop access apart
+      - Reconstruct a movement path across hosts from authentication and service-creation events
+    theory: |
+      Once an attacker has one set of credentials, the next step is **lateral movement**, using those
+      credentials to reach other Windows hosts. The common techniques all leave traces: remote
+      service creation (the classic PsExec pattern), **WMI** and WinRM remote execution, scheduled
+      tasks created on a remote host, and **RDP**. Each writes to Windows logs, so the movement is
+      visible if you know where to look.
+
+      **Logon types** are the key. Event 4624 records a successful logon with a type code: type 2 is
+      interactive at the console, type 3 is a network logon (file shares, PsExec, WMI), and type 10
+      is RemoteInteractive, which is RDP. A burst of type 3 logons from one account across many
+      servers, or a type 10 logon to a host the user never uses, is a movement signal. On the
+      destination host, a PsExec-style attack also creates a service, so event **7045** (a new
+      service installed) with a random-looking name right after a network logon ties the two
+      together.
+
+      The analyst's job is to **reconstruct the path**. Movement is a chain: a logon on host A, then
+      a network logon from A to host B, then a service or task created on B, then a logon from B to
+      host C. Correlating 4624 by account, source host and time across machines rebuilds that chain
+      and shows how far the attacker reached. This is distinct from the earlier authentication-
+      monitoring lesson, which watched a single host's logons; here you are following one identity
+      as it hops from host to host across the domain.
+    examples:
+      - title: A network logon followed by a service creation
+        body: |
+          host SRV-02  4624 logon type 3  account svc-admin  source WKS-19
+          host SRV-02  7045 new service "a7f3" image \\\\WKS-19\\share\\p.exe
+          A network logon immediately followed by a random-named service is the PsExec pattern.
+      - title: RDP to an unusual host
+        body: |
+          host SRV-07  4624 logon type 10 (RemoteInteractive)  account jdoe  source SRV-02
+          A type 10 logon to a server the user never administers, sourced from another server, is movement.
+    exercise:
+      title: Reconstruct a lateral-movement path from sample events
+      environment: A sample set of Windows security and system events (4624, 4625, 7045, task creation) across several hosts
+      tools: [Sample multi-host Windows event logs, a notes file or spreadsheet]
+      steps:
+        - List the logon types you see and say what each (type 2, 3, 10) means for how the host was accessed.
+        - Find the account that logs on across the most hosts and note the source host for each logon.
+        - Identify any 7045 service-creation or remote task event that follows a network logon on the same host.
+        - Draw the movement chain host by host, from the first logon to the furthest host reached.
+        - State which single compromised account drove the movement and what evidence shows it.
+        - List the hosts that need isolating and the order you would work them.
+      deliverable: A lateral-movement timeline naming the account, the host-to-host path, and the service or task events that confirm each hop.
+    expected_outcome: >
+      You can read Windows logon types, recognise remote-execution patterns, and reconstruct a
+      lateral-movement path across several hosts from authentication and service events.
+    quiz:
+      - prompt: Which Windows logon type in event 4624 indicates an RDP (RemoteInteractive) session?
+        options: [Type 2, Type 3, Type 10, Type 5]
+        answer: 2
+        explanation: Type 10 is RemoteInteractive (RDP); type 2 is interactive at the console, type 3 is a network logon.
+      - prompt: A network logon (type 3) immediately followed by event 7045 installing a random-named service suggests
+        options:
+          - A Windows update
+          - Remote service-based execution, the classic PsExec lateral-movement pattern
+          - A normal user login
+          - A printer being added
+        answer: 1
+        explanation: PsExec-style tools authenticate over the network and create a service to run, so the two events pair up.
+      - prompt: To reconstruct a lateral-movement path you mainly correlate
+        options:
+          - Only CPU usage
+          - Logon events by account, source host and time across multiple machines
+          - Font cache files
+          - A single host's screenshots
+        answer: 1
+        explanation: Movement is a chain of logons hop to hop, so correlating 4624 by account, source and time across hosts rebuilds it.
+      - prompt: How does this differ from monitoring one host's authentication?
+        options: [It is identical, It follows one identity hopping from host to host across the domain, It ignores logons, It only reads RDP]
+        answer: 1
+        explanation: Single-host monitoring watches one machine; lateral-movement detection tracks an identity moving across many.
