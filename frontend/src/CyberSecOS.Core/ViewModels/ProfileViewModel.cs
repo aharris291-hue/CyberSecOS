@@ -64,12 +64,18 @@ public sealed partial class ProfileViewModel : PageViewModel, IPageViewModel
     [RelayCommand]
     private async Task ChangePasswordAsync()
     {
-        var ok = await RunAsync(() => _api.ChangePasswordAsync(new PasswordChange(CurrentPassword, NewPassword)));
+        var ok = await RunAsync(async () =>
+        {
+            // Changing the password invalidates every existing token, including
+            // this session's; the response carries a fresh one to sign back in with.
+            var token = await _api.ChangePasswordAsync(new PasswordChange(CurrentPassword, NewPassword));
+            _session.SignIn(token);
+        });
         CurrentPassword = string.Empty;
         NewPassword = string.Empty;
         if (ok)
         {
-            StatusMessage = "Password changed.";
+            StatusMessage = "Password changed. Other sessions have been signed out.";
         }
     }
 

@@ -28,7 +28,7 @@ Security rules:
 - Usernames are case-insensitive (stored lower-case).
 - Wrong password and unknown user return the same 401 message.
 - 5 consecutive failures lock the account for 5 minutes (`Retry-After` header on 423).
-- Tokens are HS256 JWTs, valid for 12 hours by default.
+- Tokens are HS256 JWTs, valid for 12 hours by default. Each carries the account's `token_version`; changing the password bumps that version, so every token issued earlier stops authenticating (401).
 
 ## Profile
 
@@ -36,7 +36,7 @@ Security rules:
 |---|---|---|
 | GET | `/api/users/me` | Current profile |
 | PATCH | `/api/users/me` | Any of `display_name`, `target_role`, `weekly_goal_hours` (1-80) |
-| POST | `/api/users/me/password` | `{current_password, new_password}` → 204 |
+| POST | `/api/users/me/password` | `{current_password, new_password}` → a fresh token. Invalidates every token issued before the change (other sessions are signed out); the response token keeps the caller signed in. 400 if the current password is wrong |
 
 ## Course engine
 

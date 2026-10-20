@@ -37,6 +37,8 @@ class User(Base):
     display_name: Mapped[str] = mapped_column(String(100))
     target_role: Mapped[str] = mapped_column(String(100), default="SOC Analyst")
     weekly_goal_hours: Mapped[int] = mapped_column(Integer, default=10)
+    # Bumped on password change so tokens minted before it stop authenticating.
+    token_version: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
     failed_login_attempts: Mapped[int] = mapped_column(Integer, default=0)
     locked_until: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)

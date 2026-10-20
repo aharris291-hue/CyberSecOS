@@ -14,7 +14,7 @@ public interface ICyberSecApi
 
     Task<UserProfile> GetProfileAsync(CancellationToken ct = default);
     Task<UserProfile> UpdateProfileAsync(ProfileUpdate update, CancellationToken ct = default);
-    Task ChangePasswordAsync(PasswordChange change, CancellationToken ct = default);
+    Task<TokenResponse> ChangePasswordAsync(PasswordChange change, CancellationToken ct = default);
 
     Task<IReadOnlyList<Certification>> GetCertificationsAsync(CancellationToken ct = default);
     Task<IReadOnlyList<CourseSummary>> GetCoursesAsync(CancellationToken ct = default);

@@ -32,7 +32,7 @@ Low Priority
 | Advanced Analytics | Low | Not started |
 | More lessons per course (target 5-10 each) | High | In progress: 29 lessons; Windows, Linux and SIEM now have 3 each; still building toward 5-10 per course |
 | Render lesson Markdown richly in the desktop app | Medium | Done: theory shows bold and inline code; paragraphs spaced (Core Markdown parser, unit-tested) |
-| Invalidate existing sessions after a password change | Medium | Not started |
+| Invalidate existing sessions after a password change | Medium | Done: each token carries a `token_version`; a password change bumps it so older tokens are rejected, and the change returns a fresh token so the current session stays signed in |
 | UI tests for XAML views and chart converters on Windows | Medium | Not started |
 | Start the backend automatically from the desktop app | Medium | Partly done: `Start CyberSecOS.bat` launcher in the Windows build; a single installer is not started |
 | Data backup and export (PDF progress report) | Low | Not started |

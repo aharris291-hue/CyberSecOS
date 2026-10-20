@@ -52,7 +52,7 @@ def create_access_token(user: User, settings: Settings) -> tuple[str, int]:
     """Return a signed JWT for the user and its lifetime in seconds."""
     lifetime = timedelta(minutes=settings.access_token_minutes)
     now = utcnow()
-    payload = {"sub": str(user.id), "iat": now, "exp": now + lifetime}
+    payload = {"sub": str(user.id), "ver": user.token_version, "iat": now, "exp": now + lifetime}
     token = jwt.encode(payload, settings.jwt_secret, algorithm=settings.jwt_algorithm)
     return token, int(lifetime.total_seconds())
 
@@ -76,9 +76,13 @@ def get_current_user(
     try:
         payload = jwt.decode(credentials.credentials, settings.jwt_secret, algorithms=[settings.jwt_algorithm])
         user_id = int(payload["sub"])
+        token_version = int(payload["ver"])
     except (jwt.PyJWTError, KeyError, ValueError):
         raise unauthorized from None
     user = db.get(User, user_id)
     if user is None:
+        raise unauthorized
+    # A password change bumps token_version, so tokens issued earlier no longer match.
+    if token_version != user.token_version:
         raise unauthorized
     return user

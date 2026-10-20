@@ -1,5 +1,11 @@
 # Changelog
 
+## Phase 2 - Session hardening
+
+### Sign out other sessions when the password changes
+- Changing the account password now invalidates every access token issued before the change, so a token that leaked or is still held on another device stops working. The session that made the change gets a fresh token back and stays signed in; the desktop app re-signs-in transparently and notes that other sessions were signed out.
+- Each JWT now carries the account's `token_version`; a password change increments it and `/api/users/me/password` returns a new token (was a 204). 5 new/updated backend tests and 1 new desktop test (229 backend, 111 desktop).
+
 ## Phase 2 - Study planner
 
 ### A pace check and a weekly schedule toward each exam
