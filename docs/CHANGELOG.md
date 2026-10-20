@@ -1,5 +1,12 @@
 # Changelog
 
+## Phase 2 - A sixth lesson for the last four courses
+
+### A sixth lesson for Security Foundations, Security Architecture, Cloud Security and Governance/Risk/Compliance
+- Finished the second pass past five lessons: the last four courses each gain a sixth lesson, so every one of the twelve courses now has six (72 lessons total).
+- New lessons: malware types and how they behave (families, matching behaviour to type, fileless and living-off-the-land); designing key management and secrets architecture (where keys and secrets live, their lifecycle and rotation, least-privilege access); securing containers and serverless workloads (build/registry/runtime risk, image scanning and signing, least-privilege workload identity); and security metrics and reporting to leadership (decision-driving metrics over vanity numbers, risk in business terms, honest reporting).
+- All keep the six education-standard sections and the ~18/82 theory/lab split (catalog theory ratio 0.18); content-standard, seeding and coverage tests still pass (401 backend tests).
+
 ## Phase 2 - A sixth lesson for Networking, Windows, Linux and Vulnerability Management
 
 ### A sixth lesson for the next tier of courses

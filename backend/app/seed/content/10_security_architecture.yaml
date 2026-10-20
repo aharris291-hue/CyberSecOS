@@ -462,3 +462,91 @@ lessons:
           - Never documented
         answer: 1
         explanation: Building logging and monitoring in from the start means the telemetry exists before you need it.
+
+  - slug: arch-key-management-secrets
+    title: Designing Key Management and Secrets Architecture
+    order: 6
+    difficulty: intermediate
+    summary: Decide where cryptographic keys and application secrets live, how they rotate, and who can reach them.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:1.4", "secplus:3.1", "secplus:4.1"]
+    learning_objectives:
+      - Explain why keys and secrets need a managed home rather than living in code or config
+      - Describe the lifecycle of a key from generation through rotation to revocation
+      - Choose where secrets live and who can reach them, following least privilege
+    theory: |
+      Cryptography only protects data if the **keys** are protected, and applications also hold
+      **secrets**, database passwords, API tokens, certificates, that grant access. The most common
+      architectural failure is keeping these in the wrong place: hard-coded in source, committed to
+      a repository, or sitting in a plaintext config file. Once a secret is in version control it is
+      effectively public to everyone with history access, so the first design decision is that keys
+      and secrets live in a **managed store**, not in the code that uses them.
+
+      A key has a **lifecycle**, and the architecture has to serve all of it. A key is **generated**
+      with enough randomness, **stored** somewhere resistant to extraction (a secrets manager, or a
+      hardware security module for the highest-value keys), **used** without the application ever
+      seeing the raw key where possible, **rotated** on a schedule so a leaked key has a short useful
+      life, and **revoked and destroyed** when it is compromised or retired. A design that can issue
+      a key but has no story for rotating or revoking it is incomplete.
+
+      The last piece is **access**: who, and what, can retrieve each secret. Least privilege applies
+      to secrets as much as to users, so each service reads only the secrets it needs, access is
+      authenticated and logged, and a human reading a production secret is an audited event, not a
+      routine one. Short-lived, automatically issued credentials are safer than long-lived ones a
+      person copies around. This builds on the earlier cryptography lesson, which covered how the
+      algorithms work; here the subject is the architecture around the keys, where they live, how
+      they move, and who can reach them.
+    examples:
+      - title: A secret in the wrong place
+        body: |
+          config.yml committed to git:  db_password: S3cr3t!
+          A secret in version control is exposed to everyone with repo history; it belongs in a secrets store.
+      - title: A short-lived issued credential
+        body: |
+          service requests a database credential at startup -> valid 1 hour -> auto-renewed
+          A rotating, auto-issued credential limits the damage a leak can do far better than a static password.
+    exercise:
+      title: Design a key and secrets architecture on paper
+      environment: A notes or diagram file for a small application with a database and an external API
+      tools: [A notes or diagram tool, the application scenario]
+      steps:
+        - List every key and secret the application needs and where each one is used.
+        - For each, state where it should live and why that store rather than code or config.
+        - Describe the lifecycle for one key, generation, storage, use, rotation and revocation.
+        - Define which service or person may read each secret, following least privilege, and how access is logged.
+        - Decide which credentials should be short-lived and auto-issued rather than static.
+        - Note one thing that would go wrong if a secret leaked, and how the design limits the damage.
+      deliverable: A one-page secrets architecture listing each secret, its store, its lifecycle, and the access rules around it.
+    expected_outcome: >
+      You can design where keys and secrets live, define their lifecycle including rotation and
+      revocation, and apply least privilege to who can reach them.
+    quiz:
+      - prompt: Why should secrets not be kept in source code or committed config?
+        options:
+          - It makes the code run slower
+          - Once in version control they are exposed to everyone with history access, effectively public
+          - Code cannot store text
+          - It is against copyright law
+        answer: 1
+        explanation: A secret in version control history is readable by anyone with access to the repo, so it is no longer secret.
+      - prompt: Rotating keys on a schedule matters because it
+        options:
+          - Makes keys longer
+          - Limits how long a leaked key stays useful to an attacker
+          - Changes the algorithm
+          - Removes the need for access control
+        answer: 1
+        explanation: Regular rotation shortens the window in which a compromised key is valid.
+      - prompt: Applying least privilege to secrets means
+        options:
+          - Every service can read every secret
+          - Each service reads only the secrets it needs, with access authenticated and logged
+          - Secrets are printed to the console
+          - Only the newest secret is protected
+        answer: 1
+        explanation: Least privilege restricts each consumer to the secrets it actually requires, and logs the access.
+      - prompt: How does this lesson differ from the earlier cryptography lesson?
+        options: [It is the same, It is about the architecture around keys (where they live, rotate and who reaches them) rather than how the algorithms work, It only covers passwords, It ignores rotation]
+        answer: 1
+        explanation: The crypto lesson covered the algorithms; this one covers the key-management architecture around them.

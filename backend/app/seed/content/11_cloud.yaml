@@ -448,3 +448,88 @@ lessons:
         options: [A faster region, A permission boundary or service control policy, A larger instance, A longer access key]
         answer: 1
         explanation: Permission boundaries and service control policies set a ceiling that individual policy grants cannot exceed.
+
+  - slug: cloud-containers-serverless
+    title: Securing Containers and Serverless Workloads
+    order: 6
+    difficulty: intermediate
+    summary: Secure container images and functions across build, deploy and run, and give each the least privilege it needs.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:3.1", "secplus:4.1", "sc200:2"]
+    learning_objectives:
+      - Describe where risk enters a container workload across build, registry and runtime
+      - Explain what serverless functions change about the attack surface
+      - Apply least privilege to the identity a container or function runs as
+    theory: |
+      Containers and serverless functions package an application with its dependencies and run it on
+      shared cloud infrastructure, and the security problems follow that lifecycle. At **build** time
+      the risk is the image contents: a base image with known vulnerabilities, or secrets baked into
+      a layer. In the **registry** the risk is trust: pulling an unsigned or unverified image, or one
+      that has drifted since it was scanned. At **runtime** the risk is what the container can do,
+      whether it runs as root, what it can reach on the network, and whether it can escape to the
+      host. Scanning images for known vulnerabilities and signing them so only trusted images deploy
+      covers the first two stages; restricting the running container covers the third.
+
+      **Serverless** functions change the surface rather than removing it. There is no server for you
+      to patch, which is the appeal, but the function's **code and dependencies** are still yours to
+      secure, and the function runs with an **identity** that holds cloud permissions. The classic
+      serverless mistake is giving a small function a broad role, so a flaw in a few lines of code
+      inherits wide access to the account. Event-driven triggers also widen the entry points, since
+      a function may run in response to an upload, a queue message or an API call.
+
+      The thread through both is **least privilege on the workload's identity**. A container or
+      function should run as a non-root user where it can, hold only the cloud permissions its job
+      needs, and reach only the services it must. That way a compromised workload is contained to
+      what little it was allowed to do. This builds on the earlier least-privilege lesson, which
+      covered human and service roles; here the same principle is applied to the ephemeral identity a
+      container or function runs under.
+    examples:
+      - title: An over-privileged function
+        body: |
+          function "resize-image" role: AdministratorAccess
+          A thumbnail function with full admin rights turns one code flaw into full account access.
+      - title: A vulnerable base image
+        body: |
+          image scan: base layer "oldlinux:1.0" - 42 known CVEs, 3 critical
+          Known-vulnerable base layers ship their flaws into every container built on them.
+    exercise:
+      title: Review a container and serverless setup for weaknesses
+      environment: A sample container image definition and a serverless function with its role, on paper or in a lab
+      tools: [A sample Dockerfile or image manifest, a function definition and its role, a notes file]
+      steps:
+        - Walk the container lifecycle and name the main risk at build, registry and runtime.
+        - Inspect the image definition for a vulnerable base image, baked-in secrets or running as root.
+        - Describe how image scanning and signing would address the build and registry risks.
+        - Examine the serverless function's role and decide whether it follows least privilege.
+        - Rewrite the function's permissions to only what its job needs, and say what a compromise could then reach.
+        - List the event triggers for the function and note which widen the attack surface.
+      deliverable: A review note listing the container and serverless weaknesses found and the least-privilege and scanning fixes for each.
+    expected_outcome: >
+      You can identify where risk enters a container workload, explain what serverless changes about
+      the attack surface, and tighten the identity a container or function runs as.
+    quiz:
+      - prompt: At which stage does an unsigned or unverified image mainly create risk?
+        options: [Only at build, In the registry, where trust in the image is established before it is pulled, Never, Only after deletion]
+        answer: 1
+        explanation: The registry is where image trust matters; pulling unsigned or drifted images undermines it.
+      - prompt: What does serverless change about security?
+        options:
+          - It removes all security concerns
+          - It removes the server to patch, but the code, dependencies and the function's identity permissions are still yours to secure
+          - It makes code unhackable
+          - It encrypts everything automatically
+        answer: 1
+        explanation: Serverless offloads the server, but your code, its dependencies and its granted permissions remain your responsibility.
+      - prompt: Giving a small function a broad cloud role is dangerous because
+        options:
+          - Functions cannot use roles
+          - A flaw in a few lines of code then inherits wide access to the account
+          - It makes the function slower
+          - Broad roles are free
+        answer: 1
+        explanation: An over-privileged function turns one small code flaw into account-wide access.
+      - prompt: The common principle for securing both containers and functions is
+        options: [Run everything as root, Least privilege on the workload's identity so a compromise is contained, Disable logging, Use the largest instance]
+        answer: 1
+        explanation: Running with only the permissions the job needs limits what a compromised workload can do.

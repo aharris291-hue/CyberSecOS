@@ -438,3 +438,87 @@ lessons:
         options: [Routine maintenance, A classic account-takeover signal, A password reset, A normal SSO event]
         answer: 1
         explanation: Disabling MFA ahead of an unusual login is a common takeover pattern worth alerting on.
+
+  - slug: sec-malware-types-behaviour
+    title: Malware Types and How They Behave
+    order: 6
+    difficulty: beginner
+    summary: Tell the main malware families apart by what they do, so you can read an alert and expect the right behaviour.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:2.1", "secplus:2.4", "cysa:1.2"]
+    learning_objectives:
+      - Name the main malware families and describe what each one does
+      - Match observed behaviour (files, processes, network) to a likely malware type
+      - Explain why fileless and living-off-the-land malware is harder to spot
+    theory: |
+      Malware is a broad word for software written to act against the owner's interest, and the
+      families behave differently enough that naming the type tells you what to look for. A **virus**
+      attaches to a file and spreads when that file runs; a **worm** spreads on its own across a
+      network with no user action. A **trojan** pretends to be something useful to get itself run.
+      **Ransomware** encrypts files and demands payment. **Spyware** and a **keylogger** quietly
+      collect information, and a **rootkit** hides other malware from the system. A **bot** turns the
+      host into one node an attacker controls remotely.
+
+      For an analyst the value is matching **behaviour to type**. Rapid encryption of many files with
+      a ransom note is ransomware; a process beaconing to the same external host on a timer looks
+      like a bot or remote-access trojan calling home; a new program that spreads to peers over the
+      network without anyone opening it behaves like a worm. You rarely name the exact strain from
+      one alert, but the shape of the activity, what touched the disk, what ran, what talked to the
+      network, points at a family and tells you what to check next.
+
+      The hardest cases carry **no file to find**. **Fileless** malware runs in memory, and
+      **living-off-the-land** attacks abuse tools already on the system, such as PowerShell or
+      scripting engines, so there is no malicious binary on disk to scan. These defeat simple file-
+      based antivirus and are caught by behaviour instead: a trusted tool doing something it never
+      normally does. This is foundational knowledge the later hands-on lessons build on; here the aim
+      is to recognise the families and their behaviour, not yet to write detections for them.
+    examples:
+      - title: Behaviour pointing at ransomware
+        body: |
+          thousands of files rewritten in minutes, new extension, a README demanding payment
+          Fast mass-encryption plus a ransom note is ransomware, whatever the exact strain.
+      - title: Living-off-the-land activity
+        body: |
+          powershell.exe launched by a Word document, downloading and running code in memory
+          A trusted tool abused to run code with nothing written to disk is living-off-the-land.
+    exercise:
+      title: Classify malware behaviour from sample descriptions
+      environment: A set of short written incident descriptions; no live malware
+      tools: [A set of sample behaviour descriptions, a notes file]
+      steps:
+        - Write a one-line description of each main malware family in your own words.
+        - For each sample description, name the most likely malware family and the evidence behind your choice.
+        - Identify which sample is a worm and explain what separates it from a virus.
+        - Identify any sample that is fileless or living-off-the-land and say why file scanning would miss it.
+        - For one sample, list what you would check next (files, processes, network) to confirm the type.
+        - Summarise which single behaviour was the strongest clue in each case.
+      deliverable: A classification table mapping each sample to a malware family, the evidence, and the next check you would make.
+    expected_outcome: >
+      You can name the main malware families, match observed behaviour to a likely type, and explain
+      why fileless and living-off-the-land malware evades simple file-based scanning.
+    quiz:
+      - prompt: What distinguishes a worm from a virus?
+        options:
+          - A worm spreads on its own across a network, while a virus needs an infected file to be run
+          - A worm is always harmless
+          - A virus only affects printers
+          - There is no difference
+        answer: 0
+        explanation: A worm self-propagates with no user action; a virus spreads when someone runs the infected file.
+      - prompt: Rapid encryption of many files followed by a ransom note is characteristic of
+        options: [Spyware, Ransomware, A rootkit, A keylogger]
+        answer: 1
+        explanation: Mass file encryption plus a payment demand is the defining behaviour of ransomware.
+      - prompt: Why is fileless or living-off-the-land malware hard to detect?
+        options:
+          - It is too large to run
+          - It runs in memory or abuses trusted built-in tools, so there is no malicious file on disk to scan
+          - It only runs on paper
+          - It disables the network card
+        answer: 1
+        explanation: With no binary on disk, file-based antivirus has nothing to match; it must be caught by behaviour.
+      - prompt: For an analyst, the main value of naming a malware family is that it
+        options: [Changes the hostname, Tells you what behaviour to expect and what to check next, Deletes the alert, Encrypts the logs]
+        answer: 1
+        explanation: The family predicts the activity's shape, which guides what disk, process and network evidence to look for.
