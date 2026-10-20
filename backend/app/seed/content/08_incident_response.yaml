@@ -477,3 +477,86 @@ lessons:
           - More analysts on shift
         answer: 1
         explanation: If clean, tested backups can restore the data, the organisation does not depend on the attacker's key.
+
+  - slug: ir-bec-account-takeover
+    title: Responding to Business Email Compromise
+    order: 6
+    difficulty: intermediate
+    summary: Work an account-takeover incident in a mailbox from detection to containment.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.8", "cysa:3.2", "cysa:4.2"]
+    learning_objectives:
+      - Describe how business email compromise works and why it often involves no malware
+      - Recognise the signs of a mailbox takeover in sign-in and mailbox telemetry
+      - Contain an account takeover and assess its financial and notification impact
+    theory: |
+      **Business email compromise (BEC)** is an attacker operating a real mailbox after taking over
+      the account, usually for financial fraud, fake invoices, redirected payroll or supplier
+      payments, rather than to drop malware. Entry is typically phishing or password spraying, and
+      sometimes weak or bypassable MFA. Because the attacker uses the legitimate account, there is
+      no malicious binary to find; the evidence is in **identity and mailbox telemetry**.
+
+      The signs are recognisable once you know them. A suspicious sign-in, a new location,
+      impossible travel, or an unusual client, is the entry. Then come the tell-tale mailbox
+      changes: new **inbox rules** that auto-delete or move replies so the real user never sees
+      them, **mail forwarding** to an external address, and messages in Sent that the user did not
+      write. These rules exist to hide the fraud while the attacker conducts it.
+
+      Response is fast and specific. Confirm the takeover from the sign-in logs, then **revoke the
+      account's sessions and reset the password**, enforce or repair MFA, and **remove the malicious
+      inbox rules and forwarding** so the attacker loses both access and concealment. Search what
+      was sent and to whom, warn any recipients who received fraudulent payment requests, and check
+      for actual financial impact. If customer data or payments are involved, the notification
+      duties from the governance side apply. This is distinct from phishing triage, where you
+      analyse a suspicious message; here the account is already compromised and the job is to take
+      it back.
+    examples:
+      - title: A concealment inbox rule
+        body: |
+          rule   if subject contains "invoice" or "payment" then move to RSS Feeds and mark read
+          A rule hiding payment replies from the real user is a hallmark of BEC.
+      - title: The takeover sign-in
+        body: |
+          sign-in  user=finance-clerk  location=another country  MFA=not satisfied  result=success
+          An impossible-travel login that somehow succeeded points at account takeover.
+    exercise:
+      title: Work a BEC incident from sample telemetry
+      environment: A sample set of sign-in logs, mailbox audit events and inbox-rule changes
+      tools: [Sample sign-in and mailbox audit logs, a notes file]
+      steps:
+        - From the sign-in logs, identify the suspicious login and note the location, client and MFA state.
+        - Find any new inbox rules or mail forwarding and explain what each one is hiding or doing.
+        - List the containment steps in order, starting with revoking sessions and resetting the password.
+        - Say how you would restore or enforce MFA and remove the malicious rules and forwarding.
+        - Search what the account sent during the takeover and decide who needs warning.
+        - Assess the financial and notification impact and state who must be told.
+      deliverable: A BEC response note with the takeover evidence, the ordered containment steps, the malicious rules removed, and the impact and notifications.
+    expected_outcome: >
+      You can recognise an account takeover from identity and mailbox telemetry, contain
+      it in the right order, and assess the fraud, warnings and notifications it triggers.
+    quiz:
+      - prompt: Business email compromise usually involves
+        options:
+          - Ransomware encrypting the mailbox
+          - An attacker operating a legitimate account, often with no malware, for financial fraud
+          - A denial-of-service attack
+          - A firewall change
+        answer: 1
+        explanation: BEC rides a real account for fraud, so there is typically no malware, only misuse of legitimate access.
+      - prompt: A new inbox rule that moves payment replies to a hidden folder is
+        options: [Normal tidying, A concealment technique typical of BEC, A backup, A spam filter working]
+        answer: 1
+        explanation: Hiding replies about invoices or payments keeps the real user unaware while the attacker commits fraud.
+      - prompt: The first containment step for a confirmed mailbox takeover is
+        options:
+          - Send a company-wide email
+          - Revoke the account's sessions and reset the password
+          - Delete the mailbox
+          - Buy more storage
+        answer: 1
+        explanation: Cutting the attacker's active access by revoking sessions and resetting the password comes first.
+      - prompt: How does BEC response differ from phishing triage?
+        options: [They are identical, In BEC the account is already compromised and must be taken back, BEC only analyses an email, BEC needs no containment]
+        answer: 1
+        explanation: Phishing triage analyses a suspicious message; BEC response reclaims an account that is already under attacker control.

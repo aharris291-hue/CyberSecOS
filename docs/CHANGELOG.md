@@ -1,5 +1,12 @@
 # Changelog
 
+## Phase 2 - A sixth lesson for the SOC daily-driver courses
+
+### A sixth lesson for SIEM, Threat Hunting, Incident Response and Detection Engineering
+- Opened the second pass past five lessons, adding a sixth to the four courses closest to daily SOC work (64 lessons total).
+- New lessons: threat-intelligence matching in the SIEM (watchlists, indicator context and aging, matches as leads); hunting data exfiltration (stage-package-move, egress volume and destination against baseline, ruling out backups); responding to business email compromise (account takeover signs, concealment inbox rules, session revocation and rule removal); and detection-as-code and the detection lifecycle (version control, pull-request review, CI validation on known-good/known-bad samples, deprecation).
+- All keep the six education-standard sections and the ~18/82 theory/lab split (catalog theory ratio 0.18); content-standard, seeding and coverage tests still pass (369 backend tests).
+
 ## Phase 2 - Every course five lessons deep
 
 ### A fifth lesson for the last four courses

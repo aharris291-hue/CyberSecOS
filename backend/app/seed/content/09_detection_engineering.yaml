@@ -467,3 +467,87 @@ lessons:
           - Only on weekends
         answer: 1
         explanation: They are complementary; signatures catch the known and behavioural detection catches what has no signature yet.
+
+  - slug: de-detection-as-code
+    title: Detection-as-Code and the Detection Lifecycle
+    order: 6
+    difficulty: intermediate
+    summary: Manage detections like software with version control, review and CI validation.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.4", "cysa:1.5", "cysa:3.1", "sc200:2"]
+    learning_objectives:
+      - Explain why detections are managed as code once there are many of them
+      - Describe the detection lifecycle from proposal through review, CI and deprecation
+      - Say what continuous integration validates before a rule reaches production
+    theory: |
+      A handful of detections can live in a console, but once there are hundreds, editing them by
+      hand there does not scale and nobody can say why a rule exists. Mature teams treat
+      **detections as code**. Each rule is a file in **version control**, so every change has an
+      author, a diff and a history, and ships only after a **pull request** that a second engineer
+      reviews. The same discipline that protects application code now protects detections.
+
+      **Continuous integration** is what makes this safe. When a rule changes, CI checks it
+      automatically: that the syntax is valid, that it **fires on a sample of known-bad logs**, and
+      that it **stays quiet on known-good** ones, before the change can merge. A rule that would
+      break or flood analysts is caught in the pipeline rather than in production. Rules then roll
+      out through **environments**, test first, then production, so a change is proven before it
+      reaches the live SOC.
+
+      The lifecycle does not end at deployment. Detections are **deprecated deliberately** when the
+      data source they rely on goes away or the threat changes, instead of being left to rot and
+      generate noise. Metrics, true-positive and false-positive rates and coverage, guide what to
+      keep, tune or retire. The payoff is software discipline for detection: review catches
+      mistakes, CI stops a bad rule reaching production, and the history explains every rule. This
+      is the workflow around all the rules, distinct from writing or testing any single one.
+    examples:
+      - title: A rule change as a reviewed pull request
+        body: |
+          PR #214  detections/windows/lsass_access.yml  +threshold tweak
+          author requests review; CI runs before anyone can merge
+          Every detection change is authored, diffed and reviewed like code.
+      - title: CI catching a bad rule
+        body: |
+          CI step   run rule against known-good sample
+          result    FAILED  rule fired on 4,000 benign events
+          CI blocks the merge, so the noisy rule never reaches production.
+    exercise:
+      title: Design a detection-as-code pipeline on paper
+      environment: A notes or diagram file; no running pipeline required
+      tools: [A sample detection rule, a notes or diagram tool]
+      steps:
+        - Describe how a new detection would be proposed and where the rule file would live.
+        - Define the review step and who signs off before a rule can merge.
+        - List the checks CI should run, including firing on known-bad and staying quiet on known-good samples.
+        - Describe how a rule moves from a test environment to production.
+        - Define when and how a rule is deprecated, and what metrics decide it.
+        - Explain in one line how this workflow differs from writing or testing a single rule.
+      deliverable: A one-page detection lifecycle covering proposal, review, CI checks, rollout, metrics and deprecation.
+    expected_outcome: >
+      You can describe a detection-as-code workflow, say what CI validates before a rule
+      ships, and explain how the lifecycle keeps a large rule set reviewed and current.
+    quiz:
+      - prompt: Why manage detections as code in version control?
+        options:
+          - To make them secret
+          - So every change has an author, a diff, a history and a review before it ships
+          - To slow the SOC down
+          - To avoid writing rules
+        answer: 1
+        explanation: Version control gives detections authorship, history and peer review, the same discipline as application code.
+      - prompt: What should CI validate before a detection rule merges?
+        options:
+          - Only the file name
+          - That it is valid, fires on known-bad samples and stays quiet on known-good ones
+          - The analyst's password
+          - The size of the SIEM
+        answer: 1
+        explanation: CI proves the rule works and will not flood analysts before it can reach production.
+      - prompt: Deprecating a detection deliberately matters because
+        options: [It never matters, A rule whose data source or threat has changed otherwise rots and generates noise, It deletes the SIEM, It disables CI]
+        answer: 1
+        explanation: Retiring stale rules on purpose keeps the rule set accurate instead of accumulating noisy dead detections.
+      - prompt: Detection-as-code differs from writing a single rule in that it is
+        options: [The same thing, The workflow and lifecycle around all the rules, A type of malware, A dashboard]
+        answer: 1
+        explanation: Detection-as-code is the review, CI, rollout and deprecation process around the whole rule set, not one rule.

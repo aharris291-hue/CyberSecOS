@@ -466,3 +466,87 @@ lessons:
         options: [Something is wrong somewhere, Specific and falsifiable so evidence can confirm or kill it, A list of every tool, Only a dashboard]
         answer: 1
         explanation: A specific, falsifiable hypothesis tells you what evidence to look for and when to move on.
+
+  - slug: hunt-data-exfiltration
+    title: Hunting Data Exfiltration
+    order: 6
+    difficulty: advanced
+    summary: Find data leaving the network by its volume, destination and timing.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["cysa:1.4", "cysa:1.2", "sc200:4"]
+    learning_objectives:
+      - Describe how attackers stage and move stolen data out of a network
+      - Form hunting hypotheses around egress volume, destination and timing
+      - Separate real exfiltration from backups and legitimate sync
+    theory: |
+      Exfiltration is the objective of many intrusions, and like other attacker behaviour it leaves
+      a shape even when the contents are hidden. The pattern is usually **stage, package, move**:
+      collect the data into one place, compress or encrypt it into an archive, then push it out over
+      a channel the network already allows, an HTTPS upload, a personal cloud-storage account, email,
+      or DNS. The payload is hidden by encryption, but the **volume, destination and timing** are
+      not.
+
+      Good hunts start from a hypothesis about that shape. A host sending far more outbound than its
+      own baseline; a large upload to a new or rare external destination or a personal file-sharing
+      service; transfers at odd hours; or a sudden archive creation followed by egress. The metrics
+      that expose it are bytes out per host against baseline, an inverted upload-to-download ratio,
+      the rarity of the destination, and the time of day. Encrypted traffic defeats content
+      inspection but not these signals.
+
+      The discipline is ruling out the benign. Backups, software updates and legitimate cloud sync
+      also move large volumes, so a baseline of what each host normally sends, and to where, is what
+      lets you flag the genuinely unusual. A confirmed hunt hands over the host, the data that was
+      touched, the destination, a timeline, and the containment it calls for, such as blocking the
+      destination and isolating the host.
+    examples:
+      - title: An egress spike against baseline
+        body: |
+          host=10.2.3.9  normal daily upload = 20-80 MB
+          today = 7.1 GB uploaded to an unfamiliar cloud-storage host
+          Far above baseline, to a rare destination, is the shape of exfiltration.
+      - title: Stage then move
+        body: |
+          14:40  archive created  /tmp/export.7z (3.2 GB)
+          14:52  7.1 GB uploaded to an external host
+          A large archive appearing just before a big upload ties staging to egress.
+    exercise:
+      title: Hunt exfiltration in sample egress data
+      environment: A SIEM or notebook with sample proxy, firewall or flow logs
+      tools: [Sample egress logs, a SIEM or notebook, a notes file]
+      steps:
+        - Write one falsifiable hypothesis about how data would leave this environment.
+        - Build a per-host baseline of normal outbound volume from the sample data.
+        - Flag hosts whose outbound volume is far above their baseline in the hunt window.
+        - For a flagged host, check the destination's rarity, the upload-to-download ratio and the time of day.
+        - Rule out backups and legitimate cloud sync, and say how you told them apart.
+        - For one confirmed case, name the host, the destination, a timeline and the containment you would recommend.
+      deliverable: A hunt write-up with the hypothesis, the confirmed exfiltration versus what you ruled out, and the containment actions.
+    expected_outcome: >
+      You can hypothesise how data would leave, find it by egress volume, destination and
+      timing, tell it from backups and sync, and hand off a scoped case with containment.
+    quiz:
+      - prompt: Encrypted exfiltration still exposes which signals?
+        options:
+          - The file contents
+          - The volume, destination and timing of the transfer
+          - The user's password
+          - Nothing at all
+        answer: 1
+        explanation: Encryption hides contents but not how much left, to where, or when, which is what the hunt uses.
+      - prompt: A sudden large archive created just before a big upload suggests
+        options: [A normal backup, Staging and then exfiltration, A software update, A DNS lookup]
+        answer: 1
+        explanation: Collecting data into an archive and then pushing it out is the stage-then-move pattern of exfiltration.
+      - prompt: Why baseline each host's normal outbound volume before hunting exfiltration?
+        options:
+          - Baselines are decorative
+          - Because backups and legitimate sync also move large volumes, so you need normal to spot the abnormal
+          - To block all uploads
+          - To delete logs
+        answer: 1
+        explanation: Large transfers are not all malicious, so a baseline lets you separate exfiltration from benign bulk traffic.
+      - prompt: A confirmed exfiltration hunt should hand off
+        options: [Just a hunch, The host, destination, data touched, a timeline and containment, A reboot, Nothing]
+        answer: 1
+        explanation: The useful output scopes the incident with the host, destination, affected data, timeline and containment steps.
