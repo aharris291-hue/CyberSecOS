@@ -1,0 +1,200 @@
+slug: governance-risk-compliance
+title: Governance, Risk and Compliance
+domain: Governance, Risk and Compliance
+order: 12
+description: >
+  The managerial side of security: governance and policy, risk management,
+  third-party risk, compliance, audits, awareness and security automation.
+lessons:
+  - slug: grc-governance-compliance
+    title: Governance, Policies, Compliance and Audits
+    order: 1
+    difficulty: beginner
+    summary: Map governance structures and write policies and a compliance checklist against a real framework.
+    theory_minutes: 12
+    lab_minutes: 48
+    objectives: ["secplus:5.1", "secplus:5.4", "secplus:5.5", "secplus:5.6", "sc900:4"]
+    learning_objectives:
+      - Describe security governance: structures, roles, policies, standards and procedures
+      - Explain compliance, its consequences and common regulations
+      - Explain audits, assessments and security awareness, and start a compliance checklist
+    theory: |
+      **Governance** is how an organisation directs and controls security. **Structures**
+      include a board, committees, and roles with clear responsibilities: **data owner**
+      (accountable for a data set), **data controller** (decides why and how data is processed),
+      **data processor** (processes on the controller's behalf), **data custodian/steward**
+      (day-to-day handling) and the **CISO**. Governance produces written guidance in a
+      hierarchy: **policies** (high-level intent, for example an acceptable-use or password
+      policy), **standards** (specific requirements), **procedures** (step-by-step), and
+      **guidelines** (recommendations). External **governance drivers** include regulations,
+      laws and industry frameworks.
+
+      **Compliance** is meeting those obligations, and non-compliance has **consequences**:
+      fines, sanctions, reputational damage, loss of licence and legal exposure. Common
+      regimes to recognise: **GDPR** (EU privacy), **HIPAA** (US health data), **PCI DSS**
+      (payment cards), **SOX**, and frameworks such as **NIST CSF**, **ISO 27001** and **CIS
+      Controls**. Compliance is tracked through **internal and external monitoring**,
+      **attestation** and **due diligence/due care**.
+
+      **Audits and assessments** check reality against requirements. **Internal** audits are
+      run by the organisation; **external** or **third-party** audits give independent
+      assurance. **Penetration testing** actively tests defences and can be **known** (white
+      box), **partially known** (grey box) or **unknown** (black box) to the tester. Finally,
+      people are part of the system: **security awareness** programmes cover phishing
+      recognition, anomalous behaviour reporting, and secure habits, reinforced by **phishing
+      simulations** and measured over time.
+    examples:
+      - title: The policy hierarchy
+        body: |
+          Policy:     "All remote access requires multi-factor authentication."
+          Standard:   "MFA uses a TOTP authenticator app or FIDO2 key; SMS is not permitted."
+          Procedure:  "1. Enrol device in the portal  2. Register authenticator  3. Test login"
+          Guideline:  "Prefer a hardware key for administrators."
+      - title: A compliance checklist row (PCI DSS style)
+        body: |
+          Requirement: Encrypt cardholder data in transit over public networks
+          Evidence:    TLS 1.2+ enforced; config screenshot; quarterly external scan report
+          Owner:       Platform team     Status: Met     Next review: quarterly
+    exercise:
+      title: Draft a policy set and a framework-based compliance checklist
+      environment: A document editor; the free CIS Controls v8 or NIST CSF reference from the web
+      tools: [Document editor, CIS Controls or NIST CSF (public downloads)]
+      steps:
+        - Download the CIS Controls v8 (or open the NIST Cybersecurity Framework) and skim its top-level controls.
+        - Choose five controls relevant to a small team (for example inventory, access control, MFA, backups, awareness training).
+        - For each, write a short policy statement, one standard, and a one-line procedure, keeping the hierarchy clear.
+        - Build a compliance checklist: control, requirement, evidence you would collect, owner, status and review frequency.
+        - Assign each control a data role (owner, custodian) responsible for it.
+        - Write a one-paragraph consequences statement for failing an external PCI DSS or GDPR audit, naming at least two concrete consequences.
+        - Plan a basic security-awareness element: one phishing-simulation idea and the metric you would track over time.
+      deliverable: A five-control policy/standard/procedure set plus a compliance checklist mapped to the framework, with owners and evidence.
+    expected_outcome: >
+      You can place any piece of security guidance in the policy hierarchy and build a
+      framework-based compliance checklist with evidence, owners and review cycles.
+    quiz:
+      - prompt: Which document gives high-level intent rather than step-by-step instructions?
+        options: [Procedure, Policy, Runbook, Checklist]
+        answer: 1
+        explanation: A policy states intent; procedures give the detailed steps.
+      - prompt: A hospital handling patient records in the US must primarily comply with
+        options: [PCI DSS, HIPAA, SOX, GDPR]
+        answer: 1
+        explanation: HIPAA governs protected health information in the United States.
+      - prompt: A penetration test where the tester is given no prior information is
+        options: [Known (white box), Partially known (grey box), Unknown (black box), Internal audit]
+        answer: 2
+        explanation: Black-box testing simulates an outside attacker with no inside knowledge.
+      - prompt: Who is accountable for a specific data set in a governance model?
+        options: [Data processor, Data owner, End user, Auditor]
+        answer: 1
+        explanation: The data owner is accountable for classification and protection of that data.
+      - prompt: A primary purpose of security awareness training is to
+        options:
+          - Replace technical controls
+          - Reduce human-driven risk such as falling for phishing
+          - Satisfy the firewall policy
+          - Eliminate the need for audits
+        answer: 1
+        explanation: People are a common attack path, and training reduces that risk.
+
+  - slug: grc-risk-thirdparty-automation
+    title: Risk Management, Third-Party Risk and Security Automation
+    order: 2
+    difficulty: intermediate
+    summary: Build a risk register, assess a vendor, and automate a repetitive security task.
+    theory_minutes: 12
+    lab_minutes: 55
+    objectives: ["secplus:5.2", "secplus:5.3", "secplus:4.7", "cysa:4.1"]
+    learning_objectives:
+      - Run the risk management process and maintain a risk register
+      - Assess and manage third-party and supply-chain risk
+      - Explain security automation and orchestration and script a simple automated check
+    theory: |
+      **Risk management** is identifying, analysing and treating uncertainty. **Risk
+      identification** finds what could go wrong; **assessment** can be **qualitative**
+      (high/medium/low from likelihood and impact) or **quantitative** using numbers:
+      **SLE** (single loss expectancy) = asset value x exposure factor, **ARO** (annual rate
+      of occurrence), and **ALE** = SLE x ARO, the expected yearly loss. Treatment options are
+      **mitigate**, **transfer**, **avoid** and **accept**, each recorded with an owner in a
+      **risk register** along with **inherent** risk (before controls), **residual** risk
+      (after) and **risk appetite/tolerance**. A **business impact analysis** identifies
+      critical processes and their RTO/RPO. Reporting risk clearly, including in **incident
+      and vulnerability reports**, so leaders can act is a core analyst skill.
+
+      **Third-party risk** matters because vendors become part of your attack surface.
+      Manage it with **vendor assessments** and questionnaires, **right-to-audit** clauses,
+      **service level agreements (SLAs)**, **memoranda of understanding (MOU)**, **master
+      service agreements (MSA)** and **business partner agreements (BPA)**, plus
+      **supply-chain** analysis of software and hardware. Ongoing **vendor monitoring**
+      catches drift after onboarding.
+
+      **Automation and orchestration** reduce toil and speed response. Good use cases:
+      enforcing baselines, user provisioning and **deprovisioning**, ticket enrichment,
+      continuous compliance checks and guard rails. Benefits are consistency, speed and
+      reaction time; considerations include complexity, single points of failure, technical
+      debt and the cost of ongoing supportability. A **SOAR** platform runs **playbooks** that
+      chain these steps; even a small script that checks a control daily is automation.
+    examples:
+      - title: Quantitative risk of laptop theft
+        body: |
+          Asset value = $2,000   Exposure factor = 50%   ->  SLE = $1,000
+          ARO = 3 laptops lost per year
+          ALE = SLE x ARO = $3,000/year
+          A $1,500/year MDM + encryption control is justified against a $3,000 ALE.
+      - title: A tiny automation check
+        body: |
+          #!/usr/bin/env bash
+          # Fails if SSH password authentication is enabled (a baseline guard rail)
+          if grep -Eq '^\s*PasswordAuthentication\s+yes' /etc/ssh/sshd_config; then
+            echo "NON-COMPLIANT: SSH password auth enabled"; exit 1
+          fi
+          echo "COMPLIANT"
+    exercise:
+      title: Risk register, vendor assessment and an automated control check
+      environment: A spreadsheet and a Linux VM or WSL for the script
+      tools: [Spreadsheet, bash or PowerShell]
+      steps:
+        - Identify five risks to your lab environment (for example weak SSH, no backups, an unpatched VM, a vendor dependency, a shared admin password).
+        - For each, record likelihood, impact, a qualitative rating, and the treatment (mitigate/transfer/avoid/accept) with an owner, in a risk register.
+        - For the laptop-theft example, compute SLE, ARO and ALE with your own numbers and state whether a given control is cost-justified.
+        - Write a short vendor assessment questionnaire (eight questions) covering security practices, breach history, data handling and right-to-audit.
+        - Pick one repetitive check and automate it: write a script that tests a control (for example SSH password auth disabled, firewall enabled, or disk encryption on) and exits non-zero when non-compliant.
+        - Run the script in both the compliant and non-compliant states and capture the output.
+        - Write two sentences on what a SOAR playbook would add if this check ran across 100 hosts.
+      deliverable: The risk register (5 rows with treatment and owner), the ALE calculation, the vendor questionnaire, and the working compliance script with its output in both states.
+    expected_outcome: >
+      You can quantify and record risk, assess a third party, and replace a manual security
+      check with an automated one, explaining the trade-offs of doing so.
+    quiz:
+      - prompt: ALE is calculated as
+        options: ["SLE x ARO", "Asset value x ARO", "SLE + ARO", "Exposure factor x ARO"]
+        answer: 0
+        explanation: Annual loss expectancy is single loss expectancy times the annual rate of occurrence.
+      - prompt: Residual risk is the risk that remains
+        options:
+          - Before any controls are applied
+          - After controls are applied
+          - Only for third parties
+          - After an incident
+        answer: 1
+        explanation: Inherent risk is before controls; residual risk is what is left after them.
+      - prompt: A right-to-audit clause in a vendor contract lets you
+        options:
+          - Terminate for any reason
+          - Inspect the vendor's security controls
+          - Avoid paying
+          - Use their software free
+        answer: 1
+        explanation: It grants the ability to verify the vendor's security rather than trust assertions.
+      - prompt: Which is the best candidate for security automation?
+        options:
+          - A one-off investigation requiring judgement
+          - A repetitive, well-defined check such as a daily baseline verification
+          - A sensitive legal decision
+          - Negotiating a vendor contract
+        answer: 1
+        explanation: Automation suits repetitive, rule-based tasks; judgement-heavy work does not.
+      - prompt: A risk the organisation decides to live with, formally and with sign-off, is
+        options: [Risk avoidance, Risk acceptance, Risk transference, Risk mitigation]
+        answer: 1
+        explanation: Acceptance means acknowledging the risk and choosing not to spend more to reduce it.

@@ -1,0 +1,272 @@
+slug: security-foundations
+title: Security Foundations
+domain: Security Foundations
+order: 2
+description: >
+  The core concepts every Security+ question builds on: security controls, the
+  CIA triad, cryptography, and who attacks organisations and why.
+lessons:
+  - slug: sec-controls-cia
+    title: Security Controls, the CIA Triad and Zero Trust
+    order: 1
+    difficulty: beginner
+    summary: Classify security controls and audit a real system against the CIA triad and AAA.
+    theory_minutes: 12
+    lab_minutes: 48
+    objectives: ["secplus:1.1", "secplus:1.2", "sc900:1"]
+    learning_objectives:
+      - Classify controls by category (technical, managerial, operational, physical) and type (preventive, detective, corrective and others)
+      - Explain confidentiality, integrity, availability, non-repudiation and AAA
+      - Describe Zero Trust, deception technologies and physical security controls
+    theory: |
+      Security+ groups controls two ways. **Category** says what the control is: **technical**
+      (firewalls, MFA, encryption), **managerial** (policies, risk assessments), **operational**
+      (security guards, awareness training, procedures run by people) and **physical** (locks,
+      fences, badges). **Type** says what it does: **preventive** stops an incident, **deterrent**
+      discourages it, **detective** finds it, **corrective** fixes it, **compensating** substitutes
+      for a control you cannot implement, and **directive** tells people what to do.
+
+      The **CIA triad** is the goal of all of them. **Confidentiality** keeps data from the wrong
+      people (encryption, access control). **Integrity** keeps it unaltered (hashing, digital
+      signatures). **Availability** keeps it usable (redundancy, backups). **Non-repudiation** means
+      someone cannot deny an action they took, which digital signatures and logs provide.
+      **AAA** is Authentication (prove who you are), Authorization (what you may do) and
+      Accounting (a record of what you did).
+
+      **Zero Trust** removes implicit trust based on network location. A **policy decision
+      point** evaluates each request using identity, device health and context, and a **policy
+      enforcement point** allows or blocks it. **Deception technology** such as honeypots,
+      honeynets, honeyfiles and honeytokens has no legitimate use, so any interaction with it is
+      a high-confidence alert. **Gap analysis** compares the controls you have with the controls
+      a framework says you need.
+    examples:
+      - title: One risk, several controls
+        body: |
+          Risk: stolen laptop exposes customer data
+          Preventive / technical:   full-disk encryption (BitLocker)
+          Deterrent / physical:     cable lock and asset tag
+          Detective / technical:    MDM alert when the device checks in from a new country
+          Corrective / operational: remote wipe procedure run by the service desk
+          Directive / managerial:   acceptable-use policy requiring encryption
+      - title: A honeytoken
+        body: |
+          A fake cloud access key placed in an internal wiki page.
+          No system uses it, so any API call made with it means someone read and
+          stole credentials from the wiki.
+    exercise:
+      title: Run a control inventory and gap analysis on your own lab
+      environment: Your Windows VM from the Windows Security course and a spreadsheet
+      tools: [PowerShell, Spreadsheet, auditpol, manage-bde]
+      steps:
+        - Create a spreadsheet with columns Control, Category, Type, CIA goal, Evidence, Status.
+        - Check disk encryption with `manage-bde -status` (or Settings > Privacy & security > Device encryption) and record it.
+        - Check Windows Defender Firewall profiles with `Get-NetFirewallProfile | Select Name, Enabled` and record them.
+        - Check audit logging with `auditpol /get /category:*` and record which categories detect logons and process creation.
+        - Check password and lockout policy with `net accounts` and record whether a lockout threshold exists.
+        - Classify each control by category and type, and map it to confidentiality, integrity or availability.
+        - Add three controls you do not have (for example backups, MFA, a honeyfile), mark them as gaps, and write one sentence on the risk each gap leaves open.
+        - Create a honeyfile named `passwords-2026.xlsx` and enable auditing on it (Properties > Security > Advanced > Auditing) so reads generate event 4663.
+      deliverable: The completed control inventory with at least eight rows, including three gaps and your honeyfile.
+    expected_outcome: >
+      You can look at any control and say which category and type it is, which CIA goal it
+      serves, and what is missing compared with a baseline.
+    quiz:
+      - prompt: A security guard checking badges at the entrance is which control category?
+        options: [Technical, Managerial, Operational, Compensating]
+        answer: 2
+        explanation: Guards are people carrying out a procedure, which Security+ calls operational.
+      - prompt: Which control type is a security camera that is reviewed after an incident?
+        options: [Preventive, Detective, Corrective, Directive]
+        answer: 1
+        explanation: Reviewing footage finds and records what happened, which is detective.
+      - prompt: Digital signatures primarily provide integrity and
+        options: [Availability, Non-repudiation, Obfuscation, Load balancing]
+        answer: 1
+        explanation: A signature proves who signed, so the signer cannot deny it.
+      - prompt: Any access to a honeyfile is treated as malicious because
+        options:
+          - Honeyfiles are encrypted
+          - The file has no legitimate business use
+          - Honeyfiles contain malware
+          - Only administrators can open it
+        answer: 1
+        explanation: Deception assets have no real purpose, so interaction signals an intruder.
+      - prompt: In Zero Trust, which component decides whether a request is allowed?
+        options: [Policy enforcement point, Policy decision point, Jump server, Screened subnet]
+        answer: 1
+        explanation: The policy decision point evaluates the request; the enforcement point applies the decision.
+
+  - slug: sec-crypto-pki
+    title: Cryptography, Hashing and PKI in Practice
+    order: 2
+    difficulty: beginner
+    summary: Hash, encrypt, sign and inspect certificates with OpenSSL.
+    theory_minutes: 12
+    lab_minutes: 50
+    objectives: ["secplus:1.4"]
+    learning_objectives:
+      - Distinguish symmetric encryption, asymmetric encryption and hashing and say when each is used
+      - Explain digital signatures, certificates and the chain of trust
+      - Use OpenSSL to hash files, encrypt data and inspect a website's certificate
+    theory: |
+      **Symmetric** encryption (AES) uses one shared key: fast, used for bulk data, but the key
+      must be shared safely. **Asymmetric** encryption (RSA, elliptic curve) uses a key pair:
+      what the public key encrypts only the private key can decrypt. It is slow, so it is used
+      to exchange symmetric keys and to sign. **Hashing** (SHA-256) is one-way: the same input
+      always gives the same fixed-length digest, and any change gives a completely different one.
+      Passwords should be stored with a **salted**, deliberately slow hash (bcrypt, PBKDF2,
+      Argon2), which makes precomputed rainbow tables useless.
+
+      A **digital signature** is a hash of the message signed with the sender's private key;
+      anyone can verify it with the public key. A **certificate** binds a public key to an
+      identity and is signed by a **Certificate Authority (CA)**. Your browser trusts a site
+      because the chain leads from the site's certificate through intermediates to a **root CA**
+      in its trust store. Certificates are revoked through **CRLs** or **OCSP**; **OCSP
+      stapling** lets the server deliver the status itself.
+
+      Other terms to know: **key escrow** (a third party holds keys for recovery), **HSM** and
+      **TPM** (hardware that protects keys), **secure enclave**, **key stretching**,
+      **obfuscation** techniques such as steganography, tokenization and data masking, and
+      **blockchain** as an append-only ledger. **Wildcard** certificates cover all subdomains,
+      and **self-signed** certificates are not trusted by default.
+    examples:
+      - title: Hashes reveal any change
+        body: |
+          $ echo "pay 100" | sha256sum
+          5c1e...  -
+          $ echo "pay 900" | sha256sum
+          a8f4...  -
+          One character changed, the digest is completely different.
+      - title: Inspecting a certificate chain
+        body: |
+          $ openssl s_client -connect example.com:443 -showcerts </dev/null
+          depth=2 ... CN = DigiCert Global Root G2
+          depth=1 ... CN = DigiCert Global G2 TLS RSA SHA256 2020 CA1
+          depth=0 ... CN = www.example.org
+    exercise:
+      title: Hash, encrypt, sign and verify
+      environment: Linux VM or WSL with OpenSSL (installed by default on Ubuntu)
+      tools: [openssl, sha256sum]
+      steps:
+        - Create a file, record its SHA-256 with `sha256sum`, change one character, hash it again and compare.
+        - Encrypt the file with `openssl enc -aes-256-cbc -pbkdf2 -salt -in notes.txt -out notes.enc`, then decrypt it and confirm the hash matches the original.
+        - Generate an RSA key pair with `openssl genpkey -algorithm RSA -out key.pem` and extract the public key with `openssl pkey -in key.pem -pubout -out pub.pem`.
+        - Sign the file with `openssl dgst -sha256 -sign key.pem -out notes.sig notes.txt` and verify it with `openssl dgst -sha256 -verify pub.pem -signature notes.sig notes.txt`.
+        - Change the file and run the verification again; record the result.
+        - Inspect a real certificate with `openssl s_client -connect example.com:443 -showcerts` and record the issuer, validity dates and chain depth.
+        - Create a self-signed certificate with `openssl req -x509 -newkey rsa:2048 -nodes -keyout lab.key -out lab.crt -days 30 -subj "/CN=lab.local"` and explain why a browser would not trust it.
+      deliverable: A short report with your hashes, the verification results before and after the change, and the certificate chain you inspected.
+    expected_outcome: >
+      You can choose the right cryptographic tool for confidentiality, integrity or
+      non-repudiation and verify certificates and signatures yourself.
+    quiz:
+      - prompt: Which provides integrity but not confidentiality?
+        options: [AES encryption, SHA-256 hashing, RSA encryption, A VPN tunnel]
+        answer: 1
+        explanation: A hash proves data has not changed but does not hide it.
+      - prompt: To create a digital signature, the sender uses
+        options: [The recipient's public key, The sender's private key, A shared symmetric key, The CA's public key]
+        answer: 1
+        explanation: Signing uses the sender's private key; anyone verifies with the sender's public key.
+      - prompt: Why is AES used for bulk data instead of RSA?
+        options:
+          - AES is asymmetric
+          - Symmetric encryption is much faster
+          - RSA cannot encrypt files
+          - AES does not need a key
+        answer: 1
+        explanation: Asymmetric algorithms are slow, so they protect a symmetric key that encrypts the data.
+      - prompt: Adding a random salt to password hashes defeats
+        options: [Brute force entirely, Precomputed rainbow tables, Phishing, Keyloggers]
+        answer: 1
+        explanation: Salts make each hash unique, so precomputed tables do not match.
+      - prompt: Which lets a web server provide certificate revocation status during the TLS handshake?
+        options: [CRL, OCSP stapling, Key escrow, Certificate pinning]
+        answer: 1
+        explanation: With OCSP stapling the server attaches a signed, recent OCSP response.
+
+  - slug: sec-threat-actors-vulns
+    title: Threat Actors and Vulnerability Research
+    order: 3
+    difficulty: beginner
+    summary: Profile threat actors and research, score and remediate real published vulnerabilities.
+    theory_minutes: 12
+    lab_minutes: 50
+    objectives: ["secplus:2.1", "secplus:2.3", "cysa:2.4"]
+    learning_objectives:
+      - Compare threat actors by sophistication, resources and motivation
+      - Name the common vulnerability classes and the control that mitigates each
+      - Research a CVE in public databases and turn it into a remediation recommendation
+    theory: |
+      **Threat actors** differ in resources, sophistication and motive. **Nation-state** groups
+      are well funded and patient, seeking espionage or disruption. **Organised crime** wants
+      money, most often through ransomware and fraud. **Hacktivists** want attention for a cause.
+      **Insider threats** already have access, whether malicious or careless. **Unskilled
+      attackers** use tools others wrote. **Shadow IT**, systems staff deploy without approval, is
+      treated as a threat source because nobody secures it. Motivations to know include data
+      exfiltration, financial gain, espionage, disruption, revenge and ideology.
+
+      **Vulnerability classes** describe *why* a system is weak. **Injection** flaws happen
+      when input is treated as code, and are prevented by parameterised queries and input
+      validation. **Cross-site scripting** lets input run in another user's browser, prevented
+      by output encoding. **Memory** flaws such as buffer overflows are mitigated by safe
+      languages, ASLR and DEP. **Race conditions** (time-of-check to time-of-use) need atomic
+      operations. **Misconfiguration**, default credentials and missing patches are the most
+      common real-world cause. **Zero-days** have no patch yet, so you rely on compensating
+      controls. **Supply chain** weaknesses come from vendors and dependencies.
+
+      Every published vulnerability gets a **CVE** identifier. **NVD** adds a **CVSS** score
+      (0-10) describing severity, and **CISA's Known Exploited Vulnerabilities (KEV)** catalog
+      lists the ones attackers actually use, which should be patched first.
+    examples:
+      - title: Matching a weakness to its fix
+        body: |
+          Finding: login form builds SQL with string concatenation
+          Class:   Injection (CWE-89)
+          Fix:     parameterised queries; least-privilege database account; WAF as compensating control
+      - title: Reading a CVSS vector
+        body: |
+          CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H  -> 9.8 Critical
+          Network reachable, low complexity, no privileges, no user interaction:
+          anyone on the internet can exploit it. Patch immediately.
+    exercise:
+      title: Profile an actor and triage three real CVEs
+      environment: A web browser and a spreadsheet; no lab VM needed
+      tools: [MITRE ATT&CK Groups, NVD, CISA KEV catalog, FIRST CVSS calculator]
+      steps:
+        - On attack.mitre.org open Groups, choose one financially motivated group and one state-sponsored group, and record each one's motive, typical targets and three techniques.
+        - Classify both groups using the Security+ actor types and write one sentence on the controls that would most disrupt each.
+        - Open CISA's KEV catalog and pick three entries for products you know (for example a VPN appliance, a browser and a mail server).
+        - Look up each CVE on nvd.nist.gov and record the CVSS score, the vector string and the CWE weakness class.
+        - Paste each vector into the FIRST CVSS calculator and explain in your own words what each metric means for that CVE.
+        - Map each weakness to its vulnerability class from the theory and to a primary fix and a compensating control.
+        - Rank the three CVEs for patching and justify the order using KEV status, CVSS and exposure.
+      deliverable: An actor profile table and a three-row vulnerability triage table with class, score, fix, compensating control and patch priority.
+    expected_outcome: >
+      You can explain who is likely to attack an organisation and why, and turn a CVE into a
+      prioritised, justified remediation recommendation.
+    quiz:
+      - prompt: Which threat actor is most associated with ransomware for profit?
+        options: [Hacktivist, Organised crime, Nation-state, Shadow IT]
+        answer: 1
+        explanation: Organised criminal groups are financially motivated, and ransomware is their main business model.
+      - prompt: Which control prevents SQL injection at its source?
+        options: [Antivirus, Parameterised queries, Full-disk encryption, Longer passwords]
+        answer: 1
+        explanation: Parameterised queries keep user input as data so it is never executed as SQL.
+      - prompt: A vulnerability with no available patch is called a
+        options: [Zero-day, Race condition, Misconfiguration, Legacy system]
+        answer: 0
+        explanation: Defenders have had zero days to fix it, so compensating controls are needed.
+      - prompt: Why patch entries in CISA's KEV catalog first?
+        options:
+          - They always have a CVSS of 10
+          - They are confirmed to be exploited in the wild
+          - They only affect government systems
+          - They cannot be detected
+        answer: 1
+        explanation: KEV lists vulnerabilities attackers are actively using, which makes them the most urgent.
+      - prompt: An employee runs an unapproved cloud file-sharing service for the team. This is
+        options: [An insider attack, Shadow IT, A zero-day, Hacktivism]
+        answer: 1
+        explanation: Systems deployed without IT approval are shadow IT and go unmanaged and unsecured.

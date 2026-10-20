@@ -22,15 +22,15 @@ Low Priority
 |---|---|---|
 | User Profiles | High | Done: single-user account, profile and password change |
 | Dashboard | High | Done: stats, next lesson, weekly goal, LiveCharts2 charts |
-| Learning Engine | High | Done: 8 courses, 12 lessons meeting the education standards |
+| Learning Engine | High | Done: 12 courses, 21 lessons; full objective coverage of all four certifications |
 | Quiz Engine | High | Done: graded quizzes with explanations, 70% pass mark |
 | Progress Tracking | High | Done: theory/lab/quiz tracking, streaks, weekly goal, per-course progress |
 | AI Mentor | Medium | Phase 3 |
 | Study Planner | Medium | Not started |
-| Certification Tracking | Medium | Partly done: readiness by objective coverage; exam dates and practice exams not started |
+| Certification Tracking | Medium | Partly done: readiness by objective coverage, now full for all 4 exams; exam dates and timed practice exams not started |
 | Cyber Range | Low | Phase 6 |
 | Advanced Analytics | Low | Not started |
-| More lessons per course (target 5-10 each) | High | Not started |
+| More lessons per course (target 5-10 each) | High | In progress: added depth for Security+ coverage; several domains still have one lesson |
 | Render lesson Markdown richly in the desktop app | Medium | Not started |
 | Invalidate existing sessions after a password change | Medium | Not started |
 | UI tests for XAML views and chart converters on Windows | Medium | Not started |
