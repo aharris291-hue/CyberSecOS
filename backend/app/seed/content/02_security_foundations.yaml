@@ -355,3 +355,86 @@ lessons:
         options: [Click it and see, Hover or inspect the href without clicking, Forward it to a colleague, Reply and ask]
         answer: 1
         explanation: Inspecting the href shows the true destination without executing anything.
+
+  - slug: sec-identity-access-management
+    title: Identity and Access Management Fundamentals
+    order: 5
+    difficulty: beginner
+    summary: Understand authentication, authorisation, MFA, SSO and the account lifecycle.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.6", "sc900:2", "secplus:1.2"]
+    learning_objectives:
+      - Distinguish authentication, authorisation and accounting
+      - Explain how MFA, SSO and least privilege strengthen access control
+      - Describe the account lifecycle and the identity attacks a SOC watches for
+    theory: |
+      Identity and access management decides who you are and what you may do, and in a modern
+      estate it is the real perimeter. Three ideas sit underneath it, together called **AAA**:
+      **authentication** proves identity, **authorisation** grants the permissions that identity
+      should have, and **accounting** records what was done. Keeping the three straight matters,
+      because most access failures are really authorisation failures, not authentication ones.
+
+      Stronger access rests on a few mechanisms. **Multi-factor authentication (MFA)** combines
+      factors from different categories, something you know, something you have and something you
+      are, so a stolen password alone is not enough. **Single sign-on (SSO)** lets one login reach
+      many applications through a trusted identity provider using protocols like SAML and OIDC,
+      which is convenient but makes that provider a high-value target. **Least privilege** and
+      **role-based access control** keep each account's permissions to the minimum its job needs.
+
+      The **account lifecycle** is where gaps appear. Accounts are provisioned on joining, changed
+      when roles change, and must be **deprovisioned promptly** when someone leaves, or you get
+      orphaned accounts and privilege creep. Privileged accounts need extra care through
+      just-in-time elevation and privileged access management. For a SOC the IAM signals are
+      specific: MFA fatigue or push-bombing, impossible-travel logins, MFA suddenly disabled, and
+      new grants of privileged access.
+    examples:
+      - title: Authentication versus authorisation
+        body: |
+          Authentication   the user proves they are jsmith with a password and MFA
+          Authorisation    jsmith is allowed to read the finance folder but not the admin console
+          A valid login still should not reach actions the role does not need.
+      - title: An IAM signal worth an alert
+        body: |
+          event   MFA method removed from an admin account, then a login from a new country
+          Disabling MFA just before an unusual login is a classic account-takeover pattern.
+    exercise:
+      title: Review an identity setup against IAM principles
+      environment: A sample directory or IAM export with users, roles and sign-in logs
+      tools: [A sample user and role list, sample sign-in logs, a notes file]
+      steps:
+        - From the sample, list the accounts and the roles or permissions each one holds.
+        - Flag any account whose permissions look broader than its job would need.
+        - Check which accounts have MFA enabled and note any privileged account without it.
+        - Look for accounts that should have been deprovisioned, such as ones with no recent activity.
+        - In the sign-in logs, search for impossible travel, repeated MFA prompts or MFA being disabled.
+        - Recommend one least-privilege change and one monitoring rule for privileged-access grants.
+      deliverable: A short IAM review noting over-privileged and stale accounts, MFA gaps and one alerting rule for privileged changes.
+    expected_outcome: >
+      You can tell authentication from authorisation, explain how MFA, SSO and least
+      privilege work, and spot the account-lifecycle gaps and identity attacks a SOC cares about.
+    quiz:
+      - prompt: Multi-factor authentication is strong because it combines
+        options:
+          - Two passwords
+          - Factors from different categories such as something you know and something you have
+          - Two usernames
+          - A password typed twice
+        answer: 1
+        explanation: MFA requires factors of different kinds, so a stolen password alone is not enough to log in.
+      - prompt: Authorisation (as opposed to authentication) decides
+        options: [Who you are, What an identity is allowed to do, The network speed, The password length]
+        answer: 1
+        explanation: Authentication proves identity; authorisation grants what that identity may do.
+      - prompt: Which account-lifecycle failure most often leaves a security gap?
+        options:
+          - Creating an account on day one
+          - Failing to deprovision an account promptly when someone leaves
+          - Enabling MFA
+          - Assigning least privilege
+        answer: 1
+        explanation: Accounts that are not removed on departure become orphaned access an attacker can use.
+      - prompt: An admin account's MFA being removed just before a login from a new country is
+        options: [Routine maintenance, A classic account-takeover signal, A password reset, A normal SSO event]
+        answer: 1
+        explanation: Disabling MFA ahead of an unusual login is a common takeover pattern worth alerting on.

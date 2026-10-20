@@ -377,3 +377,88 @@ lessons:
           - To write the code
         answer: 1
         explanation: A gateway is a single edge point for authenticating callers, limiting request rates and logging access.
+
+  - slug: arch-logging-monitoring
+    title: Designing Logging and Monitoring Architecture
+    order: 5
+    difficulty: intermediate
+    summary: Build the telemetry, integrity and coverage a SOC needs into the architecture.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.4", "secplus:3.1", "cysa:1.1"]
+    learning_objectives:
+      - Decide what to log and where to centralise it for detection and investigation
+      - Explain why log integrity, time synchronisation and coverage matter
+      - Produce a monitoring coverage map and spot its blind spots
+    theory: |
+      Detection and investigation only work if the right telemetry reaches the right place
+      reliably, and that is an architecture decision made early, not a scramble during an incident.
+      The first choice is **what to log**: authentication, process and command execution, network
+      connections, and administrative actions on every critical system. The second is **where it
+      goes**, usually a central SIEM or log lake, so one query spans the estate instead of hunting
+      box by box.
+
+      Three properties decide whether that data can be trusted. **Log integrity** means logs are
+      forwarded off the host and stored append-only, so an attacker who owns a machine cannot
+      quietly erase their tracks. **Time synchronisation** through NTP, with everything stored in
+      UTC, lets events from different systems line up on one timeline. **Coverage** means every
+      asset that matters actually ships logs and you are alerted when a source goes silent, because
+      a blind spot is where incidents hide. Retention has to meet both investigation needs and any
+      compliance minimum, balancing hot, searchable storage against cheaper cold archive.
+
+      The architecture also places the **sensors**, network taps or flow exporters, endpoint
+      agents, cloud audit logging, and keeps secrets out of the logs themselves. The point is to
+      design detective controls in from the start and to keep a living **coverage map** of what is
+      and is not monitored, so the gaps are known rather than discovered the hard way.
+    examples:
+      - title: Why logs must leave the host
+        body: |
+          On-host only   attacker with root clears /var/log and the evidence is gone
+          Forwarded      the same events already sit append-only in the central store
+          Off-host, append-only storage is what makes logs trustworthy after a compromise.
+      - title: A coverage-map blind spot
+        body: |
+          Shipping logs   domain controllers, firewalls, EDR
+          Silent          the new payroll server (no agent, not onboarded)
+          An asset that matters but ships nothing is exactly where an intrusion goes unseen.
+    exercise:
+      title: Design a monitoring coverage map for a small estate
+      environment: A diagram or notes file describing a small set of systems; no running system needed
+      tools: [A system inventory, a diagram or notes tool]
+      steps:
+        - List the critical systems in the sample estate and what each one does.
+        - For each, decide which log types it should send (authentication, process, network, admin actions).
+        - Choose where logs are centralised and how they are forwarded off the host.
+        - State how you would guarantee log integrity and consistent timestamps across the systems.
+        - Mark which systems currently ship logs and which are silent, and flag the blind spots.
+        - Set a retention split between hot searchable storage and cold archive, with a compliance minimum in mind.
+        - Add one alert that fires when an expected log source goes quiet.
+      deliverable: A coverage map listing each system, its log types, where they go, the blind spots, and a silent-source alert.
+    expected_outcome: >
+      You can design what to log, where it goes and how it stays trustworthy, and keep a
+      coverage map that makes monitoring blind spots visible before an incident finds them.
+    quiz:
+      - prompt: Why forward logs off the host to a central append-only store?
+        options:
+          - To save local disk only
+          - So an attacker who compromises the host cannot erase the evidence
+          - To slow down searches
+          - To avoid time synchronisation
+        answer: 1
+        explanation: Off-host, append-only storage preserves the evidence even when the source machine is fully compromised.
+      - prompt: Why store all log timestamps in UTC with synchronised clocks?
+        options: [To use less storage, So events from different systems line up on one timeline, To hide the logs, To disable retention]
+        answer: 1
+        explanation: Consistent, synchronised UTC timestamps let events from many sources be correlated in the right order.
+      - prompt: A critical asset that ships no logs is best described as
+        options: [Well protected, A monitoring blind spot where incidents can hide, Fully compliant, A backup source]
+        answer: 1
+        explanation: Coverage gaps are exactly where an intrusion goes unseen, which is why silent sources must be flagged.
+      - prompt: Detective controls such as logging and monitoring are best
+        options:
+          - Added after the first incident
+          - Designed into the architecture from the start
+          - Left to each user
+          - Never documented
+        answer: 1
+        explanation: Building logging and monitoring in from the start means the telemetry exists before you need it.
