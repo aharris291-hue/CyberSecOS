@@ -239,3 +239,81 @@ lessons:
         options: [A firewall vendor name, The SHA-256 of a malicious payload, The OSI model, A user's job title]
         answer: 1
         explanation: File hashes, malicious domains, IPs and URLs are classic IOCs.
+
+  - slug: net-encrypted-traffic
+    title: Reading Encrypted Traffic with TLS Metadata
+    order: 4
+    difficulty: intermediate
+    summary: Spot malicious TLS sessions from SNI, certificates and JA3 without decrypting.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.9", "cysa:1.2", "cysa:1.3"]
+    learning_objectives:
+      - Explain which parts of a TLS session stay in cleartext and why they are useful
+      - Use the Server Name Indication, certificate fields and JA3 fingerprints as indicators
+      - Triage an encrypted conversation without decrypting the payload
+    theory: |
+      Most traffic is now encrypted with **TLS**, so you rarely see payloads. The useful part is
+      that the handshake leaks a lot before encryption starts. The **Client Hello** carries the
+      **Server Name Indication (SNI)**, the hostname the client asked for, in cleartext, and the
+      **Server Hello** and certificate expose the subject, issuer and validity dates. These are
+      often enough to decide whether a session deserves a closer look.
+
+      A few patterns stand out. Connections to a bare IP with **no SNI**, or an SNI that does not
+      match the certificate subject, are worth flagging. **Self-signed certificates**, certificates
+      valid for only a few days, or subjects full of random characters often belong to malware or
+      throwaway infrastructure. A long-lived connection to one destination with steady timing still
+      looks like beaconing even when you cannot read the bytes.
+
+      **JA3** and **JA3S** hash the ordered fields of the Client and Server Hello into a short
+      fingerprint of the client and server software. The same malware family tends to produce the
+      same JA3, so a known-bad fingerprint is an indicator even against a brand-new domain. None of
+      this needs decryption; it all comes from metadata that TLS leaves in the open.
+    examples:
+      - title: SNI and certificate mismatch
+        body: |
+          Client Hello  SNI = cdn.example-good.com
+          Certificate   subject CN = a83kfj.duckdns.org   issuer = self-signed
+          The requested name and the presented certificate disagree, and the cert is self-signed.
+      - title: Pulling JA3 in Wireshark
+        body: |
+          Filter    tls.handshake.type == 1
+          The JA3 field appears under the TLS layer once JA3 is enabled in preferences.
+          Record the hash and compare it against a threat-intel JA3 blocklist.
+    exercise:
+      title: Triage encrypted sessions from metadata
+      environment: An isolated analysis VM with a sample TLS capture; only analyse traffic you are authorised to
+      tools: [Wireshark, a JA3 reference list, a text editor]
+      steps:
+        - Open a capture containing HTTPS traffic in your analysis VM.
+        - Filter `tls.handshake.type == 1` and list the SNI value for each Client Hello.
+        - Filter `tls.handshake.type == 11` and record the certificate subject, issuer and validity period for each server.
+        - Flag any session where the SNI is missing, is a bare IP, or disagrees with the certificate subject.
+        - Note any self-signed certificate or one valid for only a handful of days.
+        - Enable JA3 in Wireshark preferences and collect the JA3 hash for each suspicious client.
+        - Write up the sessions you would escalate and the single metadata field that justified each one.
+      deliverable: A short table of suspicious TLS sessions with the SNI, certificate subject, JA3 hash and the reason each was flagged.
+    expected_outcome: >
+      You can decide which encrypted sessions are worth investigating using only
+      the handshake metadata, without ever decrypting the payload.
+    quiz:
+      - prompt: Which part of a TLS session reveals the requested hostname in cleartext?
+        options: [The encrypted application data, The Server Name Indication in the Client Hello, The session ticket, The message authentication code]
+        answer: 1
+        explanation: The SNI is sent in the clear in the Client Hello so the server can present the right certificate.
+      - prompt: A JA3 fingerprint is most useful because
+        options:
+          - It decrypts the TLS session
+          - The same client software tends to produce the same hash, so a known-bad value is an indicator even for a new domain
+          - It reveals the user's password
+          - It replaces the need for certificates
+        answer: 1
+        explanation: JA3 hashes the client's handshake fields, so malware reusing a TLS stack keeps a recognisable fingerprint.
+      - prompt: Which observation most warrants a closer look?
+        options: [A certificate issued by a well-known authority, An SNI that matches the certificate subject, A self-signed certificate valid for three days on a connection to a bare IP, A long-lived session to a known update server]
+        answer: 2
+        explanation: Self-signed, short-lived certificates on connections to bare IPs are common to malware and throwaway infrastructure.
+      - prompt: Can beaconing still be spotted in encrypted traffic?
+        options: [No, encryption hides everything, Yes, the timing and size of connections are still visible, Only with the private key, Only over UDP]
+        answer: 1
+        explanation: Connection timing and sizes are metadata TLS does not hide, so regular check-ins still stand out.

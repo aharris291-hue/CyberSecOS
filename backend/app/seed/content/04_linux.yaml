@@ -263,3 +263,86 @@ lessons:
         options: [A performance tweak, A silent re-entry mechanism for an attacker, A normal backup, A kernel module]
         answer: 1
         explanation: An added public key lets someone log in without a password, a common persistence and re-entry trick.
+
+  - slug: linux-log-triage-cli
+    title: Command-Line Log Triage with grep, awk and jq
+    order: 4
+    difficulty: intermediate
+    summary: Turn raw Linux logs into answers using grep, awk, sort, uniq and jq.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.9", "cysa:1.1", "cysa:1.3"]
+    learning_objectives:
+      - Extract and count fields from text logs with grep, awk, sort and uniq
+      - Build a top-talkers and failed-login summary from a raw log file
+      - Query structured JSON logs with jq
+    theory: |
+      A SOC analyst on Linux lives at the command line, because the logs are plain text and the
+      tools are already there. The core pattern is a **pipeline**: filter with `grep`, pull out a
+      field with `awk`, then rank what is left with `sort`, `uniq -c` and `sort -nr`. That one
+      idiom answers most triage questions, such as which address failed to log in the most, which
+      URL was requested most often, or which account ran a command.
+
+      `grep` finds lines; its `-E` flag enables extended regular expressions and `-c` counts the
+      matches instead of printing them. `awk` splits each line into fields on whitespace by
+      default, so `awk '{print $1}'` prints the first column and `-F` changes the delimiter.
+      Chaining `sort` into `uniq -c` collapses duplicates into counts, and a final `sort -nr` puts
+      the biggest numbers on top. Add `head` to keep only the leaders.
+
+      Modern logs are increasingly **JSON**, one object per line. `jq` parses them safely so you do
+      not have to write fragile regexes; it selects records on a field and prints just the values
+      you want. Whether the log is text or JSON, the goal is the same, to reduce thousands of lines
+      to the handful of rows that answer the question in front of you.
+    examples:
+      - title: Top failed-login source addresses from auth.log
+        body: |
+          grep "Failed password" /var/log/auth.log \
+            | awk '{print $(NF-3)}' \
+            | sort | uniq -c | sort -nr | head
+          The count on the left ranks the noisiest source addresses.
+      - title: Counting events in a JSON log with jq
+        body: |
+          jq -r 'select(.event == "login_failed") | .src_ip' events.json \
+            | sort | uniq -c | sort -nr | head
+          jq handles the quoting and nesting that a regex would get wrong.
+    exercise:
+      title: Build a triage summary from raw logs
+      environment: Any Linux shell or VM with sample log files; work on copies, not live system logs
+      tools: [grep, awk, sort, uniq, jq]
+      steps:
+        - Copy a sample auth.log and a JSON event log into a working directory.
+        - Count the total failed logins with `grep -c "Failed password" auth.log`.
+        - Produce a ranked list of the source addresses with the most failed logins using an awk and sort-uniq pipeline.
+        - For the top source address, list the usernames it tried and decide whether it looks like spraying or brute force.
+        - Use `jq` to pull every failed-login record from the JSON log and rank its source addresses the same way.
+        - Compare the two logs and note whether the same address appears in both.
+        - Write a three-line summary naming the worst offender, the number of attempts and the accounts targeted.
+      deliverable: A short triage note with the top source addresses, their attempt counts and the exact commands you ran.
+    expected_outcome: >
+      You can turn a raw text or JSON log into a ranked summary at the command line
+      and answer who, how often and against what without a SIEM.
+    quiz:
+      - prompt: Which pipeline ranks the most frequent values in a column?
+        options:
+          - "head then tail"
+          - "sort then uniq -c then sort -nr"
+          - "grep -v then wc"
+          - "awk with no pattern"
+        answer: 1
+        explanation: Sorting then uniq -c counts duplicates, and a final numeric reverse sort puts the most frequent on top.
+      - prompt: By default, awk splits each input line on
+        options: [Commas, Whitespace, Colon characters, Tab characters only]
+        answer: 1
+        explanation: awk uses runs of whitespace as the default field separator; the -F flag changes it.
+      - prompt: Why prefer jq over a regular expression for JSON logs?
+        options:
+          - jq is faster to type
+          - jq understands JSON structure, so quoting and nesting do not break it
+          - Regular expressions cannot read files
+          - jq encrypts the output
+        answer: 1
+        explanation: jq parses the JSON properly, avoiding the brittle edge cases a regex hits on quotes and nesting.
+      - prompt: What does grep -c do?
+        options: [Colourises the output, Counts matching lines, Shows surrounding context, Searches case-insensitively]
+        answer: 1
+        explanation: The -c flag prints the number of matching lines instead of the lines themselves.

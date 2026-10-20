@@ -29,7 +29,8 @@ def test_dashboard_reflects_study(client, auth_headers, db):
     assert body["totals"]["current_streak_days"] == 1
     assert body["daily_activity"][-1]["lab_minutes"] == lesson.lab_minutes
     assert body["week"]["minutes"] > 0
-    assert body["courses"][0]["percent"] == 33
+    lessons_in_first_course = len(lesson.course.lessons)
+    assert body["courses"][0]["percent"] == round(100 / lessons_in_first_course)
     assert len(body["recent_activity"]) == 3
 
 
