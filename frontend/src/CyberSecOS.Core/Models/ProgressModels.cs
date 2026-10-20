@@ -30,7 +30,9 @@ public sealed record CertificationProgress(
     int ObjectivesTotal,
     int ObjectivesWithContent,
     int ObjectivesMastered,
-    int ReadinessPercent);
+    int ReadinessPercent,
+    DateOnly? TargetDate = null,
+    int? DaysUntilExam = null);
 
 public sealed record ActivityEntry(string Kind, int Minutes, int? LessonId, string? LessonTitle, DateTime CreatedAt);
 

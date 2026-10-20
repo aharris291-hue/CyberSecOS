@@ -36,9 +36,24 @@ public sealed partial class ExamOptionViewModel : ObservableObject
     [ObservableProperty]
     private bool _isSelected;
 
+    [ObservableProperty]
+    private ExamTarget? _target;
+
     public string BestSummary => BestAttempt is null
         ? "Not attempted yet"
         : $"Best: {BestAttempt.Score}% ({(BestAttempt.Passed ? "passed" : "not yet")})";
+
+    public string TargetSummary => Target is null
+        ? "No exam date set"
+        : Target.DaysUntilExam switch
+        {
+            > 1 => $"Exam {Target.ExamDate:yyyy-MM-dd} — {Target.DaysUntilExam} days to go",
+            1 => $"Exam {Target.ExamDate:yyyy-MM-dd} — tomorrow",
+            0 => $"Exam {Target.ExamDate:yyyy-MM-dd} — today",
+            _ => $"Exam {Target.ExamDate:yyyy-MM-dd} — {-Target.DaysUntilExam} days ago",
+        };
+
+    partial void OnTargetChanged(ExamTarget? value) => OnPropertyChanged(nameof(TargetSummary));
 }
 
 /// <summary>
@@ -88,6 +103,10 @@ public sealed partial class ExamsViewModel : PageViewModel, IPageViewModel
     [ObservableProperty]
     private ExamResult? _result;
 
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(SetTargetCommand))]
+    private string _targetDateInput = string.Empty;
+
     public ObservableCollection<ObjectiveScore> WeakAreas { get; } = [];
 
     public bool CanStart => SelectedExam is { AvailableQuestions: > 0 } && QuestionCount >= ExamLimits.Min;
@@ -121,6 +140,7 @@ public sealed partial class ExamsViewModel : PageViewModel, IPageViewModel
                 var option = new ExamOptionViewModel(info);
                 var history = await _api.GetExamHistoryAsync(cert.Id);
                 option.BestAttempt = history.OrderByDescending(a => a.Score).FirstOrDefault();
+                option.Target = await _api.GetExamTargetAsync(cert.Id);
                 Options.Add(option);
             }
             SelectedExam = Options.FirstOrDefault(o => o.AvailableQuestions > 0) ?? Options.FirstOrDefault();
@@ -134,6 +154,38 @@ public sealed partial class ExamsViewModel : PageViewModel, IPageViewModel
         {
             SelectedExam = option;
         }
+    }
+
+    private bool CanSetTarget => SelectedExam is not null && DateOnly.TryParse(TargetDateInput, out _);
+
+    [RelayCommand(CanExecute = nameof(CanSetTarget))]
+    private async Task SetTargetAsync()
+    {
+        if (SelectedExam is null || !DateOnly.TryParse(TargetDateInput, out var when))
+        {
+            return;
+        }
+        var cert = SelectedExam;
+        await RunAsync(async () =>
+        {
+            cert.Target = await _api.SetExamTargetAsync(cert.Info.CertificationId, new ExamTargetUpdate(when));
+        });
+    }
+
+    [RelayCommand]
+    private async Task ClearTargetAsync()
+    {
+        if (SelectedExam is null)
+        {
+            return;
+        }
+        var cert = SelectedExam;
+        await RunAsync(async () =>
+        {
+            await _api.ClearExamTargetAsync(cert.Info.CertificationId);
+            cert.Target = null;
+            TargetDateInput = string.Empty;
+        });
     }
 
     [RelayCommand(CanExecute = nameof(CanStart))]
@@ -222,6 +274,7 @@ public sealed partial class ExamsViewModel : PageViewModel, IPageViewModel
         {
             option.IsSelected = ReferenceEquals(option, value);
         }
+        TargetDateInput = value?.Target is { } t ? t.ExamDate.ToString("yyyy-MM-dd") : string.Empty;
     }
 
     partial void OnResultChanged(ExamResult? value) => OnPropertyChanged(nameof(ResultHeadline));

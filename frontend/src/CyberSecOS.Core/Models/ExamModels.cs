@@ -39,3 +39,7 @@ public sealed record ExamAttempt(
     bool Passed,
     int? DurationSeconds,
     DateTime CreatedAt);
+
+public sealed record ExamTargetUpdate(DateOnly ExamDate);
+
+public sealed record ExamTarget(string CertificationId, DateOnly ExamDate, int DaysUntilExam);

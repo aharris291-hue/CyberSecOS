@@ -89,6 +89,15 @@ public sealed class CyberSecApiClient : ICyberSecApi
     public async Task<IReadOnlyList<ExamAttempt>> GetExamHistoryAsync(string certId, CancellationToken ct = default) =>
         await SendAsync<List<ExamAttempt>>(HttpMethod.Get, $"api/certifications/{Uri.EscapeDataString(certId)}/exam/history", null, ct).ConfigureAwait(false);
 
+    public Task<ExamTarget?> GetExamTargetAsync(string certId, CancellationToken ct = default) =>
+        SendAsync<ExamTarget?>(HttpMethod.Get, $"api/certifications/{Uri.EscapeDataString(certId)}/exam/target?tz_offset_minutes={LocalOffsetMinutes()}", null, ct);
+
+    public Task<ExamTarget> SetExamTargetAsync(string certId, ExamTargetUpdate update, CancellationToken ct = default) =>
+        SendAsync<ExamTarget>(HttpMethod.Put, $"api/certifications/{Uri.EscapeDataString(certId)}/exam/target?tz_offset_minutes={LocalOffsetMinutes()}", update, ct);
+
+    public Task ClearExamTargetAsync(string certId, CancellationToken ct = default) =>
+        SendAsync<object?>(HttpMethod.Delete, $"api/certifications/{Uri.EscapeDataString(certId)}/exam/target", null, ct);
+
     public Task<DashboardData> GetDashboardAsync(CancellationToken ct = default) =>
         SendAsync<DashboardData>(HttpMethod.Get, $"api/dashboard?tz_offset_minutes={LocalOffsetMinutes()}", null, ct);
 

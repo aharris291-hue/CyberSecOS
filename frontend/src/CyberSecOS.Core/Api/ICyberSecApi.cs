@@ -34,4 +34,7 @@ public interface ICyberSecApi
     Task<ExamPaper> GetExamPaperAsync(string certId, int size, CancellationToken ct = default);
     Task<ExamResult> SubmitExamAsync(string certId, ExamSubmission submission, CancellationToken ct = default);
     Task<IReadOnlyList<ExamAttempt>> GetExamHistoryAsync(string certId, CancellationToken ct = default);
+    Task<ExamTarget?> GetExamTargetAsync(string certId, CancellationToken ct = default);
+    Task<ExamTarget> SetExamTargetAsync(string certId, ExamTargetUpdate update, CancellationToken ct = default);
+    Task ClearExamTargetAsync(string certId, CancellationToken ct = default);
 }

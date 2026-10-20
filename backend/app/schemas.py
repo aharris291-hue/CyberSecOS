@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date, datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -219,6 +219,8 @@ class CertificationProgress(BaseModel):
     objectives_with_content: int
     objectives_mastered: int
     readiness_percent: int
+    target_date: date | None = None
+    days_until_exam: int | None = None
 
 
 class ActivityOut(BaseModel):
@@ -336,3 +338,13 @@ class ExamAttemptOut(BaseModel):
     passed: bool
     duration_seconds: int | None
     created_at: datetime
+
+class ExamTargetUpdate(BaseModel):
+    exam_date: date
+
+
+class ExamTargetOut(BaseModel):
+    certification_id: str
+    exam_date: date
+    days_until_exam: int
+
