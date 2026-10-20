@@ -398,3 +398,86 @@ lessons:
         options: [Reading every query by hand, Metrics like query length, NXDOMAIN rate and record type, Blocking all DNS, Ignoring DNS entirely]
         answer: 1
         explanation: Abuse shows in the shape and volume of traffic, so metrics such as entropy, NXDOMAIN rate and record type surface it.
+
+  - slug: net-flow-lateral-movement
+    title: Flow Analysis and Detecting Scanning and Lateral Movement
+    order: 6
+    difficulty: intermediate
+    summary: Use connection flow records to spot scanning and east-west movement without full packet capture.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:2.4", "cysa:1.2", "cysa:1.3"]
+    learning_objectives:
+      - Explain what a flow record is and how it differs from full packet capture
+      - Recognise horizontal and vertical scanning in flow data
+      - Spot east-west lateral movement that north-south monitoring misses
+    theory: |
+      Full packet capture is rich but expensive to keep, so most networks are watched with **flow
+      records** instead. A flow is a summary of one conversation, source and destination address
+      and port, protocol, byte and packet counts, and start and end time, without the payload. You
+      lose the content but gain a cheap, long record of **who talked to whom**, which is exactly
+      what you need to see movement across a network.
+
+      Scanning has a recognisable shape in flow data. A **vertical scan** is one source hitting many
+      ports on one host; a **horizontal scan** is one source hitting the same port across many
+      hosts. Both show up as a fan of short, small, often half-open flows from a single source in a
+      brief window. A host that suddenly opens connections to dozens of peers it never spoke to
+      before is behaving like a scanner even if each flow looks ordinary on its own.
+
+      The highest-value use of flow data is **east-west** visibility. Perimeter tools watch
+      north-south traffic crossing the network edge, but an attacker who is already inside moves
+      sideways, server to server, workstation to server, on internal protocols like SMB and RDP.
+      That lateral movement never crosses the perimeter, so only internal flow records reveal it:
+      an administrative workstation reaching many servers on port 445, or a server opening RDP to
+      peers it normally only answers. Baselining each host's normal set of peers turns these into
+      alerts. This is a different altitude from reading a single packet capture; here you are
+      watching the whole network's connection graph for movement, not dissecting one session.
+    examples:
+      - title: A horizontal scan in flow records
+        body: |
+          src 10.0.0.50 -> 10.0.0.0/24 port 445  200 flows  avg 2 packets each  5 seconds
+          One source touching port 445 across a whole subnet in seconds is a scan, not normal use.
+      - title: Lateral movement east-west
+        body: |
+          workstation 10.0.5.12 -> 10.0.9.21, .22, .23 ... port 3389 (RDP)
+          A workstation opening RDP to many servers it never contacted before is lateral movement.
+    exercise:
+      title: Hunt scanning and lateral movement in sample flow data
+      environment: A sample set of network flow records (NetFlow or Zeek conn logs) in a file
+      tools: [A sample flow or conn log, command-line tools or a spreadsheet]
+      steps:
+        - Describe how a flow record differs from a full packet capture and what each is good for.
+        - Count distinct destination ports per source to find any vertical scan, and name the source.
+        - Count distinct destination hosts per source and port to find any horizontal scan.
+        - Identify an internal host whose set of peers is far larger than the others and explain why it stands out.
+        - Decide which of the findings is east-west lateral movement and which is north-south, and say why it matters.
+        - Write the one host you would isolate first and the flow evidence behind that call.
+      deliverable: A short flow-analysis note listing the scan or scans found, the lateral-movement host, and the evidence for each.
+    expected_outcome: >
+      You can read flow records, recognise horizontal and vertical scanning, and spot east-west
+      lateral movement that perimeter monitoring would miss.
+    quiz:
+      - prompt: A flow record differs from full packet capture in that it
+        options:
+          - Contains the full payload of every packet
+          - Summarises a conversation (addresses, ports, counts, time) without the payload
+          - Only works for encrypted traffic
+          - Is larger than a packet capture
+        answer: 1
+        explanation: A flow is a metadata summary of a conversation, cheap to keep, with no payload.
+      - prompt: One source connecting to the same port across many hosts in a short window is
+        options: [A vertical scan, A horizontal scan, A normal backup, A DNS lookup]
+        answer: 1
+        explanation: Same port, many hosts is a horizontal scan; many ports on one host is vertical.
+      - prompt: Why is internal (east-west) flow visibility important?
+        options:
+          - It is cheaper than any other monitoring
+          - Lateral movement between internal hosts never crosses the perimeter, so only internal flows reveal it
+          - It replaces endpoint logging
+          - It decrypts TLS
+        answer: 1
+        explanation: An attacker already inside moves server to server, traffic the perimeter never sees.
+      - prompt: Flow analysis differs from reading a single packet capture in that it
+        options: [Is the same thing, Watches the whole network's connection graph rather than dissecting one session, Only reads payloads, Needs no baseline]
+        answer: 1
+        explanation: Flow analysis is about who-talks-to-whom across the network, a different altitude from one session.

@@ -1,5 +1,12 @@
 # Changelog
 
+## Phase 2 - A sixth lesson for Networking, Windows, Linux and Vulnerability Management
+
+### A sixth lesson for the next tier of courses
+- Continued the second pass past five lessons, adding a sixth to Networking, Windows, Linux and Vulnerability Management, so eight of the twelve courses now have six (68 lessons total).
+- New lessons: flow analysis and detecting scanning and lateral movement (NetFlow vs full capture, horizontal and vertical scans, east-west movement); detecting lateral movement in Windows logs (logon types 2/3/10, the PsExec service-creation pattern, reconstructing a host-to-host path); detecting Linux privilege escalation (sudo and SUID abuse, telling abuse from legitimate administration); and validating findings and verifying remediation (false positives, safe confirmation, rescan to verify closure, risk exceptions).
+- All keep the six education-standard sections and the ~18/82 theory/lab split (catalog theory ratio 0.18); content-standard, seeding and coverage tests still pass (385 backend tests).
+
 ## Phase 2 - A sixth lesson for the SOC daily-driver courses
 
 ### A sixth lesson for SIEM, Threat Hunting, Incident Response and Detection Engineering
