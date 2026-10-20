@@ -1,5 +1,12 @@
 # Changelog
 
+## Phase 2 - Five lessons for the environment and tooling courses
+
+### A fifth lesson for Networking, Windows, Linux and Vulnerability Management
+- Added a fifth lesson to the next tier of courses (56 lessons total), so eight of the twelve courses now have five lessons.
+- New lessons: detecting DNS abuse, tunnelling and DGA (query shape, NXDOMAIN rate, record types, encrypted-DNS bypass); detecting credential theft and LSASS access (Sysmon ProcessAccess, SAM/SYSTEM hives, DCSync, Credential Guard and LSA protection); triaging a live Linux host (volatile state in order of volatility with ps/ss/lsof and /proc, preserve-don't-reboot, timeline); and configuration and compliance scanning (CIS Benchmarks, DISA STIGs, SCAP, failed controls to owned remediation and drift tracking).
+- All keep the six education-standard sections and the ~18/82 theory/lab split (catalog theory ratio 0.18); content-standard, seeding and coverage tests still pass (337 backend tests).
+
 ## Phase 2 - Five lessons for the SOC daily-driver courses
 
 ### A fifth lesson for SIEM, Threat Hunting, Incident Response and Detection Engineering

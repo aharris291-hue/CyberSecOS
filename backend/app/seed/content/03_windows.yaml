@@ -336,3 +336,85 @@ lessons:
         options: [A task signed by Microsoft running Windows Update, A task that runs encoded PowerShell from a temp folder, A daily disk-cleanup task, A task that runs at a fixed time each day]
         answer: 1
         explanation: Encoded PowerShell launched from a temp folder on a trigger is a common persistence and execution pattern.
+
+  - slug: win-credential-theft
+    title: Detecting Credential Theft and LSASS Access
+    order: 5
+    difficulty: advanced
+    summary: Detect credential dumping from LSASS, the SAM hive and Active Directory replication.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.4", "secplus:2.4", "cysa:1.2", "sc200:2"]
+    learning_objectives:
+      - Explain where Windows keeps credentials and how attackers try to steal them
+      - Recognise the telemetry that LSASS access and credential dumping leave behind
+      - Name the defences that make credential theft harder to pull off
+    theory: |
+      Once an attacker lands on a Windows host they want credentials to move further, and the
+      richest target is **LSASS**, the process that caches secrets for signed-in users. Reading its
+      memory is the classic credential-dumping step. A SOC does not need to know the offensive tool;
+      it needs the trace. **Sysmon event 10 (ProcessAccess)** to `lsass.exe` from an unexpected
+      process, especially with access masks like `0x1010` or `0x1410`, is the signal, as is a
+      process opening a handle to LSASS that is not your antivirus or EDR.
+
+      Attackers have other routes worth watching. Copying the **SAM and SYSTEM registry hives**
+      yields local password hashes offline. **DCSync** abuses Active Directory replication to ask a
+      domain controller for password data; from a machine that is not a domain controller it shows
+      as event **4662** referencing the directory-replication permission. Each of these has a small,
+      recognisable footprint once you know to look for it.
+
+      Detection rests on a **baseline**: a short list of processes that legitimately touch LSASS or
+      request replication, so everything else stands out. The defences are layered. **Credential
+      Guard** isolates secrets in virtualisation-based security, **LSA protection (RunAsPPL)** stops
+      ordinary processes reading LSASS, and least privilege limits who can run the dump at all.
+      Alerting on LSASS access turns a silent theft into an investigation.
+    examples:
+      - title: Suspicious LSASS access in Sysmon
+        body: |
+          Sysmon EID 10  SourceImage=C:\Users\sam\AppData\Local\Temp\x.exe
+                         TargetImage=C:\Windows\System32\lsass.exe  GrantedAccess=0x1410
+          A temp-folder process reading LSASS memory is a credential-dumping signal.
+      - title: DCSync from a non-DC
+        body: |
+          EID 4662  account=svc-app  properties=DS-Replication-Get-Changes-All
+          A replication request from an account that is not a domain controller is abnormal.
+    exercise:
+      title: Build credential-theft detections from sample telemetry
+      environment: A SIEM or notebook with sample Sysmon and Security-log events
+      tools: [Sample Sysmon and Windows Security logs, a SIEM or notebook, a notes file]
+      steps:
+        - List the processes in the sample data that access lsass.exe and baseline which are legitimate (AV or EDR).
+        - Write a detection idea for LSASS ProcessAccess from any process outside that baseline.
+        - Search for access to the SAM and SYSTEM registry hives and note what a copy of them would expose.
+        - Look for event 4662 referencing directory replication from an account that is not a domain controller.
+        - For each hit, decide whether it is a real credential-theft attempt or expected activity, and say why.
+        - Recommend one hardening step (Credential Guard, LSA protection or least privilege) for the environment.
+      deliverable: A set of credential-theft detection ideas with the baseline they rely on and one recommended hardening step.
+    expected_outcome: >
+      You can recognise LSASS access, hive theft and DCSync in the telemetry, tell it
+      from expected activity with a baseline, and name the defences that blunt it.
+    quiz:
+      - prompt: Which process is the classic target for credential dumping on Windows?
+        options: [explorer.exe, lsass.exe, notepad.exe, spoolsv.exe]
+        answer: 1
+        explanation: LSASS caches the secrets of signed-in users, so reading its memory is the classic credential-dumping step.
+      - prompt: A temp-folder process opening LSASS with access mask 0x1410 is best treated as
+        options:
+          - Normal system behaviour
+          - A likely credential-dumping attempt to investigate
+          - A DNS query
+          - A software update
+        answer: 1
+        explanation: Unexpected processes reading LSASS memory, especially from a temp folder, are a strong credential-theft signal.
+      - prompt: DCSync abuse shows up as
+        options:
+          - A replication request (event 4662) from an account that is not a domain controller
+          - A failed login
+          - A new scheduled task
+          - A normal DNS lookup
+        answer: 0
+        explanation: DCSync asks a domain controller for password data via replication, so a replication request from a non-DC account is abnormal.
+      - prompt: Which defence isolates secrets so ordinary processes cannot read LSASS?
+        options: [A faster CPU, Credential Guard, A larger page file, Disabling logging]
+        answer: 1
+        explanation: Credential Guard uses virtualisation-based security to keep LSASS secrets out of reach of normal processes.

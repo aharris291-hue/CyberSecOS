@@ -317,3 +317,84 @@ lessons:
         options: [No, encryption hides everything, Yes, the timing and size of connections are still visible, Only with the private key, Only over UDP]
         answer: 1
         explanation: Connection timing and sizes are metadata TLS does not hide, so regular check-ins still stand out.
+
+  - slug: net-dns-abuse
+    title: Detecting DNS Abuse, Tunnelling and DGA
+    order: 5
+    difficulty: intermediate
+    summary: Spot command-and-control, tunnelling and domain-generation activity hiding in DNS.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:2.4", "cysa:1.2", "cysa:1.3"]
+    learning_objectives:
+      - Explain why attackers abuse DNS and which DNS behaviours are suspicious
+      - Recognise tunnelling, domain-generation algorithms and fast flux in query logs
+      - Hunt DNS logs for the metrics that expose abuse
+    theory: |
+      DNS is needed everywhere and is usually allowed outbound, so attackers lean on it heavily.
+      **DNS tunnelling** hides data or command-and-control inside queries and responses; in the
+      logs it shows as long, high-entropy subdomains, a burst of TXT or NULL record queries, and
+      heavy query volume to a single domain. The payload rides in the part of the name the client
+      controls, so the giveaway is the shape of the traffic, not its content.
+
+      Two more patterns are worth knowing. A **domain generation algorithm (DGA)** has malware try
+      many random-looking domains until one resolves, so you see a spike of **NXDOMAIN** (does not
+      exist) responses from one host as it works through dead names. **Fast flux** rotates many IP
+      addresses behind one name with very low TTLs to resist takedown. And **encrypted DNS** (DoH
+      or DoT) can bypass your monitoring entirely, so a client quietly bypassing the internal
+      resolver is itself a flag.
+
+      None of this needs the query contents. You hunt it with a handful of metrics: query length
+      and entropy, the NXDOMAIN rate per host, query volume per domain, unusual record types, and
+      abnormally low TTLs. A host that scores high on several at once is the one to investigate,
+      and the output is a list of suspect domains and the internal host behind them.
+    examples:
+      - title: A tunnelling query by its shape
+        body: |
+          Query   a8f3k2j9x1q7.d4t4.exfil-example.net  type=TXT
+          A long, high-entropy label and a TXT lookup to one domain is a tunnelling signature.
+      - title: A DGA host by its NXDOMAIN rate
+        body: |
+          host=10.1.1.23  NXDOMAIN responses in 2 min = 180
+          A single host generating a flood of failed lookups is working through generated domains.
+    exercise:
+      title: Hunt DNS abuse in query logs
+      environment: A SIEM or notebook with a sample DNS query log
+      tools: [A sample DNS log, a SIEM or notebook, a notes file]
+      steps:
+        - Load a sample DNS query log and list the top domains by query volume.
+        - Flag domains whose subdomains are long or look high-entropy rather than human-readable.
+        - Count NXDOMAIN responses per host and pick out any host with an unusually high rate.
+        - List the record types in use and flag a spike in TXT or NULL queries to one domain.
+        - Check for a client resolving names without going through the internal resolver.
+        - Combine the signals and name the hosts and domains you would escalate.
+        - Write an indicator list of the suspect domains and the internal hosts behind them.
+      deliverable: A short hunt note listing suspect domains, the internal hosts involved and the DNS metric that flagged each.
+    expected_outcome: >
+      You can tell abusive DNS from normal lookups using query shape, NXDOMAIN rate,
+      record type and TTL, and hand off the suspect domains and hosts.
+    quiz:
+      - prompt: A host suddenly producing a flood of NXDOMAIN responses most likely indicates
+        options: [A faster connection, Malware working through algorithm-generated domains, A DNS cache hit, A normal software update]
+        answer: 1
+        explanation: A DGA tries many generated domains until one resolves, so failed lookups spike from the infected host.
+      - prompt: Long, high-entropy subdomains with heavy TXT queries to one domain suggest
+        options:
+          - A content delivery network
+          - DNS tunnelling of data or command-and-control
+          - A healthy resolver
+          - A time-synchronisation service
+        answer: 1
+        explanation: Tunnelling encodes data in the query name and often uses TXT records, giving long high-entropy labels to one domain.
+      - prompt: Why can encrypted DNS (DoH or DoT) be a monitoring problem?
+        options:
+          - It speeds up name resolution
+          - A client can bypass the internal resolver and hide its lookups from you
+          - It deletes DNS logs
+          - It blocks all DNS
+        answer: 1
+        explanation: Encrypted DNS to an external resolver takes the queries out of your visibility, so bypassing the internal resolver is itself suspicious.
+      - prompt: DNS abuse is best hunted by
+        options: [Reading every query by hand, Metrics like query length, NXDOMAIN rate and record type, Blocking all DNS, Ignoring DNS entirely]
+        answer: 1
+        explanation: Abuse shows in the shape and volume of traffic, so metrics such as entropy, NXDOMAIN rate and record type surface it.
