@@ -35,6 +35,8 @@ public sealed class FakeApi : ICyberSecApi
 
     public Func<DashboardData> Dashboard { get; set; } = Samples.Dashboard;
 
+    public Func<StudyPlan> StudyPlan { get; set; } = Samples.StudyPlan;
+
     public Func<string, ExamInfo> ExamInfo { get; set; } = Samples.ExamInfo;
     public Func<string, int, ExamPaper> ExamPaper { get; set; } = Samples.ExamPaper;
     public Func<string, ExamSubmission, ExamResult> ExamSubmit { get; set; } = (cert, s) => Samples.ExamResult(cert, s);
@@ -66,6 +68,8 @@ public sealed class FakeApi : ICyberSecApi
     public Task<IReadOnlyList<DailyMinutes>> GetDailyActivityAsync(int days, CancellationToken ct = default) => Run(() => Daily(days));
 
     public Task<DashboardData> GetDashboardAsync(CancellationToken ct = default) => Run(Dashboard);
+
+    public Task<StudyPlan> GetStudyPlanAsync(CancellationToken ct = default) => Run(StudyPlan);
 
     public Task<ExamInfo> GetExamInfoAsync(string certId, CancellationToken ct = default) => Run(() => ExamInfo(certId), $"exam-info:{certId}");
     public Task<ExamPaper> GetExamPaperAsync(string certId, int size, CancellationToken ct = default) => Run(() => ExamPaper(certId, size), $"exam-paper:{certId}:{size}");

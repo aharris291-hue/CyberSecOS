@@ -37,4 +37,6 @@ public interface ICyberSecApi
     Task<ExamTarget?> GetExamTargetAsync(string certId, CancellationToken ct = default);
     Task<ExamTarget> SetExamTargetAsync(string certId, ExamTargetUpdate update, CancellationToken ct = default);
     Task ClearExamTargetAsync(string certId, CancellationToken ct = default);
+
+    Task<StudyPlan> GetStudyPlanAsync(CancellationToken ct = default);
 }

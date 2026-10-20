@@ -97,3 +97,25 @@ can see weak areas. All paths are under `/api/certifications/{cert_id}/exam`.
 - **Objective breakdown:** for each objective the exam touched, correct / total and a percentage, so a result points at the objectives to revise.
 - A 404 is returned for an unknown `cert_id`; a 422 if the certification has no questions to build an exam from.
 - Certification readiness in `/api/progress` and `/api/dashboard` now includes `target_date` and `days_until_exam` (null when no target is set).
+
+## Study planner
+
+Turns the weekly goal, the target exam dates and the remaining lessons into a
+pace check and a schedule. Read-only; derived live, so nothing new is stored.
+
+| Method | Path | Description |
+|---|---|---|
+| GET | `/api/plan` | The study plan: summary, per-certification pace and a week-by-week schedule. Accepts `tz_offset_minutes` |
+
+- **Summary:** weekly goal (hours and minutes), total remaining lessons and
+  minutes, estimated weeks to finish at the current pace and the projected
+  finish date, an overall `on_track` flag (null when no exam date is set), and
+  the `focus_certification_id` — the soonest exam that still has lessons left.
+- **Per-certification pace:** remaining lessons and minutes toward the
+  certification's uncovered objectives, days until its exam, the
+  `required_minutes_per_week` to finish in time, and a `status` of `ready`
+  (all objectives covered), `no_date` (no target set), `on_track`, `behind`,
+  or `overdue` (exam date passed with work left).
+- **Schedule:** remaining lessons packed into weeks at the weekly goal, with
+  soonest-exam work first; each week lists its lessons with their theory and
+  lab minutes. A lesson longer than the whole weekly budget takes its own week.

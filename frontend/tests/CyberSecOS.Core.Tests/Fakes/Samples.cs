@@ -106,4 +106,32 @@ public static class Samples
         return new DashboardData("Adam", "SOC Analyst", summary.Totals, summary.Week, summary.NextLesson,
             Daily(14), summary.Courses, summary.Certifications, summary.RecentActivity);
     }
+
+    public static StudyPlan StudyPlan() => new(
+        WeeklyGoalHours: 10,
+        WeeklyTargetMinutes: 600,
+        TotalRemainingLessons: 3,
+        TotalRemainingMinutes: 195,
+        EstimatedWeeksToFinish: 1,
+        EstimatedFinishDate: new DateOnly(2026, 10, 27),
+        OnTrack: true,
+        FocusCertificationId: "secplus",
+        Certifications:
+        [
+            new CertificationPace("secplus", "CompTIA Security+", "SY0-701",
+                new DateOnly(2026, 12, 1), 42, 2, 130, 65, "on_track"),
+            new CertificationPace("sc900", "Microsoft SC-900", "SC-900",
+                null, null, 1, 65, null, "no_date"),
+        ],
+        Schedule:
+        [
+            new PlanWeek(1, "2026-10-20", 195,
+            [
+                new PlannedLesson(1, "Active Directory and Authentication Monitoring", "Windows Security",
+                    12, 54, new DateOnly(2026, 12, 1)),
+                new PlannedLesson(2, "Investigating an Alert in the SIEM", "SIEM Operations",
+                    12, 52, new DateOnly(2026, 12, 1)),
+                new PlannedLesson(3, "Identity Fundamentals", "Cloud Security", 10, 55, null),
+            ]),
+        ]);
 }

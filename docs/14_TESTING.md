@@ -20,6 +20,7 @@ every pull request and on pushes to `main`.
 | `test_dashboard.py` | Dashboard payload for new and active learners |
 | `test_exams.py` | Exam sampling across objectives, 80% grading, per-objective breakdown, submission validation and attempt history |
 | `test_exam_targets.py` | Set/get/clear a per-certification target date, countdown maths, and its surfacing in dashboard readiness |
+| `test_planner.py` | Study plan: remaining-work schedule packing, weekly-target limits, pace verdicts (on track / behind / overdue / no date), soonest-exam ordering, and the low-goal bound |
 | `test_learner_journey.py` | End-to-end: sign up, study a lesson, see it on the dashboard |
 
 Each test gets a fresh SQLite database in a temp directory. bcrypt uses a low
@@ -35,6 +36,7 @@ View models and the API client are tested without WPF:
 - `ProgressTrackingTests`: theory/lab commands, checklist, Progress page.
 - `DashboardViewModelTests`: tiles, chart data, next lesson, empty state.
 - `ExamsViewModelTests`: certification selection, length capping, timer, answering, grading, focus areas, the setup/taking/results flow, and target-date set/clear with countdown.
+- `PlannerViewModelTests`: plan load, on-track / behind / complete headlines, per-certification pace phrasing, week summaries, and navigation to a lesson or the exam dates.
 - `MarkdownTextTests`: lesson-theory parsing into paragraphs with bold and inline-code runs, including unmatched markers and wrapped lines.
 
 `Fakes/FakeApi` is an in-memory `ICyberSecApi`; `Fakes/StubHttpHandler` fakes HTTP.
