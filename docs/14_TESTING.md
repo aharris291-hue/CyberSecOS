@@ -18,6 +18,7 @@ every pull request and on pushes to `main`.
 | `test_courses_api.py` | Catalog, lesson detail without answers, quiz submission |
 | `test_progress.py` | Theory/lab/quiz state machine, summary, streaks, week, time zones, readiness |
 | `test_dashboard.py` | Dashboard payload for new and active learners |
+| `test_exams.py` | Exam sampling across objectives, 80% grading, per-objective breakdown, submission validation and attempt history |
 | `test_learner_journey.py` | End-to-end: sign up, study a lesson, see it on the dashboard |
 
 Each test gets a fresh SQLite database in a temp directory. bcrypt uses a low
@@ -32,6 +33,7 @@ View models and the API client are tested without WPF:
 - `CoursesViewModelTests`, `LessonViewModelTests`: catalog, lesson sections, quiz selection, grading and retry.
 - `ProgressTrackingTests`: theory/lab commands, checklist, Progress page.
 - `DashboardViewModelTests`: tiles, chart data, next lesson, empty state.
+- `ExamsViewModelTests`: certification selection, length capping, timer, answering, grading, focus areas and the setup/taking/results flow.
 
 `Fakes/FakeApi` is an in-memory `ICyberSecApi`; `Fakes/StubHttpHandler` fakes HTTP.
 

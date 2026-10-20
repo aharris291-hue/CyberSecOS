@@ -275,3 +275,64 @@ class Dashboard(BaseModel):
     courses: list[CourseProgress]
     certifications: list[CertificationProgress]
     recent_activity: list[ActivityOut]
+
+
+# --- Practice exams --------------------------------------------------------
+
+
+class ExamInfo(BaseModel):
+    """What the client needs to offer an exam for a certification."""
+
+    certification_id: str
+    name: str
+    exam_code: str
+    available_questions: int
+    default_size: int
+    pass_mark: int
+
+
+class ExamPaper(BaseModel):
+    certification_id: str
+    name: str
+    exam_code: str
+    pass_mark: int
+    questions: list[QuestionOut]
+
+
+class ExamAnswer(BaseModel):
+    question_id: int
+    selected_index: int | None = None
+
+
+class ExamSubmission(BaseModel):
+    answers: list[ExamAnswer] = Field(min_length=1, max_length=200)
+    duration_seconds: int | None = Field(default=None, ge=0, le=86400)
+
+
+class ObjectiveScore(BaseModel):
+    code: str
+    title: str
+    correct: int
+    total: int
+    percent: int
+
+
+class ExamResultOut(BaseModel):
+    certification_id: str
+    score: int
+    correct: int
+    total: int
+    passed: bool
+    pass_mark: int
+    breakdown: list[ObjectiveScore]
+
+
+class ExamAttemptOut(BaseModel):
+    id: int
+    certification_id: str
+    score: int
+    correct: int
+    total: int
+    passed: bool
+    duration_seconds: int | None
+    created_at: datetime

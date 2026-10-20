@@ -29,4 +29,9 @@ public interface ICyberSecApi
     Task<IReadOnlyList<DailyMinutes>> GetDailyActivityAsync(int days, CancellationToken ct = default);
 
     Task<DashboardData> GetDashboardAsync(CancellationToken ct = default);
+
+    Task<ExamInfo> GetExamInfoAsync(string certId, CancellationToken ct = default);
+    Task<ExamPaper> GetExamPaperAsync(string certId, int size, CancellationToken ct = default);
+    Task<ExamResult> SubmitExamAsync(string certId, ExamSubmission submission, CancellationToken ct = default);
+    Task<IReadOnlyList<ExamAttempt>> GetExamHistoryAsync(string certId, CancellationToken ct = default);
 }

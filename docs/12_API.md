@@ -75,3 +75,21 @@ Definitions:
 | Method | Path | Description |
 |---|---|---|
 | GET | `/api/dashboard?days=14` | One call for the home screen: name and target role, totals, week vs goal, next lesson, daily study minutes for the last `days` (7-90), per-course progress, certification readiness, and the 5 latest activities. Accepts `tz_offset_minutes` |
+
+## Practice exams
+
+Timed, scored mock exams for a certification. Questions are sampled across the
+lessons mapped to that certification's objectives, spread round-robin so no one
+objective dominates a short exam. Exams are graded at an 80% pass mark (harder
+than the 70% lesson quizzes) and return a per-objective breakdown so the learner
+can see weak areas. All paths are under `/api/certifications/{cert_id}/exam`.
+
+| Method | Path | Description |
+|---|---|---|
+| GET | `` | Exam info: certification name and exam code, questions available, default length and the 80% pass mark |
+| GET | `/paper?size=20` | A fresh exam paper: `size` questions (5-100, capped at those available) without answers. Each call reshuffles |
+| POST | `` | Submit `{answers: [{question_id, selected_index}], duration_seconds}`; grades, records an attempt, and returns score, pass/fail and the per-objective breakdown |
+| GET | `/history` | Past attempts for this certification, newest first |
+
+- **Objective breakdown:** for each objective the exam touched, correct / total and a percentage, so a result points at the objectives to revise.
+- A 404 is returned for an unknown `cert_id`; a 422 if the certification has no questions to build an exam from.
