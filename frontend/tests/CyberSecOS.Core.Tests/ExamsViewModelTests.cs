@@ -226,4 +226,84 @@ public class ExamsViewModelTests
         Assert.False(vm.CanStart);
         Assert.False(vm.StartExamCommand.CanExecute(null));
     }
+
+    [Fact]
+    public async Task LoadsExistingTargetAndSummary()
+    {
+        var when = DateOnly.FromDateTime(DateTime.Today).AddDays(30);
+        _api.ExamTargets["secplus"] = new ExamTarget("secplus", when, 30);
+        var vm = Create();
+
+        await vm.OnNavigatedToAsync();
+
+        var secplus = vm.Options.First(o => o.Info.CertificationId == "secplus");
+        Assert.Equal(when, secplus.Target?.ExamDate);
+        Assert.Contains("30 days to go", secplus.TargetSummary);
+        Assert.Equal(when.ToString("yyyy-MM-dd"), vm.TargetDateInput);
+    }
+
+    [Fact]
+    public async Task NoTargetShowsNoDateSet()
+    {
+        var vm = Create();
+        await vm.OnNavigatedToAsync();
+
+        var secplus = vm.Options.First(o => o.Info.CertificationId == "secplus");
+        Assert.Null(secplus.Target);
+        Assert.Equal("No exam date set", secplus.TargetSummary);
+    }
+
+    [Fact]
+    public async Task SetTargetStoresDateAndCountdown()
+    {
+        var vm = Create();
+        await vm.OnNavigatedToAsync();
+        var when = DateOnly.FromDateTime(DateTime.Today).AddDays(14);
+        vm.TargetDateInput = when.ToString("yyyy-MM-dd");
+
+        Assert.True(vm.SetTargetCommand.CanExecute(null));
+        await vm.SetTargetCommand.ExecuteAsync(null);
+
+        Assert.Equal(when, vm.SelectedExam?.Target?.ExamDate);
+        Assert.Contains("14 days to go", vm.SelectedExam!.TargetSummary);
+    }
+
+    [Fact]
+    public async Task SetTargetRejectsUnparseableDate()
+    {
+        var vm = Create();
+        await vm.OnNavigatedToAsync();
+        vm.TargetDateInput = "not a date";
+
+        Assert.False(vm.SetTargetCommand.CanExecute(null));
+    }
+
+    [Fact]
+    public async Task ClearTargetRemovesIt()
+    {
+        var when = DateOnly.FromDateTime(DateTime.Today).AddDays(10);
+        _api.ExamTargets["secplus"] = new ExamTarget("secplus", when, 10);
+        var vm = Create();
+        await vm.OnNavigatedToAsync();
+
+        await vm.ClearTargetCommand.ExecuteAsync(null);
+
+        Assert.Null(vm.SelectedExam?.Target);
+        Assert.Equal(string.Empty, vm.TargetDateInput);
+        Assert.False(_api.ExamTargets.ContainsKey("secplus"));
+    }
+
+    [Fact]
+    public async Task SelectingCertPrefillsItsTargetDate()
+    {
+        var when = DateOnly.FromDateTime(DateTime.Today).AddDays(7);
+        _api.ExamTargets["sc200"] = new ExamTarget("sc200", when, 7);
+        var vm = Create();
+        await vm.OnNavigatedToAsync();
+
+        vm.SelectCommand.Execute(vm.Options.First(o => o.Info.CertificationId == "sc200"));
+
+        Assert.Equal(when.ToString("yyyy-MM-dd"), vm.TargetDateInput);
+    }
+
 }

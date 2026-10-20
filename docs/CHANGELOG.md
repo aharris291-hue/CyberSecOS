@@ -1,5 +1,12 @@
 # Changelog
 
+## Phase 2 - Exam-date tracking
+
+### Target exam dates with a countdown
+- A learner can set a target sitting date for each certification and see a live countdown, both on the Practice Exams page and next to certification readiness on the Progress page.
+- New `exam_targets` table and endpoints (`GET`/`PUT`/`DELETE` `/api/certifications/{cert_id}/exam/target`); certification readiness in `/api/progress` and `/api/dashboard` now carries `target_date` and `days_until_exam`.
+- 8 new backend tests and 6 new desktop view-model tests (205 backend, 100 desktop tests total).
+
 ## Phase 2 - Readable lessons
 
 ### Rich Markdown rendering of lesson theory

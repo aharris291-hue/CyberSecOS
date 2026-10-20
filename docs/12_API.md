@@ -90,6 +90,10 @@ can see weak areas. All paths are under `/api/certifications/{cert_id}/exam`.
 | GET | `/paper?size=20` | A fresh exam paper: `size` questions (5-100, capped at those available) without answers. Each call reshuffles |
 | POST | `` | Submit `{answers: [{question_id, selected_index}], duration_seconds}`; grades, records an attempt, and returns score, pass/fail and the per-objective breakdown |
 | GET | `/history` | Past attempts for this certification, newest first |
+| GET | `/target` | The learner's target exam date for this certification, with days remaining, or `null` if none set. Accepts `tz_offset_minutes` |
+| PUT | `/target` | Set or update the target date (`{exam_date}`); returns the date and days remaining. Accepts `tz_offset_minutes` |
+| DELETE | `/target` | Clear the target date |
 
 - **Objective breakdown:** for each objective the exam touched, correct / total and a percentage, so a result points at the objectives to revise.
 - A 404 is returned for an unknown `cert_id`; a 422 if the certification has no questions to build an exam from.
+- Certification readiness in `/api/progress` and `/api/dashboard` now includes `target_date` and `days_until_exam` (null when no target is set).

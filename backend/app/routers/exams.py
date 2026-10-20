@@ -6,14 +6,18 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from ..database import get_db
-from ..models import Certification, ExamAttempt, User
+from datetime import timedelta
+
+from ..database import get_db, utcnow
+from ..models import Certification, ExamAttempt, ExamTarget, User
 from ..schemas import (
     ExamAttemptOut,
     ExamInfo,
     ExamPaper,
     ExamResultOut,
     ExamSubmission,
+    ExamTargetOut,
+    ExamTargetUpdate,
     QuestionOut,
 )
 from ..security import UNPROCESSABLE, get_current_user
@@ -118,3 +122,67 @@ def exam_history(
             .limit(limit)
         )
     )
+
+def _local_today(tz_offset_minutes: int):
+    return (utcnow() + timedelta(minutes=tz_offset_minutes)).date()
+
+
+@router.get("/target", response_model=ExamTargetOut | None)
+def get_exam_target(
+    cert_id: str,
+    tz_offset_minutes: int = 0,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> ExamTargetOut | None:
+    _get_cert_or_404(db, cert_id)
+    target = db.scalar(
+        select(ExamTarget).where(ExamTarget.user_id == user.id, ExamTarget.certification_id == cert_id)
+    )
+    if target is None:
+        return None
+    return ExamTargetOut(
+        certification_id=cert_id,
+        exam_date=target.exam_date,
+        days_until_exam=(target.exam_date - _local_today(tz_offset_minutes)).days,
+    )
+
+
+@router.put("/target", response_model=ExamTargetOut)
+def set_exam_target(
+    cert_id: str,
+    body: ExamTargetUpdate,
+    tz_offset_minutes: int = 0,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> ExamTargetOut:
+    _get_cert_or_404(db, cert_id)
+    target = db.scalar(
+        select(ExamTarget).where(ExamTarget.user_id == user.id, ExamTarget.certification_id == cert_id)
+    )
+    if target is None:
+        target = ExamTarget(user_id=user.id, certification_id=cert_id, exam_date=body.exam_date)
+        db.add(target)
+    else:
+        target.exam_date = body.exam_date
+    db.commit()
+    return ExamTargetOut(
+        certification_id=cert_id,
+        exam_date=body.exam_date,
+        days_until_exam=(body.exam_date - _local_today(tz_offset_minutes)).days,
+    )
+
+
+@router.delete("/target", status_code=status.HTTP_204_NO_CONTENT)
+def clear_exam_target(
+    cert_id: str,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> None:
+    _get_cert_or_404(db, cert_id)
+    target = db.scalar(
+        select(ExamTarget).where(ExamTarget.user_id == user.id, ExamTarget.certification_id == cert_id)
+    )
+    if target is not None:
+        db.delete(target)
+        db.commit()
+

@@ -85,3 +85,29 @@ public sealed class EnumEqualsVisibilityConverter : IValueConverter
     public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) =>
         throw new NotSupportedException();
 }
+
+/// <summary>Turns a days-until-exam count into a short human countdown label.</summary>
+public sealed class ExamCountdownConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture) => value switch
+    {
+        int d and > 1 => $"Exam in {d} days",
+        1 => "Exam tomorrow",
+        0 => "Exam today",
+        int d => $"Exam was {-d} days ago",
+        _ => string.Empty,
+    };
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) =>
+        throw new NotSupportedException();
+}
+
+/// <summary>Visible when the bound value is not null.</summary>
+public sealed class NotNullToVisibilityConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture) =>
+        value is null ? Visibility.Collapsed : Visibility.Visible;
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) =>
+        throw new NotSupportedException();
+}

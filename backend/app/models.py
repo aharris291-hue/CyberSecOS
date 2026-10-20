@@ -7,10 +7,10 @@ written by the API.
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date, datetime
 from enum import StrEnum
 
-from sqlalchemy import JSON, Column, DateTime, ForeignKey, Integer, String, Table, Text, UniqueConstraint
+from sqlalchemy import JSON, Column, Date, DateTime, ForeignKey, Integer, String, Table, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .database import Base, utcnow
@@ -195,3 +195,17 @@ class ExamAttempt(Base):
     duration_seconds: Mapped[int | None] = mapped_column(Integer, nullable=True)
     breakdown: Mapped[list[dict]] = mapped_column(JSON)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, index=True)
+
+
+class ExamTarget(Base):
+    """A learner's target sitting date for one certification exam."""
+
+    __tablename__ = "exam_targets"
+    __table_args__ = (UniqueConstraint("user_id", "certification_id", name="uq_exam_target"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    certification_id: Mapped[str] = mapped_column(ForeignKey("certifications.id", ondelete="CASCADE"))
+    exam_date: Mapped[date] = mapped_column(Date)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, onupdate=utcnow)

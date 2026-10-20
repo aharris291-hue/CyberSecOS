@@ -23,6 +23,7 @@ created at API startup; all timestamps are stored as naive UTC.
 | `quiz_attempts` | Every quiz submission with score and chosen answers |
 | `activity_log` | Study minutes by kind (`theory`, `lab`, `quiz`) for streaks and weekly hours |
 | `exam_attempts` | Each practice-exam sitting: certification, score, pass/fail, duration and per-objective breakdown (JSON) |
+| `exam_targets` | A learner's target sitting date per certification (one row per user and certification) |
 
 ## Lesson completion rule
 

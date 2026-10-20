@@ -43,6 +43,7 @@
                                             <TextBlock Style="{StaticResource MutedText}">
                                                 <Run Text="{Binding AvailableQuestions, Mode=OneWay}" /><Run Text=" questions available  ·  " /><Run Text="{Binding BestSummary, Mode=OneWay}" />
                                             </TextBlock>
+                                            <TextBlock Text="{Binding TargetSummary}" Style="{StaticResource MutedText}" Foreground="{StaticResource AccentBrush}" />
                                         </StackPanel>
                                     </RadioButton>
                                 </DataTemplate>
@@ -57,6 +58,20 @@
                         <Slider Minimum="5" Maximum="100" TickFrequency="5" IsSnapToTickEnabled="True"
                                 Value="{Binding QuestionCount}" Width="400" HorizontalAlignment="Left" />
                         <TextBlock Text="{Binding LengthCaption}" Style="{StaticResource MutedText}" Margin="0,6,0,0" />
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource Card}" Margin="0,0,0,16">
+                    <StackPanel>
+                        <TextBlock Text="Target exam date" Style="{StaticResource SubheadingText}" Margin="0,0,0,4" />
+                        <TextBlock Text="Set the date you plan to sit this exam to see a countdown here and on your progress." Style="{StaticResource MutedText}" Margin="0,0,0,8" />
+                        <StackPanel Orientation="Horizontal">
+                            <TextBox Text="{Binding TargetDateInput, UpdateSourceTrigger=PropertyChanged}" Width="160" VerticalContentAlignment="Center"
+                                     ToolTip="YYYY-MM-DD" />
+                            <Button Content="Set date" Command="{Binding SetTargetCommand}" Style="{StaticResource PrimaryButton}" Margin="8,0,0,0" />
+                            <Button Content="Clear" Command="{Binding ClearTargetCommand}" Style="{StaticResource SecondaryButton}" Margin="8,0,0,0" />
+                        </StackPanel>
+                        <TextBlock Text="{Binding SelectedExam.TargetSummary}" Style="{StaticResource MutedText}" Foreground="{StaticResource AccentBrush}" Margin="0,8,0,0" />
                     </StackPanel>
                 </Border>
 

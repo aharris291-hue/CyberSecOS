@@ -9,7 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
 from ..database import utcnow
-from ..models import ActivityLog, Certification, Course, Lesson, LessonProgress, LessonStatus, QuizAttempt, User
+from ..models import ActivityLog, Certification, Course, ExamTarget, Lesson, LessonProgress, LessonStatus, QuizAttempt, User
 
 
 def local_date(timestamp: datetime, tz_offset_minutes: int) -> date:
@@ -61,6 +61,10 @@ class ProgressStats:
         self.activity = list(
             db.scalars(select(ActivityLog).where(ActivityLog.user_id == user.id).order_by(ActivityLog.created_at))
         )
+        self.exam_targets = {
+            t.certification_id: t.exam_date
+            for t in db.scalars(select(ExamTarget).where(ExamTarget.user_id == user.id))
+        }
 
     def status(self, lesson: Lesson) -> str:
         row = self.progress.get(lesson.id)
@@ -171,6 +175,7 @@ class ProgressStats:
             ids = {o.id for o in cert.objectives}
             total = len(ids)
             done = len(ids & mastered)
+            target_date = self.exam_targets.get(cert.id)
             result.append(
                 {
                     "id": cert.id,
@@ -180,6 +185,8 @@ class ProgressStats:
                     "objectives_with_content": len(ids & with_content),
                     "objectives_mastered": done,
                     "readiness_percent": round(100 * done / total) if total else 0,
+                    "target_date": target_date.isoformat() if target_date else None,
+                    "days_until_exam": (target_date - self.today).days if target_date else None,
                 }
             )
         return result

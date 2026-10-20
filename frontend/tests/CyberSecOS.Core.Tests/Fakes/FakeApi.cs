@@ -39,6 +39,7 @@ public sealed class FakeApi : ICyberSecApi
     public Func<string, int, ExamPaper> ExamPaper { get; set; } = Samples.ExamPaper;
     public Func<string, ExamSubmission, ExamResult> ExamSubmit { get; set; } = (cert, s) => Samples.ExamResult(cert, s);
     public Func<string, IReadOnlyList<ExamAttempt>> ExamHistory { get; set; } = _ => [];
+    public Dictionary<string, ExamTarget> ExamTargets { get; } = [];
 
     public static TokenResponse Token(UserProfile user) => new("token-123", "bearer", 3600, user);
 
@@ -70,6 +71,20 @@ public sealed class FakeApi : ICyberSecApi
     public Task<ExamPaper> GetExamPaperAsync(string certId, int size, CancellationToken ct = default) => Run(() => ExamPaper(certId, size), $"exam-paper:{certId}:{size}");
     public Task<ExamResult> SubmitExamAsync(string certId, ExamSubmission submission, CancellationToken ct = default) => Run(() => ExamSubmit(certId, submission), submission);
     public Task<IReadOnlyList<ExamAttempt>> GetExamHistoryAsync(string certId, CancellationToken ct = default) => Run(() => ExamHistory(certId), $"exam-history:{certId}");
+
+    public Task<ExamTarget?> GetExamTargetAsync(string certId, CancellationToken ct = default) =>
+        Run(() => ExamTargets.TryGetValue(certId, out var t) ? t : null, $"exam-target-get:{certId}");
+
+    public Task<ExamTarget> SetExamTargetAsync(string certId, ExamTargetUpdate update, CancellationToken ct = default) =>
+        Run(() =>
+        {
+            var target = new ExamTarget(certId, update.ExamDate, update.ExamDate.DayNumber - DateOnly.FromDateTime(DateTime.Today).DayNumber);
+            ExamTargets[certId] = target;
+            return target;
+        }, update);
+
+    public Task ClearExamTargetAsync(string certId, CancellationToken ct = default) =>
+        Run<object?>(() => { ExamTargets.Remove(certId); return null; }, $"exam-target-clear:{certId}");
 
     private Task<T> Run<T>(Func<T> handler, object? request = null)
     {

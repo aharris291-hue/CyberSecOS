@@ -21,6 +21,8 @@
             <conv:ChartSeriesConverter x:Key="ChartSeries" />
             <conv:ChartAxisConverter x:Key="ChartAxis" />
             <conv:EnumEqualsVisibilityConverter x:Key="StageVisibility" />
+            <conv:ExamCountdownConverter x:Key="ExamCountdown" />
+            <conv:NotNullToVisibilityConverter x:Key="NotNullToVisibility" />
 
             <!-- Each page view model is rendered by its view (view-model-first navigation). -->
             <DataTemplate DataType="{x:Type vm:DashboardViewModel}"><views:DashboardView /></DataTemplate>
