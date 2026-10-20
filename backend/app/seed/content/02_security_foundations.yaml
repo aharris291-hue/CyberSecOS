@@ -270,3 +270,88 @@ lessons:
         options: [An insider attack, Shadow IT, A zero-day, Hacktivism]
         answer: 1
         explanation: Systems deployed without IT approval are shadow IT and go unmanaged and unsecured.
+
+  - slug: sec-phishing-social-engineering
+    title: Analysing Phishing and Social Engineering
+    order: 4
+    difficulty: beginner
+    summary: Pull apart a phishing email from its headers, links and pretext.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:2.2", "secplus:5.6", "cysa:1.2"]
+    learning_objectives:
+      - Describe the common social-engineering techniques and why they work
+      - Read an email's headers and authentication results to judge if it is spoofed
+      - Safely inspect links and attachments and extract indicators from a phish
+    theory: |
+      **Social engineering** attacks the person, not the software. The most common form a SOC sees
+      is **phishing**, an email that pushes the reader to click a link, open an attachment or hand
+      over credentials. It works by borrowing **authority** (a message that looks like it is from
+      IT or a bank), creating **urgency** (an account will be closed), and offering a plausible
+      **pretext**. Variants include **spear phishing** aimed at one person, **smishing** over SMS
+      and **vishing** over the phone.
+
+      The header tells you a lot. The **Received** chain shows the servers the mail passed through,
+      and the authentication results record whether **SPF**, **DKIM** and **DMARC** passed. SPF
+      checks the sending server is allowed for the domain, DKIM checks a signature over the
+      message, and DMARC ties the visible From address to those results. A friendly display name
+      hiding a mismatched address, or a Reply-To on a different domain, are classic tells.
+
+      Links and attachments are where the payload lives. Hover to see the real destination, watch
+      for lookalike domains and URL shorteners, and treat an unexpected document that asks you to
+      enable macros as hostile. Your output from triaging a phish is a set of **indicators**, the
+      sender, the URLs and any attachment hashes, that feed blocking and a search for anyone else
+      who received it.
+    examples:
+      - title: A spoofed sender giveaway
+        body: |
+          From      IT Support <helpdesk@it-support-portal.co>
+          Reply-To  harvest@mail.ru
+          DMARC     fail
+          A display name of IT Support over an unrelated domain, a foreign Reply-To, and a failed DMARC.
+      - title: A lookalike link under a safe-looking label
+        body: |
+          Visible text   https://login.microsoft.com
+          Real href      https://login.microsoft.com.secure-check.ru/auth
+          The real domain is secure-check.ru, not microsoft.com.
+    exercise:
+      title: Triage a phishing sample
+      environment: An isolated analysis VM; never click live links or open attachments on a work machine
+      tools: [A raw email (.eml) sample, a text editor, a URL defang tool, VirusTotal (hash and URL search only)]
+      steps:
+        - Open a phishing .eml sample in a text editor in your analysis VM.
+        - Read the Received chain and note the originating server and the From, Reply-To and Return-Path.
+        - Find the authentication results and record whether SPF, DKIM and DMARC passed or failed.
+        - List every URL in the body, defang them, and compare the visible text against the real destination.
+        - Identify any attachment, record its name and hash, and search the hash on VirusTotal without uploading the file.
+        - Decide whether the message is phishing and write the one or two tells that convinced you.
+        - Produce an indicator list (sender, URLs, attachment hash) you would hand to blocking and a mailbox search.
+      deliverable: A short triage note with the verdict, the deciding tells, and an indicator list for blocking.
+    expected_outcome: >
+      Given an unfamiliar email you can judge whether it is phishing from its headers
+      and links and hand off a usable indicator list, without exposing yourself to the payload.
+    quiz:
+      - prompt: Which trio of checks helps show whether an email's sender is spoofed?
+        options:
+          - "TCP, UDP and ICMP"
+          - "SPF, DKIM and DMARC"
+          - "RAID 0, 1 and 5"
+          - "GET, POST and PUT"
+        answer: 1
+        explanation: SPF, DKIM and DMARC together verify the sending server, a message signature and the From alignment.
+      - prompt: A message's display name reads IT Support but the address is on an unrelated domain. This is
+        options: [Proof the mail is safe, A common spoofing tell worth investigating, A DKIM signature, A normal mailing list]
+        answer: 1
+        explanation: A trusted-looking display name over a mismatched address is a classic phishing giveaway.
+      - prompt: Why search an attachment's hash on VirusTotal rather than uploading the file?
+        options:
+          - Hashes are easier to type
+          - Uploading may share a targeted sample publicly and tip off the attacker
+          - VirusTotal rejects files
+          - Hashes identify the victim
+        answer: 1
+        explanation: A hash lookup reveals nothing new, while an upload can expose a sensitive or targeted sample.
+      - prompt: The safest way to check where a link really goes is to
+        options: [Click it and see, Hover or inspect the href without clicking, Forward it to a colleague, Reply and ask]
+        answer: 1
+        explanation: Inspecting the href shows the true destination without executing anything.
