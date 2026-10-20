@@ -1,5 +1,12 @@
 # Changelog
 
+## Phase 2 - More SOC-core depth
+
+### A third lesson for the remediation and response courses
+- Added one lesson each to Vulnerability Management, Incident Response and Detection Engineering (12 courses, 32 lessons), deepening the detect-respond-remediate core of the SOC path.
+- New lessons: prioritising vulnerabilities with CVSS, EPSS and the CISA KEV catalog then reporting with owners and SLAs; digital forensics and evidence handling (order of volatility, hashing, chain of custody, timelines); and tuning detections to cut false positives (precision, scoped tuning vs blanket suppression, rule lifecycle).
+- All keep the six education-standard sections and the ~18/82 theory/lab split; content-standard, seeding and coverage tests still pass (241 backend tests).
+
 ## Phase 2 - Session hardening
 
 ### Sign out other sessions when the password changes
