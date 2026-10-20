@@ -1,5 +1,14 @@
 # Changelog
 
+## Phase 2 - Timed practice exams
+
+### Certification practice exams
+- New exam engine samples quiz questions across the lessons mapped to a certification's objectives, spread round-robin so breadth of readiness is tested rather than one lesson.
+- API under `/api/certifications/{cert_id}/exam`: exam info, a reshuffled paper of 5-100 questions, scored submission, and attempt history (`12_API.md`).
+- Graded at an 80% pass mark with a per-objective breakdown; each sitting is recorded in the new `exam_attempts` table with its duration and breakdown.
+- Desktop "Practice Exams" page: pick a certification and length, a timed sitting, then a score with highlighted focus areas linking to courses.
+- 15 backend tests and 13 desktop view-model tests cover sampling, grading, the breakdown and the exam flow.
+
 ## Phase 2 - Learning content
 
 ### Full certification coverage

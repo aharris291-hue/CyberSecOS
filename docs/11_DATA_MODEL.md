@@ -22,6 +22,7 @@ created at API startup; all timestamps are stored as naive UTC.
 | `lesson_progress` | One row per user and lesson: theory read, lab done, best quiz score, completion |
 | `quiz_attempts` | Every quiz submission with score and chosen answers |
 | `activity_log` | Study minutes by kind (`theory`, `lab`, `quiz`) for streaks and weekly hours |
+| `exam_attempts` | Each practice-exam sitting: certification, score, pass/fail, duration and per-objective breakdown (JSON) |
 
 ## Lesson completion rule
 

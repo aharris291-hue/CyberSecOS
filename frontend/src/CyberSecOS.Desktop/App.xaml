@@ -20,6 +20,7 @@
             <conv:InverseBoolConverter x:Key="InverseBool" />
             <conv:ChartSeriesConverter x:Key="ChartSeries" />
             <conv:ChartAxisConverter x:Key="ChartAxis" />
+            <conv:EnumEqualsVisibilityConverter x:Key="StageVisibility" />
 
             <!-- Each page view model is rendered by its view (view-model-first navigation). -->
             <DataTemplate DataType="{x:Type vm:DashboardViewModel}"><views:DashboardView /></DataTemplate>
@@ -28,6 +29,7 @@
             <DataTemplate DataType="{x:Type vm:CoursesViewModel}"><views:CoursesView /></DataTemplate>
             <DataTemplate DataType="{x:Type vm:LessonViewModel}"><views:LessonView /></DataTemplate>
             <DataTemplate DataType="{x:Type vm:ProgressViewModel}"><views:ProgressView /></DataTemplate>
+            <DataTemplate DataType="{x:Type vm:ExamsViewModel}"><views:ExamsView /></DataTemplate>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

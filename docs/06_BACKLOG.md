@@ -27,7 +27,7 @@ Low Priority
 | Progress Tracking | High | Done: theory/lab/quiz tracking, streaks, weekly goal, per-course progress |
 | AI Mentor | Medium | Phase 3 |
 | Study Planner | Medium | Not started |
-| Certification Tracking | Medium | Partly done: readiness by objective coverage, now full for all 4 exams; exam dates and timed practice exams not started |
+| Certification Tracking | Medium | Partly done: readiness by objective coverage (full for all 4 exams) and timed practice exams with per-objective scoring; exam dates not started |
 | Cyber Range | Low | Phase 6 |
 | Advanced Analytics | Low | Not started |
 | More lessons per course (target 5-10 each) | High | In progress: added depth for Security+ coverage; several domains still have one lesson |

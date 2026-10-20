@@ -178,3 +178,20 @@ class ActivityLog(Base):
     kind: Mapped[str] = mapped_column(String(16))
     minutes: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, index=True)
+
+
+class ExamAttempt(Base):
+    """A completed certification practice exam. Breakdown is per-objective stats as JSON."""
+
+    __tablename__ = "exam_attempts"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    certification_id: Mapped[str] = mapped_column(ForeignKey("certifications.id", ondelete="CASCADE"))
+    score: Mapped[int] = mapped_column(Integer)  # percentage 0-100
+    correct: Mapped[int] = mapped_column(Integer)
+    total: Mapped[int] = mapped_column(Integer)
+    passed: Mapped[bool] = mapped_column(Integer)  # SQLite stores as 0/1
+    duration_seconds: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    breakdown: Mapped[list[dict]] = mapped_column(JSON)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, index=True)

@@ -35,6 +35,11 @@ public sealed class FakeApi : ICyberSecApi
 
     public Func<DashboardData> Dashboard { get; set; } = Samples.Dashboard;
 
+    public Func<string, ExamInfo> ExamInfo { get; set; } = Samples.ExamInfo;
+    public Func<string, int, ExamPaper> ExamPaper { get; set; } = Samples.ExamPaper;
+    public Func<string, ExamSubmission, ExamResult> ExamSubmit { get; set; } = (cert, s) => Samples.ExamResult(cert, s);
+    public Func<string, IReadOnlyList<ExamAttempt>> ExamHistory { get; set; } = _ => [];
+
     public static TokenResponse Token(UserProfile user) => new("token-123", "bearer", 3600, user);
 
     public static ApiException Error(HttpStatusCode code, string message) => new(code, message);
@@ -60,6 +65,11 @@ public sealed class FakeApi : ICyberSecApi
     public Task<IReadOnlyList<DailyMinutes>> GetDailyActivityAsync(int days, CancellationToken ct = default) => Run(() => Daily(days));
 
     public Task<DashboardData> GetDashboardAsync(CancellationToken ct = default) => Run(Dashboard);
+
+    public Task<ExamInfo> GetExamInfoAsync(string certId, CancellationToken ct = default) => Run(() => ExamInfo(certId), $"exam-info:{certId}");
+    public Task<ExamPaper> GetExamPaperAsync(string certId, int size, CancellationToken ct = default) => Run(() => ExamPaper(certId, size), $"exam-paper:{certId}:{size}");
+    public Task<ExamResult> SubmitExamAsync(string certId, ExamSubmission submission, CancellationToken ct = default) => Run(() => ExamSubmit(certId, submission), submission);
+    public Task<IReadOnlyList<ExamAttempt>> GetExamHistoryAsync(string certId, CancellationToken ct = default) => Run(() => ExamHistory(certId), $"exam-history:{certId}");
 
     private Task<T> Run<T>(Func<T> handler, object? request = null)
     {

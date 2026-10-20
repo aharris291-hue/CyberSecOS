@@ -65,6 +65,41 @@ public static class Samples
             .Select(i => new DailyMinutes(new DateOnly(2026, 10, 1).AddDays(i).ToString("yyyy-MM-dd"), i, 4 * i, 0, 5 * i))
             .ToList();
 
+    public static Certification Cert(string id = "secplus", string name = "CompTIA Security+", string code = "SY0-701", int priority = 1) =>
+        new(id, name, code, priority, []);
+
+    public static ExamInfo ExamInfo(string certId) => certId switch
+    {
+        "secplus" => new ExamInfo("secplus", "CompTIA Security+", "SY0-701", 40, 20, 80),
+        _ => new ExamInfo(certId, certId, certId.ToUpperInvariant(), 8, 20, 80),
+    };
+
+    public static ExamPaper ExamPaper(string certId, int size)
+    {
+        var count = Math.Min(size, ExamInfo(certId).AvailableQuestions);
+        var questions = Enumerable.Range(1, count)
+            .Select(i => new QuizQuestion(i, i, $"Question {i}", ["a", "b", "c", "d"]))
+            .ToList();
+        var info = ExamInfo(certId);
+        return new ExamPaper(certId, info.Name, info.ExamCode, info.PassMark, questions);
+    }
+
+    /// <summary>Grades every answer as correct when its selected index is 0.</summary>
+    public static ExamResult ExamResult(string certId, ExamSubmission submission)
+    {
+        var total = submission.Answers.Count;
+        var correct = submission.Answers.Count(a => a.SelectedIndex == 0);
+        var score = total == 0 ? 0 : (int)Math.Round(100.0 * correct / total);
+        var breakdown = new List<ObjectiveScore>
+        {
+            new("secplus:1.1", "General Security Concepts", correct, total, total == 0 ? 0 : (int)Math.Round(100.0 * correct / total)),
+        };
+        return new ExamResult(certId, score, correct, total, score >= 80, 80, breakdown);
+    }
+
+    public static ExamAttempt ExamAttempt(int id, string certId, int score, bool passed) =>
+        new(id, certId, score, score, 20, passed, 600, new DateTime(2026, 10, 19, 20, 0, 0));
+
     public static DashboardData Dashboard()
     {
         var summary = Summary();

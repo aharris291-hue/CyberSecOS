@@ -15,6 +15,7 @@ EXPECTED_TABLES = {
     "lesson_progress",
     "quiz_attempts",
     "activity_log",
+    "exam_attempts",
 }
 
 
