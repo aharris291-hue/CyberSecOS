@@ -1,7 +1,7 @@
 slug: detection-engineering
 title: Detection Engineering
 domain: Detection Engineering
-order: 7
+order: 9
 description: >
   Detection engineers turn attacker behaviour into reliable alerts. Learn to
   write, test and tune portable detection rules with Sigma.

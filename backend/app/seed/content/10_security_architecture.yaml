@@ -1,0 +1,200 @@
+slug: security-architecture
+title: Security Architecture
+domain: Security Architecture
+order: 10
+description: >
+  Design networks and systems to resist attack and keep running: segmentation,
+  secure access, data protection, identity and resilience.
+lessons:
+  - slug: arch-network-design
+    title: Secure Network Architecture and Segmentation
+    order: 1
+    difficulty: intermediate
+    summary: Design a segmented network with a screened subnet and least-privilege firewall rules, and verify it.
+    theory_minutes: 12
+    lab_minutes: 55
+    objectives: ["secplus:3.1", "secplus:3.2", "secplus:4.5"]
+    learning_objectives:
+      - Compare architecture models and explain their security implications
+      - Design network segmentation with a screened subnet and VLANs
+      - Write and verify least-privilege firewall rules between zones
+    theory: |
+      Where systems run changes their risk. **On-premises** gives full control and
+      responsibility. **Cloud** shifts some to the provider under the shared responsibility
+      model. **Hybrid** and **multi-cloud** add integration complexity. **Serverless**,
+      **microservices**, **containers**, **IoT**, **ICS/SCADA** and **embedded** systems each
+      have their own exposure; ICS and embedded devices often cannot be patched, so they are
+      isolated instead.
+
+      **Segmentation** limits how far an attacker can move. A **screened subnet** (historically
+      a DMZ) holds internet-facing services between two firewalls, so a compromised web server
+      cannot reach the internal network directly. **VLANs** separate traffic logically;
+      **microsegmentation** isolates individual workloads. Management interfaces sit on a
+      separate network reached through a **jump server** or bastion host. **Air-gapped**
+      networks have no connection at all.
+
+      Controls that enforce the design: **firewalls** (packet-filtering, stateful,
+      next-generation), **web application firewalls**, **IPS/IDS**, **network access control
+      (NAC)**, **proxies**, and secure protocols. The guiding ideas are **least privilege**
+      (allow only what is needed), **defence in depth** (layered controls) and **deny by
+      default** (block everything, then permit specific flows). A rule set should end with an
+      explicit deny and be documented so anyone can see why each flow is allowed.
+    examples:
+      - title: A deny-by-default rule set
+        body: |
+          # Zones: INTERNET, DMZ (web), INTERNAL (db), MGMT
+          allow INTERNET -> DMZ:443         # public HTTPS
+          allow DMZ      -> INTERNAL:5432   # web app to database only
+          allow MGMT     -> any:22          # admins via jump host
+          deny  any      -> any             # explicit default deny, logged
+      - title: Why a screened subnet helps
+        body: |
+          Attacker compromises the web server in the DMZ.
+          With segmentation, the only path onward is DMZ -> INTERNAL:5432.
+          The attacker cannot reach file shares, domain controllers or workstations.
+    exercise:
+      title: Build and test a segmented network in your lab
+      environment: VirtualBox/VMware with three VMs and two internal networks (or pfSense as the firewall)
+      tools: [pfSense or Linux with nftables/iptables, nmap, a diagram tool]
+      steps:
+        - Draw the target design: INTERNET, a DMZ holding one web VM, and an INTERNAL network holding one database VM, separated by a firewall VM.
+        - Create two host-only/internal networks and attach the web VM to the DMZ and the database VM to INTERNAL; give the firewall VM an interface on each.
+        - On the firewall, write deny-by-default rules that allow only INTERNET->DMZ:443 and DMZ->INTERNAL on the database port.
+        - From the web VM, confirm you can reach the database port but not other internal ports (`nmap` the internal host).
+        - From the DMZ, attempt to reach an internal service that should be blocked and confirm the firewall denies and logs it.
+        - Add a management rule allowing SSH only from a jump host, and confirm direct admin access from the DMZ is blocked.
+        - Export the firewall log entries that show allowed and denied flows and annotate your diagram with the final rules.
+      deliverable: The network diagram, the firewall rule set, and nmap/log evidence that allowed flows work and blocked flows are denied.
+    expected_outcome: >
+      You can design a least-privilege, deny-by-default segmented network and prove with
+      scans and logs that lateral movement is contained.
+    quiz:
+      - prompt: A screened subnet (DMZ) exists mainly to
+        options:
+          - Speed up internet access
+          - Separate internet-facing services from the internal network
+          - Store backups
+          - Replace a firewall
+        answer: 1
+        explanation: It isolates public-facing servers so a compromise there cannot directly reach internal systems.
+      - prompt: 'A "deny by default" firewall rule set means it'
+        options:
+          - Allows everything, then blocks a few things
+          - Blocks everything, then allows only specific required flows
+          - Has no final rule
+          - Logs nothing
+        answer: 1
+        explanation: Starting from a full block and permitting only needed flows enforces least privilege.
+      - prompt: Why are ICS/SCADA and embedded devices often isolated rather than patched?
+        options:
+          - They are not valuable
+          - They frequently cannot be updated without breaking operations
+          - They have no vulnerabilities
+          - They are always offline
+        answer: 1
+        explanation: Many cannot tolerate patching or downtime, so isolation is the practical control.
+      - prompt: A jump server (bastion host) is used to
+        options:
+          - Host public websites
+          - Provide a single controlled path to management interfaces
+          - Store encryption keys
+          - Run backups
+        answer: 1
+        explanation: Admins connect through it, so management access is funnelled and monitored.
+      - prompt: Layering multiple independent controls is called
+        options: [Least privilege, Defence in depth, Air gapping, Tokenization]
+        answer: 1
+        explanation: Defence in depth means no single control failure exposes the asset.
+
+  - slug: arch-data-resilience
+    title: Protecting Data and Designing for Resilience
+    order: 2
+    difficulty: intermediate
+    summary: Classify and protect data by state and build a tested backup and recovery plan.
+    theory_minutes: 12
+    lab_minutes: 48
+    objectives: ["secplus:3.3", "secplus:3.4", "secplus:4.1"]
+    learning_objectives:
+      - Classify data and protect it at rest, in transit and in use
+      - Explain resilience concepts: redundancy, RTO/RPO, backups and site types
+      - Build and test a backup following the 3-2-1 rule
+    theory: |
+      **Data classification** (public, private, sensitive, confidential, restricted, regulated)
+      drives how strongly data is protected and who may see it. Data exists in three **states**,
+      each needing different controls. **At rest**: full-disk or database encryption. **In
+      transit**: TLS, VPNs. **In use**: harder, addressed by access control, memory protection
+      and, increasingly, confidential computing. **Data Loss Prevention (DLP)** watches for
+      sensitive data leaving the organisation. Other protections: **tokenization** (replace
+      data with a non-sensitive token), **masking** (hide part of a value), **hashing**, and
+      **geographic/sovereignty** rules about where data may be stored.
+
+      **Resilience** keeps services running through failure. **Redundancy** removes single
+      points of failure: RAID for disks, load balancers and clustering for servers, multiple
+      power supplies and ISPs, **UPS** and generators for power. Measure recovery with **RTO**
+      (how quickly you must be back) and **RPO** (how much data you can afford to lose).
+      **Backups** follow the **3-2-1** rule: three copies, two media types, one offsite;
+      **immutable** or offline backups resist ransomware. Recovery **sites** range from a
+      **hot site** (ready now), through **warm**, to a **cold site** (space only). Plans are
+      only real once **tested**: tabletop exercises, failover tests and restore drills.
+    examples:
+      - title: Controls by data state
+        body: |
+          Customer records (classification: regulated)
+          At rest:     AES-256 database encryption + restricted DB role
+          In transit:  TLS 1.3 between app and database
+          In use:      row-level access control; masking of card numbers in the UI
+          Leaving:     DLP rule blocks export of >100 records to personal email
+      - title: RTO and RPO on a timeline
+        body: |
+          Last backup 02:00 ──(data created)── 09:15 FAILURE ──(recover)── 10:00 back up
+          RPO = 09:15 - 02:00 = up to 7h15m of data lost  (so back up more often)
+          RTO = 10:00 - 09:15 = 45m to restore service    (meets a 1h target)
+    exercise:
+      title: Build a tested 3-2-1 backup and classify its data
+      environment: A Linux VM (or WSL) with some sample data files
+      tools: [tar, sha256sum, gpg or openssl, a second USB/drive or a second folder as "offsite"]
+      steps:
+        - Create a folder of sample files and assign each a data classification (public, private, confidential).
+        - Encrypt the confidential files at rest with `openssl enc -aes-256-cbc -pbkdf2` and record the command.
+        - Make backup copy 1 as a tarball, and record a SHA-256 of it for integrity.
+        - Make copy 2 on a different medium (a USB drive, a second virtual disk, or a clearly separate location) to satisfy "two media".
+        - Make copy 3 in an "offsite" location (another machine, or a separate cloud/sync folder) to satisfy "one offsite".
+        - Delete the originals to simulate a failure, restore from a backup, and verify the restored files match by comparing hashes.
+        - Write an RTO and RPO for this data and state how often you would back up to meet the RPO.
+      deliverable: Evidence of the three copies, the restore test with matching hashes, and your stated RTO/RPO with backup frequency.
+    expected_outcome: >
+      You can protect data in every state and produce a backup you have actually restored,
+      with recovery targets you can defend.
+    quiz:
+      - prompt: Encrypting a laptop's drive protects data
+        options: [In transit, At rest, In use, In motion]
+        answer: 1
+        explanation: Full-disk encryption protects stored data if the device is lost or stolen.
+      - prompt: The 3-2-1 backup rule means
+        options:
+          - 3 backups daily, 2 weekly, 1 monthly
+          - 3 copies, on 2 media types, with 1 offsite
+          - 3 servers, 2 sites, 1 admin
+          - 3 passwords, 2 factors, 1 key
+        answer: 1
+        explanation: Three copies on two kinds of media with one offsite survives most failures.
+      - prompt: RPO measures
+        options:
+          - How quickly service must be restored
+          - How much data loss is acceptable
+          - How many backups exist
+          - The cost of downtime
+        answer: 1
+        explanation: Recovery Point Objective is the maximum acceptable data loss, set by backup frequency.
+      - prompt: A hot site differs from a cold site because it
+        options:
+          - Is in a warmer climate
+          - Is fully equipped and ready to take over almost immediately
+          - Has no power
+          - Stores only backups
+        answer: 1
+        explanation: A hot site is operational and current; a cold site is just space and utilities.
+      - prompt: Immutable or offline backups specifically protect against
+        options: [Power loss, Ransomware encrypting the backups too, Slow networks, User error only]
+        answer: 1
+        explanation: Backups that cannot be altered or reached online survive ransomware that encrypts live data.

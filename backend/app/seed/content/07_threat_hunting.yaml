@@ -1,7 +1,7 @@
 slug: threat-hunting
 title: Threat Hunting
 domain: Threat Hunting
-order: 5
+order: 7
 description: >
   Hunting assumes a breach and looks for attackers that alerts missed. Learn to
   form hypotheses from MITRE ATT&CK and test them with data.

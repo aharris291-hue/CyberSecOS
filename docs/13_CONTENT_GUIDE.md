@@ -13,16 +13,25 @@ progress is kept because lessons are matched by `slug`.
 
 | # | Course | Domain | Lessons |
 |---|---|---|---|
-| 1 | Networking Foundations for SOC Analysts | Networking | OSI/TCP-IP and the handshake; Ports, services and DNS; Finding malicious traffic in a pcap |
-| 2 | Windows Security Monitoring | Windows Security | Security event logs; Sysmon and suspicious PowerShell |
-| 3 | Linux Security Operations | Linux Security | SSH brute force in auth.log; Permissions, SUID and hardening |
-| 4 | SIEM Fundamentals | SIEM | Searching logs with KQL |
-| 5 | Threat Hunting | Threat Hunting | Hypothesis-driven hunting for persistence |
-| 6 | Incident Response | Incident Response | IR lifecycle and phishing triage |
-| 7 | Detection Engineering | Detection Engineering | Writing and testing Sigma rules |
-| 8 | Cloud Security Operations | Cloud Security | Shared responsibility and cloud sign-in investigation |
+| 1 | Networking Foundations for SOC Analysts | Networking | 3 |
+| 2 | Security Foundations | Security Foundations | 3 |
+| 3 | Windows Security Monitoring | Windows Security | 2 |
+| 4 | Linux Security Operations | Linux Security | 2 |
+| 5 | SIEM Fundamentals | SIEM | 1 |
+| 6 | Vulnerability Management | Vulnerability Management | 2 |
+| 7 | Threat Hunting | Threat Hunting | 1 |
+| 8 | Incident Response | Incident Response | 1 |
+| 9 | Detection Engineering | Detection Engineering | 1 |
+| 10 | Security Architecture | Security Architecture | 2 |
+| 11 | Cloud Security Operations | Cloud Security | 1 |
+| 12 | Governance, Risk and Compliance | Governance, Risk and Compliance | 2 |
 
-12 lessons, about 19% theory and 81% lab time overall.
+12 courses, 21 lessons, about 18% theory and 82% lab time overall.
+
+**Certification coverage:** every objective of all four priority certifications
+(Security+ SY0-701, SC-900, SC-200, CySA+ CS0-003) maps to at least one lesson.
+`test_content_standards.py` fails the build if any Security+ objective loses its
+lesson, or if any priority certification stops being fully covered.
 
 ## Lesson schema
 

@@ -1,7 +1,7 @@
 slug: cloud-security
 title: Cloud Security Operations
 domain: Cloud Security
-order: 8
+order: 11
 description: >
   Identity is the new perimeter. Learn the shared responsibility model and how to
   investigate cloud sign-ins with Microsoft Entra ID logs.

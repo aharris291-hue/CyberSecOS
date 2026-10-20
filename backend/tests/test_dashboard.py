@@ -10,7 +10,7 @@ def test_new_learner_dashboard(client, auth_headers):
     assert body["display_name"] == "Adam" and body["target_role"] == "SOC Analyst"
     assert body["totals"]["completed_lessons"] == 0
     assert len(body["daily_activity"]) == 14
-    assert len(body["courses"]) == 8
+    assert len(body["courses"]) == 12
     assert [c["exam_code"] for c in body["certifications"]] == ["SY0-701", "SC-900", "SC-200", "CS0-003"]
     assert body["next_lesson"]["course_title"] == "Networking Foundations for SOC Analysts"
     assert body["recent_activity"] == []

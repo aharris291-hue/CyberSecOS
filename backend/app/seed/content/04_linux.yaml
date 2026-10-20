@@ -1,7 +1,7 @@
 slug: linux-security
 title: Linux Security Operations
 domain: Linux Security
-order: 3
+order: 4
 description: >
   Most servers and cloud workloads run Linux. Learn where Linux records
   authentication and how to find and fix risky configurations.

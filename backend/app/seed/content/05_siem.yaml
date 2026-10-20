@@ -1,7 +1,7 @@
 slug: siem-fundamentals
 title: SIEM Fundamentals
 domain: SIEM
-order: 4
+order: 5
 description: >
   The SIEM is the SOC analyst's main workspace. Learn how logs are collected,
   normalised and searched, using KQL in Microsoft Sentinel.

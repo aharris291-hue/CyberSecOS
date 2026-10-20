@@ -81,3 +81,23 @@ def test_catalog_hits_the_20_80_target():
 def test_every_priority_certification_is_covered():
     mapped = {objective.split(":")[0] for _, lesson in LESSONS for objective in lesson["objectives"]}
     assert mapped == {cert["id"] for cert in CERTS}
+
+
+def _objective_coverage(cert_id: str) -> tuple[set[str], set[str]]:
+    cert = next(c for c in CERTS if c["id"] == cert_id)
+    all_objectives = {f"{cert_id}:{o['code']}" for o in cert["objectives"]}
+    covered = {o for _, lesson in LESSONS for o in lesson["objectives"] if o.startswith(f"{cert_id}:")}
+    return all_objectives, covered
+
+
+def test_every_security_plus_objective_has_a_lesson():
+    """Security+ is the first-priority certification, so its coverage must stay complete."""
+    all_objectives, covered = _objective_coverage("secplus")
+    missing = sorted(code.split(":")[1] for code in all_objectives - covered)
+    assert not missing, f"Security+ objectives with no lesson: {missing}"
+
+
+def test_all_priority_certifications_fully_covered():
+    for cert in CERTS:
+        all_objectives, covered = _objective_coverage(cert["id"])
+        assert all_objectives <= covered, f"{cert['id']} missing {sorted(all_objectives - covered)}"

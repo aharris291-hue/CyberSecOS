@@ -1,5 +1,12 @@
 # Changelog
 
+## Phase 2 - Learning content
+
+### Full certification coverage
+- Added 4 courses and 9 lessons (Security Foundations, Vulnerability Management, Security Architecture, Governance/Risk/Compliance): 12 courses and 21 lessons total.
+- Every objective of Security+, SC-900, SC-200 and CySA+ now maps to at least one lesson; catalog is ~18% theory / 82% lab.
+- New tests enforce full Security+ objective coverage and full coverage of every priority certification.
+
 ## Phase 1 - Core Application (complete)
 
 ### Project structure
