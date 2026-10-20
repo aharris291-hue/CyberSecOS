@@ -2,15 +2,16 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Response
 from sqlalchemy.orm import Session
 
-from ..database import get_db
+from ..database import get_db, utcnow
 from ..models import User
 from ..schemas import DailyMinutes, LabRequest, LessonProgressOut, ProgressSummary, TheoryRequest
 from ..security import get_current_user
 from ..services import progress as progress_service
-from ..services.stats import ProgressStats
+from ..services.report import build_progress_pdf
+from ..services.stats import ProgressStats, local_date
 from .courses import get_lesson_or_404, progress_out
 
 router = APIRouter(prefix="/api", tags=["progress"])
@@ -63,6 +64,33 @@ def progress_summary(
         "recent_activity": stats.recent_activity(),
         "next_lesson": stats.next_lesson(),
     }
+
+
+@router.get(
+    "/progress/report.pdf",
+    responses={200: {"content": {"application/pdf": {}}, "description": "A one-page progress report"}},
+)
+def progress_report(
+    tz_offset_minutes: int = TzOffset, db: Session = Depends(get_db), user: User = Depends(get_current_user)
+) -> Response:
+    """Download the learner's progress as a PDF, drawn from the same figures as /api/progress."""
+    now = utcnow()
+    stats = ProgressStats(db, user, tz_offset_minutes, now=now)
+    pdf = build_progress_pdf(
+        display_name=user.display_name,
+        target_role=user.target_role,
+        totals=stats.totals(),
+        week=stats.week(),
+        courses=stats.by_course(),
+        certifications=stats.by_certification(),
+        generated_on=local_date(now, tz_offset_minutes),
+    )
+    filename = f"cybersecos-progress-{local_date(now, tz_offset_minutes).isoformat()}.pdf"
+    return Response(
+        content=pdf,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 @router.get("/progress/activity", response_model=list[DailyMinutes])

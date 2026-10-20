@@ -35,4 +35,4 @@ Low Priority
 | Invalidate existing sessions after a password change | Medium | Done: each token carries a `token_version`; a password change bumps it so older tokens are rejected, and the change returns a fresh token so the current session stays signed in |
 | UI tests for XAML views and chart converters on Windows | Medium | Not started |
 | Start the backend automatically from the desktop app | Medium | Partly done: `Start CyberSecOS.bat` launcher in the Windows build; a single installer is not started |
-| Data backup and export (PDF progress report) | Low | Not started |
+| Data backup and export (PDF progress report) | Low | Partly done: `GET /api/progress/report.pdf` exports a one-page PDF progress report (overall stats, per-course progress, certification readiness). Data backup/export in other formats not started |
