@@ -1,5 +1,12 @@
 # Changelog
 
+## Phase 2 - Five lessons for the SOC daily-driver courses
+
+### A fifth lesson for SIEM, Threat Hunting, Incident Response and Detection Engineering
+- Added a fifth lesson to the four courses closest to an analyst's daily work (52 lessons total), starting the climb from four toward the 5-10 lessons-per-course target.
+- New lessons: onboarding and normalising log sources (collection, parsing, common-schema normalisation, UTC timestamps and completeness checks); hunting lateral movement and credential access (pass-the-hash, remote execution, Kerberoasting, baselines and fan-out); responding to a ransomware incident (early signs, scope-isolate-preserve-eradicate-recover, and the payment decision); and behavioural and anomaly-based detection (baselines, thresholds, UEBA, and when it beats signatures).
+- All keep the six education-standard sections and the ~18/82 theory/lab split (catalog theory ratio 0.18); content-standard, seeding and coverage tests still pass (321 backend tests).
+
 ## Phase 2 - Every course four lessons deep
 
 ### A fourth lesson for the six courses still at three

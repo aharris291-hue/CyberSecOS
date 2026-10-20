@@ -17,16 +17,16 @@ progress is kept because lessons are matched by `slug`.
 | 2 | Security Foundations | Security Foundations | 4 |
 | 3 | Windows Security Monitoring | Windows Security | 4 |
 | 4 | Linux Security Operations | Linux Security | 4 |
-| 5 | SIEM Fundamentals | SIEM | 4 |
+| 5 | SIEM Fundamentals | SIEM | 5 |
 | 6 | Vulnerability Management | Vulnerability Management | 4 |
-| 7 | Threat Hunting | Threat Hunting | 4 |
-| 8 | Incident Response | Incident Response | 4 |
-| 9 | Detection Engineering | Detection Engineering | 4 |
+| 7 | Threat Hunting | Threat Hunting | 5 |
+| 8 | Incident Response | Incident Response | 5 |
+| 9 | Detection Engineering | Detection Engineering | 5 |
 | 10 | Security Architecture | Security Architecture | 4 |
 | 11 | Cloud Security Operations | Cloud Security | 4 |
 | 12 | Governance, Risk and Compliance | Governance, Risk and Compliance | 4 |
 
-12 courses, 48 lessons, about 18% theory and 82% lab time overall. Every course now has four lessons.
+12 courses, 52 lessons, about 18% theory and 82% lab time overall. Every course has at least four lessons; the daily-driver SOC courses (SIEM, Threat Hunting, Incident Response, Detection Engineering) have five.
 
 **Certification coverage:** every objective of all four priority certifications
 (Security+ SY0-701, SC-900, SC-200, CySA+ CS0-003) maps to at least one lesson.

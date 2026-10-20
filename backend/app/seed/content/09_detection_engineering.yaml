@@ -379,3 +379,91 @@ lessons:
         options: [The server's uptime, What stage of an attack the behaviour belongs to, The cost of the SIEM, The user's salary]
         answer: 1
         explanation: An ATT&CK technique places the behaviour in the attack lifecycle, adding meaning to the alert.
+
+  - slug: de-behavioural-anomaly-detection
+    title: Behavioural and Anomaly-Based Detection
+    order: 5
+    difficulty: advanced
+    summary: Detect attacks by how far behaviour strays from a baseline, not by a fixed signature.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.4", "cysa:1.5", "cysa:3.1", "sc200:2"]
+    learning_objectives:
+      - Contrast signature-based detection with behavioural and anomaly-based detection
+      - Build a baseline and choose a threshold that balances catching attacks against false positives
+      - Say when a behavioural detection is the right tool and when it is not
+    theory: |
+      A signature detection fires on a known pattern, this command line or that file hash. It is
+      precise but blind to anything new. **Behavioural** and **anomaly-based** detection take the
+      opposite approach, learning what normal looks like and then alerting when something strays
+      far enough from it. This catches attacks that have no signature yet, such as a user suddenly
+      downloading ten times their usual data or logging in from a new country at 3am.
+
+      The method rests on a **baseline**. You pick an entity (a user, a host, a service account) and
+      a measure (bytes downloaded per day, distinct hosts contacted, logon hours) and learn its
+      normal range over time. A detection then flags values far outside that range. Tools that do
+      this across many entities and signals are often sold as **UEBA**, user and entity behaviour
+      analytics, but the idea works with a simple statistical threshold too.
+
+      The hard trade-off is the **threshold**. Set it tight and you drown in false positives as
+      normal-but-rare behaviour trips it; set it loose and a real attack hides in the noise. So
+      behavioural detection is best for things that genuinely have a stable normal and high impact
+      when they change, such as privileged accounts, data egress and authentication, and a poor fit
+      for noisy, ever-changing activity. In practice the two approaches are paired, signatures for
+      the known and behaviour for the novel.
+    examples:
+      - title: A baseline deviation worth alerting on
+        body: |
+          user=jsmith  normal daily egress = 50-200 MB
+          today = 9.4 GB to an external host
+          The value is far outside the learned range, so it is flagged for review.
+      - title: Tight versus loose threshold
+        body: |
+          Threshold at 2x normal    many false positives from busy-but-benign days
+          Threshold at 20x normal   quieter, but a slow data theft stays under the line
+          The threshold is a dial between missed attacks and analyst fatigue.
+    exercise:
+      title: Design a behavioural detection for one entity
+      environment: A notebook or SIEM with sample per-user or per-host activity over time
+      tools: [A sample activity dataset, a notebook or SIEM, a notes file]
+      steps:
+        - Pick one entity and one measure that should have a stable normal, such as daily data egress per user.
+        - Build a baseline of that measure from the historical sample data and describe its normal range.
+        - Choose a threshold for flagging a deviation and justify where you put it.
+        - Run the detection over the sample and list what it flags.
+        - For each flag, decide whether it is a real anomaly or normal-but-rare, and tune the threshold once.
+        - Compare how a signature rule would have done on the same data and note what each approach catches.
+        - State whether this measure is a good fit for behavioural detection and why.
+      deliverable: A behavioural-detection design with the entity, measure, baseline, chosen threshold and the false-positive trade-off you made.
+    expected_outcome: >
+      You can build a baseline, set a defensible threshold, and judge when behavioural
+      detection beats a signature and when it would only generate noise.
+    quiz:
+      - prompt: How does anomaly-based detection differ from signature-based detection?
+        options:
+          - It only works on malware hashes
+          - It alerts on behaviour that strays far from a learned baseline rather than a known pattern
+          - It needs no data
+          - It is the same thing
+        answer: 1
+        explanation: Signatures match known patterns; anomaly detection learns normal and flags large deviations, catching novel activity.
+      - prompt: Setting a behavioural threshold too tight tends to
+        options: [Catch nothing at all, Produce many false positives from normal-but-rare activity, Delete the baseline, Disable signatures]
+        answer: 1
+        explanation: A tight threshold trips on benign but unusual behaviour, flooding analysts with false positives.
+      - prompt: Which is the best fit for behavioural detection?
+        options:
+          - Noisy, ever-changing activity with no stable normal
+          - A privileged account's data egress, which has a stable normal and high impact
+          - A fixed, well-known malware hash
+          - A static configuration file
+        answer: 1
+        explanation: Behavioural detection suits high-impact measures with a stable normal, such as privileged-account egress.
+      - prompt: Signature and behavioural detection are best used
+        options:
+          - One instead of the other
+          - "Together, signatures for the known and behaviour for the novel"
+          - Never together
+          - Only on weekends
+        answer: 1
+        explanation: They are complementary; signatures catch the known and behavioural detection catches what has no signature yet.

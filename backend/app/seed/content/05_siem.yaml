@@ -402,3 +402,87 @@ lessons:
         options: [Reset all dashboards, Carry in-flight investigations and watch items across so nothing is dropped or duplicated, Delete old alerts, Change the SIEM schema]
         answer: 1
         explanation: A handover preserves continuity across a 24/7 operation by passing open work and context to the next analyst.
+
+  - slug: siem-log-normalisation
+    title: Onboarding and Normalising Log Sources
+    order: 5
+    difficulty: intermediate
+    summary: Get a new log source into the SIEM parsed, normalised and ready to search.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.4", "sc200:2", "cysa:1.3"]
+    learning_objectives:
+      - Describe the steps to onboard a new log source into a SIEM
+      - Explain why normalising fields to a common schema matters for searching and correlation
+      - Validate that a newly onboarded source is parsed, timestamped and complete
+    theory: |
+      A SIEM is only as good as the data in it, and raw logs arrive in a dozen shapes.
+      **Onboarding** is the work of getting a new source, a firewall, a cloud audit log or an
+      endpoint agent, from a stream of text into fields an analyst can search. The first step is
+      **collection**, deciding how the data arrives (an agent, syslog, an API pull) and confirming
+      it actually lands. The second is **parsing**, breaking each event into fields such as source
+      IP, user and action.
+
+      Different products name the same thing differently, so the third step is **normalisation**,
+      mapping those fields onto a **common schema** such as the Elastic Common Schema or a SIEM's
+      information model. Once a user is always `user.name` and a source address is always
+      `source.ip`, one search and one correlation rule work across every source. Without it, every
+      detection has to know the quirks of every vendor, which does not scale.
+
+      Two details decide whether the data is trustworthy. **Timestamps** must be parsed into a real
+      time and stored in UTC, because an event in the wrong time zone lands in the wrong place on a
+      timeline. And you must check for **completeness**, that the volume looks right, that no fields
+      are silently dropped, and that the source has not gone quiet. Onboarding ends not when data
+      arrives but when a test search returns correct, normalised, correctly timed results.
+    examples:
+      - title: Normalising two sources to one field
+        body: |
+          Firewall       src=10.1.1.5
+          Cloud audit    callerIp=10.1.1.5
+          Both map to source.ip = 10.1.1.5, so one search finds the host across both.
+      - title: A timestamp parsed into UTC
+        body: |
+          Raw      Oct 20 14:02:11 host sshd[1123] Failed password
+          Parsed   @timestamp = 2026-10-20T13:02:11Z  (host is BST, stored as UTC)
+          Storing UTC keeps the event in the right place on a cross-source timeline.
+    exercise:
+      title: Onboard a sample log source end to end
+      environment: A SIEM or a local parser with a sample log from an unfamiliar source
+      tools: [A sample raw log, a SIEM or a parsing tool, a common-schema field reference]
+      steps:
+        - Take a sample log from a source the SIEM does not yet parse and confirm the events are arriving.
+        - Write or configure a parser that splits each event into named fields.
+        - Map those fields onto the common schema so the user, source address and action match the names other sources use.
+        - Parse the timestamp into a real time and store it in UTC, checking one event against its original local time.
+        - Run a test search that should return known events and confirm the fields come back populated and correct.
+        - Check the event volume looks reasonable and note how you would alert if the source went silent.
+        - Record the field mapping and the validation you ran so the next person can trust the source.
+      deliverable: A field-mapping note for the new source plus the test search and the completeness check you used to validate it.
+    expected_outcome: >
+      You can take an unfamiliar log source and onboard it so its events are parsed,
+      normalised to the common schema, correctly timestamped and verified as complete.
+    quiz:
+      - prompt: Why normalise fields from different sources onto a common schema?
+        options:
+          - To make logs larger
+          - So one search and one correlation rule work across every source
+          - To delete old logs
+          - To avoid parsing
+        answer: 1
+        explanation: A shared schema means a detection refers to one field name instead of every vendor's quirks, so it scales across sources.
+      - prompt: Event timestamps should be stored in
+        options: [The sender's local time, UTC, Whatever the vendor happens to send, Only inside the raw message text]
+        answer: 1
+        explanation: Storing UTC keeps events from different sources and zones aligned on a single timeline.
+      - prompt: Onboarding a log source is finished when
+        options:
+          - The data first arrives
+          - A test search returns correct, normalised, correctly timed results
+          - The parser is written
+          - The source is added to a list
+        answer: 1
+        explanation: Arrival is only the start; the source is onboarded once searches return correct, normalised, well-timed data.
+      - prompt: A sudden drop to zero events from an onboarded source most likely means
+        options: [The source is healthy, A collection or parsing problem worth alerting on, Normalisation succeeded, The schema improved]
+        answer: 1
+        explanation: A silent source usually signals a broken collector or parser, which is why completeness monitoring matters.

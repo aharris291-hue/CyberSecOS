@@ -387,3 +387,93 @@ lessons:
         options: [Blame the analyst who missed it, Separate what the evidence proves from what is inferred and avoid blame, Omit the timeline, Speculate freely on cause]
         answer: 1
         explanation: A factual, sourced, blame-free report serves learning and accountability and keeps information flowing for the next incident.
+
+  - slug: ir-ransomware-response
+    title: Responding to a Ransomware Incident
+    order: 5
+    difficulty: intermediate
+    summary: Work a ransomware incident from detection through isolation to recovery.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.8", "cysa:3.2", "cysa:3.3"]
+    learning_objectives:
+      - Recognise the early signs of ransomware before full encryption
+      - Apply the response steps of scope, isolate, preserve, eradicate and recover in order
+      - Explain why paying is a last resort and how good backups change the decision
+    theory: |
+      Ransomware encrypts an organisation's files and demands payment for the key, and modern
+      variants also **steal data first** so the attacker can threaten to leak it. The incident
+      usually does not start with encryption; it starts with the intrusion days earlier. Early
+      signs a SOC can catch include mass file renames, bursts of file writes, **shadow copies being
+      deleted**, security tools disabled, and new admin accounts. Catching it in that window is the
+      difference between one host and the whole estate.
+
+      The response follows the incident-response lifecycle under pressure. **Scope** which hosts and
+      accounts are affected before touching anything. **Isolate** the affected machines from the
+      network to stop the spread, preferring containment that keeps the host powered on. **Preserve**
+      evidence, memory, logs and a sample of the ransom note and an encrypted file, because it aids
+      attribution and any decryptor. **Eradicate** the attacker's access, then **recover** from
+      known-good backups onto clean systems.
+
+      The payment question is where governance meets the technical work. Paying funds crime, carries
+      no guarantee the data returns, and may breach sanctions, so it is a **last resort** and a
+      business and legal decision, not the SOC's. Tested, offline, immutable backups are what make a
+      confident refusal realistic, which is why ransomware readiness is really backup readiness. The
+      incident ends with recovery verified and a post-incident review that fixes the original way in.
+    examples:
+      - title: Early signs before full encryption
+        body: |
+          vssadmin delete shadows /all         shadow copies being destroyed
+          Defender real-time protection = off  security tooling disabled
+          200 files renamed to .locked in 60s  mass rename burst
+          Any one of these in isolation is a reason to investigate now, not after encryption.
+      - title: Why backups decide the payment question
+        body: |
+          Backups   offline, immutable, restore tested last month
+          Outcome   recover to clean systems without paying
+          An untested or online-only backup often leaves payment as the only option, so test restores.
+    exercise:
+      title: Work a ransomware scenario on paper
+      environment: A tabletop or notes file with a sample ransomware scenario and host inventory
+      tools: [A scenario brief, a host and backup inventory, a notes file]
+      steps:
+        - From the scenario, list the early indicators and the time you would have first been able to act.
+        - Scope the incident, naming the affected hosts and accounts and how you confirmed each.
+        - Write the isolation steps, keeping affected hosts powered on where you can, and say what you isolate first.
+        - List the evidence you would preserve before eradication and why each item matters.
+        - Plan recovery from the backup inventory, noting which backups you trust and whether a restore was ever tested.
+        - State the payment recommendation and who actually makes that decision.
+        - Name the one root-cause fix a post-incident review should require so it does not recur.
+      deliverable: A one-page ransomware response plan with scope, isolation, evidence, recovery, the payment recommendation and a root-cause fix.
+    expected_outcome: >
+      You can recognise ransomware early, work it through scope, isolation, evidence,
+      eradication and recovery, and explain why tested backups make not paying possible.
+    quiz:
+      - prompt: Which is an early sign of ransomware a SOC can catch before mass encryption?
+        options:
+          - A user changing their wallpaper
+          - Shadow copies being deleted and security tools disabled
+          - A successful nightly backup
+          - A routine software update
+        answer: 1
+        explanation: Deleting shadow copies and disabling security tools are classic pre-encryption steps worth acting on immediately.
+      - prompt: What is the right order for the core response steps?
+        options:
+          - Recover first, then scope, then isolate
+          - "Scope, isolate, preserve, eradicate, recover"
+          - Pay first and investigate later
+          - Delete everything and rebuild
+        answer: 1
+        explanation: You scope, isolate, preserve evidence, eradicate access and then recover, in that order.
+      - prompt: Paying the ransom is best treated as
+        options: [The first step, A last resort and a business and legal decision, Always required, The SOC analyst's call alone]
+        answer: 1
+        explanation: Payment funds crime, guarantees nothing and may breach sanctions, so it is a last-resort decision made by the business, not the SOC.
+      - prompt: What makes a confident decision not to pay realistic?
+        options:
+          - A large SIEM
+          - "Tested, offline, immutable backups"
+          - A faster firewall
+          - More analysts on shift
+        answer: 1
+        explanation: If clean, tested backups can restore the data, the organisation does not depend on the attacker's key.
