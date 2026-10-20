@@ -95,3 +95,113 @@ lessons:
         options: [Specificity, Robustness, Documentation, A severity level]
         answer: 1
         explanation: Robust detections survive trivial variations by the attacker.
+
+  - slug: de-testing-coverage
+    title: Testing Detections and Mapping Coverage
+    order: 2
+    difficulty: intermediate
+    summary: Validate a detection against benign test activity, measure its precision, and map your rule set to MITRE ATT&CK to find coverage gaps.
+    theory_minutes: 12
+    lab_minutes: 55
+    objectives: ["secplus:4.4", "sc200:2", "cysa:1.5", "cysa:3.1"]
+    learning_objectives:
+      - Validate a detection by generating the behaviour it should catch
+      - Measure a detection's precision and recall and tune from the results
+      - Map a rule set to MITRE ATT&CK to see and close coverage gaps
+    theory: |
+      Writing a detection is only half the job; an untested rule is a guess.
+      **Detection validation** generates the behaviour a rule should catch in a safe
+      lab and confirms the rule fires, then generates benign look-alike activity to
+      confirm it does not. Teams do this with controlled, well-understood test actions
+      (a benign script that writes a Run key, a safe simulation of a logon pattern)
+      rather than real malware, so the signal is known in advance. This is the core of
+      **detection-as-code**: rules live in version control, each has a documented test,
+      and a change is reviewed and re-tested like any other code.
+
+      Detections are measured, not assumed. **Precision** is how many alerts were real
+      out of those raised; **recall** is how much of the real activity was caught. A
+      rule with high recall but low precision floods the queue; one with high precision
+      but low recall is quiet but misses things. Tuning moves a rule toward both using
+      allow lists, better fields and thresholds, and every change is re-validated so a
+      fix does not silently break detection. Tracking these numbers over time is part of
+      **process improvement**: the SOC can show a rule getting better rather than just
+      busier.
+
+      Individual rules say nothing about overall **coverage**. Mapping every detection
+      to a **MITRE ATT&CK** technique produces a heatmap showing which tactics and
+      techniques are well covered, thinly covered, or blind. A **detection maturity**
+      view then prioritises the gaps by how relevant each technique is to the
+      organisation's real threats, so engineering builds the detection that closes the
+      most important blind spot next rather than the easiest one. Coverage mapping turns
+      a pile of rules into a deliberate, measurable program.
+    examples:
+      - title: A validation record for one rule
+        body: |
+          Rule: encoded PowerShell (-enc) execution
+          Positive test: run a benign script with an -enc flag  -> rule fired (good)
+          Negative test: run normal admin PowerShell            -> no alert (good)
+          Result: precision improved after excluding a known deployment tool's -enc use
+      - title: An ATT&CK coverage snapshot
+        body: |
+          Tactic                 Techniques covered / total   Note
+          Execution              4 / 6                        PowerShell, WMI covered
+          Persistence            2 / 8                        Run key, scheduled task only
+          Lateral Movement       0 / 5                        blind spot -> build next
+    exercise:
+      title: Validate a detection and map your coverage to ATT&CK
+      environment: Your detection lab (Sigma plus a SIEM, or a local rule set) on an isolated VM, and the free MITRE ATT&CK Navigator
+      tools: [SIEM or Sigma, MITRE ATT&CK Navigator, a spreadsheet, a benign test script]
+      steps:
+        - Take an existing detection (for example your encoded-PowerShell Sigma rule) and write down exactly what behaviour should and should not trigger it.
+        - In an isolated VM, generate the target behaviour with a benign, well-understood test action and confirm the rule fires; record the evidence.
+        - Generate benign look-alike activity and confirm the rule stays quiet; if it fires, note the false positive and its cause.
+        - Estimate the rule's precision and recall from your tests and make one tuning change (allow list, field or threshold), then re-validate both cases.
+        - Map every detection you have to a MITRE ATT&CK technique in the Navigator and colour a simple coverage heatmap.
+        - Identify your biggest blind spot and justify, using your organisation's likely threats, why it is the next detection to build.
+        - Record the rule, its test, and the change in a version-controlled file (or a documented change entry) as detection-as-code.
+      deliverable: The validation evidence (positive and negative tests), the precision/recall estimate and tuning result, and the ATT&CK coverage heatmap naming the next gap to close.
+    expected_outcome: >
+      You can prove a detection works with positive and negative tests, measure and tune
+      its precision and recall, and map your rule set to ATT&CK so coverage gaps are
+      visible and prioritised.
+    quiz:
+      - prompt: Why generate benign look-alike activity when testing a detection?
+        options:
+          - To fill up the logs
+          - To confirm the rule does not raise false positives on normal behaviour
+          - To replace the positive test
+          - To slow the SIEM down
+        answer: 1
+        explanation: A negative test checks the rule stays quiet on benign activity, measuring false positives.
+      - prompt: A detection with high recall but low precision will
+        options:
+          - Miss most real activity
+          - Catch real activity but also flood the queue with false positives
+          - Never fire
+          - Run faster
+        answer: 1
+        explanation: High recall catches the activity; low precision means many of those alerts are false.
+      - prompt: Mapping detections to MITRE ATT&CK mainly lets a team
+        options:
+          - Delete old rules
+          - See which tactics and techniques are covered or blind and prioritise gaps
+          - Avoid testing
+          - Lower storage cost
+        answer: 1
+        explanation: Coverage mapping turns individual rules into a visible, prioritisable program.
+      - prompt: Detection-as-code means detections are
+        options:
+          - Written only in a SIEM UI
+          - Kept in version control with documented tests and reviewed changes
+          - Never changed
+          - Run manually each day
+        answer: 1
+        explanation: Treating rules like code adds versioning, tests and review so changes are safe and repeatable.
+      - prompt: After tuning a detection, why re-validate it?
+        options:
+          - To use more compute
+          - To confirm the change did not silently break the rule's detection
+          - To reset its ATT&CK mapping
+          - To clear the alert queue
+        answer: 1
+        explanation: Re-running the positive and negative tests ensures a fix still catches real activity.

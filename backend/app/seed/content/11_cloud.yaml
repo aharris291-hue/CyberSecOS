@@ -90,3 +90,107 @@ lessons:
         options: [Conditional Access, Sign-in logs, Password writeback, Groups]
         answer: 0
         explanation: Conditional Access policies apply conditions and controls such as MFA.
+
+  - slug: cloud-logging-posture
+    title: Cloud Logging and Posture Management
+    order: 2
+    difficulty: intermediate
+    summary: Turn on the cloud audit logs that matter, find a risky misconfiguration, and read a posture-management finding to a fix.
+    theory_minutes: 12
+    lab_minutes: 52
+    objectives: ["secplus:3.1", "secplus:4.1", "sc900:3", "sc200:2"]
+    learning_objectives:
+      - Explain the cloud control-plane logs a SOC relies on
+      - Find a common misconfiguration and explain its risk
+      - Read a cloud posture-management finding and turn it into a fix
+    theory: |
+      In the cloud the **control plane** (the API that creates and changes resources)
+      is the most important thing to watch, because an attacker with stolen credentials
+      acts through it rather than on a single host. The essential **audit logs** record
+      who did what: **AWS CloudTrail**, **Azure Activity log** and **Microsoft Entra**
+      sign-in and audit logs, plus resource-level logs such as storage access. A SOC's
+      first cloud task is ensuring these are enabled, centralised and retained, because
+      an action nobody logged is an action nobody can investigate. These feed the same
+      SIEM detections covered earlier, now looking for things like a new access key, a
+      permission grant, or public exposure of a resource.
+
+      Most cloud incidents start with a **misconfiguration**, not an exploit. Classic
+      examples: a storage bucket or blob made public, an over-permissive identity role
+      with wildcard permissions, a security group open to the internet on a sensitive
+      port, and disabled logging. These are failures of configuration against the
+      **shared responsibility model**, where securing *what you put in* the cloud is
+      the customer's job. **Cloud Security Posture Management (CSPM)** tools continuously
+      check resources against benchmarks (for example the CIS cloud benchmarks) and
+      raise **findings** ranked by severity.
+
+      A finding is only useful once it becomes a fix. Each one names the resource, the
+      rule it broke, and usually a remediation, and the analyst's job is to confirm the
+      risk, decide whether it is a true exposure, and route it to remediation with the
+      right urgency. **Workload protection** adds runtime detection on top of
+      configuration checks: tools such as **Microsoft Defender for Cloud** watch for
+      suspicious behaviour like a compute instance querying the cloud metadata service
+      for credentials. Posture management (prevent misconfiguration) and workload
+      protection (detect behaviour) together are how a SOC covers the cloud.
+    examples:
+      - title: A CloudTrail event worth alerting on
+        body: |
+          eventName: CreateAccessKey        // a new long-lived credential was created
+          userIdentity: assumed-role/deploy  on an account that normally uses SSO
+          sourceIPAddress: an unfamiliar country
+          Alert: new access key on a human identity from a rare location -> investigate
+      - title: A CSPM finding read to a fix
+        body: |
+          Finding:   Storage account "backups" allows public read   Severity: High
+          Rule:      CIS - no anonymous public access to object storage
+          Confirm:   the bucket holds database exports (regulated data) -> true exposure
+          Fix:       remove public access, add a private endpoint, rotate anything leaked
+    exercise:
+      title: Enable cloud logging, find a misconfiguration and remediate a finding
+      environment: A free-tier cloud account (AWS Free Tier, Azure free account) or a cloud sandbox; never use a production account
+      tools: [Cloud provider console, the provider's audit log (CloudTrail/Activity/Entra), a free CSPM or the provider's built-in posture tool]
+      steps:
+        - In a free-tier or sandbox account (never production), confirm the control-plane audit log is enabled and centralised, and note its retention.
+        - Perform a benign logged action (create then delete a test resource) and find the corresponding entry in the audit log, identifying who, what and from where.
+        - Deliberately create one common misconfiguration on a test resource (for example a storage container set to public read) in the sandbox.
+        - Run the provider's posture tool or a free CSPM and locate the finding for your misconfiguration; record its severity and the rule it cites.
+        - Confirm the risk, then remediate it (remove public access) and re-run the check to show the finding cleared.
+        - Write one SIEM-style detection idea for a control-plane event worth alerting on (for example a new access key from a rare location) and the log it reads.
+        - Summarise, using the shared responsibility model, which of these the provider secures and which you must.
+      deliverable: Evidence of the audit-log entry for your test action, the CSPM finding before and after remediation, and one control-plane detection idea with its log source.
+    expected_outcome: >
+      You can ensure the cloud control-plane logs are flowing, find and remediate a
+      common misconfiguration from a posture finding, and name a control-plane event
+      worth detecting, framed by the shared responsibility model.
+    quiz:
+      - prompt: Why is the cloud control plane the priority for SOC logging?
+        options:
+          - It is the only thing that generates logs
+          - An attacker with stolen credentials acts through its API to create and change resources
+          - It is cheaper to log
+          - It replaces endpoint logs
+        answer: 1
+        explanation: Control-plane API activity is how cloud resources are created and changed, so it is where credential misuse shows.
+      - prompt: Most cloud security incidents begin with
+        options: [A zero-day exploit, A misconfiguration such as public storage or over-permissive roles, A DDoS, A phishing call]
+        answer: 1
+        explanation: Misconfigured resources and identities are the leading cause of cloud exposure.
+      - prompt: Under the shared responsibility model, securing the data and configuration you put in the cloud is
+        options: [The provider's job, The customer's job, Nobody's job, The auditor's job]
+        answer: 1
+        explanation: Providers secure the cloud itself; customers secure what they deploy and configure in it.
+      - prompt: A CSPM tool primarily
+        options:
+          - Blocks all traffic
+          - Continuously checks resources against benchmarks and raises ranked findings
+          - Replaces the SIEM
+          - Encrypts backups
+        answer: 1
+        explanation: Cloud Security Posture Management flags configuration drift against benchmarks as prioritised findings.
+      - prompt: Workload protection differs from posture management because it
+        options:
+          - Only checks configuration
+          - Adds runtime detection of suspicious behaviour on top of configuration checks
+          - Is a billing feature
+          - Disables logging
+        answer: 1
+        explanation: Posture management prevents misconfiguration; workload protection detects malicious runtime behaviour.

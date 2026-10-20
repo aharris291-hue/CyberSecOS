@@ -97,6 +97,7 @@ def test_pass_mark_boundary():
 
 def test_grade_exam_breakdown_counts(db):
     from app.models import QuizQuestion
+    from app.services.exam import certification_questions
     questions = build_exam(db, "secplus", 6, rng=random.Random(3))
     # Answer the first correctly, the rest wrong.
     answers = {}
@@ -106,7 +107,12 @@ def test_grade_exam_breakdown_counts(db):
     result = grade_exam(db, "secplus", answers)
     assert result.correct == 1
     assert result.total == 6
-    assert sum(b.correct for b in result.breakdown) == 1
+    # The one correct question credits each objective it exercises, and no
+    # objective can report more correct than it was asked.
+    correct_objectives = len(certification_questions(db, "secplus").get(questions[0].id, []))
+    assert correct_objectives >= 1
+    assert sum(b.correct for b in result.breakdown) == correct_objectives
+    assert all(b.correct <= b.total for b in result.breakdown)
 
 
 def test_duplicate_question_rejected(client, auth_headers, db):

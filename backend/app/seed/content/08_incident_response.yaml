@@ -90,3 +90,110 @@ lessons:
         options: [A new firewall, Lessons learned and improvements, Deleted logs, A password reset]
         answer: 1
         explanation: Post-incident activity captures lessons learned to improve preparation.
+
+  - slug: ir-containment-recovery
+    title: Containment, Recovery and Post-Incident Review
+    order: 2
+    difficulty: intermediate
+    summary: Take a confirmed incident through containment, eradication and recovery, then run a lessons-learned review and build a reusable playbook.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.8", "cysa:3.2", "cysa:3.3", "cysa:3.1"]
+    learning_objectives:
+      - Choose a containment strategy that preserves evidence
+      - Walk an incident through eradication, recovery and verification
+      - Run a post-incident review and capture it as a reusable playbook
+    theory: |
+      The phishing lesson covered detection, analysis and reporting; this lesson
+      covers what happens once an incident is confirmed. The **NIST** lifecycle moves
+      from analysis into **containment, eradication and recovery**, then
+      **post-incident activity**. **Containment** stops the spread, and the strategy
+      is a trade-off. **Short-term** containment is immediate (isolate a host from the
+      network, disable an account) while **long-term** containment keeps the business
+      running while a permanent fix is prepared. A key rule is to **preserve evidence**
+      while containing. Pulling the power cord destroys memory-resident artefacts, so
+      analysts prefer network isolation and a memory capture before reimaging.
+
+      **Eradication** removes the adversary's foothold: deleting malware and the
+      persistence it created, resetting compromised credentials, and closing the
+      initial access vector. **Recovery** returns systems to production from a known
+      good state, restoring from clean backups and monitoring closely for the attacker
+      returning. Nothing is called recovered until it is **verified**, because
+      reinfection from a missed persistence mechanism is common. The whole response
+      is framed by an attack model such as **MITRE ATT&CK** or the **Cyber Kill Chain**,
+      which helps responders anticipate the adversary's next step.
+
+      The phase teams most often skip is **post-incident activity**. A **lessons-learned**
+      review, held soon after closure, asks what happened, how well the response went,
+      and what to change, producing concrete actions with owners. Recurring responses
+      are captured as **playbooks** and **runbooks** so the next analyst does not start
+      from scratch, and **metrics** such as dwell time and time-to-contain show whether
+      the SOC is improving. **Preparation**, the first NIST phase, is really the output
+      of this one: better tooling, access and playbooks ready before the next incident.
+    examples:
+      - title: Containment that preserves evidence
+        body: |
+          Compromised laptop detected.
+          Wrong:  power it off      -> loses memory, running processes, network state
+          Right:  isolate at the network (keep it powered), capture memory and disk,
+                  disable the user's sessions, then reimage from a clean build
+      - title: A lessons-learned action table
+        body: |
+          Finding                         Action                          Owner     Due
+          MFA was not enforced on VPN     Enforce MFA for all remote acc. IT        2 weeks
+          Alert sat 6h before triage      Add after-hours on-call rota    SOC lead  1 month
+          No playbook for this malware    Write and test a playbook       Analyst   2 weeks
+    exercise:
+      title: Run an incident through containment to a lessons-learned playbook
+      environment: A written incident scenario (use your phishing-triage result or a sample compromise) and a document or wiki for the playbook
+      tools: [A document editor, the MITRE ATT&CK website, your IR notes]
+      steps:
+        - Take a confirmed incident (a compromised workstation and account) and map the attacker's steps so far to MITRE ATT&CK or the Cyber Kill Chain.
+        - Decide a containment strategy that preserves evidence, writing the exact order of actions (isolate, capture, disable) and why power-off is avoided.
+        - List the eradication steps needed to remove the foothold, including persistence removal and credential resets, and the initial vector you would close.
+        - Write the recovery steps and, crucially, how you would verify the system is clean before and after returning it to production.
+        - Hold a short lessons-learned review (on paper) and produce an action table with at least three findings, each with an owner and a due date.
+        - Capture the whole response as a reusable playbook: trigger, roles, step-by-step actions, and the decision points where an analyst must escalate.
+        - State two metrics you would track (for example time-to-contain and dwell time) and how preparation for the next incident improves because of this one.
+      deliverable: The ATT&CK mapping, the ordered containment/eradication/recovery steps with verification, the lessons-learned action table, and the reusable playbook.
+    expected_outcome: >
+      You can take a confirmed incident through evidence-preserving containment,
+      eradication and verified recovery, then turn the response into a lessons-learned
+      review and a playbook that makes the next response faster.
+    quiz:
+      - prompt: Why do responders prefer network isolation over powering a compromised host off?
+        options:
+          - It is faster to type
+          - Powering off destroys memory-resident evidence and running state
+          - It uses less electricity
+          - It automatically removes malware
+        answer: 1
+        explanation: Network isolation contains the host while preserving volatile evidence that a shutdown would lose.
+      - prompt: Eradication in the incident lifecycle means
+        options:
+          - Writing the final report
+          - Removing the adversary's foothold, including malware, persistence and the initial vector
+          - Restoring from backup
+          - Notifying customers
+        answer: 1
+        explanation: Eradication removes the attacker's presence so recovery does not simply restore a compromised state.
+      - prompt: A system should not be called recovered until it is
+        options: [Rebooted, Verified clean and monitored for the attacker's return, Renamed, Re-IP'd]
+        answer: 1
+        explanation: Missed persistence often causes reinfection, so verification and monitoring are required before closure.
+      - prompt: The main purpose of a lessons-learned review is to
+        options:
+          - Assign blame
+          - Produce concrete improvement actions with owners so the next response is better
+          - Close the ticket faster
+          - Satisfy the firewall policy
+        answer: 1
+        explanation: It is a blameless review that turns the incident into owned, actionable improvements.
+      - prompt: A playbook helps a SOC because it
+        options:
+          - Replaces the analyst
+          - Captures a repeatable response so the next analyst does not start from scratch
+          - Deletes old alerts
+          - Guarantees no incidents
+        answer: 1
+        explanation: Playbooks encode proven steps for a scenario, making response consistent and faster.
