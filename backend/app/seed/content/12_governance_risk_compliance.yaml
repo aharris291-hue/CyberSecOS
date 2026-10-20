@@ -375,3 +375,87 @@ lessons:
         options: ["72 hours of becoming aware", "one calendar year", "ten minutes", "no fixed time"]
         answer: 0
         explanation: GDPR sets a 72-hour window to notify the supervisory authority after becoming aware of a reportable breach.
+
+  - slug: grc-frameworks-control-mapping
+    title: Security Frameworks and Control Mapping
+    order: 5
+    difficulty: beginner
+    summary: Use NIST CSF, ISO 27001 and CIS Controls to structure a program and show coverage.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:5.1", "sc900:4", "cysa:4.1"]
+    learning_objectives:
+      - Describe what NIST CSF, ISO 27001 and the CIS Controls each provide
+      - Explain control mapping and why it satisfies several obligations at once
+      - Use a framework to structure a program and demonstrate coverage to auditors
+    theory: |
+      A security program needs a structure so that effort is deliberate rather than ad hoc, and
+      frameworks provide it. **NIST CSF** organises the work into functions, Identify, Protect,
+      Detect, Respond and Recover, with Govern added in version 2.0, giving a common language for
+      where an activity fits. **ISO 27001** is a certifiable standard for an information security
+      management system, an ISMS, that puts the emphasis on a repeatable process of risk
+      assessment and treatment. The **CIS Controls** are a prioritised, concrete checklist of
+      safeguards, useful when you want specific actions rather than principles.
+
+      Because the frameworks cover similar ground in different words, **control mapping** matters.
+      Mapping one framework's controls to another, or to a regulation such as GDPR or PCI DSS,
+      lets a single implemented control satisfy several obligations at once and shows auditors the
+      same evidence answers many requirements. Without a map you re-implement the same control
+      three times and still cannot prove coverage.
+
+      In practice you pick a **primary framework** that fits the organisation, map each requirement
+      to the control that actually implements it, and find the **gaps** where a requirement has no
+      control behind it. Tracking that over time turns into a maturity view, and for a SOC it is
+      the frameworks that decide which detections, logging and response processes are expected and
+      how that coverage is demonstrated when an auditor asks.
+    examples:
+      - title: One control mapped to several requirements
+        body: |
+          Control    centralised logging with 1-year retention
+          Satisfies  NIST CSF Detect, ISO 27001 A.8.15, PCI DSS log-retention requirement
+          One implemented control answers requirements in three different frameworks.
+      - title: A gap the mapping exposes
+        body: |
+          Requirement   recover from backups within a set time
+          Mapped control   none found (no tested restore process)
+          A requirement with no control behind it is a gap to fix, not a box to tick.
+    exercise:
+      title: Map controls to a framework and find the gaps
+      environment: A notes or spreadsheet file with a list of implemented controls
+      tools: [A framework reference (NIST CSF or CIS Controls), a list of current controls, a notes file]
+      steps:
+        - Choose a primary framework that suits a small organisation and note why.
+        - List the controls the organisation already has in place.
+        - Map each control to the framework requirement or requirements it satisfies.
+        - Mark any requirement that has no control behind it as a gap.
+        - Show one control that satisfies requirements in two different frameworks or regulations.
+        - Recommend which gap to close first and why, based on risk.
+      deliverable: A control-mapping table linking controls to framework requirements, with the gaps highlighted and a first priority.
+    expected_outcome: >
+      You can use a framework to structure a program, map controls to requirements so one
+      control covers several obligations, and show where the gaps are and which to close first.
+    quiz:
+      - prompt: Which framework organises security work into Identify, Protect, Detect, Respond and Recover?
+        options: [PCI DSS, The NIST Cybersecurity Framework, A firewall ruleset, The OSI model]
+        answer: 1
+        explanation: The NIST CSF groups activity into those functions (with Govern added in CSF 2.0) as a common language.
+      - prompt: What is the main benefit of control mapping?
+        options:
+          - It deletes controls
+          - One implemented control can satisfy requirements across several frameworks or regulations
+          - It replaces the need for controls
+          - It hides gaps
+        answer: 1
+        explanation: Mapping shows how one control answers many requirements, so you prove coverage without duplicating work.
+      - prompt: A framework requirement with no control behind it is
+        options: [A pass, A gap to fix, An exception, A duplicate]
+        answer: 1
+        explanation: A requirement nothing implements is a genuine gap, not something to tick off.
+      - prompt: ISO 27001 is best described as
+        options:
+          - A packet analyser
+          - A certifiable standard for an information security management system
+          - A password policy
+          - A cloud provider
+        answer: 1
+        explanation: ISO 27001 certifies an ISMS built on a repeatable risk-assessment and treatment process.

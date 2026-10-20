@@ -1,5 +1,12 @@
 # Changelog
 
+## Phase 2 - Every course five lessons deep
+
+### A fifth lesson for the last four courses
+- Added a fifth lesson to Security Foundations, Security Architecture, Cloud Security and Governance/Risk/Compliance, so all 12 courses now have five lessons each (60 lessons total) - the lower bound of the 5-10 lessons-per-course target.
+- New lessons: identity and access management fundamentals (AAA, MFA, SSO, least privilege, the account lifecycle and IAM attack signals); designing logging and monitoring architecture (what to log, central collection, log integrity, time sync, coverage maps and silent-source alerts); cloud identity, roles and least privilege (policies and service identities, over-broad grants, privilege-escalation paths, permission boundaries); and security frameworks and control mapping (NIST CSF, ISO 27001, CIS Controls, mapping one control to many requirements, finding gaps).
+- All keep the six education-standard sections and the ~18/82 theory/lab split (catalog theory ratio 0.18); content-standard, seeding and coverage tests still pass (353 backend tests).
+
 ## Phase 2 - Five lessons for the environment and tooling courses
 
 ### A fifth lesson for Networking, Windows, Linux and Vulnerability Management

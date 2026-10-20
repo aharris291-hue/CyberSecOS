@@ -370,3 +370,81 @@ lessons:
         options: [It is alphabetical, It turns scattered events into a coherent attack story, It is required by law, It saves disk space]
         answer: 1
         explanation: Following the attacker's natural progression reconstructs the incident instead of leaving a pile of events.
+
+  - slug: cloud-iam-privilege
+    title: Cloud Identity, Roles and Least Privilege
+    order: 5
+    difficulty: intermediate
+    summary: Spot over-broad cloud permissions and privilege-escalation paths in roles and policies.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.6", "sc200:1", "sc900:2"]
+    learning_objectives:
+      - Describe how cloud access is granted through policies, roles and service identities
+      - Recognise over-broad permissions and privilege-escalation paths
+      - Name the controls and signals that keep cloud identity least-privileged
+    theory: |
+      In the cloud, identity is the perimeter and misconfigured permissions are the most common
+      serious risk. Access is granted by **policies** that list allowed actions and are attached to
+      **roles**, users and **service identities**, the managed identities, service accounts and
+      instance roles that let workloads call the platform without a human. Because almost everything
+      is an API call, a permission is effectively a capability, and a careless grant hands an
+      attacker that capability.
+
+      The failure modes are predictable. **Over-broad permissions**, the wildcard `*:*` or a
+      service with far more rights than it uses, give a huge blast radius. **Long-lived access
+      keys** are credentials waiting to leak. And the dangerous one is a **privilege-escalation
+      path**: a role allowed to modify its own policy, attach an admin policy, or assume a more
+      powerful role can quietly promote itself. Spotting these needs you to read the policy, not
+      just trust the role's name.
+
+      The controls are about caps and review. **Least privilege** grants only what is used, and
+      **permission boundaries** or **service control policies** cap what any identity can ever do,
+      however its policies change. Access analyzers and entitlement reviews surface unused and risky
+      grants. For a SOC, the live signals tie back to incidents: a new admin-policy attach, a role
+      assuming another it never normally does, and fresh access-key creation are all worth an alert.
+    examples:
+      - title: An over-broad policy
+        body: |
+          Statement   Effect=Allow  Action=*  Resource=*
+          A policy granting every action on every resource is the opposite of least privilege.
+      - title: A privilege-escalation path
+        body: |
+          Role app-ci may call AttachRolePolicy on itself
+          It can attach AdministratorAccess to its own role and become admin, so the grant is dangerous.
+    exercise:
+      title: Audit cloud roles for least privilege
+      environment: A sample set of cloud IAM policies and roles in a notebook or console export
+      tools: [Sample IAM policies and roles, a policy reference, a notes file]
+      steps:
+        - List the roles and service identities in the sample and the policies attached to each.
+        - Flag any policy using wildcard actions or resources and note what it could reach.
+        - Identify any long-lived access keys and say why they are a risk.
+        - Look for privilege-escalation paths, such as a role that can modify its own policy or assume a stronger role.
+        - Recommend a least-privilege change and where a permission boundary or service control policy would cap the risk.
+        - Name the identity events you would alert on, such as a new admin-policy attach or access-key creation.
+      deliverable: An IAM audit note listing over-broad policies, escalation paths, a least-privilege fix and the identity alerts to add.
+    expected_outcome: >
+      You can read cloud policies for over-broad grants and escalation paths, recommend
+      least-privilege caps, and name the identity signals that tie into incident detection.
+    quiz:
+      - prompt: In the cloud, a permission is effectively
+        options: [A cosmetic label, A capability, since almost everything is an API call, A billing line, A network port]
+        answer: 1
+        explanation: Because cloud actions are API calls, granting a permission grants the capability to perform them.
+      - prompt: Which policy is the clearest least-privilege violation?
+        options:
+          - A read-only policy on one bucket
+          - A policy allowing all actions on all resources
+          - A policy scoped to one function
+          - A deny-all policy
+        answer: 1
+        explanation: A wildcard allow on every action and resource gives the widest possible blast radius.
+      - prompt: A role that can attach an admin policy to itself represents
+        options: [Normal automation, A privilege-escalation path, A backup job, A logging feature]
+        answer: 1
+        explanation: Being able to grant itself more power lets the role escalate to admin, so the grant is dangerous.
+      - prompt: What caps what an identity can ever do regardless of its attached policies?
+        options: [A faster region, A permission boundary or service control policy, A larger instance, A longer access key]
+        answer: 1
+        explanation: Permission boundaries and service control policies set a ceiling that individual policy grants cannot exceed.
