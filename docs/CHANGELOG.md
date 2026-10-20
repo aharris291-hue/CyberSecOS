@@ -1,5 +1,12 @@
 # Changelog
 
+## Phase 2 - Every course four lessons deep
+
+### A fourth lesson for the six courses still at three
+- Added a fourth lesson to the remaining three-lesson courses, so all 12 courses now have four lessons each (48 lessons total).
+- New lessons: analysing phishing and social engineering (email headers, SPF/DKIM/DMARC, safe link and attachment triage); finding web application vulnerabilities (OWASP Top 10, authenticated scanning, confirming findings over false positives); enriching and correlating alerts (context sources, MITRE ATT&CK mapping, deduplication); designing secure applications and APIs (least privilege, authN vs authZ, gateways, WAF, secrets); investigating a cloud incident from audit logs (CloudTrail/Activity logs, access-escalation-objective, timeline and containment); and business continuity and incident readiness (RTO/RPO, tabletop exercises, breach-notification duties).
+- All keep the six education-standard sections and the ~18/82 theory/lab split (catalog theory ratio 0.18); content-standard, seeding and coverage tests still pass (305 backend tests). Also corrected the content-guide lesson-count table, which had drifted behind the seed data.
+
 ## Phase 2 - Deeper foundation courses
 
 ### A fourth lesson for Networking, Windows and Linux

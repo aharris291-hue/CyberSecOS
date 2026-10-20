@@ -300,3 +300,82 @@ lessons:
         options: [A true positive, Detection debt worth retiring, A compensating control, An enrichment source]
         answer: 1
         explanation: Unmaintained, distrusted rules are detection debt, and retiring them can be as valuable as adding new coverage.
+
+  - slug: de-alert-enrichment-correlation
+    title: Enriching and Correlating Alerts
+    order: 4
+    difficulty: intermediate
+    summary: Turn a bare detection into an actionable alert with context and correlation.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.4", "cysa:1.5", "cysa:1.4", "sc200:2"]
+    learning_objectives:
+      - Explain why a raw detection needs enrichment before an analyst can act on it
+      - List the context sources that make an alert actionable
+      - Correlate and deduplicate related alerts into a single incident
+    theory: |
+      A detection rule fires on a pattern, but a bare alert, a username, an IP and a timestamp,
+      forces the analyst to go and look everything up by hand. **Enrichment** adds that context
+      automatically as the alert is created, so the analyst reads one record instead of pivoting
+      across five tools. Good enrichment answers the obvious first questions before they are asked.
+
+      The useful context sources are predictable. **Asset data** says what the host is and how
+      important it is. **Identity data** says who the user is, their role and whether the account
+      is privileged. **Threat intelligence** says whether an IP, domain or hash is already known
+      bad. **Geolocation and history** say whether this is normal for this user. Mapping the
+      detection to a framework such as **MITRE ATT&CK** tells the analyst what stage of an attack
+      the behaviour belongs to.
+
+      Enrichment is also how you fight alert fatigue. One intrusion often trips several rules, so
+      **correlation** groups alerts that share an entity or a time window, and **deduplication**
+      collapses repeats of the same thing into one. The result is fewer, richer alerts: an analyst
+      opens a single incident that already carries the host, the user, the threat-intel verdict
+      and the ATT&CK technique, and can make a decision instead of assembling facts.
+    examples:
+      - title: A bare alert versus an enriched one
+        body: |
+          Bare       login_failed  user=jsmith  src=203.0.113.9
+          Enriched   login_failed  user=jsmith (Finance, non-admin)  src=203.0.113.9
+                     threat-intel = known brute-force source, geo = different country
+          The enriched alert answers who, from where and how risky before the analyst pivots.
+      - title: Correlating repeats into one incident
+        body: |
+          40 login_failed alerts, same user, same source, within 3 minutes
+          Correlation groups them as one brute-force incident rather than 40 tickets.
+    exercise:
+      title: Design the enrichment for one detection
+      environment: A SIEM or notebook with sample alert, asset, identity and threat-intel data
+      tools: [A sample alert feed, an asset or identity list, a threat-intel list, a notes file]
+      steps:
+        - Take one raw detection, such as a failed-login or suspicious-process alert, and list the fields it carries.
+        - Write down the questions an analyst would have to look up by hand to triage it.
+        - For each question, name the data source that answers it and the field you would join on.
+        - Build the enriched alert on paper or in the tool, adding asset, identity and threat-intel context.
+        - Map the detection to a MITRE ATT&CK technique and add that to the record.
+        - Define a correlation rule that groups alerts sharing the same user and source inside a time window, and a deduplication key.
+        - Compare the raw and enriched alerts and note how many pivots the enrichment saved.
+      deliverable: An enriched-alert design listing each context field, its source, the ATT&CK mapping and the correlation and dedup keys.
+    expected_outcome: >
+      You can take a bare detection and specify the enrichment, ATT&CK mapping and
+      correlation that turn it into a single actionable alert an analyst can decide on.
+    quiz:
+      - prompt: Why enrich an alert at creation time rather than leaving it bare?
+        options:
+          - To make the alert larger
+          - So the analyst reads one record instead of pivoting across several tools
+          - To slow the pipeline down
+          - To avoid writing detection rules
+        answer: 1
+        explanation: Enrichment adds the context up front, so the analyst decides from one record rather than looking everything up by hand.
+      - prompt: Which of these is an identity-context source for enrichment?
+        options: [The user's role and whether the account is privileged, The office Wi-Fi password, The server's fan speed, The SIEM licence count]
+        answer: 0
+        explanation: Identity context is who the user is, their role and privilege level, which shapes how serious the alert is.
+      - prompt: Forty identical failed-login alerts for one user in three minutes should be
+        options: [Forty separate tickets, Correlated and deduplicated into one incident, Deleted, Ignored]
+        answer: 1
+        explanation: Correlation and deduplication collapse related and repeated alerts into a single incident, cutting fatigue.
+      - prompt: Mapping a detection to MITRE ATT&CK tells the analyst
+        options: [The server's uptime, What stage of an attack the behaviour belongs to, The cost of the SIEM, The user's salary]
+        answer: 1
+        explanation: An ATT&CK technique places the behaviour in the attack lifecycle, adding meaning to the alert.

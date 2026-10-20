@@ -295,3 +295,83 @@ lessons:
         options: [Writes the privacy policy, Detects and reports breaches in time and protects classified data with monitoring and DLP, Sets the company's legal strategy, Chooses which customers to onboard]
         answer: 1
         explanation: The SOC operationalises compliance by monitoring, protecting regulated data and meeting breach-notification deadlines, rather than authoring policy.
+
+  - slug: grc-continuity-incident-readiness
+    title: Business Continuity and Incident Readiness
+    order: 4
+    difficulty: beginner
+    summary: Plan to keep running through disruption and to meet breach-reporting duties.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:5.1", "secplus:4.8", "cysa:4.2", "sc900:4"]
+    learning_objectives:
+      - Define business continuity and disaster recovery and the metrics RTO and RPO
+      - Explain how an incident response plan and a tabletop exercise prepare an organisation
+      - Describe breach notification duties and who must be told within what time
+    theory: |
+      Security governance is not only about preventing incidents; it is about staying in business
+      when one happens. **Business continuity planning (BCP)** keeps the essential functions of the
+      organisation running through a disruption, while **disaster recovery (DR)** is the narrower
+      job of restoring IT systems and data. The two anchor metrics are the **recovery time
+      objective (RTO)**, how quickly a system must be back, and the **recovery point objective
+      (RPO)**, how much data you can afford to lose, measured as the age of the last good backup.
+
+      Readiness is written down in advance. An **incident response plan** names the roles, the
+      decision-makers, the communication paths and the steps for common scenarios, so that nobody
+      is improvising during a crisis. A **tabletop exercise** walks the team through a realistic
+      scenario on paper to find the gaps, a missing contact, an unclear owner, a backup nobody has
+      ever restored, while it is still cheap to fix them. Backups follow the **3-2-1** idea (three
+      copies, two media, one off-site) and are only real once a restore has actually been tested.
+
+      Finally, many incidents carry **legal and regulatory reporting duties**. Frameworks such as
+      GDPR set tight windows; a personal-data breach is reportable to the regulator within 72
+      hours of becoming aware, and contracts and sector rules add their own. The plan should name
+      who decides a breach is reportable, who notifies the regulator and the affected people, and
+      what must be recorded, because getting the notification wrong adds a second, avoidable harm
+      on top of the incident.
+    examples:
+      - title: RTO and RPO on one system
+        body: |
+          Order system   RTO = 4 hours   RPO = 15 minutes
+          It must be back within 4 hours, and backups every 15 minutes cap the data that can be lost.
+      - title: A gap a tabletop exercise exposes
+        body: |
+          Scenario   ransomware encrypts the file server
+          Finding    nightly backups exist but no restore has ever been tested
+          An untested backup is an assumption, not a recovery plan.
+    exercise:
+      title: Draft a continuity and response one-pager
+      environment: A notes or document file; no system required
+      tools: [A document editor, a backup and recovery reference]
+      steps:
+        - Pick one business-critical system and write what it does and who depends on it.
+        - Assign it an RTO and an RPO and justify each in one line.
+        - Describe its backup scheme against the 3-2-1 idea and state when a restore was last tested.
+        - Write a short incident response plan for one scenario, naming the roles and the first five actions.
+        - Design a one-hour tabletop exercise for that scenario and list the questions you would ask the team.
+        - Note the breach-notification duties that would apply, who must be told and within what time.
+      deliverable: A one-page readiness brief with the RTO and RPO, the backup and restore status, an IR plan outline, a tabletop agenda and the notification duties.
+    expected_outcome: >
+      You can set recovery objectives for a system, outline an incident response plan and
+      tabletop exercise, and state the breach-notification duties an incident would trigger.
+    quiz:
+      - prompt: The recovery point objective (RPO) measures
+        options:
+          - How quickly a system must be back
+          - How much data you can afford to lose, as the age of the last good backup
+          - The cost of the server
+          - The number of users
+        answer: 1
+        explanation: RPO is the tolerable data loss, set by how old the last usable backup is; RTO is the time-to-restore.
+      - prompt: What is the main value of a tabletop exercise?
+        options: [It replaces backups, It finds gaps in the plan on paper before a real crisis, It encrypts data, It buys hardware]
+        answer: 1
+        explanation: A tabletop walks the team through a scenario to surface missing contacts, owners and untested backups cheaply.
+      - prompt: An untested backup should be treated as
+        options: [A guaranteed recovery, An assumption until a restore is tested, A compliance pass, A tabletop exercise]
+        answer: 1
+        explanation: A backup is only real once a restore has been proven; until then it is an assumption.
+      - prompt: Under GDPR, a reportable personal-data breach must reach the regulator within
+        options: ["72 hours of becoming aware", "one calendar year", "ten minutes", "no fixed time"]
+        answer: 0
+        explanation: GDPR sets a 72-hour window to notify the supervisory authority after becoming aware of a reportable breach.

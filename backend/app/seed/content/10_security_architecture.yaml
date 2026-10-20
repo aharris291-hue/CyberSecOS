@@ -292,3 +292,88 @@ lessons:
         options: [Access to the whole subnet after login, Brokered per-application access verified per request, A faster perimeter firewall, Shared admin accounts]
         answer: 1
         explanation: ZTNA brokers access to specific applications with per-request verification instead of dropping the user onto the internal network.
+
+  - slug: arch-secure-applications-apis
+    title: Designing Secure Applications and APIs
+    order: 4
+    difficulty: intermediate
+    summary: Build security into an application and its APIs instead of bolting it on.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:3.1", "secplus:2.3", "secplus:4.1"]
+    learning_objectives:
+      - Apply secure-design principles such as least privilege and defence in depth at the app layer
+      - Explain how input validation, authentication and authorisation defend an API
+      - Place protective controls like a WAF and a gateway in an application's architecture
+    theory: |
+      Most application weaknesses are design choices made early, so security belongs in the
+      architecture, not in a patch later. A few principles do most of the work. **Defence in
+      depth** means no single control is the only thing standing between an attacker and the data.
+      **Least privilege** means each component and token can do only what it needs. **Fail
+      securely** means an error denies access rather than granting it. **Validate input** on the
+      server, because anything from the client can be forged.
+
+      APIs deserve particular care because they expose the application's logic directly.
+      **Authentication** proves who is calling, usually a token the gateway checks, and
+      **authorisation** decides what that caller may do on each object, which is where broken
+      access control creeps in. Validate and constrain every parameter, apply **rate limiting** to
+      blunt abuse and brute force, and never trust an identifier just because it arrived in a
+      request; check that the caller owns the object it names.
+
+      Protective controls sit at the edges. An **API gateway** centralises authentication, rate
+      limiting and logging. A **web application firewall (WAF)** filters common injection and
+      scripting payloads before they reach the app. **Secrets** such as keys and database
+      passwords live in a secrets manager, never in source code. None of these replace secure
+      code, but together they give an attacker far fewer ways in and the defender a place to see
+      and stop abuse.
+    examples:
+      - title: Authentication is not authorisation
+        body: |
+          GET /api/orders/1005   token valid for user 42
+          User 42 is authenticated, but order 1005 belongs to user 88.
+          Without an ownership check the API leaks another user's data.
+      - title: A secret that should not be in code
+        body: |
+          db_password = "S3cr3t!" hard-coded in app.py
+          Anyone with the source, including the git history, now has the database password.
+          It belongs in a secrets manager and should be rotated.
+    exercise:
+      title: Threat-model a small API by design
+      environment: A diagram or notes file; no running system required
+      tools: [A sample API with two or three endpoints, a diagram or notes tool]
+      steps:
+        - Sketch a small API with a client, a gateway and a couple of endpoints, one of which returns a record by id.
+        - For the record-by-id endpoint, write the authentication step and then the separate authorisation check that the caller owns the record.
+        - List each input parameter and the server-side validation you would apply to it.
+        - Mark where a WAF, rate limiting and request logging sit in the diagram.
+        - Find every place a secret is used and state where it is stored instead of in code.
+        - Walk one broken-access-control attack through your design and show which control stops it.
+      deliverable: An annotated API diagram with the authentication and authorisation steps, input validation, placed controls, and secret storage called out.
+    expected_outcome: >
+      You can take a small application or API and show where authentication, authorisation,
+      input validation and edge controls belong so that common attacks are designed out.
+    quiz:
+      - prompt: A request carries a valid token for user 42 but asks for an object owned by user 88. What stops the leak?
+        options:
+          - Authentication alone
+          - An authorisation check that the caller owns the object
+          - A faster database
+          - A larger token
+        answer: 1
+        explanation: Authentication proves who is calling; only an ownership authorisation check stops them reaching another user's object.
+      - prompt: Where should a database password live?
+        options: [In the source code, In a secrets manager, In a code comment, In the client app]
+        answer: 1
+        explanation: Secrets belong in a secrets manager, never in source or the client, where anyone with the code can read them.
+      - prompt: Input validation should be enforced
+        options: [Only in the browser, On the server since client input can be forged, Never, Only in logs]
+        answer: 1
+        explanation: Client-side checks help usability but can be bypassed, so the server must validate every input.
+      - prompt: What is the main job of an API gateway?
+        options:
+          - To style the user interface
+          - "To centralise authentication, rate limiting and logging"
+          - To store the database
+          - To write the code
+        answer: 1
+        explanation: A gateway is a single edge point for authenticating callers, limiting request rates and logging access.

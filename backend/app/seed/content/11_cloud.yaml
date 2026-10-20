@@ -290,3 +290,83 @@ lessons:
         options: [Runs faster, Prevents the whole class of misconfiguration rather than detecting it after exposure, Needs no permissions, Encrypts the data]
         answer: 1
         explanation: Preventive guardrails stop the mistake from happening, which is stronger than detecting and remediating it after data is already exposed.
+
+  - slug: cloud-incident-investigation
+    title: Investigating a Cloud Incident from Audit Logs
+    order: 4
+    difficulty: intermediate
+    summary: Trace an attacker through cloud audit logs from first access to data exfiltration.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["sc200:1", "sc200:3", "cysa:3.2", "secplus:4.8"]
+    learning_objectives:
+      - Name the cloud audit log that records control-plane actions on each major platform
+      - Reconstruct an attacker's path through identity, persistence and data access
+      - Produce a cloud incident timeline and the containment actions it calls for
+    theory: |
+      In the cloud the attacker's moves show up in the **control plane**, the API calls that
+      create, change and delete resources, and every major platform records them. On AWS this is
+      **CloudTrail**, on Azure the **Activity log** and sign-in logs, on Google Cloud the **Cloud
+      Audit Logs**. Each entry carries who made the call, from where, what action, on what
+      resource, and whether it succeeded. That is enough to rebuild an incident even when you
+      never touch the hosts.
+
+      Cloud intrusions follow a recognisable shape. Access usually starts with a **stolen
+      credential or key**, so the first sign is a sign-in or API call from a new location or a
+      service account behaving like a person. Next comes **escalation and persistence**, attaching
+      an admin policy, creating a new access key, adding a user, or changing a role so the access
+      survives. Then the objective, often **data access or exfiltration** from object storage or a
+      database, or spinning up expensive compute. Reading the log in that order turns a pile of
+      events into a story.
+
+      Your output is a **timeline** and a set of **containment** actions. The timeline lists each
+      event with its time, identity, source and resource. Containment in the cloud is fast and
+      specific, disable or rotate the credential, detach the added policy, revoke sessions, and
+      lock down the exposed resource, and every step should itself be recorded so the response is
+      auditable.
+    examples:
+      - title: A persistence step in the audit log
+        body: |
+          time=14:02  identity=svc-ci  action=AttachUserPolicy  policy=AdministratorAccess  result=success
+          A build service account granting itself admin is escalation, not normal CI behaviour.
+      - title: Reading the exfiltration step
+        body: |
+          time=14:19  identity=svc-ci  action=GetObject  bucket=customer-exports  count=3100
+          A sudden bulk read of an export bucket by that same identity is the likely objective.
+    exercise:
+      title: Reconstruct a cloud intrusion from a log sample
+      environment: A sample cloud audit log (CloudTrail, Azure Activity or a GCP equivalent) in a notebook or SIEM
+      tools: [A sample audit log, jq or a SIEM, a timeline template]
+      steps:
+        - Load a sample cloud audit log covering a suspected incident window.
+        - Find the first suspicious authentication or API call and note the identity, source and time.
+        - Follow that identity forward and flag any escalation or persistence action, such as a policy attach or a new access key.
+        - Identify the data-access or resource-creation events that look like the attacker's objective.
+        - Build a timeline with one row per event, each carrying time, identity, source, action and resource.
+        - List the containment actions the incident calls for and the order you would do them in.
+        - Note which log fields you would turn into a detection so this is caught sooner next time.
+      deliverable: A cloud incident timeline and an ordered containment action list, with one proposed detection.
+    expected_outcome: >
+      Given a cloud audit log you can reconstruct an attacker's path from first access
+      to objective, produce a timeline, and name the containment actions and a detection.
+    quiz:
+      - prompt: Which log records control-plane API actions on AWS?
+        options: [CloudTrail, A browser history, The billing PDF, The OS syslog]
+        answer: 0
+        explanation: CloudTrail records who made which API call on which resource, the backbone of an AWS investigation.
+      - prompt: A build service account attaches AdministratorAccess to itself. This is best read as
+        options:
+          - Normal continuous integration
+          - Privilege escalation and likely persistence
+          - A billing event
+          - A network scan
+        answer: 1
+        explanation: A service account granting itself admin is escalation and a persistence foothold, not routine CI.
+      - prompt: A sensible first containment step for a compromised cloud credential is to
+        options: [Buy more storage, Disable or rotate the credential and revoke its sessions, Restart the website, Delete the audit log]
+        answer: 1
+        explanation: Cutting off the attacker's access by disabling or rotating the credential comes first; never destroy the logs.
+      - prompt: Why read cloud audit events in the order access, then escalation, then objective?
+        options: [It is alphabetical, It turns scattered events into a coherent attack story, It is required by law, It saves disk space]
+        answer: 1
+        explanation: Following the attacker's natural progression reconstructs the incident instead of leaving a pile of events.
