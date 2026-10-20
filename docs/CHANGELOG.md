@@ -1,5 +1,12 @@
 # Changelog
 
+## Phase 2 - Deeper core SOC courses
+
+### A fourth lesson for SIEM, Threat Hunting and Incident Response
+- Added a fourth lesson to the three courses closest to a SOC analyst's daily work (39 lessons total), pushing the core of the path past three lessons each.
+- New lessons: SOC dashboards, metrics and shift handover (MTTD/MTTR, dwell time, carrying work across shifts); hunting living-off-the-land and process lineage (LOLBins, parent-child anomalies, behavioural detection); and incident severity, communication and reporting (severity matrix, audience-tailored updates, sourced reports).
+- All keep the six education-standard sections and the ~18/82 theory/lab split; content-standard, seeding and coverage tests still pass (269 backend tests).
+
 ## Phase 2 - Every course three lessons deep
 
 ### A third lesson for the last four two-lesson courses

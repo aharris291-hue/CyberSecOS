@@ -291,3 +291,99 @@ lessons:
         options: [Normal maintenance, Anti-forensics that are themselves findings, Backups, Patch management]
         answer: 1
         explanation: Deliberate tampering to hinder investigation is anti-forensics, and its traces or inconsistencies are evidence in their own right.
+  - slug: ir-severity-communication
+    title: Incident Severity, Communication and Reporting
+    order: 4
+    difficulty: intermediate
+    summary: Classify an incident's severity consistently, keep the right people informed at the right cadence, and write a report that stands up after the fact.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.8", "cysa:3.3", "cysa:4.2"]
+    learning_objectives:
+      - Classify incident severity with a consistent, documented matrix
+      - Communicate to technical and non-technical audiences at the right cadence
+      - Write an incident report that is accurate, sourced and useful later
+    theory: |
+      Technical response is only half of incident handling; the other half is deciding
+      how serious it is and telling the right people. A **severity matrix** makes the
+      first call consistent, rating an incident on **impact** (data loss, systems down,
+      safety, regulatory exposure) and **scope** (one host or the whole fleet) to produce
+      a level such as SEV-1 to SEV-4. The level is not academic: it drives who is woken,
+      how fast, and whether to invoke a major-incident process. A documented matrix stops
+      severity being argued from scratch under pressure and keeps two analysts from rating
+      the same event differently.
+
+      **Communication** is tailored to the audience. Responders need precise technical
+      detail; leadership needs impact, risk and what is being done, in plain language
+      without jargon; legal, compliance and PR may need to know because of **notification
+      obligations** (tying back to the privacy and compliance lessons). The discipline is
+      a **cadence**: regular updates even when the update is "no change", a single source
+      of truth, and care not to speculate on cause before it is known. Stating an
+      unconfirmed attacker or blaming a team early is how an incident's story goes wrong.
+      Who speaks externally is decided in advance, not mid-crisis.
+
+      Afterwards comes the **report**. A good incident report is factual and **sourced**,
+      separating what the evidence proves from what is inferred, and typically covers the
+      timeline, impact, root cause, the response taken and the follow-up actions with
+      owners. It serves several readers at once: the team learning from it, leadership
+      accounting for it, and sometimes an auditor or regulator. It links to the
+      lessons-learned review rather than repeating it, and it avoids blame, because a
+      report that punishes honesty kills the next incident's information flow.
+    examples:
+      - title: A severity matrix makes the call repeatable
+        body: |
+          Impact \ Scope   one host         many hosts / critical system
+          data at risk     SEV-3            SEV-1
+          nuisance only    SEV-4            SEV-2
+          The level sets who is paged, how fast, and whether it is a major incident.
+      - title: Same incident, two audiences
+        body: |
+          To responders:  "LSASS access on HOST-7 by svc-x; isolating, capturing memory"
+          To leadership:  "One laptop isolated as a precaution, no customer data affected
+                           so far, next update in 1 hour"
+    exercise:
+      title: Classify, communicate and report on an incident scenario
+      environment: An incident scenario (reuse an earlier one or invent a compromise) and a document for the matrix, updates and report
+      tools: [A document editor, your incident notes, a reference on breach-notification basics]
+      steps:
+        - Build a simple severity matrix with at least three levels, defined by impact and scope, and write what each level triggers (who is informed, how fast).
+        - Apply the matrix to your scenario and justify the severity level you assign.
+        - Write a technical update for responders and a separate plain-language update for leadership about the same point in the incident.
+        - State which non-technical stakeholders (legal, compliance, PR) would need to know and why, including any notification obligation.
+        - Define an update cadence for the incident and write one "no material change" update that still reassures without speculating on cause.
+        - Write a short incident report with timeline, impact, root cause, response and follow-up actions with owners, marking what is proven versus inferred.
+        - Note one thing you deliberately did not say publicly and why (for example, unconfirmed attribution).
+      deliverable: The severity matrix with triggers, a justified severity rating, audience-tailored updates, a cadence with one update, and a sourced incident report.
+    expected_outcome: >
+      You can rate an incident's severity consistently, communicate to technical and
+      non-technical audiences at the right cadence without speculating, and write an
+      accurate, sourced report that serves the team, leadership and any auditor later.
+    quiz:
+      - prompt: What is the main purpose of a severity matrix?
+        options:
+          - To assign blame for the incident
+          - To rate impact and scope consistently so the level drives the right response
+          - To replace the incident report
+          - To count alerts
+        answer: 1
+        explanation: A documented matrix makes severity repeatable and ties the level to who is informed and how fast, instead of arguing it under pressure.
+      - prompt: A good leadership update during an incident
+        options:
+          - Uses as much technical jargon as possible
+          - States impact, risk and action in plain language without speculating on cause
+          - Names the suspected attacker immediately
+          - Is sent only once at the end
+        answer: 1
+        explanation: Leadership needs clear impact and status; speculating on cause or attribution early is how an incident's story goes wrong.
+      - prompt: Why keep a regular update cadence even when there is no change?
+        options:
+          - To fill the log
+          - To maintain a single source of truth and reassure stakeholders without rumour filling the gap
+          - To increase MTTR
+          - Because the matrix requires it
+        answer: 1
+        explanation: Regular updates, even "no change", keep everyone aligned and stop speculation from taking over.
+      - prompt: An incident report should
+        options: [Blame the analyst who missed it, Separate what the evidence proves from what is inferred and avoid blame, Omit the timeline, Speculate freely on cause]
+        answer: 1
+        explanation: A factual, sourced, blame-free report serves learning and accountability and keeps information flowing for the next incident.
