@@ -10,7 +10,7 @@ from fastapi import FastAPI
 from . import __version__
 from .config import Settings
 from .database import create_db_engine, create_session_factory, init_db
-from .routers import auth, courses, dashboard, exams, progress, users
+from .routers import auth, courses, dashboard, exams, planner, progress, users
 from .services.seed import seed_database
 
 
@@ -45,5 +45,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(progress.router)
     app.include_router(dashboard.router)
     app.include_router(exams.router)
+    app.include_router(planner.router)
 
     return app

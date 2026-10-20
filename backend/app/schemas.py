@@ -348,3 +348,47 @@ class ExamTargetOut(BaseModel):
     exam_date: date
     days_until_exam: int
 
+
+# --- Study planner ---------------------------------------------------------
+
+
+class CertificationPace(BaseModel):
+    id: str
+    name: str
+    exam_code: str
+    target_date: date | None = None
+    days_until_exam: int | None = None
+    remaining_lessons: int
+    remaining_minutes: int
+    required_minutes_per_week: int | None = None
+    status: str  # ready | no_date | overdue | on_track | behind
+
+
+class PlannedLesson(BaseModel):
+    id: int
+    title: str
+    course_title: str
+    theory_minutes: int
+    lab_minutes: int
+    target_date: date | None = None
+
+
+class PlanWeek(BaseModel):
+    week_index: int
+    week_start: str
+    planned_minutes: int
+    lessons: list[PlannedLesson]
+
+
+class StudyPlan(BaseModel):
+    weekly_goal_hours: int
+    weekly_target_minutes: int
+    total_remaining_lessons: int
+    total_remaining_minutes: int
+    estimated_weeks_to_finish: int
+    estimated_finish_date: date | None = None
+    on_track: bool | None = None
+    focus_certification_id: str | None = None
+    certifications: list[CertificationPace]
+    schedule: list[PlanWeek]
+

@@ -1,5 +1,11 @@
 # Changelog
 
+## Phase 2 - Study planner
+
+### A pace check and a weekly schedule toward each exam
+- A new Study Plan page turns the weekly goal, the target exam dates and the remaining lessons into two things: a per-certification pace check (ready / on track / behind / overdue, with the hours per week needed to finish in time) and a schedule that packs the remaining lessons into weeks at the chosen pace, soonest-exam work first. Each scheduled lesson opens straight into its lesson page.
+- New read-only endpoint `GET /api/plan` (derived live; nothing new is stored). 10 new backend tests and 10 new desktop view-model tests (227 backend, 110 desktop tests total).
+
 ## Phase 2 - More SOC-core depth
 
 ### A third lesson for the core environment and tooling courses

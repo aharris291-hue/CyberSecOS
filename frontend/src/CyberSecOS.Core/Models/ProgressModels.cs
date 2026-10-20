@@ -47,3 +47,36 @@ public sealed record ProgressSummary(
     NextLesson? NextLesson);
 
 public sealed record DailyMinutes(string Date, int TheoryMinutes, int LabMinutes, int QuizMinutes, int TotalMinutes);
+
+public sealed record CertificationPace(
+    string Id,
+    string Name,
+    string ExamCode,
+    DateOnly? TargetDate,
+    int? DaysUntilExam,
+    int RemainingLessons,
+    int RemainingMinutes,
+    int? RequiredMinutesPerWeek,
+    string Status);
+
+public sealed record PlannedLesson(
+    int Id,
+    string Title,
+    string CourseTitle,
+    int TheoryMinutes,
+    int LabMinutes,
+    DateOnly? TargetDate);
+
+public sealed record PlanWeek(int WeekIndex, string WeekStart, int PlannedMinutes, IReadOnlyList<PlannedLesson> Lessons);
+
+public sealed record StudyPlan(
+    int WeeklyGoalHours,
+    int WeeklyTargetMinutes,
+    int TotalRemainingLessons,
+    int TotalRemainingMinutes,
+    int EstimatedWeeksToFinish,
+    DateOnly? EstimatedFinishDate,
+    bool? OnTrack,
+    string? FocusCertificationId,
+    IReadOnlyList<CertificationPace> Certifications,
+    IReadOnlyList<PlanWeek> Schedule);

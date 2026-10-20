@@ -26,7 +26,7 @@ Low Priority
 | Quiz Engine | High | Done: graded quizzes with explanations, 70% pass mark |
 | Progress Tracking | High | Done: theory/lab/quiz tracking, streaks, weekly goal, per-course progress |
 | AI Mentor | Medium | Phase 3 |
-| Study Planner | Medium | Not started |
+| Study Planner | Medium | Done: per-certification pace check (on track / behind / overdue) and a week-by-week schedule from the weekly goal, exam dates and remaining lessons (`GET /api/plan`, Study Plan page) |
 | Certification Tracking | Medium | Done: readiness by objective coverage (all 4 exams), timed practice exams with per-objective scoring, and target exam dates with a countdown on exams and progress |
 | Cyber Range | Low | Phase 6 |
 | Advanced Analytics | Low | Not started |
