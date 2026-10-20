@@ -257,3 +257,82 @@ lessons:
         options: ["4625", "4769", "7045", "4688"]
         answer: 1
         explanation: Event 4769 is a Kerberos service ticket request; unusual target services can indicate reconnaissance or movement.
+
+  - slug: win-persistence-autoruns
+    title: Hunting Windows Persistence in Registry, Tasks and Services
+    order: 4
+    difficulty: intermediate
+    summary: Find how malware survives a reboot using autoruns, scheduled tasks and services.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.9", "secplus:2.4", "cysa:1.2", "sc200:2"]
+    learning_objectives:
+      - List the main Windows persistence locations an attacker uses to survive a reboot
+      - Enumerate autoruns, scheduled tasks and services and tell normal from suspicious
+      - Map a persistence finding back to the event that created it
+    theory: |
+      **Persistence** is how an attacker keeps access after a reboot or logoff. Windows offers
+      dozens of auto-start locations, and defenders need to know the common ones. The **Run and
+      RunOnce registry keys** under both `HKCU` and `HKLM` launch a program at logon. **Scheduled
+      tasks** run code on a trigger, at logon, on a timer, or on an event, and are a favourite
+      because they look administrative. **Windows services** start code at boot, often as SYSTEM.
+
+      Legitimate software uses all of these, so the skill is telling normal from malicious. Signs
+      worth a closer look include an auto-start entry pointing at a user profile or temp folder, a
+      command line that calls `powershell`, `rundll32` or `mshta` with encoded arguments, an
+      unsigned binary, or a service with a random name. **Sysinternals Autoruns** lists every
+      auto-start location in one place and can hide Microsoft-signed entries so the unusual ones
+      stand out.
+
+      Each persistence mechanism leaves a trace when it is created. A new service writes event
+      **7045** to the System log, and a new or changed scheduled task writes **4698** and **4702**
+      to the Security log. Finding the auto-start entry tells you what survives a reboot; finding
+      the creating event tells you when it arrived and often which account did it.
+    examples:
+      - title: A Run key pointing at a temp folder
+        body: |
+          HKCU\Software\Microsoft\Windows\CurrentVersion\Run
+          Updater = C:\Users\sam\AppData\Local\Temp\svc.exe
+          A logon auto-start from a temp folder with a generic name is a classic red flag.
+      - title: A service-creation event
+        body: |
+          Event ID 7045 (System log)
+          Service Name = WinHelpSvc
+          Image Path  = C:\Windows\Temp\a.exe
+          Record the time and the host, then pivot to who was logged on.
+    exercise:
+      title: Enumerate and triage persistence on a lab VM
+      environment: A disposable Windows lab VM; do not run unknown binaries on a production host
+      tools: [Sysinternals Autoruns, Task Scheduler, Event Viewer, PowerShell]
+      steps:
+        - On a lab VM, run Autoruns and turn on Options then Hide Microsoft Entries to cut the noise.
+        - Review the Logon, Scheduled Tasks and Services tabs and note any entry in a user or temp folder.
+        - In PowerShell, list services with `Get-CimInstance Win32_Service | Select Name,PathName,StartMode` and look for odd image paths.
+        - List scheduled tasks with `Get-ScheduledTask` and inspect the actions of any you do not recognise.
+        - In Event Viewer, filter the System log for event 7045 and the Security log for 4698 to find when suspicious entries were created.
+        - For one suspicious entry, write a line explaining what it runs, where it starts from and when it was created.
+      deliverable: A list of auto-start entries you would investigate, each with its location, command line and creating event ID and time.
+    expected_outcome: >
+      You can enumerate the common Windows persistence locations, separate normal
+      software from suspicious entries, and tie a finding back to the event that created it.
+    quiz:
+      - prompt: Which registry keys launch a program at user logon?
+        options: [SAM and SECURITY, Run and RunOnce, The SYSTEM and SOFTWARE hives only, The boot configuration data store]
+        answer: 1
+        explanation: The Run and RunOnce keys under HKCU and HKLM start programs at logon and are common persistence spots.
+      - prompt: A newly created Windows service is recorded by which event ID?
+        options: ["4624", "7045", "4104", "5140"]
+        answer: 1
+        explanation: Event 7045 in the System log records service installation, a frequent persistence technique.
+      - prompt: Why turn on Hide Microsoft Entries in Autoruns?
+        options:
+          - It deletes Microsoft software
+          - It removes signed, expected entries so unusual auto-starts stand out
+          - It speeds up the boot
+          - It disables persistence
+        answer: 1
+        explanation: Filtering out signed Microsoft entries shrinks the list to the third-party and unexpected items worth reviewing.
+      - prompt: Which scheduled-task detail most warrants investigation?
+        options: [A task signed by Microsoft running Windows Update, A task that runs encoded PowerShell from a temp folder, A daily disk-cleanup task, A task that runs at a fixed time each day]
+        answer: 1
+        explanation: Encoded PowerShell launched from a temp folder on a trigger is a common persistence and execution pattern.

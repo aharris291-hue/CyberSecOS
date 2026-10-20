@@ -1,5 +1,12 @@
 # Changelog
 
+## Phase 2 - Deeper foundation courses
+
+### A fourth lesson for Networking, Windows and Linux
+- Added a fourth lesson to the three environment-and-tooling foundations a SOC analyst relies on every day (42 lessons total), taking them to the same depth as the core SOC courses.
+- New lessons: reading encrypted traffic from TLS metadata (SNI, certificate fields and JA3, triaging a session without decrypting it); hunting Windows persistence in the Run keys, scheduled tasks and services, and tying each finding to its creation event (7045/4698); and command-line log triage with grep, awk and jq (the sort/uniq-c/sort-nr idiom, and querying JSON logs).
+- All keep the six education-standard sections and the ~18/82 theory/lab split; content-standard, seeding and coverage tests still pass (281 backend tests). A dashboard test that assumed the first course had three lessons now derives the expected percentage from the course's lesson count.
+
 ## Phase 2 - Deeper core SOC courses
 
 ### A fourth lesson for SIEM, Threat Hunting and Incident Response
