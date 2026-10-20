@@ -346,3 +346,82 @@ lessons:
         options: [Colourises the output, Counts matching lines, Shows surrounding context, Searches case-insensitively]
         answer: 1
         explanation: The -c flag prints the number of matching lines instead of the lines themselves.
+
+  - slug: linux-live-response
+    title: Triaging a Live Linux Host
+    order: 5
+    difficulty: intermediate
+    summary: Investigate a running Linux host's processes, network and files before the state changes.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.9", "cysa:1.2", "cysa:3.2"]
+    learning_objectives:
+      - Capture the volatile state of a suspected Linux host in the right order
+      - Use process, network and open-file tools to find a foothold
+      - Preserve findings and build a quick timeline without destroying evidence
+    theory: |
+      When a Linux host is suspected compromised, the running state is the evidence, and it
+      disappears on reboot, so triage it live and in order of volatility. Start with **processes**:
+      `ps auxf` shows the tree, and the tell-tales are processes running from `/tmp` or `/dev/shm`,
+      odd names, or a binary that has been deleted while still running (`ls -l /proc/<pid>/exe`
+      shows `(deleted)`). From a suspect PID, `/proc/<pid>/cmdline`, `cwd` and `environ` reveal how
+      it was launched.
+
+      Next the **network**: `ss -tupan` lists listening ports and established connections mapped to
+      their process, so an unexpected listener or an outbound connection to an odd address points
+      straight at the foothold. **Open files** via `lsof` tie processes to the files and sockets
+      they hold. Then check **loaded kernel modules** with `lsmod`, since a rootkit may hide there,
+      and look for recently changed files with `find / -mtime -1` around the suspected time.
+
+      The discipline matters as much as the commands. **Do not reboot** a host you are triaging; it
+      wipes memory, running processes and network state. Record each command and its output,
+      capture a memory image if you can, and assemble a short **timeline** of what ran, what it
+      connected to and what it touched. That timeline is what turns a hunch into a scoped incident
+      you can hand to containment.
+    examples:
+      - title: A process running from a deleted binary
+        body: |
+          ps        PID 2041  ./update  (cwd=/tmp)
+          /proc     ls -l /proc/2041/exe -> /tmp/update (deleted)
+          A running process whose on-disk binary is gone is a classic sign of a dropped implant.
+      - title: An unexpected listener tied to a process
+        body: |
+          ss -tupan   LISTEN  0.0.0.0:4444  users:(("update",pid=2041))
+          A process listening on an unusual port is a likely backdoor or reverse-shell handler.
+    exercise:
+      title: Triage a suspect Linux host from sample captures
+      environment: A lab VM or sample command outputs from a suspected-compromised host; work on a copy
+      tools: [ps, ss, lsof, find, access to /proc]
+      steps:
+        - List the full process tree and flag any process running from /tmp, /dev/shm or with an odd name.
+        - For one suspect PID, read /proc/<pid>/cmdline, cwd and exe and note whether the binary is marked deleted.
+        - List network connections with ss and map any unexpected listener or outbound connection to its process.
+        - Use lsof to see the files and sockets the suspect process holds open.
+        - Check loaded kernel modules and recently modified files around the suspected time.
+        - Record each command and its output, and say why you would not reboot the host yet.
+        - Assemble a short timeline of what ran, what it connected to and what it touched.
+      deliverable: A triage note with the suspect process, its network and file activity, the evidence you preserved and a short timeline.
+    expected_outcome: >
+      You can capture a live Linux host's volatile state in order, find a foothold from
+      its processes, network and files, and preserve a timeline without destroying evidence.
+    quiz:
+      - prompt: Why triage a suspected Linux host before rebooting it?
+        options:
+          - Rebooting is faster
+          - A reboot wipes volatile state such as memory, running processes and network connections
+          - Rebooting preserves evidence
+          - It makes no difference
+        answer: 1
+        explanation: Volatile state is the evidence; a reboot destroys the running processes, memory and connections you need.
+      - prompt: A running process whose on-disk binary shows as (deleted) in /proc/<pid>/exe suggests
+        options: [A normal update, A dropped implant that removed its file to hide, A kernel feature, A backup job]
+        answer: 1
+        explanation: Malware often deletes its binary after launch while the process keeps running, leaving the (deleted) marker.
+      - prompt: Which tool maps listening ports and connections to the owning process?
+        options: ["ss -tupan", "cat /etc/passwd", "uptime", "echo $PATH"]
+        answer: 0
+        explanation: ss with those flags lists TCP and UDP listeners and connections together with the process that owns each.
+      - prompt: After the triage, the most useful hand-off to containment is
+        options: [A reboot, A short timeline of what ran, connected and was touched, A screenshot of the desktop, Nothing]
+        answer: 1
+        explanation: A timeline of process, network and file activity scopes the incident so containment knows what to act on.
