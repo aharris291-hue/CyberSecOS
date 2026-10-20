@@ -30,7 +30,7 @@ Low Priority
 | Certification Tracking | Medium | Done: readiness by objective coverage (all 4 exams), timed practice exams with per-objective scoring, and target exam dates with a countdown on exams and progress |
 | Cyber Range | Low | Phase 6 |
 | Advanced Analytics | Low | Not started |
-| More lessons per course (target 5-10 each) | High | In progress: every course now has at least 2 lessons (26 total); SOC-core domains still short of the 5-10 target |
+| More lessons per course (target 5-10 each) | High | In progress: 29 lessons; Windows, Linux and SIEM now have 3 each; still building toward 5-10 per course |
 | Render lesson Markdown richly in the desktop app | Medium | Done: theory shows bold and inline code; paragraphs spaced (Core Markdown parser, unit-tested) |
 | Invalidate existing sessions after a password change | Medium | Not started |
 | UI tests for XAML views and chart converters on Windows | Medium | Not started |

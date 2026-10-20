@@ -164,3 +164,96 @@ lessons:
           - Use only zero-day exploits
         answer: 1
         explanation: Built-in binaries such as PowerShell or certutil blend in with normal administration.
+
+  - slug: win-ad-authentication
+    title: Active Directory and Authentication Monitoring
+    order: 3
+    difficulty: intermediate
+    summary: Read Windows logon and Kerberos events to spot account enumeration, suspicious logon types and lateral movement.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.6", "secplus:2.4", "cysa:1.2", "sc200:4"]
+    learning_objectives:
+      - Explain how Active Directory authentication appears in the event logs
+      - Read logon types and Kerberos events to judge whether a logon is normal
+      - Spot indicators of account enumeration and lateral movement
+    theory: |
+      Most enterprise logons flow through **Active Directory**, so the domain
+      controllers and endpoints together tell the story of who authenticated where.
+      Two protocols matter. **Kerberos** is normal in a domain: a client gets a
+      **ticket-granting ticket** (event 4768) and then service tickets (4769) to reach
+      resources. **NTLM** is older and, when it appears for something that should use
+      Kerberos, can be a clue worth checking. On each machine, logons appear as **4624**
+      (success) and **4625** (failure), and the **logon type** says how: type 2 is
+      interactive at the console, type 3 is over the network, type 10 is Remote Desktop.
+      A service account suddenly doing a type-10 interactive logon, or a workstation
+      account authenticating to many hosts, stands out against its own baseline.
+
+      Attackers probe AD before moving. **Account and group enumeration** shows up as a
+      burst of directory queries or many 4769 requests from one source. **Password
+      spraying** is one or two failed logons (4625) against many different accounts from
+      a single host, the mirror image of brute force against one account. **Lateral
+      movement** often looks like one credential authenticating to a series of machines
+      over the network (type 3) in a short window, sometimes with tools that trigger
+      service creation (7045) on the targets.
+
+      You judge these by **baseline and context**, not single events. Admin logons at
+      3am, a service account used interactively, Kerberos tickets requested for services
+      an account never touches, and the same account appearing on ten hosts in five
+      minutes are all worth an investigation. Defensively, the same telemetry drives
+      hardening: tiered admin accounts, limiting where privileged accounts can log on,
+      and alerting on the specific event patterns above.
+    examples:
+      - title: Logon types tell you how someone got in
+        body: |
+          4624 logon success, account svc_backup
+          LogonType 10 (RemoteInteractive / RDP)  from WKSTN-07
+          Expected: svc_backup runs as a service (type 5), never RDP.
+          Verdict: investigate - a service account being used interactively is abnormal.
+      - title: Password spraying vs brute force
+        body: |
+          Brute force: 200x 4625 for one account from one host  (one door, many keys)
+          Spraying:    1-2x 4625 each for 200 accounts from one host (many doors, one key)
+          Spraying stays under per-account lockout thresholds, so count by source, not account.
+    exercise:
+      title: Investigate domain authentication in a lab
+      environment: A Windows lab with a domain controller and one client (an evaluation AD lab or two VMs), or a provided sample of exported security events
+      tools: [Event Viewer or a SIEM, the sample/live Security logs, a spreadsheet]
+      steps:
+        - Generate normal domain activity (a couple of user logons and a network share access) and locate the 4624 events, recording the logon type for each.
+        - Produce several failed logons for different accounts from one host to simulate spraying, then write a query or filter that counts 4625 by source host rather than by account.
+        - Identify a logon that does not fit its account's baseline (for example a service account with an interactive or RDP logon) and explain why it is suspicious.
+        - Find the Kerberos ticket events (4768/4769) for one account and note which services it requested tickets for.
+        - Describe one realistic lateral-movement pattern you could detect from type-3 logons across multiple hosts in a short window.
+        - Write two detection ideas (the event IDs and the condition) you would hand to a SIEM, each mapped to a MITRE ATT&CK technique.
+        - Recommend one hardening change (for example restricting where a privileged account may log on) justified by what you observed.
+      deliverable: A short investigation note listing the logon types you saw, the spraying count-by-source query, one abnormal logon with reasoning, and two ATT&CK-mapped detection ideas.
+    expected_outcome: >
+      You can read Windows logon and Kerberos events, tell a normal logon from a
+      suspicious one using type and baseline, and describe how enumeration and lateral
+      movement appear in the logs.
+    quiz:
+      - prompt: A Windows logon event (4624) with logon type 10 means the logon was
+        options: [A service starting, Interactive at the console, Over the network, Remote Desktop]
+        answer: 3
+        explanation: Type 10 is RemoteInteractive, i.e. a Remote Desktop session.
+      - prompt: Many accounts each seeing one or two failed logons from a single host most likely indicates
+        options: [Brute force, Password spraying, A normal morning, A software update]
+        answer: 1
+        explanation: Spraying tries a few passwords across many accounts to stay under lockout thresholds.
+      - prompt: Why is a service account with an interactive (type 2) or RDP (type 10) logon suspicious?
+        options:
+          - Service accounts cannot log on
+          - Service accounts normally authenticate as a service (type 5), not interactively
+          - Interactive logons are always malicious
+          - It uses more memory
+        answer: 1
+        explanation: A service account used interactively deviates from its expected logon type and warrants investigation.
+      - prompt: To detect password spraying you should count failed logons primarily by
+        options: [Account name, Source host, Time of day, Domain controller]
+        answer: 1
+        explanation: Spraying spreads across accounts, so grouping by source host surfaces it; per-account counts stay low.
+      - prompt: Kerberos service ticket requests appear as which event, useful for spotting access to unusual services?
+        options: ["4625", "4769", "7045", "4688"]
+        answer: 1
+        explanation: Event 4769 is a Kerberos service ticket request; unusual target services can indicate reconnaissance or movement.
