@@ -1,5 +1,11 @@
 # Changelog
 
+## Phase 2 - Tests for the desktop converters
+
+### Cover the WPF value and chart converters
+- Added `CyberSecOS.Desktop.Tests` (net9.0-windows), a new test project that covers every WPF value converter (visibility, inverse-bool, status label and brush selection logic, Markdown-stripping, enum matching, exam countdown) and the LiveCharts chart and axis converters (series mapping for stacked/row/pie, zero-sum filtering, category and value axes). It runs headless on the Windows CI job, which already does `dotnet test` on the whole solution.
+- Documented the remaining gap honestly: full XAML view rendering stays a manual Windows smoke test, because instantiating the views needs an STA visual tree the headless CI runner can't host. The converter logic those views bind to is now covered.
+
 ## Phase 2 - Downloadable PDF progress report
 
 ### Export your progress as a PDF

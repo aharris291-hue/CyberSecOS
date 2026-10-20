@@ -33,6 +33,6 @@ Low Priority
 | More lessons per course (target 5-10 each) | High | In progress: 72 lessons; every one of the 12 courses now has 6 (well within the 5-10 target); can keep building toward the upper bound |
 | Render lesson Markdown richly in the desktop app | Medium | Done: theory shows bold and inline code; paragraphs spaced (Core Markdown parser, unit-tested) |
 | Invalidate existing sessions after a password change | Medium | Done: each token carries a `token_version`; a password change bumps it so older tokens are rejected, and the change returns a fresh token so the current session stays signed in |
-| UI tests for XAML views and chart converters on Windows | Medium | Not started |
+| UI tests for XAML views and chart converters on Windows | Medium | Partly done: `CyberSecOS.Desktop.Tests` (net9.0-windows) covers all the value converters and the LiveCharts chart/axis converters, run headless on the Windows CI job. Full XAML view rendering stays a documented manual smoke test (needs an STA visual tree the CI runner can't host) |
 | Start the backend automatically from the desktop app | Medium | Partly done: `Start CyberSecOS.bat` launcher in the Windows build; a single installer is not started |
 | Data backup and export (PDF progress report) | Low | Partly done: `GET /api/progress/report.pdf` exports a one-page PDF progress report (overall stats, per-course progress, certification readiness). Data backup/export in other formats not started |
