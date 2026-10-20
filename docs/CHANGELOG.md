@@ -1,5 +1,11 @@
 # Changelog
 
+## Phase 2 - Readable lessons
+
+### Rich Markdown rendering of lesson theory
+- Lesson theory now renders real formatting in the desktop app: bold terms, inline `code`, and spaced paragraphs, instead of showing the raw `**` and backtick markers.
+- A small, dependency-free Markdown reader in `CyberSecOS.Core` (paragraphs, bold, inline code) parses the theory; an attached property fills the view's text inlines. 11 new unit tests cover it (94 desktop tests total).
+
 ## Phase 2 - Deeper SOC content
 
 ### A second lesson for every single-lesson course

@@ -34,6 +34,7 @@ View models and the API client are tested without WPF:
 - `ProgressTrackingTests`: theory/lab commands, checklist, Progress page.
 - `DashboardViewModelTests`: tiles, chart data, next lesson, empty state.
 - `ExamsViewModelTests`: certification selection, length capping, timer, answering, grading, focus areas and the setup/taking/results flow.
+- `MarkdownTextTests`: lesson-theory parsing into paragraphs with bold and inline-code runs, including unmatched markers and wrapped lines.
 
 `Fakes/FakeApi` is an in-memory `ICyberSecApi`; `Fakes/StubHttpHandler` fakes HTTP.
 
