@@ -19,7 +19,7 @@ public sealed class FakeApi : ICyberSecApi
     public Func<UserProfile> Profile { get; set; } = () => Adam;
     public Func<ProfileUpdate, UserProfile> UpdateProfile { get; set; } =
         u => Adam with { DisplayName = u.DisplayName ?? Adam.DisplayName, TargetRole = u.TargetRole ?? Adam.TargetRole, WeeklyGoalHours = u.WeeklyGoalHours ?? Adam.WeeklyGoalHours };
-    public Action<PasswordChange> ChangePassword { get; set; } = _ => { };
+    public Func<PasswordChange, TokenResponse> ChangePassword { get; set; } = _ => Token(Adam) with { AccessToken = "token-after-change" };
 
     public Func<IReadOnlyList<Certification>> Certifications { get; set; } = () => [];
     public Func<IReadOnlyList<CourseSummary>> Courses { get; set; } = () => [Samples.Course("networking", 1), Samples.Course("windows", 2)];
@@ -52,7 +52,7 @@ public sealed class FakeApi : ICyberSecApi
     public Task<TokenResponse> LoginAsync(LoginRequest request, CancellationToken ct = default) => Run(() => Login(request), request);
     public Task<UserProfile> GetProfileAsync(CancellationToken ct = default) => Run(Profile);
     public Task<UserProfile> UpdateProfileAsync(ProfileUpdate update, CancellationToken ct = default) => Run(() => UpdateProfile(update), update);
-    public Task ChangePasswordAsync(PasswordChange change, CancellationToken ct = default) => Run<object?>(() => { ChangePassword(change); return null; }, change);
+    public Task<TokenResponse> ChangePasswordAsync(PasswordChange change, CancellationToken ct = default) => Run(() => ChangePassword(change), change);
 
     public Task<IReadOnlyList<Certification>> GetCertificationsAsync(CancellationToken ct = default) => Run(Certifications);
     public Task<IReadOnlyList<CourseSummary>> GetCoursesAsync(CancellationToken ct = default) => Run(Courses);

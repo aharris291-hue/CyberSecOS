@@ -18,7 +18,7 @@ created at API startup; all timestamps are stored as naive UTC.
 
 | Table | Purpose |
 |---|---|
-| `users` | The single learner account: credentials (bcrypt hash), profile, lockout counters |
+| `users` | The single learner account: credentials (bcrypt hash), profile, lockout counters, and a `token_version` bumped on password change to invalidate old tokens |
 | `lesson_progress` | One row per user and lesson: theory read, lab done, best quiz score, completion |
 | `quiz_attempts` | Every quiz submission with score and chosen answers |
 | `activity_log` | Study minutes by kind (`theory`, `lab`, `quiz`) for streaks and weekly hours |

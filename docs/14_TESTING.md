@@ -11,7 +11,7 @@ every pull request and on pushes to `main`.
 | `test_health.py` | App starts, health endpoint |
 | `test_database.py` | Tables, JSON columns, unique constraints, cascades |
 | `test_auth.py` | First-run registration, single-account rule, password policy, hashing, login, lockout, token tampering and expiry |
-| `test_users.py` | Profile read/update and password change |
+| `test_users.py` | Profile read/update and password change, including that a change invalidates older tokens and returns a working fresh one |
 | `test_content_standards.py` | Every lesson has the six required sections, valid quizzes, certification mapping, 20/80 split, every focus domain and certification covered |
 | `test_seed.py` | Seeding and idempotent re-seeding that keeps progress |
 | `test_quiz_grading.py` | Scoring, rounding, pass mark, unanswered questions |

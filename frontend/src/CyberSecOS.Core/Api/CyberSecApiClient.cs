@@ -43,8 +43,8 @@ public sealed class CyberSecApiClient : ICyberSecApi
     public Task<UserProfile> UpdateProfileAsync(ProfileUpdate update, CancellationToken ct = default) =>
         SendAsync<UserProfile>(HttpMethod.Patch, "api/users/me", update, ct);
 
-    public Task ChangePasswordAsync(PasswordChange change, CancellationToken ct = default) =>
-        SendAsync<object?>(HttpMethod.Post, "api/users/me/password", change, ct);
+    public Task<TokenResponse> ChangePasswordAsync(PasswordChange change, CancellationToken ct = default) =>
+        SendAsync<TokenResponse>(HttpMethod.Post, "api/users/me/password", change, ct);
 
     public async Task<IReadOnlyList<Certification>> GetCertificationsAsync(CancellationToken ct = default) =>
         await SendAsync<List<Certification>>(HttpMethod.Get, "api/certifications", null, ct).ConfigureAwait(false);

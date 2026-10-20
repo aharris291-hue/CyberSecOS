@@ -2,13 +2,22 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
+from ..config import Settings
 from ..database import get_db
 from ..models import User
-from ..schemas import PasswordChange, ProfileUpdate, UserOut
-from ..security import UNPROCESSABLE, get_current_user, hash_password, password_problems, verify_password
+from ..schemas import PasswordChange, ProfileUpdate, TokenResponse, UserOut
+from ..security import (
+    UNPROCESSABLE,
+    create_access_token,
+    get_current_user,
+    get_settings,
+    hash_password,
+    password_problems,
+    verify_password,
+)
 
 router = APIRouter(prefix="/api/users", tags=["users"])
 
@@ -26,15 +35,22 @@ def update_me(body: ProfileUpdate, user: User = Depends(get_current_user), db: S
     return user
 
 
-@router.post("/me/password", status_code=status.HTTP_204_NO_CONTENT)
+@router.post("/me/password", response_model=TokenResponse)
 def change_password(
-    body: PasswordChange, user: User = Depends(get_current_user), db: Session = Depends(get_db)
-) -> Response:
+    body: PasswordChange,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+    settings: Settings = Depends(get_settings),
+) -> TokenResponse:
     if not verify_password(body.current_password, user.password_hash):
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Current password is incorrect")
     problems = password_problems(body.new_password)
     if problems:
         raise HTTPException(UNPROCESSABLE, "Password " + ", ".join(problems))
     user.password_hash = hash_password(body.new_password)
+    # Invalidate every token issued before this change, then hand back a fresh
+    # one so the session that made the change stays signed in.
+    user.token_version += 1
     db.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    token, expires_in = create_access_token(user, settings)
+    return TokenResponse(access_token=token, expires_in=expires_in, user=UserOut.model_validate(user))

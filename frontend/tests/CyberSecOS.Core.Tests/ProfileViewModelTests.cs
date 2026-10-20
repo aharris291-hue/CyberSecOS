@@ -56,6 +56,21 @@ public class ProfileViewModelTests
     }
 
     [Fact]
+    public async Task ChangePasswordSignsBackInWithTheFreshToken()
+    {
+        _vm.CurrentPassword = "Correct-Horse-42";
+        _vm.NewPassword = "Another-Secret-77";
+
+        await _vm.ChangePasswordCommand.ExecuteAsync(null);
+
+        // The returned token replaces the now-invalidated one on the client.
+        Assert.Equal("token-after-change", _api.AccessToken);
+        Assert.Contains("Password changed", _vm.StatusMessage);
+        Assert.Empty(_vm.CurrentPassword);
+        Assert.Empty(_vm.NewPassword);
+    }
+
+    [Fact]
     public async Task ChangePasswordReportsServerError()
     {
         _api.ChangePassword = _ => throw FakeApi.Error(HttpStatusCode.BadRequest, "Current password is incorrect");
