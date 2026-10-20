@@ -382,3 +382,87 @@ lessons:
         options: [A single file hash block, A behavioural detection on parent-child plus command line, A firewall rule, A new password policy]
         answer: 1
         explanation: Because the binary is legitimate, the durable detection is behavioural (lineage and command line), not a file hash.
+
+  - slug: hunt-lateral-movement
+    title: Hunting Lateral Movement and Credential Access
+    order: 5
+    difficulty: advanced
+    summary: Hunt the signs of an attacker moving between hosts and stealing credentials.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["cysa:1.4", "cysa:1.2", "sc200:4"]
+    learning_objectives:
+      - Describe how attackers move laterally and harvest credentials inside a network
+      - Form hunting hypotheses for remote execution and anomalous authentication
+      - Separate normal administration from suspicious movement in the evidence
+    theory: |
+      Once an attacker has one foothold they rarely stay put. **Lateral movement** is spreading to
+      other hosts to reach the real objective, and it runs on stolen credentials. The common
+      techniques are worth hunting by name. **Pass-the-hash** and **pass-the-ticket** reuse captured
+      authentication material instead of a password. **Remote execution** over SMB, WMI, WinRM or a
+      tool like PsExec runs code on another host. **Kerberoasting** requests service tickets to
+      crack service-account passwords offline.
+
+      The hunt starts from a hypothesis, not a tool. A good one is specific and falsifiable, such as
+      a compromised admin account running code on servers it never normally touches. From there you
+      look for the evidence that behaviour would leave, a workstation suddenly making authenticated
+      connections to many hosts, a service account logging in interactively, network logons (type 3)
+      from an account that only ever worked at a console, or a burst of service-ticket requests.
+
+      The hard part is that administrators do many of these same things. So the hunt is really about
+      **baselines**, which accounts normally reach which hosts, from where, at what hours, and about
+      **fan-out**, because one source touching many destinations in a short window is the shape
+      movement takes. A confirmed hunt turns into a detection and a list of hosts and accounts to
+      scope for incident response.
+    examples:
+      - title: Fan-out from one workstation
+        body: |
+          host=WKS-14  account=svc-backup  logon_type=3
+          targets in 5 min = SRV-01, SRV-02, SRV-03, SRV-07, SRV-09
+          A backup service account making network logons to many servers at once is unusual movement.
+      - title: A hypothesis written to be falsifiable
+        body: |
+          Hypothesis   a compromised admin account is running code on hosts it never normally touches
+          Evidence     remote-execution events (SMB or WMI) grouped by source account and destination host
+          If every destination is one the account routinely administers, the hypothesis fails and you move on.
+    exercise:
+      title: Hunt lateral movement in sample authentication logs
+      environment: A SIEM or notebook with sample authentication and remote-execution logs
+      tools: [Sample Windows logon and process logs, a SIEM or notebook, a notes file]
+      steps:
+        - Write one falsifiable hypothesis about lateral movement, naming the account behaviour you expect to see.
+        - Build a baseline of which accounts normally authenticate to which hosts from the sample data.
+        - Search for network logons (type 3) by accounts that normally only log in at a console.
+        - Look for one source host or account authenticating to many destinations inside a short window.
+        - Check for remote-execution signs such as service creation or WMI and PsExec activity on the destinations.
+        - For each hit, decide from the baseline whether it is routine administration or suspicious, and say why.
+        - Turn one confirmed pattern into a detection idea and list the hosts and accounts to scope.
+      deliverable: A hunt write-up with the hypothesis, the suspicious movement you found versus what you ruled out, and one detection idea.
+    expected_outcome: >
+      You can hypothesise how an attacker would move laterally, find the authentication
+      and execution evidence, and tell real movement from normal administration.
+    quiz:
+      - prompt: Pass-the-hash lets an attacker
+        options:
+          - Reset a user's password
+          - Authenticate using captured credential material instead of the plaintext password
+          - Encrypt a disk
+          - Scan for open ports
+        answer: 1
+        explanation: Pass-the-hash reuses a stolen hash to authenticate, so the attacker never needs the plaintext password.
+      - prompt: Which pattern most suggests lateral movement rather than normal admin work?
+        options: [One account logging into its own workstation, One source authenticating to many hosts it never normally touches in a short window, A nightly backup to the same server, A user reading email]
+        answer: 1
+        explanation: Fan-out from one source to many unfamiliar destinations in a short window is the shape lateral movement takes.
+      - prompt: Why baseline normal account-to-host access before hunting movement?
+        options:
+          - Baselines slow the hunt down
+          - Because administrators do many of the same actions, so you need normal to spot the abnormal
+          - To delete logs
+          - Baselines replace detections
+        answer: 1
+        explanation: Much movement looks like administration, so only a baseline of normal access lets you flag the genuinely unusual.
+      - prompt: A good hunting hypothesis is
+        options: [Something is wrong somewhere, Specific and falsifiable so evidence can confirm or kill it, A list of every tool, Only a dashboard]
+        answer: 1
+        explanation: A specific, falsifiable hypothesis tells you what evidence to look for and when to move on.
