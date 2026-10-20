@@ -1,5 +1,12 @@
 # Changelog
 
+## Phase 2 - Downloadable PDF progress report
+
+### Export your progress as a PDF
+- Added `GET /api/progress/report.pdf`, which returns a one-page PDF a learner can download and share: overall stats (completion, labs, quizzes, average score, study time, streaks, this week vs goal), per-course progress, and certification readiness with exam-date countdowns.
+- The report is built from the same `ProgressStats` figures as `/api/progress`, so the document and the on-screen numbers always agree, and it renders correctly for a brand-new account with no activity yet.
+- Adds `reportlab` to the backend requirements. 7 new backend tests cover the endpoint and the report builder (408 backend tests).
+
 ## Phase 2 - A sixth lesson for the last four courses
 
 ### A sixth lesson for Security Foundations, Security Architecture, Cloud Security and Governance/Risk/Compliance

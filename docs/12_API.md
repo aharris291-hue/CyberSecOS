@@ -57,6 +57,7 @@ Security rules:
 | DELETE | `/api/lessons/{id}/lab` | Reopens a lab marked done by mistake (logged time is kept) |
 | GET | `/api/progress` | Totals, this week vs goal, per-course progress, certification readiness, recent activity and the recommended next lesson |
 | GET | `/api/progress/activity?days=30` | Daily theory/lab/quiz minutes for the last N days (1-365) |
+| GET | `/api/progress/report.pdf` | Downloadable one-page PDF progress report (`application/pdf`, sent as a dated attachment), built from the same figures as `/api/progress` |
 
 `/api/progress` endpoints accept `tz_offset_minutes` (the learner's UTC offset,
 -840 to 840) so days, weeks and streaks follow the learner's calendar. The
