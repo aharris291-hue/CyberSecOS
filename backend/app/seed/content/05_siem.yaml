@@ -207,3 +207,102 @@ lessons:
           - More log sources
         answer: 1
         explanation: The technique label tells the analyst what the alert means in attacker terms, speeding triage.
+
+  - slug: siem-alert-investigation
+    title: Investigating an Alert in the SIEM
+    order: 3
+    difficulty: intermediate
+    summary: Take a fired alert and work it to a verdict - pivoting across data sources, building a timeline, and deciding true vs false positive.
+    theory_minutes: 12
+    lab_minutes: 52
+    objectives: ["secplus:4.9", "cysa:1.3", "sc200:3"]
+    learning_objectives:
+      - Triage a fired alert and decide what to do first
+      - Pivot across data sources to gather context on the entities involved
+      - Build a timeline and reach a defensible true/false-positive verdict
+    theory: |
+      An alert is a question, not an answer. **Triage** decides how urgently to work it:
+      what fired, which entities (user, host, IP) are involved, how critical the asset is,
+      and whether it matches a known-good pattern. A SOC works the queue by severity and
+      age, and the first job on any alert is to understand what the detection actually
+      matched before touching anything else.
+
+      Investigation is **pivoting**: starting from the alert's entities and following them
+      across data sources. From a suspicious process you pivot to the host's other
+      activity, to the user's logons, to the destination's network connections and
+      reputation. Each pivot either builds the case or clears it. Along the way you build
+      a **timeline** - the ordered sequence of events across sources - because order and
+      proximity are what turn separate logs into a story ("the logon, then the process,
+      then the outbound connection, all within a minute").
+
+      Every investigation ends in a **verdict** with evidence. A **true positive** is
+      escalated into incident response with the timeline and indicators attached; a
+      **false positive** is documented and fed back into **tuning** so the same benign
+      activity does not fire again. A **benign true positive** (real but authorised, like
+      an admin's expected tool use) is recorded as an exception. Good analysts leave a
+      trail: what they checked, what they found, and why they concluded what they did, so
+      the next person can trust and reuse the work. This feeds process-improvement metrics
+      like time-to-triage and false-positive rate.
+    examples:
+      - title: Pivoting from one alert
+        body: |
+          Alert: rare process 'update.exe' on HR-LAPTOP-12 (user: jsmith)
+          Pivot 1 host:  what else ran on HR-LAPTOP-12 in +/- 10 min?
+          Pivot 2 user:  where else did jsmith authenticate today?
+          Pivot 3 net:   who did update.exe connect to, and is that IP known-bad?
+          Each pivot builds the timeline or clears the alert.
+      - title: Three verdicts, three actions
+        body: |
+          True positive:        malware confirmed      -> escalate to IR with timeline
+          False positive:       benign tool misdetected -> document + tune the rule
+          Benign true positive: admin's real tool use   -> record an approved exception
+    exercise:
+      title: Work an alert from fired to verdict in your SIEM
+      environment: Your SIEM lab with sample endpoint, authentication and network logs (Sentinel free tier, ELK, or a provided data set), plus one seeded suspicious event
+      tools: [SIEM query editor, sample logs, a document for the investigation write-up]
+      steps:
+        - Take a fired alert (reuse a detection from an earlier lesson or seed one) and write down what it matched and which entities (user, host, IP) it names.
+        - Triage it: state the severity, the asset's criticality, and whether it resembles any known-good pattern, then decide it is worth a full look.
+        - Pivot on the host: query everything that entity did within a short window around the alert and note anything related.
+        - Pivot on the user and the destination IP in turn, checking logons and the destination's reputation, recording what each pivot adds or rules out.
+        - Assemble the related events into a single timeline ordered by time across the sources.
+        - Reach a verdict (true positive, false positive, or benign true positive) and justify it from your timeline; state the next action for that verdict.
+        - If it is a false or benign positive, write the tuning change; if true, list the indicators and timeline you would hand to incident response.
+      deliverable: A one-page investigation write-up covering the alert and entities, the pivots you ran with findings, the assembled timeline, the verdict with justification, and the resulting action (escalate or tune).
+    expected_outcome: >
+      You can take a fired alert, pivot across data sources to build a timeline, and reach
+      a defensible verdict with the right next action, leaving a trail the next analyst can
+      trust.
+    quiz:
+      - prompt: The first thing to do with a newly fired alert is to
+        options:
+          - Close it
+          - Understand what the detection matched and which entities are involved
+          - Reboot the host
+          - Delete the rule
+        answer: 1
+        explanation: Triage starts by understanding what fired and on what before taking any action.
+      - prompt: What pivoting means during an investigation
+        options:
+          - Rotating the dashboard
+          - Following the alert's entities across data sources to gather context
+          - Changing the severity
+          - Restarting the SIEM
+        answer: 1
+        explanation: Pivoting follows users, hosts and IPs across sources to build or clear the case.
+      - prompt: A real but authorised activity that triggers an alert is a
+        options: [False positive, Benign true positive, False negative, Flake]
+        answer: 1
+        explanation: A benign true positive is genuinely detected activity that is expected and authorised.
+      - prompt: Why build a timeline across data sources?
+        options:
+          - To use more storage
+          - Because the order and proximity of events turn separate logs into a coherent story
+          - To avoid pivoting
+          - To replace the verdict
+        answer: 1
+        explanation: Sequencing events across sources reveals the narrative that single logs cannot.
+      - prompt: After confirming a false positive, the follow-up that prevents a repeat is
+        options: [Escalate to IR, Tune the detection, Reimage the host, Notify customers]
+        answer: 1
+        explanation: Feeding false positives back into tuning stops the same benign activity firing again.

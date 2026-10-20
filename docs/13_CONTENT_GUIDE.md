@@ -15,9 +15,9 @@ progress is kept because lessons are matched by `slug`.
 |---|---|---|---|
 | 1 | Networking Foundations for SOC Analysts | Networking | 3 |
 | 2 | Security Foundations | Security Foundations | 3 |
-| 3 | Windows Security Monitoring | Windows Security | 2 |
-| 4 | Linux Security Operations | Linux Security | 2 |
-| 5 | SIEM Fundamentals | SIEM | 2 |
+| 3 | Windows Security Monitoring | Windows Security | 3 |
+| 4 | Linux Security Operations | Linux Security | 3 |
+| 5 | SIEM Fundamentals | SIEM | 3 |
 | 6 | Vulnerability Management | Vulnerability Management | 2 |
 | 7 | Threat Hunting | Threat Hunting | 2 |
 | 8 | Incident Response | Incident Response | 2 |
@@ -26,7 +26,7 @@ progress is kept because lessons are matched by `slug`.
 | 11 | Cloud Security Operations | Cloud Security | 2 |
 | 12 | Governance, Risk and Compliance | Governance, Risk and Compliance | 2 |
 
-12 courses, 26 lessons, about 18% theory and 82% lab time overall. Every course now has at least two lessons.
+12 courses, 29 lessons, about 18% theory and 82% lab time overall. Every course has at least two lessons; the core SOC environments (Windows, Linux, SIEM) have three.
 
 **Certification coverage:** every objective of all four priority certifications
 (Security+ SY0-701, SC-900, SC-200, CySA+ CS0-003) maps to at least one lesson.

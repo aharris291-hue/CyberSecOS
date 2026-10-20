@@ -171,3 +171,95 @@ lessons:
           - Root logins are preferred
         answer: 1
         explanation: Least privilege limits damage when an account or process is compromised.
+
+  - slug: linux-audit-persistence
+    title: Auditing and Hunting Persistence on Linux
+    order: 3
+    difficulty: intermediate
+    summary: Turn on Linux auditing, then hunt the common persistence spots - cron, systemd, shell startup files - and investigate a suspicious process.
+    theory_minutes: 12
+    lab_minutes: 55
+    objectives: ["secplus:4.9", "cysa:1.2", "cysa:3.2"]
+    learning_objectives:
+      - Configure Linux auditing and know which logs answer which question
+      - Enumerate the common persistence locations on a Linux host
+      - Investigate a suspicious process from a running system back to its on-disk source
+    theory: |
+      To investigate a Linux host you first need it to keep records. **journald** (via
+      `journalctl`) holds systemd's structured logs; **auditd** records security-relevant
+      kernel events (file access, execution, privilege changes) against rules you define;
+      and classic files under `/var/log` (auth, syslog) still matter. The skill is
+      knowing which to ask: auth logs for who logged in, auditd for what a process did,
+      journald for service behaviour. A SOC enables these before an incident, ships them
+      off-host so an attacker cannot simply wipe them, and protects their integrity.
+
+      Attackers want to survive a reboot, so **persistence** lives in a handful of
+      predictable places. **cron** (`/etc/crontab`, `/etc/cron.*`, per-user crontabs) and
+      **systemd** units and timers are the classics; **shell startup files**
+      (`~/.bashrc`, `~/.profile`, `/etc/profile.d`) run code at login; **SSH
+      authorized_keys** grants silent re-entry; and service or package hooks can relaunch
+      a payload. Knowing the list turns hunting into a checklist: enumerate each location
+      and compare against a known-good baseline, because a new timer or an unfamiliar key
+      is far easier to spot than arbitrary malware.
+
+      When you find a suspicious **running process**, you trace it from memory back to
+      disk. `/proc/<pid>` is the bridge: `exe` is a link to the binary, `cwd` its working
+      directory, `cmdline` how it was launched, and the open sockets show where it talks.
+      From there you find how it was started and how it persists, then you have what an
+      incident response needs: the indicator, the persistence mechanism to remove, and the
+      detection to write so it is caught next time.
+    examples:
+      - title: Where persistence hides
+        body: |
+          cron:       /etc/crontab, /etc/cron.d/*, crontab -l   (scheduled re-launch)
+          systemd:    /etc/systemd/system/*.service and *.timer (service/timer)
+          shell:      ~/.bashrc, /etc/profile.d/*.sh            (runs at login)
+          ssh:        ~/.ssh/authorized_keys                    (silent re-entry)
+      - title: Tracing a process from PID to disk
+        body: |
+          $ ls -l /proc/4821/exe     -> /tmp/.cache/update   (binary in a hidden tmp path)
+          $ cat /proc/4821/cmdline   -> ./update --daemon
+          $ grep -R update /etc/cron* /etc/systemd  -> a systemd timer relaunches it
+          Finding: timer = persistence to remove; /tmp binary = IOC to hash and detect.
+    exercise:
+      title: Audit a host and hunt a planted persistence mechanism
+      environment: A disposable Linux VM or container you control (never a production host)
+      tools: [auditd, journalctl, systemctl, crontab, ls/grep, a notes file]
+      steps:
+        - Install and enable auditd, add one rule (for example watch /etc/passwd for writes), and confirm an event appears when you touch the watched file.
+        - Use journalctl to find a service's recent logs and note how you would narrow by time and unit.
+        - Plant a benign persistence mechanism on the VM yourself (for example a harmless cron entry or systemd timer that writes a timestamp to a file) to act as the thing you will hunt.
+        - Enumerate each common persistence location (cron, systemd units and timers, shell startup files, authorized_keys) and find your planted entry by comparing against what you expect.
+        - Start the benign process it launches and trace it with /proc/<pid>/exe, cwd and cmdline back to its on-disk binary and how it was started.
+        - Remove the persistence, confirm it no longer relaunches, and record the indicators (path, command, mechanism) as you would for an incident.
+        - Write one auditd or journald-based detection idea that would have caught the persistence being created.
+      deliverable: The working auditd rule and its event, notes showing you found the planted persistence by location, the /proc trace to the binary, and one detection idea.
+    expected_outcome: >
+      You can enable and use Linux auditing, check every common persistence location
+      against a baseline, and trace a suspicious process back to its source and its
+      persistence so it can be removed and detected.
+    quiz:
+      - prompt: Which tool records security-relevant kernel events such as file access and execution against rules you define?
+        options: [journalctl, auditd, crontab, top]
+        answer: 1
+        explanation: auditd applies audit rules and logs matching kernel events for investigation.
+      - prompt: Which of these is a common Linux persistence location?
+        options: ["A systemd timer unit", "The CPU cache", "The ARP table", "The MOTD banner"]
+        answer: 0
+        explanation: systemd timers (and services), cron, shell startup files and authorized_keys are classic persistence spots.
+      - prompt: To find the on-disk binary behind a running PID you would inspect
+        options: ["/proc/<pid>/exe", "/etc/hostname", "/var/run/utmp", "/dev/null"]
+        answer: 0
+        explanation: /proc/<pid>/exe is a symlink to the executable backing the process.
+      - prompt: Why do SOCs ship Linux logs off the host?
+        options:
+          - To save local disk only
+          - So an attacker who compromises the host cannot simply delete the evidence
+          - To make them load faster
+          - Because journald requires it
+        answer: 1
+        explanation: Off-host (and integrity-protected) logs survive an attacker trying to cover their tracks.
+      - prompt: An unfamiliar entry in ~/.ssh/authorized_keys most likely represents
+        options: [A performance tweak, A silent re-entry mechanism for an attacker, A normal backup, A kernel module]
+        answer: 1
+        explanation: An added public key lets someone log in without a password, a common persistence and re-entry trick.

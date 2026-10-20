@@ -1,5 +1,12 @@
 # Changelog
 
+## Phase 2 - More SOC-core depth
+
+### A third lesson for the core environment and tooling courses
+- Added one lesson each to Windows, Linux and SIEM (12 courses, 29 lessons), the environments and tool a SOC analyst works in daily.
+- New lessons: Windows Active Directory and authentication monitoring (logon types, Kerberos, spraying and lateral movement); Linux auditing and persistence hunting (auditd/journald, cron/systemd/startup files, tracing a process via /proc); and investigating a SIEM alert end-to-end (triage, pivoting, timeline, verdict).
+- All keep the six education-standard sections and the ~18/82 theory/lab split; content-standard and coverage tests still pass (217 backend tests).
+
 ## Phase 2 - Exam-date tracking
 
 ### Target exam dates with a countdown
