@@ -205,3 +205,98 @@ lessons:
           - To clear the alert queue
         answer: 1
         explanation: Re-running the positive and negative tests ensures a fix still catches real activity.
+  - slug: de-tuning-false-positives
+    title: Tuning Detections and Cutting False Positives
+    order: 3
+    difficulty: intermediate
+    summary: Take a noisy detection and make it trustworthy by measuring precision, tuning with context instead of blanket suppression, and managing the rule over its lifecycle.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.4", "cysa:1.5", "sc200:2"]
+    learning_objectives:
+      - Measure a detection with true/false positives and precision
+      - Tune out noise with scoped context rather than blanket suppression
+      - Manage a rule through its lifecycle so it stays trustworthy
+    theory: |
+      A detection that fires constantly is worse than none, because **alert fatigue**
+      trains analysts to close alerts unread and the real one gets missed with the
+      rest. Tuning is the discipline that keeps detections trustworthy. Start by
+      measuring. A **true positive** is a real detection of the behaviour; a **false
+      positive** is benign activity that matched; a **false negative** is the attack
+      the rule missed. **Precision** is true positives over everything the rule fired
+      (true plus false positives), and it answers the analyst's real question of
+      whether an alert from this rule is worth opening.
+
+      Tuning is not simply making a rule fire less. The goal is to drop the false
+      positives while keeping the true ones, which means **scoped context** rather
+      than a blanket mute. If a backup service legitimately triggers a credential-access
+      rule, exclude that specific account on that specific host, not the whole technique.
+      Good levers are **allowlisting** known-good identities or paths, **thresholds**
+      and rate limits for noisy-but-sometimes-real behaviour, and **enrichment** that
+      adds asset, identity or threat-intel context so the rule can be specific. Blanket
+      suppression is a last resort because it quietly creates false negatives, which is
+      how a tuned-away rule misses the real attack.
+
+      Detections need **lifecycle management**. Each rule carries metadata such as its
+      author, its **ATT&CK** mapping, its data source and its known false positives, so
+      the next analyst understands it. Rules are version-controlled as **detection-as-code**
+      and tested in CI (the previous lesson), reviewed on a schedule, and **retired**
+      when the logging or the threat changes. A rule nobody trusts or maintains is
+      **detection debt**, and removing it can be as valuable as writing a new one.
+    examples:
+      - title: Scoped tuning versus a blanket mute
+        body: |
+          Noisy rule: "LSASS access" fires on a backup agent every night.
+          Blanket:  disable the rule           -> also blinds you to real credential theft
+          Scoped:   exclude svc-backup on HOST-DB only, keep the rule everywhere else
+      - title: Precision makes the noise concrete
+        body: |
+          Last 30 days: 60 alerts -> 6 true positives, 54 false positives
+          Precision = 6 / 60 = 10%  (9 in 10 alerts are noise)
+          After scoped tuning: 9 alerts -> 6 true, 3 false  -> precision 67%
+    exercise:
+      title: Tune a noisy detection and document its lifecycle
+      environment: A detection rule and a sample of its alerts (reuse a Sigma rule from the earlier lessons, with real or invented alert outcomes) and a document or repo
+      tools: [Your detection rules, a spreadsheet for the metrics, a text editor or git repo]
+      steps:
+        - Take one detection and label a sample of at least ten of its alerts as true or false positives.
+        - Calculate the rule's precision from those labels and state in a sentence whether an analyst should trust it.
+        - For the false positives, identify the specific benign cause (an account, host, path or schedule) rather than just calling them noise.
+        - Write a scoped tuning change (an allowlist entry, a threshold, or an enrichment condition) that removes those false positives without muting the whole technique.
+        - Explain what false negative a blanket suppression of this rule would risk, to justify the scoped approach.
+        - Add lifecycle metadata to the rule: author, ATT&CK technique, data source, and a list of its known false positives.
+        - Decide a review date and the condition under which you would retire the rule, and record it.
+      deliverable: The before/after precision figures, the scoped tuning change, the rule's lifecycle metadata, and a stated review-or-retire condition.
+    expected_outcome: >
+      You can measure a detection's precision, cut its false positives with scoped
+      context instead of blanket suppression, and manage it over its lifecycle so the
+      SOC keeps trusting its alerts and does not accumulate detection debt.
+    quiz:
+      - prompt: A rule fired 40 times last month with 4 true positives and 36 false positives. Its precision is
+        options:
+          - 90%
+          - 10%
+          - 40%
+          - 4%
+        answer: 1
+        explanation: Precision is true positives over all alerts fired, so 4 / 40 = 10%, meaning nine in ten alerts are noise.
+      - prompt: Why is blanket suppression of a noisy rule a last resort?
+        options:
+          - It is slower to configure
+          - It quietly creates false negatives, so real attacks are missed
+          - It costs more to license
+          - It changes the ATT&CK mapping
+        answer: 1
+        explanation: Muting the whole rule removes the true positives along with the noise, blinding the SOC to the real behaviour.
+      - prompt: The best way to remove a recurring benign match is to
+        options:
+          - Delete the detection
+          - Exclude the specific known-good account, host or path with scoped context
+          - Raise every threshold to the maximum
+          - Stop logging the data source
+        answer: 1
+        explanation: Scoped exclusions and enrichment drop the false positives while keeping the detection active for genuine activity.
+      - prompt: A rule nobody trusts or maintains is best described as
+        options: [A true positive, Detection debt worth retiring, A compensating control, An enrichment source]
+        answer: 1
+        explanation: Unmaintained, distrusted rules are detection debt, and retiring them can be as valuable as adding new coverage.

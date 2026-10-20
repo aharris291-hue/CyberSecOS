@@ -197,3 +197,97 @@ lessons:
           - Guarantees no incidents
         answer: 1
         explanation: Playbooks encode proven steps for a scenario, making response consistent and faster.
+  - slug: ir-forensics-evidence
+    title: Digital Forensics and Evidence Handling
+    order: 3
+    difficulty: intermediate
+    summary: Acquire and preserve evidence from a compromised host in the right order, keep an unbroken chain of custody, and build a defensible timeline of what happened.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.8", "cysa:3.2", "cysa:4.2"]
+    learning_objectives:
+      - Acquire volatile and non-volatile evidence in the correct order
+      - Preserve integrity with hashing and an unbroken chain of custody
+      - Reconstruct a timeline from host artefacts to answer what happened
+    theory: |
+      When an incident may lead to discipline, legal action or a regulator, how you
+      handle evidence matters as much as what you find. The guiding rule is the
+      **order of volatility**: capture the most fleeting data first. Memory (RAM),
+      running processes and network connections vanish on shutdown, so they come
+      before the disk, which in turn comes before backups and archived logs. This is
+      exactly why the containment lesson said to isolate a host at the network rather
+      than pull its power.
+
+      Integrity is proved, not assumed. An analyst takes a **forensic image** (a
+      bit-for-bit copy) and records a cryptographic **hash** (such as SHA-256) of the
+      original and the copy; matching hashes show the copy is faithful and that
+      nothing changed later. All work is done on the copy, never the original, often
+      through a **write blocker** so the acquisition itself cannot alter the source.
+      Every transfer is logged in a **chain of custody** that records who held the
+      evidence, when, and why, from seizure to storage. A gap in that chain can make
+      the evidence worthless.
+
+      The payoff is a **timeline**. Hosts are full of timestamped artefacts, including
+      event logs, file **MAC times** (modified, accessed, created), browser and command
+      history, prefetch and scheduled tasks. Correlating them reconstructs the sequence
+      from initial access to actions on objectives, and anchors each claim to a source.
+      Analysts stay alert to **anti-forensics** such as cleared logs or timestomped
+      files, where the absence or inconsistency of an artefact is itself a finding.
+    examples:
+      - title: Collect in order of volatility
+        body: |
+          First  -> memory, running processes, open network connections, logged-in users
+          Then   -> the disk image (bit-for-bit copy, through a write blocker)
+          Last   -> backups and archived/central logs
+          Rationale: volatile data is gone the moment the host powers down.
+      - title: Hashing proves the image is faithful
+        body: |
+          sha256(original_disk)  = 3b1f...e9a2
+          sha256(working_copy)   = 3b1f...e9a2   -> identical, copy is sound
+          Analysis runs on the copy; the original is sealed and logged.
+    exercise:
+      title: Acquire evidence and build a timeline for a scenario
+      environment: A practice host or a provided disk/memory sample (a disposable VM you can snapshot, or sample artefacts) and a document for notes
+      tools: [A hashing utility such as sha256sum, a timeline or spreadsheet tool, your incident notes]
+      steps:
+        - Write the acquisition order you would follow for a live compromised host, from most to least volatile, and justify the first and last items.
+        - On a practice file or disk image, generate a SHA-256 hash and record it, then copy the file and hash the copy to show the two match.
+        - Draft a chain-of-custody record with fields for item, who collected it, date and time, and each subsequent handoff.
+        - Collect at least four timestamped artefacts from the scenario (for example event-log entries, file MAC times, command history, scheduled tasks).
+        - Correlate them into a single ordered timeline, with each entry citing the artefact it came from.
+        - Identify one point where an attacker could use anti-forensics and say how you would detect the tampering.
+        - Write a short factual summary of what the timeline shows, separating what the evidence proves from what you infer.
+      deliverable: The acquisition-order note, a matching original/copy hash pair, a chain-of-custody record, and a sourced timeline with a short factual summary.
+    expected_outcome: >
+      You can acquire evidence in order of volatility, prove its integrity with hashing
+      and an unbroken chain of custody, and reconstruct a sourced timeline that stands
+      up to scrutiny, while staying alert to anti-forensic tampering.
+    quiz:
+      - prompt: Following the order of volatility, which should you capture first?
+        options:
+          - An archived log from the central SIEM
+          - The contents of RAM and running network connections
+          - A full disk image
+          - A nightly backup
+        answer: 1
+        explanation: Memory and live network state are the most volatile and are lost on shutdown, so they are collected before disk and backups.
+      - prompt: Why does an analyst hash the original evidence and the working copy?
+        options:
+          - To compress them
+          - To prove the copy is a faithful, unaltered duplicate of the original
+          - To encrypt the evidence
+          - To speed up analysis
+        answer: 1
+        explanation: Matching cryptographic hashes demonstrate the copy is identical to the source and that nothing changed afterwards.
+      - prompt: A broken chain of custody is a problem because
+        options:
+          - It makes the image larger
+          - It can render the evidence inadmissible or unreliable
+          - It deletes the timeline
+          - It changes the CVSS score
+        answer: 1
+        explanation: Unaccounted gaps in who held evidence and when undermine its integrity and its value in any proceeding.
+      - prompt: Cleared logs or timestomped files are examples of
+        options: [Normal maintenance, Anti-forensics that are themselves findings, Backups, Patch management]
+        answer: 1
+        explanation: Deliberate tampering to hinder investigation is anti-forensics, and its traces or inconsistencies are evidence in their own right.
