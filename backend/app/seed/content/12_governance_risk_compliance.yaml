@@ -1319,7 +1319,7 @@ lessons:
     summary: Understand SOC 2 and the world of audit attestations, what a SOC 2 report is, the trust services criteria, the difference between Type I and Type II, and why customers demand them.
     theory_minutes: 12
     lab_minutes: 54
-    objectives: ["secplus:5.1", "secplus:5.4", "sc900:4"]
+    objectives: ["secplus:5.1", "secplus:5.4", "sc900:4", "secplus:5.3"]
     learning_objectives:
       - Explain what a SOC 2 report is and who it is for
       - Describe the trust services criteria and Type I versus Type II
@@ -1522,7 +1522,7 @@ lessons:
     summary: Understand how data governance manages information as an asset across its lifecycle, through classification, ownership, retention and disposal, underpinning both security and compliance.
     theory_minutes: 12
     lab_minutes: 54
-    objectives: ["secplus:5.1", "secplus:5.4", "sc900:3"]
+    objectives: ["secplus:5.1", "secplus:5.4", "sc900:3", "secplus:4.2"]
     learning_objectives:
       - Explain what data governance is and why it matters
       - Describe data classification, ownership and the data lifecycle
@@ -1728,7 +1728,7 @@ lessons:
     summary: Understand how GRC platforms and compliance automation reduce the manual burden of governance, risk and compliance by centralising controls, continuously gathering evidence and mapping one control set to many frameworks.
     theory_minutes: 12
     lab_minutes: 54
-    objectives: ["secplus:5.1", "secplus:5.4", "sc900:4"]
+    objectives: ["secplus:5.1", "secplus:5.4", "sc900:4", "secplus:4.7"]
     learning_objectives:
       - Explain the manual burden that GRC tooling addresses
       - Describe how GRC platforms and compliance automation work
@@ -1933,3 +1933,110 @@ lessons:
           - Reported the incident promptly
         answer: 1
         explanation: Coverage depends on the stated controls being genuinely in place, so misrepresentation can void a claim.
+  - slug: grc-vendor-assessment-agreements
+    title: Vendor Assessment, Selection and Third-Party Agreements
+    order: 21
+    difficulty: intermediate
+    summary: Run a vendor through due diligence, pick the right agreement type, write the security clauses, and keep monitoring the relationship until offboarding.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives:
+    - secplus:5.3
+    - secplus:5.5
+    learning_objectives:
+    - Assess a vendor with questionnaires, independent evidence and a risk tier before selection
+    - Distinguish SLA, MOA, MOU, MSA, SOW, NDA and BPA and the security terms each should carry
+    - Monitor a vendor over the relationship and offboard it without leaving access or data behind
+    theory: |
+      Third-party risk management follows a vendor through a lifecycle, and Security+ objective 5.3 tests each
+      step. It starts with **tiering**: a vendor that hosts your customer data or has network access is high
+      risk and gets the full process, while a vendor that sells you office chairs does not.
+
+      **Vendor assessment** gathers evidence before you commit. **Questionnaires** (often a standard set such
+      as SIG or CAIQ) ask the vendor to describe its controls, but self-reported answers are claims, so you
+      weigh them against **independent assessments**: a SOC 2 Type II report, an ISO 27001 certificate, or a
+      **penetration test** summary. **Evidence of internal audits** shows the vendor checks itself.
+      **Supply chain analysis** looks one step further, at the vendor's own suppliers and subcontractors
+      (fourth parties). Where you need more, a **right-to-audit clause** lets you or your auditor inspect the
+      vendor directly. **Vendor selection** then weighs that evidence through **due diligence**, and watches
+      for **conflicts of interest**, such as a buyer with a financial stake in the supplier.
+
+      **Agreement types** are a frequent exam target. A **service-level agreement (SLA)** sets measurable
+      service commitments such as uptime and response time, with penalties. A **memorandum of agreement
+      (MOA)** is a formal agreement of responsibilities, while a **memorandum of understanding (MOU)** is a
+      looser statement of intent. A **master service agreement (MSA)** sets the overall legal terms for
+      repeated work, and each piece of work is defined by a **work order or statement of work (SOW)**. A
+      **non-disclosure agreement (NDA)** protects confidential information, and a **business partners
+      agreement (BPA)** governs a partnership, such as shared profits and responsibilities. Security belongs
+      in these documents: breach notification timelines, data location and return, encryption, subprocessor
+      approval, and the right to audit.
+
+      **Vendor monitoring** continues after signing, through annual reassessment, renewed reports, breach news
+      and security ratings, because a vendor's posture drifts. **Rules of engagement** define how you test or
+      interact with a vendor's environment. **Offboarding** closes the loop: revoke accounts, keys and network
+      connections, and get the data returned or certifiably destroyed.
+    examples:
+    - title: Vendor tiering
+      body: |
+        Tier 1 (high):   hosts customer PII or has network/VPN access -> questionnaire + SOC 2 Type II + right-to-audit, annual review
+        Tier 2 (medium): processes internal data, no network access   -> questionnaire + ISO 27001 or SOC 2, review every two years
+        Tier 3 (low):    no data, no access (office supplies)          -> standard contract, no security review
+    - title: Which agreement?
+      body: |
+        "99.9% uptime, 4-hour response to P1, service credits if missed"   -> SLA
+        Overall legal terms for an MSP; each project scoped separately      -> MSA + SOW per project
+        Two agencies agree in principle to share threat intel               -> MOU
+        Contractor will see unreleased product designs                      -> NDA
+    exercise:
+      title: Run a third-party risk review for a new SaaS vendor
+      environment: A document editor and a public vendor trust page (any SaaS provider's published security or trust centre)
+      tools:
+      - a document editor
+      - a spreadsheet
+      - a vendor's public trust centre
+      - a SIG Lite or CAIQ question list
+      steps:
+      - Describe the service and the data and access it will have, then assign a risk tier with a reason.
+      - Select ten questionnaire questions suited to that tier from a standard question set.
+      - Review the vendor's public trust centre and list which independent assessments it offers and their type and date.
+      - Identify any fourth parties (subprocessors) and note where your data would be stored.
+      - Choose the agreement types needed and draft five security clauses, including breach notification and right to audit.
+      - Define the monitoring cadence and the triggers for an out-of-cycle review.
+      - Write the offboarding checklist covering access revocation and data return or destruction.
+      deliverable: 'A vendor risk file: tier and rationale, questionnaire, evidence reviewed, chosen agreements with security clauses, monitoring plan and offboarding checklist.'
+    expected_outcome: |
+      You can take a vendor from tiering and assessment through selection, the right agreement types and
+      security clauses, ongoing monitoring and clean offboarding, and name each agreement type Security+ uses.
+    quiz:
+    - prompt: Which agreement sets measurable commitments such as uptime and response time?
+      options:
+      - NDA
+      - MOU
+      - SLA
+      - BPA
+      answer: 2
+      explanation: A service-level agreement defines measurable service levels and penalties.
+    - prompt: An MSP works under one set of legal terms, with each project scoped separately. Which pair fits?
+      options:
+      - MOU and NDA
+      - MSA and SOW
+      - SLA and BPA
+      - MOA and NDA
+      answer: 1
+      explanation: The MSA sets the overall terms and each SOW or work order defines a piece of work.
+    - prompt: Why is a vendor's completed questionnaire not enough on its own for a high-risk vendor?
+      options:
+      - Questionnaires are illegal to use
+      - Answers are self-reported, so they need independent evidence such as a SOC 2 Type II report
+      - Questionnaires only cover physical security
+      - High-risk vendors never answer them
+      answer: 1
+      explanation: Self-attestation is a claim; independent assessments and audit rights verify it.
+    - prompt: Which clause lets you inspect a vendor's controls directly?
+      options:
+      - Right-to-audit clause
+      - Non-compete clause
+      - Force majeure clause
+      - Termination for convenience
+      answer: 0
+      explanation: A right-to-audit clause gives you or your auditor the contractual right to verify controls.

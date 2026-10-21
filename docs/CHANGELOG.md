@@ -1,5 +1,12 @@
 # Changelog
 
+## Phase 2 - Certification depth gaps
+
+- Closed the depth gaps the certification audit (`docs/14_CERTIFICATION_GAP_AUDIT.md`) found: Security+ 4.7 (automation and orchestration), 4.2 (asset management) and 5.3 (third-party risk), and CySA+ 2.4 (recommend controls to mitigate attacks and vulnerabilities), which each rested on one or two lessons.
+- Re-tagged thirteen existing lessons whose content already teaches those objectives (for example the SOAR, detection-as-code and compliance-automation lessons to 4.7; attack surface management, data governance and data classification to 4.2; supply-chain risk and SOC 2 attestation to 5.3; web application scanning, secure application design, WAF and API gateway, patch remediation and web server hardening to CySA+ 2.4).
+- Added four distinct lessons for the sub-bullets no lesson taught: scripting security automation with Bash and Python (Linux), the asset lifecycle from procurement to secure disposal (Security Foundations), vendor assessment, selection and third-party agreements (GRC), and recommending controls for common attacks and vulnerabilities (Vulnerability Management).
+- Coverage is now 4.7: 6 lessons, 4.2: 5, 5.3: 4, CySA+ 2.4: 8. Catalog is 268 lessons (~294 hours). Content-standard and full backend suites pass.
+
 ## Phase 2 - Microsoft certification track (SC-900 and SC-200)
 
 ### Course 13: Microsoft Security Operations
