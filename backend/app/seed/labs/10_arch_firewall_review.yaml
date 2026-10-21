@@ -1,0 +1,80 @@
+slug: lab-arch-firewall-review
+lesson: arch-network-design
+title: Review a segmentation firewall policy
+pass_mark: 80
+scenario: |
+  You are reviewing the segmentation firewall for a three-tier web application before an audit.
+  The approved design says:
+
+  - The internet reaches **only** the DMZ web tier, on 443 (and 80 for the redirect).
+  - Each tier talks only to the next one: dmz → app on 8443, app → db on 5432.
+  - Administration happens **only** from the mgmt zone.
+  - Staff (users zone) reach the application only through the DMZ web tier.
+  - Everything else is denied.
+
+  Rules are evaluated top to bottom and the first match wins.
+artifacts:
+- name: firewall_rules.txt
+  kind: config
+  description: The current rule base, in evaluation order.
+  content: |
+    # Perimeter / internal segmentation firewall - evaluated top to bottom, first match wins
+    # Zones: internet, dmz (web), app, db, mgmt (admin jump hosts), users
+    #  id  action  from      to        service      comment
+       1   allow   internet  dmz       tcp/443      public website
+       2   allow   internet  dmz       tcp/80       redirect to https
+       3   allow   dmz       app       tcp/8443     web tier to API
+       4   allow   app       db        tcp/5432     API to PostgreSQL
+       5   allow   mgmt      any       tcp/22       admin SSH from jump hosts
+       6   allow   users     dmz       tcp/443      staff use the website
+       7   allow   internet  mgmt      tcp/3389     temporary vendor access (ticket CHG-1182, expired)
+       8   allow   dmz       db        tcp/5432     quick fix for report page
+       9   allow   users     app       any          troubleshooting
+      10   deny    users     app       tcp/8443     users must go through the web tier
+      11   allow   app       internet  tcp/443      API calls to payment provider
+      12   deny    any       any       any          default deny
+tasks:
+- prompt: How many rules allow traffic that starts in the internet zone?
+  type: number
+  accepted:
+  - '3'
+  hint: Look at the from column of allow rules.
+  explanation: Rules 1, 2 and 7. Rules 1 and 2 are in the design; rule 7 is not.
+  verify:
+    artifact: firewall_rules.txt
+    op: count
+    pattern: ^\s*\d+\s+allow\s+internet\s
+- prompt: Which rule IDs break the approved design? List them separated by commas.
+  type: set
+  accepted:
+  - 7, 8, 9
+  hint: Check each allow rule against the five design statements. Rule 11 is outbound from the app tier for a stated
+    business need.
+  explanation: Rule 7 exposes RDP on the mgmt zone to the whole internet, on an expired change. Rule 8 lets the
+    DMZ skip the app tier and reach the database. Rule 9 lets users reach the app tier directly on any port.
+- prompt: Which rule ID can never take effect because an earlier rule already matches all its traffic?
+  type: number
+  accepted:
+  - '10'
+  hint: Look for a deny placed below a broader allow for the same zones.
+  explanation: Rule 10 (deny users to app on 8443) is shadowed by rule 9, which already allows users to app on any
+    port. First match wins, so the deny never fires. Many firewall analysers flag shadowed rules automatically.
+- prompt: If an attacker took over the public web server, which rule would let them connect straight to the database?
+  type: number
+  accepted:
+  - '8'
+  hint: The web server lives in the dmz zone.
+  explanation: Rule 8 allows dmz to db on 5432. A compromised web server could attack the database directly, which
+    defeats the point of a separate app tier.
+- prompt: What is the best fix for rule 7?
+  type: choice
+  options:
+  - Change it to tcp/22 so it uses SSH instead of RDP
+  - Delete it; give the vendor time-bound access through the VPN to the jump hosts with MFA
+  - Move it below rule 12 so the default deny catches it
+  - Keep it but log the traffic
+  answer: 1
+  hint: The change ticket has expired and the design allows administration only from inside the mgmt zone.
+  explanation: Remove the rule. Remote admin straight from the internet is a top ransomware entry point; vendor
+    access should be brokered, MFA-protected and time-bound. Moving it below the default deny would also disable
+    it, but leaves a dead rule to confuse the next reviewer.

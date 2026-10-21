@@ -1,0 +1,81 @@
+slug: lab-grc-risk-register
+lesson: grc-risk-thirdparty-automation
+title: Score a risk register and assess a vendor
+pass_mark: 80
+scenario: |
+  You are preparing the quarterly risk review. The method is the board-approved 5x5 matrix:
+
+  - **Risk score = likelihood x impact** (each 1 to 5, so scores run 1 to 25).
+  - **Risk appetite:** any risk scoring **15 or more** is above appetite and needs a treatment
+    plan and an executive owner this quarter.
+
+  You also have the security questionnaire returned by the payroll vendor behind risk R-02. Your
+  contract requires breach notification within 72 hours and MFA for all staff with access to
+  customer data.
+artifacts:
+- name: risk_register.csv
+  kind: csv
+  description: The current risk register, before scoring.
+  content: |
+    id,risk,likelihood,impact,owner
+    R-01,Ransomware via phishing,4,5,IT Ops
+    R-02,Payroll vendor data breach,3,4,HR
+    R-03,Data centre power failure,2,4,Facilities
+    R-04,Unpatched internet-facing VPN,4,4,Network
+    R-05,Insider misuse of customer data,2,5,Data Protection
+    R-06,Laptop theft without encryption,3,3,IT Ops
+    R-07,Cloud storage misconfiguration,3,5,Cloud Platform
+    R-08,Loss of key security staff,3,2,CISO
+- name: vendor_questionnaire.txt
+  kind: text
+  description: PayFlow's returned security questionnaire.
+  content: |
+    Vendor security questionnaire - PayFlow Payroll Ltd (processes salary and bank details for all staff)
+
+    Q1  Do you hold a current SOC 2 Type II or ISO 27001 certificate?      Yes - ISO 27001, expires 2027-02
+    Q2  Is MFA enforced for all staff and administrator access?            Partially - administrators only
+    Q3  Is customer data encrypted at rest and in transit?                 Yes - AES-256 at rest, TLS 1.2+
+    Q4  When did you last have an independent penetration test?            2023-11
+    Q5  Do you notify customers of a security breach, and within what time? Yes - within 30 days
+    Q6  Do you use subcontractors that can access customer data?           Yes - offshore support provider (not named)
+tasks:
+- prompt: Which risk ID has the highest score?
+  type: text
+  accepted:
+  - R-01
+  hint: Multiply likelihood by impact for each row.
+  explanation: R-01, ransomware via phishing, scores 4 x 5 = 20, the highest in the register.
+- prompt: Which risk IDs are above appetite (score 15 or more)? List them separated by commas.
+  type: set
+  accepted:
+  - R-01, R-04, R-07
+  hint: Score every row, then keep those at 15 and above. Watch the boundary.
+  explanation: R-01 (20), R-04 (16) and R-07 (15) need treatment plans. R-07 sits exactly on the threshold, and
+    'or more' includes it. R-02 scores 12 and R-05 scores 10, so a high impact alone does not cross the line.
+- prompt: What is the score of R-04?
+  type: number
+  accepted:
+  - '16'
+  hint: Likelihood 4, impact 4.
+  explanation: 4 x 4 = 16. An unpatched internet-facing VPN is both likely to be attacked and damaging if breached.
+- prompt: Which questionnaire answers fail your contract requirements? List the question numbers separated by commas
+    (e.g. Q1, Q3).
+  type: set
+  accepted:
+  - Q2, Q5
+  hint: Compare each answer with the two contract requirements stated in the scenario.
+  explanation: Q2 fails the MFA requirement (administrators only) and Q5 fails the 72-hour breach notification requirement
+    (30 days). Q4 and Q6 are concerns to follow up, but they do not break a stated contract term.
+- prompt: What is the most appropriate treatment for the PayFlow findings?
+  type: choice
+  options:
+  - Accept the risk because the vendor holds ISO 27001
+  - Terminate the contract immediately
+  - 'Mitigate: agree a remediation plan with deadlines (MFA for all staff, 72-hour notification, a current pen test,
+    named subprocessors), track it, and re-score R-02'
+  - Transfer the risk by buying cyber insurance and take no other action
+  answer: 2
+  hint: A certificate does not cover the gaps you found, and the vendor runs payroll today.
+  explanation: Mitigation with a tracked remediation plan addresses the specific gaps while the service keeps running.
+    Certification alone does not prove the contract terms are met, insurance does not reduce the likelihood, and
+    termination is a last resort if the vendor will not remediate.

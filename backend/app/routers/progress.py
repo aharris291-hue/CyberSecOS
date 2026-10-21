@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, Query, Response
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy.orm import Session
 
 from ..database import get_db, utcnow
@@ -38,6 +38,13 @@ def complete_lab(
     lesson_id: int, body: LabRequest, db: Session = Depends(get_db), user: User = Depends(get_current_user)
 ) -> LessonProgressOut:
     lesson = get_lesson_or_404(db, lesson_id)
+    if lesson.lab is not None:
+        # A graded lab is completed by passing it, not by self-marking. Notes can still be saved.
+        current = progress_service.progress_by_lesson(db, user).get(lesson.id)
+        if current is None or current.lab_completed_at is None:
+            raise HTTPException(
+                status.HTTP_409_CONFLICT, "This lesson has a graded lab: pass it to complete the lab"
+            )
     progress = progress_service.complete_lab(db, user, lesson, body.notes, body.minutes)
     db.commit()
     return progress_out(progress)
