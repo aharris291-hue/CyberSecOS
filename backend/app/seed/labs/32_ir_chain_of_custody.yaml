@@ -1,0 +1,84 @@
+slug: lab-ir-chain-of-custody
+lesson: ir-forensics-evidence
+title: Audit a chain of custody before evidence goes to legal
+pass_mark: 80
+scenario: |
+  Legal may use the evidence from laptop LT-0388 in an employment tribunal, so before it is
+  handed over you are auditing how it was collected and handled. You have the chain-of-custody
+  log (the first 16 characters of each recorded hash are shown) and today's verification
+  hashes of the two images.
+
+  Good evidence handling means: volatile data collected first, every transfer recorded with
+  who handed it to whom, and the hash unchanged from acquisition to today.
+artifacts:
+- name: chain_of_custody.txt
+  kind: text
+  description: The custody log for case 2026-114.
+  content: |
+    Item    Description                       Time (UTC)            Action                     From          To            Hash recorded (SHA-256, first 16)
+    EV-01   Laptop LT-0388 (powered on)       2026-09-10 08:12      Seized at desk             -             r.ahmed       -
+    EV-02   RAM image of LT-0388              2026-09-10 08:20      Acquired with WinPmem      -             r.ahmed       9f2c41ad0b77e1c3
+    EV-03   Disk image of LT-0388             2026-09-10 09:55      Acquired with write blocker -            r.ahmed       5b01de88a4c9f720
+    EV-03   Disk image of LT-0388             2026-09-10 11:30      Transferred                r.ahmed       evidence-locker 5b01de88a4c9f720
+    EV-02   RAM image of LT-0388              2026-09-10 11:31      Transferred                r.ahmed       evidence-locker 9f2c41ad0b77e1c3
+    EV-03   Disk image of LT-0388             2026-09-12 14:05      Checked out for analysis   evidence-locker s.park       5b01de88a4c9f720
+    EV-02   RAM image of LT-0388              2026-09-12 14:06      Checked out for analysis   evidence-locker s.park       9f2c41ad0b77e1c3
+    EV-03   Disk image of LT-0388             2026-09-13 17:40      Returned                   j.wills       evidence-locker 5b01de88a4c9f720
+    EV-02   RAM image of LT-0388              2026-09-13 17:41      Returned                   s.park        evidence-locker 9f2c41ad0b77e1c3
+- name: verification.txt
+  kind: text
+  description: Today's sha256sum of the images.
+  content: |
+    $ sha256sum /evidence/EV-02_LT-0388_mem.raw /evidence/EV-03_LT-0388_disk.E01
+    9f2c41ad0b77e1c3f0a8c2d6e91b4a7735c0e2fd88a1b9c04e6d2f7a13b5c8e9  /evidence/EV-02_LT-0388_mem.raw
+    5b01de88a4c9f7212d6e0b9a7c4f1e8835a2c9d0b7e6f1a4c8d3e2b9a0f7c6d5  /evidence/EV-03_LT-0388_disk.E01
+tasks:
+- prompt: Which evidence item's hash no longer matches the hash recorded at acquisition?
+  type: text
+  accepted:
+  - EV-03
+  hint: Compare the first 16 characters of today's hashes with the custody log.
+  explanation: 'EV-03, the disk image: recorded 5b01de88a4c9f720, today 5b01de88a4c9f721. The image changed after
+    acquisition, so it can no longer be shown to be an exact copy.'
+- prompt: Which person returned an item they were never recorded as receiving?
+  type: text
+  accepted:
+  - j.wills
+  hint: For each transfer, the 'From' person should be the last 'To' person for that item.
+  explanation: EV-03 was checked out to s.park but returned by j.wills, with no record of the hand-over between
+    them. That gap is exactly when the hash change could have happened.
+- prompt: Which item was acquired first, and why was that the right order?
+  type: choice
+  options:
+  - EV-03 the disk, because it holds the most data
+  - EV-02 the RAM image, because memory is the most volatile evidence and is lost at power-off
+  - EV-01 the laptop, because it was powered on
+  - The order does not matter if both are hashed
+  answer: 1
+  hint: Think of the order of volatility.
+  explanation: Memory was captured at 08:20, before the disk at 09:55. RAM holds running processes, network connections
+    and keys that vanish at shutdown, so it comes first.
+- prompt: How many custody-log entries concern the RAM image (EV-02)?
+  type: number
+  accepted:
+  - '4'
+  hint: Count the rows that start with EV-02.
+  explanation: 'Four entries: acquisition, transfer to the locker, check-out to s.park and return. Its chain is
+    complete and its hash still matches.'
+  verify:
+    artifact: chain_of_custody.txt
+    op: count
+    pattern: '^EV-02 '
+- prompt: What should you tell legal?
+  type: choice
+  options:
+  - Both images are fine
+  - EV-02 is intact; EV-03 has a custody gap and a hash mismatch, so it should not be relied on. Re-image the original
+    disk if it was preserved, and document the gap
+  - Recompute EV-03's hash until it matches
+  - Delete EV-03 to avoid confusion
+  answer: 1
+  hint: Integrity problems must be disclosed, not fixed quietly.
+  explanation: 'Be transparent: the memory image is sound, the disk image is not. If the original laptop disk is
+    still sealed, a fresh verified image can replace it; altering records or evidence would be far worse than the
+    gap itself.'

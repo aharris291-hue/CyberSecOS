@@ -1,0 +1,116 @@
+slug: lab-siem-ti-matching
+lesson: siem-threat-intel-matching
+title: Match a threat-intel feed against network logs
+pass_mark: 80
+scenario: |
+  A new threat-intelligence feed has been loaded into the SIEM watchlist and the analysis date
+  is **2026-10-14**. Before trusting the matches, check the feed: indicators have a confidence
+  level and an expiry date, and feeds contain mistakes.
+
+  Then match the feed against the day's outbound connections. A match is a lead, weighted by
+  the indicator's confidence and context, not an automatic incident. Expired indicators and
+  obvious feed errors should not raise alerts at all.
+artifacts:
+- name: ti_feed.csv
+  kind: csv
+  description: The threat-intel feed with confidence and expiry.
+  content: |
+    indicator,type,confidence,first_seen,expires,context
+    185.243.115.84,ipv4,high,2026-09-20,2026-11-20,Cobalt Strike team server
+    update-cdn.example,domain,high,2026-09-28,2026-12-28,Macro dropper second stage
+    45.9.20.13,ipv4,medium,2026-03-01,2026-06-01,Old scanning infrastructure (expired)
+    paste-share.example,domain,low,2026-10-01,2026-11-01,Paste site used for staging; also used legitimately
+    8.8.8.8,ipv4,low,2026-10-05,2026-11-05,Feed error: public DNS resolver listed by mistake
+- name: connections.csv
+  kind: csv
+  description: Outbound connections for 14 October (UTC).
+  content: |
+    time,host,dest_ip,dest_domain
+    2026-10-14T08:05:10Z,WS-101,8.8.8.8,-
+    2026-10-14T08:08:18Z,WS-101,52.113.194.132,-
+    2026-10-14T08:17:39Z,WS-101,52.113.194.132,-
+    2026-10-14T08:47:22Z,SRV-APP-02,151.101.1.229,-
+    2026-10-14T09:21:55Z,WS-117,8.8.8.8,-
+    2026-10-14T09:35:13Z,WS-130,151.101.1.229,-
+    2026-10-14T09:48:52Z,WS-130,192.0.2.10,-
+    2026-10-14T09:59:50Z,WS-130,52.113.194.132,-
+    2026-10-14T10:02:46Z,WS-117,8.8.8.8,-
+    2026-10-14T10:04:00Z,WS-117,185.243.115.84,-
+    2026-10-14T10:05:56Z,WS-101,8.8.8.8,-
+    2026-10-14T10:09:00Z,WS-117,185.243.115.84,-
+    2026-10-14T10:31:58Z,SRV-APP-02,192.0.2.10,-
+    2026-10-14T10:33:36Z,SRV-APP-02,192.0.2.10,-
+    2026-10-14T10:47:42Z,WS-117,52.113.194.132,-
+    2026-10-14T10:48:07Z,WS-101,8.8.8.8,-
+    2026-10-14T10:55:19Z,WS-102,151.101.1.229,-
+    2026-10-14T11:00:00Z,WS-130,203.0.113.80,update-cdn.example
+    2026-10-14T11:20:33Z,WS-102,151.101.1.229,-
+    2026-10-14T11:34:35Z,WS-130,8.8.8.8,-
+    2026-10-14T11:36:58Z,SRV-APP-02,8.8.8.8,-
+    2026-10-14T11:44:19Z,WS-130,192.0.2.10,-
+    2026-10-14T11:46:17Z,SRV-APP-02,192.0.2.10,-
+    2026-10-14T11:46:41Z,WS-130,52.113.194.132,-
+    2026-10-14T11:58:21Z,WS-102,151.101.1.229,-
+    2026-10-14T12:00:00Z,SRV-APP-02,45.9.20.13,-
+    2026-10-14T12:31:54Z,WS-117,52.113.194.132,-
+    2026-10-14T12:41:09Z,WS-101,192.0.2.10,-
+    2026-10-14T12:43:02Z,WS-101,8.8.8.8,-
+    2026-10-14T12:56:53Z,WS-130,151.101.1.229,-
+    2026-10-14T12:59:20Z,WS-101,151.101.1.229,-
+    2026-10-14T13:00:00Z,WS-102,198.51.100.150,paste-share.example
+    2026-10-14T13:01:31Z,WS-130,192.0.2.10,-
+    2026-10-14T13:07:15Z,SRV-APP-02,192.0.2.10,-
+    2026-10-14T13:26:52Z,SRV-APP-02,151.101.1.229,-
+tasks:
+- prompt: Which feed indicator is a feed error that should be removed before matching?
+  type: text
+  accepted:
+  - 8.8.8.8
+  hint: Which indicator is a well-known public service that every host uses?
+  explanation: 8.8.8.8 is Google's public DNS resolver; matching it would alert on almost every host. Allow-listing
+    well-known services before matching is a standard feed hygiene step.
+- prompt: Which indicator has expired by the analysis date?
+  type: text
+  accepted:
+  - 45.9.20.13
+  hint: Compare each expires date with 2026-10-14.
+  explanation: 45.9.20.13 expired in June. Infrastructure is reassigned quickly, so an old IP indicator is more
+    likely to hit an innocent new owner than the attacker.
+  verify:
+    artifact: ti_feed.csv
+    op: set
+    pattern: ^([^,]+),[^,]+,[^,]+,[^,]+,2026-0[1-9]-\d\d,
+- prompt: Which hosts matched a high-confidence, unexpired indicator? List them separated by commas.
+  type: set
+  accepted:
+  - WS-117, WS-130
+  hint: Match the two high-confidence indicators against dest_ip and dest_domain.
+  explanation: WS-117 talked to a Cobalt Strike team server twice and WS-130 contacted the macro-dropper domain.
+    Both deserve an incident ticket.
+  verify:
+    artifact: connections.csv
+    op: set
+    pattern: ^[^,]+,([^,]+),(?:185\.243\.115\.84,|[^,]+,update-cdn\.example$)
+- prompt: How many connections went to the Cobalt Strike team server?
+  type: number
+  accepted:
+  - '2'
+  hint: Count rows with that dest_ip.
+  explanation: Two connections five minutes apart, consistent with a beacon. Check the host's process telemetry
+    for which process made them.
+  verify:
+    artifact: connections.csv
+    op: count
+    pattern: ',185\.243\.115\.84,'
+- prompt: WS-102 matched paste-share.example (low confidence). What is the right handling?
+  type: choice
+  options:
+  - Isolate WS-102 immediately
+  - 'Treat it as a low-priority lead: check which process and user made the connection and whether anything was
+    posted, then decide'
+  - Ignore it because low-confidence indicators are never useful
+  - Block every paste site and close the alert
+  answer: 1
+  hint: The feed itself says the site has legitimate uses.
+  explanation: Low confidence plus a dual-use site means investigate quickly, not escalate blindly. The context
+    (which process, what was uploaded) decides whether it is staging or a developer sharing a snippet.

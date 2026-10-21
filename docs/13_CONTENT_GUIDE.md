@@ -173,3 +173,15 @@ Two labs per course, 24 in total. `test_lab_content.py` fails if any course drop
 | Security Architecture | `arch-logging-monitoring` | Find the gaps in logging coverage |
 | Cloud Security | `cloud-iam-privilege` | Review IAM policies for excess privilege |
 | Governance, Risk and Compliance | `grc-frameworks-control-mapping` | Map controls to a framework and find the gaps |
+| Networking | `net-flow-lateral-movement` | Find an internal scan and lateral movement in NetFlow |
+| Security Foundations | `sec-identity-access-management` | Run a quarterly user access review |
+| Windows Security | `win-credential-theft` | Spot credential dumping in Sysmon LSASS access events |
+| Linux Security | `linux-audit-persistence` | Hunt persistence on a compromised Linux server |
+| SIEM | `siem-threat-intel-matching` | Match a threat-intel feed against network logs |
+| Vulnerability Management | `vm-web-application-scanning` | Confirm a SQL injection from web server logs |
+| Threat Hunting | `hunt-lolbins-process-lineage` | Hunt living-off-the-land binaries by process lineage |
+| Incident Response | `ir-forensics-evidence` | Audit a chain of custody before evidence goes to legal |
+| Detection Engineering | `de-testing-coverage` | Measure detection coverage from an emulation run |
+| Security Architecture | `arch-zero-trust` | Evaluate access requests against a zero-trust policy |
+| Cloud Security | `cloud-workload-storage` | Review cloud storage buckets for exposure |
+| Governance, Risk and Compliance | `grc-privacy-data-protection` | Review a personal data inventory for privacy risk |

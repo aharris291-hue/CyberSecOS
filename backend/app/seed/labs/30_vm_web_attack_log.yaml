@@ -1,0 +1,121 @@
+slug: lab-vm-web-attack-log
+lesson: vm-web-application-scanning
+title: Confirm a SQL injection from web server logs
+pass_mark: 80
+scenario: |
+  A vulnerability scan flagged the shop's `id` parameter as "possibly injectable". Before the
+  developers are paged at night, the security lead wants evidence: has anyone actually
+  exploited it? You have the web server's access log (combined log format) for the hour.
+
+  Read the requests (URL-decode them: `%20` is a space, `%27` or `'` a quote, `%2f` a slash),
+  the status codes and the response sizes. A response far larger than normal for that page is
+  a strong hint that data came back.
+artifacts:
+- name: access.log
+  kind: log
+  description: nginx access log, combined format.
+  content: |
+    192.0.2.81 - - [15/Sep/2026:13:00:10 +0000] "GET /cart HTTP/1.1" 200 2453 "-" "Mozilla/5.0"
+    192.0.2.38 - - [15/Sep/2026:13:00:13 +0000] "GET /cart HTTP/1.1" 200 1850 "-" "Mozilla/5.0"
+    192.0.2.29 - - [15/Sep/2026:13:01:45 +0000] "GET /products HTTP/1.1" 200 7382 "-" "Mozilla/5.0"
+    192.0.2.44 - - [15/Sep/2026:13:01:46 +0000] "GET /cart HTTP/1.1" 200 8602 "-" "Mozilla/5.0"
+    192.0.2.79 - - [15/Sep/2026:13:05:33 +0000] "GET / HTTP/1.1" 200 4775 "-" "Mozilla/5.0"
+    192.0.2.51 - - [15/Sep/2026:13:08:04 +0000] "GET /products?id=12 HTTP/1.1" 200 8730 "-" "Mozilla/5.0"
+    192.0.2.85 - - [15/Sep/2026:13:12:45 +0000] "GET /products?id=12 HTTP/1.1" 200 7683 "-" "Mozilla/5.0"
+    192.0.2.60 - - [15/Sep/2026:13:16:36 +0000] "GET / HTTP/1.1" 200 1270 "-" "Mozilla/5.0"
+    192.0.2.84 - - [15/Sep/2026:13:17:12 +0000] "GET / HTTP/1.1" 200 3066 "-" "Mozilla/5.0"
+    192.0.2.81 - - [15/Sep/2026:13:17:51 +0000] "GET /products?id=12 HTTP/1.1" 200 4987 "-" "Mozilla/5.0"
+    192.0.2.87 - - [15/Sep/2026:13:20:12 +0000] "GET /products?id=12 HTTP/1.1" 200 1135 "-" "Mozilla/5.0"
+    192.0.2.80 - - [15/Sep/2026:13:20:34 +0000] "GET /products?id=12 HTTP/1.1" 200 5884 "-" "Mozilla/5.0"
+    192.0.2.36 - - [15/Sep/2026:13:21:06 +0000] "GET /products?id=12 HTTP/1.1" 200 5907 "-" "Mozilla/5.0"
+    192.0.2.82 - - [15/Sep/2026:13:24:18 +0000] "GET /cart HTTP/1.1" 200 3706 "-" "Mozilla/5.0"
+    192.0.2.75 - - [15/Sep/2026:13:25:14 +0000] "GET /login HTTP/1.1" 200 5706 "-" "Mozilla/5.0"
+    192.0.2.51 - - [15/Sep/2026:13:25:59 +0000] "GET /products?id=12 HTTP/1.1" 200 5697 "-" "Mozilla/5.0"
+    192.0.2.88 - - [15/Sep/2026:13:26:44 +0000] "GET / HTTP/1.1" 200 8053 "-" "Mozilla/5.0"
+    192.0.2.68 - - [15/Sep/2026:13:27:06 +0000] "GET /login HTTP/1.1" 200 2996 "-" "Mozilla/5.0"
+    192.0.2.23 - - [15/Sep/2026:13:27:24 +0000] "GET /products HTTP/1.1" 200 5384 "-" "Mozilla/5.0"
+    192.0.2.84 - - [15/Sep/2026:13:27:58 +0000] "GET /products?id=12 HTTP/1.1" 200 3734 "-" "Mozilla/5.0"
+    192.0.2.32 - - [15/Sep/2026:13:29:16 +0000] "GET /login HTTP/1.1" 200 5361 "-" "Mozilla/5.0"
+    203.0.113.57 - - [15/Sep/2026:13:30:29 +0000] "GET /products?id=12' HTTP/1.1" 500 312 "-" "sqlmap/1.8#stable"
+    203.0.113.57 - - [15/Sep/2026:13:30:40 +0000] "GET /products?id=12%20OR%201=1-- HTTP/1.1" 200 48211 "-" "sqlmap/1.8#stable"
+    203.0.113.57 - - [15/Sep/2026:13:30:57 +0000] "GET /products?id=12%20UNION%20SELECT%20null,null-- HTTP/1.1" 500 312 "-" "sqlmap/1.8#stable"
+    203.0.113.57 - - [15/Sep/2026:13:31:14 +0000] "GET /products?id=12%20UNION%20SELECT%20username,password_hash%20FROM%20users-- HTTP/1.1" 200 15880 "-" "sqlmap/1.8#stable"
+    203.0.113.57 - - [15/Sep/2026:13:31:49 +0000] "GET /download?file=../../../../etc/passwd HTTP/1.1" 403 199 "-" "sqlmap/1.8#stable"
+    203.0.113.57 - - [15/Sep/2026:13:32:00 +0000] "GET /download?file=..%2f..%2f..%2fetc%2fpasswd HTTP/1.1" 403 199 "-" "sqlmap/1.8#stable"
+    203.0.113.57 - - [15/Sep/2026:13:32:11 +0000] "GET /search?q=%3Cscript%3Ealert(1)%3C/script%3E HTTP/1.1" 200 2210 "-" "sqlmap/1.8#stable"
+    192.0.2.68 - - [15/Sep/2026:13:34:51 +0000] "GET /login HTTP/1.1" 200 7063 "-" "Mozilla/5.0"
+    192.0.2.77 - - [15/Sep/2026:13:35:01 +0000] "GET /login HTTP/1.1" 200 6243 "-" "Mozilla/5.0"
+    192.0.2.37 - - [15/Sep/2026:13:35:16 +0000] "GET /products HTTP/1.1" 200 7184 "-" "Mozilla/5.0"
+    192.0.2.37 - - [15/Sep/2026:13:35:21 +0000] "GET /login HTTP/1.1" 200 3399 "-" "Mozilla/5.0"
+    192.0.2.63 - - [15/Sep/2026:13:35:29 +0000] "GET / HTTP/1.1" 200 1131 "-" "Mozilla/5.0"
+    192.0.2.43 - - [15/Sep/2026:13:35:45 +0000] "GET /cart HTTP/1.1" 200 6227 "-" "Mozilla/5.0"
+    192.0.2.29 - - [15/Sep/2026:13:36:00 +0000] "GET /login HTTP/1.1" 200 6244 "-" "Mozilla/5.0"
+    192.0.2.57 - - [15/Sep/2026:13:36:48 +0000] "GET /static/app.js HTTP/1.1" 200 1292 "-" "Mozilla/5.0"
+    192.0.2.24 - - [15/Sep/2026:13:38:23 +0000] "GET /static/app.js HTTP/1.1" 200 4958 "-" "Mozilla/5.0"
+    192.0.2.67 - - [15/Sep/2026:13:41:46 +0000] "GET /products?id=12 HTTP/1.1" 200 7977 "-" "Mozilla/5.0"
+    192.0.2.21 - - [15/Sep/2026:13:41:47 +0000] "GET /products?id=12 HTTP/1.1" 200 6406 "-" "Mozilla/5.0"
+    192.0.2.46 - - [15/Sep/2026:13:42:27 +0000] "GET /products?id=12 HTTP/1.1" 200 1594 "-" "Mozilla/5.0"
+    192.0.2.34 - - [15/Sep/2026:13:43:36 +0000] "GET /static/app.js HTTP/1.1" 200 8901 "-" "Mozilla/5.0"
+    192.0.2.64 - - [15/Sep/2026:13:44:40 +0000] "GET /static/app.js HTTP/1.1" 200 1908 "-" "Mozilla/5.0"
+    192.0.2.33 - - [15/Sep/2026:13:44:47 +0000] "GET /cart HTTP/1.1" 200 8756 "-" "Mozilla/5.0"
+    192.0.2.20 - - [15/Sep/2026:13:44:55 +0000] "GET /products HTTP/1.1" 200 8934 "-" "Mozilla/5.0"
+    192.0.2.48 - - [15/Sep/2026:13:45:25 +0000] "GET /products HTTP/1.1" 200 8614 "-" "Mozilla/5.0"
+    192.0.2.44 - - [15/Sep/2026:13:47:03 +0000] "GET / HTTP/1.1" 200 6282 "-" "Mozilla/5.0"
+    192.0.2.41 - - [15/Sep/2026:13:47:27 +0000] "GET /login HTTP/1.1" 200 3834 "-" "Mozilla/5.0"
+tasks:
+- prompt: Which IP address was attacking the site?
+  type: text
+  accepted:
+  - 203.0.113.57
+  hint: Look for requests with SQL keywords, ../ sequences or script tags.
+  explanation: 203.0.113.57, using sqlmap (its user agent says so). Attackers can change the user agent, but here
+    it confirms automated testing.
+  verify:
+    artifact: access.log
+    op: set
+    pattern: ^(\S+) .*"sqlmap
+- prompt: Which query parameter was injected with SQL?
+  type: text
+  accepted:
+  - id
+  hint: Which parameter carries OR 1=1 and UNION SELECT?
+  explanation: id on /products, the parameter the scanner flagged.
+  verify:
+    artifact: access.log
+    op: set
+    pattern: \?(\w+)=12%20UNION
+- prompt: Did the injection succeed? Give the HTTP status code of the UNION request that pulled user data.
+  type: number
+  accepted:
+  - '200'
+  hint: Find the request selecting username and password_hash and read its status and size.
+  explanation: 200 with a 15,880-byte response, several times a normal product page. The query returned rows from
+    the users table, so treat the password hashes as stolen.
+  verify:
+    artifact: access.log
+    op: set
+    pattern: 'password_hash%20FROM%20users-- HTTP/1\.1" (\d+) '
+- prompt: How many path-traversal attempts were blocked?
+  type: number
+  accepted:
+  - '2'
+  hint: Count requests containing ../ or ..%2f that got 403.
+  explanation: Two, both refused with 403, so the download endpoint's input filtering (or the WAF) held. Still log
+    it as attempted.
+  verify:
+    artifact: access.log
+    op: count
+    pattern: '(?:\.\./|\.\.%2f).*" 403 '
+- prompt: What is the correct fix for the injection?
+  type: choice
+  options:
+  - Block the attacker's IP
+  - Rewrite the query with parameterised statements (prepared statements), then rescan and review what the users
+    table exposed
+  - Filter the word UNION from the id parameter
+  - Hide database errors so the attacker cannot see them
+  answer: 1
+  hint: Fix the cause, not the symptom.
+  explanation: Parameterised queries make the input data, never SQL, which fixes the whole class of bug. Blocklists
+    and hidden errors are easily bypassed, and blocking one IP does nothing about the next attacker. Then reset
+    the exposed passwords.

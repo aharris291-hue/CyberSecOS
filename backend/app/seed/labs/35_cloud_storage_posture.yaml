@@ -1,0 +1,85 @@
+slug: lab-cloud-storage-posture
+lesson: cloud-workload-storage
+title: Review cloud storage buckets for exposure
+pass_mark: 80
+scenario: |
+  The cloud security posture tool exported the configuration of every storage bucket in the
+  production account. The standard says:
+
+  - No bucket is public unless it serves a public website, and none is ever publicly writable.
+  - Every bucket is encrypted at rest.
+  - Buckets holding business or personal data have versioning (to recover from deletion or
+    ransomware) and access logging (to investigate who read what).
+
+  Note that `authenticated-read` in this provider means **any** signed-in account of the
+  provider, not just your organisation's users.
+artifacts:
+- name: buckets.csv
+  kind: csv
+  description: Bucket configuration export.
+  content: |
+    bucket,acl,encryption,versioning,access_logging,contents
+    web-assets-prod,public-read,SSE-S3,enabled,enabled,public website images
+    fin-reports-prod,private,none,disabled,disabled,finance reports with customer names
+    hr-records,private,SSE-KMS,enabled,enabled,employee records
+    app-logs-2026,private,SSE-S3,disabled,enabled,application logs
+    dev-scratch-ak,public-read-write,none,disabled,disabled,developer test files
+    backup-db-prod,private,SSE-KMS,enabled,enabled,database backups
+    partner-exchange,authenticated-read,SSE-S3,enabled,disabled,files shared with suppliers
+tasks:
+- prompt: Which bucket is the most dangerous, and why must it be fixed first?
+  type: text
+  accepted:
+  - dev-scratch-ak
+  hint: Look for public write access.
+  explanation: 'dev-scratch-ak is public-read-write: anyone can read it and anyone can upload, which turns it into
+    free malware hosting under your name or a place to swap your files. Lock it down immediately.'
+  verify:
+    artifact: buckets.csv
+    op: set
+    pattern: ^([^,]+),public-read-write,
+- prompt: Which buckets are unencrypted? List them separated by commas.
+  type: set
+  accepted:
+  - fin-reports-prod, dev-scratch-ak
+  hint: Filter encryption none.
+  explanation: fin-reports-prod and dev-scratch-ak. Enabling default encryption is a one-line fix, and the finance
+    bucket holds personal data.
+  verify:
+    artifact: buckets.csv
+    op: set
+    pattern: ^([^,]+),[^,]+,none,
+- prompt: Which bucket is exposed to every account holder of the cloud provider?
+  type: text
+  accepted:
+  - partner-exchange
+  hint: Read the note about authenticated-read.
+  explanation: partner-exchange uses authenticated-read, which anyone with any account at the provider can satisfy.
+    Share with named partner accounts or pre-signed URLs instead.
+  verify:
+    artifact: buckets.csv
+    op: set
+    pattern: ^([^,]+),authenticated-read,
+- prompt: How many buckets have access logging disabled?
+  type: number
+  accepted:
+  - '3'
+  hint: Count the access_logging column.
+  explanation: 'Three: fin-reports-prod, dev-scratch-ak and partner-exchange. Without logs you cannot tell after
+    an exposure who downloaded what, which can turn a possible breach into an assumed one.'
+  verify:
+    artifact: buckets.csv
+    op: count
+    pattern: ^[^,]+,[^,]+,[^,]+,[^,]+,disabled,
+- prompt: web-assets-prod is public-read. Is that a finding?
+  type: choice
+  options:
+  - 'Yes: no bucket may ever be public'
+  - 'No: it serves public website images, which the standard allows, and it is encrypted, versioned and logged.
+    Confirm nothing sensitive is stored in it'
+  - Yes, because it is versioned
+  - No, because public buckets cannot be attacked
+  answer: 1
+  hint: Read the first rule of the standard carefully.
+  explanation: Public read is the purpose of a website asset bucket. The residual risk is someone putting a private
+    file there, so a periodic content check (or a separate bucket per purpose) keeps it honest.

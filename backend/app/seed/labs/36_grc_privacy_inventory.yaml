@@ -1,0 +1,85 @@
+slug: lab-grc-privacy-inventory
+lesson: grc-privacy-data-protection
+title: Review a personal data inventory for privacy risk
+pass_mark: 80
+scenario: |
+  Ahead of a privacy audit, the Data Protection Officer asks you to review the record of
+  processing activities (a data inventory). Under GDPR-style rules:
+
+  - **Special category data** (health, ethnicity, religion, sexual orientation, biometrics and
+    similar) needs extra protection and an additional legal condition.
+  - Personal data must not be kept longer than necessary: an "indefinite" retention period is
+    a finding.
+  - Some identifiers that look technical (IP addresses, cookie and device IDs) are still
+    personal data.
+artifacts:
+- name: data_inventory.csv
+  kind: csv
+  description: Record of processing activities (pipe-separated).
+  content: |
+    id|dataset|fields|owner|retention|lawful_basis
+    DS-01|CRM contacts|name; email; phone|Sales|6 years|contract
+    DS-02|Payroll|name; bank account; salary; national insurance number|HR|6 years after leaving|legal obligation
+    DS-03|Occupational health notes|name; medical conditions; sick leave|HR|indefinite|legal obligation
+    DS-04|Website analytics|IP address; cookie ID; pages viewed|Marketing|26 months|consent
+    DS-05|CCTV footage|images of people|Facilities|30 days|legitimate interests
+    DS-06|Diversity survey|ethnicity; religion; sexual orientation|HR|indefinite|consent
+    DS-07|Product telemetry|device ID; app version; crash logs|Engineering|12 months|legitimate interests
+tasks:
+- prompt: Which datasets contain special category data? List the IDs separated by commas.
+  type: set
+  accepted:
+  - DS-03, DS-06
+  hint: Look for health, ethnicity, religion or sexual orientation in the fields.
+  explanation: DS-03 (medical conditions) and DS-06 (ethnicity, religion, sexual orientation). Both need tighter
+    access, encryption and a documented additional condition for processing.
+  verify:
+    artifact: data_inventory.csv
+    op: set
+    pattern: ^(DS-\d+)\|[^|]+\|[^|]*(?:medical|ethnicity|religion|sexual orientation)
+- prompt: How many datasets have an indefinite retention period?
+  type: number
+  accepted:
+  - '2'
+  hint: Count the retention column.
+  explanation: Two, and both are the special category datasets, which makes it worse. Each needs a defined period
+    and a deletion process.
+  verify:
+    artifact: data_inventory.csv
+    op: count
+    pattern: \|indefinite\|
+- prompt: Which dataset holds the most financially sensitive identifiers, making it a top fraud target?
+  type: text
+  accepted:
+  - DS-02
+  hint: Look for bank details and national identifiers.
+  explanation: 'DS-02 payroll: bank account and national insurance numbers enable fraud and identity theft. It is
+    not special category, but it is high-impact if breached.'
+  verify:
+    artifact: data_inventory.csv
+    op: set
+    pattern: ^(DS-\d+)\|[^|]+\|[^|]*bank account
+- prompt: Is the website analytics dataset (DS-04) personal data?
+  type: choice
+  options:
+  - No, it only holds technical data
+  - 'Yes: IP addresses and cookie IDs can identify a person, so it is personal data and the consent and retention
+    rules apply'
+  - Only if names are added
+  - No, because consent was given
+  answer: 1
+  hint: Read the third bullet of the scenario.
+  explanation: Online identifiers are personal data under GDPR. Consent is its lawful basis, so the cookie banner
+    and the 26-month retention must actually be enforced.
+- prompt: What should the DPO do about DS-06?
+  type: choice
+  options:
+  - Nothing, because staff consented
+  - Set a retention period, anonymise or aggregate the results where possible, restrict access tightly and confirm
+    consent is freely given and can be withdrawn
+  - Move it to the CRM
+  - Delete the inventory entry
+  answer: 1
+  hint: Special category data, indefinite retention and consent from employees are all concerns.
+  explanation: Diversity monitoring is legitimate, but it rarely needs identifiable records forever. Aggregated
+    or anonymised results serve the purpose with far less risk, and consent from employees must be genuinely optional.

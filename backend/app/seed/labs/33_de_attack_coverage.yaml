@@ -1,0 +1,82 @@
+slug: lab-de-attack-coverage
+lesson: de-testing-coverage
+title: Measure detection coverage from an emulation run
+pass_mark: 80
+scenario: |
+  The purple team ran an adversary emulation plan of eight ATT&CK techniques against a test
+  host and recorded whether the SIEM alerted. You also have the detection library with the
+  technique each rule claims to cover.
+
+  A coverage map is only honest if it is based on tests: a rule that exists but did not fire
+  is a gap, and a technique with no rule at all is a gap too. Work out the tested coverage and
+  what to fix first.
+artifacts:
+- name: detection_library.csv
+  kind: csv
+  description: Detection rules and the ATT&CK technique each claims (pipe-separated).
+  content: |
+    rule|name|technique
+    DET-001|Office spawns script interpreter|T1204.002
+    DET-002|LSASS access with full rights|T1003.001
+    DET-003|New service with image in user-writable path|T1543.003
+    DET-004|Scheduled task running hidden PowerShell|T1053.005
+    DET-005|Encoded PowerShell command line|T1059.001
+    DET-006|Shadow copy deletion|T1490
+    DET-007|Run key persistence outside Program Files|T1547.001
+- name: emulation_results.csv
+  kind: csv
+  description: Emulation steps and whether an alert fired (pipe-separated).
+  content: |
+    technique|procedure|result|rule
+    T1204.002|User opens macro document|alert|DET-001
+    T1059.001|Encoded PowerShell download cradle|alert|DET-005
+    T1003.001|comsvcs.dll MiniDump of LSASS|alert|DET-002
+    T1547.001|HKCU Run key|no alert|-
+    T1053.005|schtasks hidden PowerShell|alert|DET-004
+    T1021.002|PsExec to file server|no alert|-
+    T1490|vssadmin delete shadows|alert|DET-006
+    T1048.003|Exfiltration over HTTP to file-drop site|no alert|-
+tasks:
+- prompt: How many of the eight emulated techniques were detected?
+  type: number
+  accepted:
+  - '5'
+  hint: Count results that alerted.
+  explanation: Five of eight, 62.5% tested coverage for this plan.
+  verify:
+    artifact: emulation_results.csv
+    op: count
+    pattern: \|alert\|
+- prompt: Which technique has a rule in the library that failed to fire?
+  type: text
+  accepted:
+  - T1547.001
+  hint: Find a 'no alert' technique that does appear in the detection library.
+  explanation: 'T1547.001: DET-007 claims Run-key coverage but stayed silent on an HKCU Run key. Perhaps it only
+    watches HKLM, or the log source is missing. A claimed-but-failing rule is worse than a known gap, because the
+    map says you are covered.'
+- prompt: Which emulated techniques have no rule at all? List them separated by commas.
+  type: set
+  accepted:
+  - T1021.002, T1048.003
+  hint: Compare the 'no alert' techniques with the library.
+  explanation: Lateral movement over SMB with PsExec (T1021.002) and exfiltration over HTTP (T1048.003) have no
+    detections. These are new rules to build.
+- prompt: Which rule in the library was not exercised by this emulation plan?
+  type: text
+  accepted:
+  - DET-003
+  hint: Find a library rule whose technique is not in the results.
+  explanation: DET-003 (T1543.003 service creation) was not tested, so its status is unknown, not covered. Add a
+    procedure for it to the next plan.
+- prompt: What should go on the coverage map for T1547.001 today?
+  type: choice
+  options:
+  - Covered, because DET-007 exists
+  - Not covered (rule failed testing) until DET-007 is fixed and passes a re-test
+  - Partially covered, because the rule exists
+  - Remove the technique from the map
+  answer: 1
+  hint: The map should reflect tested reality.
+  explanation: Mark it as a gap until a re-test proves the fix. Detection-as-code pipelines make this automatic
+    by running the emulation sample against every rule change.

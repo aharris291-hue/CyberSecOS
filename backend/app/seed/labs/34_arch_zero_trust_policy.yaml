@@ -1,0 +1,83 @@
+slug: lab-arch-zero-trust-policy
+lesson: arch-zero-trust
+title: Evaluate access requests against a zero-trust policy
+pass_mark: 80
+scenario: |
+  The architecture team is replacing "on the office network means trusted" with a zero-trust
+  conditional access policy for the finance applications. Before switching it on, they want to
+  see what it would have done to yesterday's sign-ins.
+
+  Evaluate each request against every rule. Zero trust means each request is judged on
+  identity, device health and risk, **never** on network location.
+artifacts:
+- name: policy.txt
+  kind: text
+  description: The proposed conditional access policy.
+  content: |
+    Conditional access policy: Finance applications (finance-erp, payroll)
+
+    Rule 1  Users must be in the Finance group.
+    Rule 2  The device must be company-managed and compliant (disk encrypted, EDR healthy, patched).
+    Rule 3  The sign-in must use phishing-resistant MFA (FIDO2 key or Windows Hello).
+    Rule 4  Sign-ins rated high risk by identity protection are blocked, whatever else is true.
+    All four must pass. There is no exception for the office network.
+- name: access_requests.csv
+  kind: csv
+  description: Yesterday's sign-ins to finance apps (pipe-separated).
+  content: |
+    request|user|group|device|device_state|mfa_method|signin_risk|network
+    REQ-1|a.berg|Finance|managed|compliant|fido2|low|office
+    REQ-2|f.garcia|Finance|managed|non-compliant|fido2|low|office
+    REQ-3|g.hughes|Sales|managed|compliant|hello|low|office
+    REQ-4|i.osei|Finance|unmanaged|unknown|sms|low|home
+    REQ-5|a.berg|Finance|managed|compliant|hello|high|home
+    REQ-6|m.ruiz|Finance|managed|compliant|hello|low|hotel
+    REQ-7|t.nash|Finance|managed|compliant|push|low|office
+tasks:
+- prompt: Which requests would the policy allow? List the request IDs separated by commas.
+  type: set
+  accepted:
+  - REQ-1, REQ-6
+  hint: A request must pass all four rules. Location does not matter.
+  explanation: REQ-1 (office) and REQ-6 (a hotel) pass every rule. The hotel sign-in is allowed because the person,
+    device and authentication are all trustworthy, which is the point of zero trust.
+- prompt: Which request is blocked only because of sign-in risk?
+  type: text
+  accepted:
+  - REQ-5
+  hint: Find a request that passes rules 1 to 3 but not rule 4.
+  explanation: 'REQ-5: the right user on a compliant device with Windows Hello, but identity protection rated it
+    high risk (for example a leaked password or impossible travel). Block, then let the user remediate.'
+  verify:
+    artifact: access_requests.csv
+    op: set
+    pattern: ^(REQ-\d+)\|[^|]+\|Finance\|managed\|compliant\|(?:fido2|hello)\|high\|
+- prompt: Which request fails only the phishing-resistant MFA rule?
+  type: text
+  accepted:
+  - REQ-7
+  hint: Which MFA methods count as phishing-resistant here?
+  explanation: REQ-7 used push approval, which is vulnerable to MFA fatigue and real-time phishing proxies. FIDO2
+    and Windows Hello are bound to the device and the site.
+  verify:
+    artifact: access_requests.csv
+    op: set
+    pattern: ^(REQ-\d+)\|[^|]+\|Finance\|managed\|compliant\|(?:push|sms)\|low\|
+- prompt: How many requests come from the office network but would still be blocked?
+  type: number
+  accepted:
+  - '3'
+  hint: Office requests that fail any rule.
+  explanation: 'Three: REQ-2 (non-compliant device), REQ-3 (not in Finance) and REQ-7 (push MFA). Under the old
+    model all three would have been trusted because of where they sat.'
+- prompt: Why does REQ-2 fail even though the user is in Finance with a FIDO2 key?
+  type: choice
+  options:
+  - Because it came from the office
+  - Because the device is non-compliant, and zero trust checks the device's health as well as the user
+  - Because FIDO2 is not allowed
+  - Because the risk is low
+  answer: 1
+  hint: Read the device_state column.
+  explanation: Rule 2 requires a compliant device. A strong user credential on an unpatched or unprotected device
+    still exposes the data, so both must be trustworthy.
