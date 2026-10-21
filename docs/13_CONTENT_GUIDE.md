@@ -137,6 +137,9 @@ lab points at a real system.
 
 ### Current labs
 
+Two labs per course, 24 in total. `test_lab_content.py` fails if any course drops below two.
+
+
 | Course | Lesson | Lab |
 |---|---|---|
 | Networking | `net-traffic-analysis` | Investigate a port scan in a packet capture |
@@ -151,3 +154,15 @@ lab points at a real system.
 | Security Architecture | `arch-network-design` | Review a segmentation firewall policy |
 | Cloud Security | `cloud-incident-investigation` | Investigate a leaked access key in CloudTrail |
 | Governance, Risk and Compliance | `grc-risk-thirdparty-automation` | Score a risk register and assess a vendor |
+| Networking | `net-dns-abuse` | Spot DNS tunnelling and a DGA in resolver logs |
+| Security Foundations | `sec-crypto-pki` | Verify downloads and read a TLS certificate |
+| Windows Security | `win-persistence-autoruns` | Find attacker persistence in an Autoruns export |
+| Linux Security | `linux-privilege-escalation` | Find the privilege-escalation path on a web server |
+| SIEM | `siem-kql-basics` | Detect a password spray in sign-in logs |
+| Vulnerability Management | `vm-validation-remediation-verification` | Verify remediation with a rescan |
+| Threat Hunting | `hunt-data-exfiltration` | Hunt for data exfiltration in proxy logs |
+| Incident Response | `ir-bec-account-takeover` | Investigate a business email compromise |
+| Detection Engineering | `de-tuning-false-positives` | Tune a noisy scheduled-task detection |
+| Security Architecture | `arch-logging-monitoring` | Find the gaps in logging coverage |
+| Cloud Security | `cloud-iam-privilege` | Review IAM policies for excess privilege |
+| Governance, Risk and Compliance | `grc-frameworks-control-mapping` | Map controls to a framework and find the gaps |

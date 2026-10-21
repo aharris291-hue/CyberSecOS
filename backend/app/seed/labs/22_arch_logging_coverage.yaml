@@ -1,0 +1,89 @@
+slug: lab-arch-logging-coverage
+lesson: arch-logging-monitoring
+title: Find the gaps in logging coverage
+pass_mark: 80
+scenario: |
+  Before the SOC signs off its new SIEM, it wants proof that every important system is
+  actually sending logs. You have the asset inventory with criticality ratings, and the SIEM's
+  list of log sources with the time each one last sent an event.
+
+  The report was taken at **2026-10-21T00:00:00Z**. The monitoring standard says every asset
+  must be onboarded, and any source silent for **more than 24 hours** must raise a
+  "silent source" alert. Silent sources are as dangerous as missing ones: attackers often
+  switch logging off first.
+artifacts:
+- name: asset_inventory.csv
+  kind: csv
+  description: CMDB export of in-scope assets.
+  content: |
+    asset,type,criticality
+    DC-01,domain controller,critical
+    DC-02,domain controller,critical
+    FW-EDGE-01,firewall,critical
+    VPN-GW,vpn gateway,critical
+    SQL-02,database,critical
+    FS-01,file server,high
+    WEB-01,web server,high
+    WEB-02,web server,high
+    APP-03,application server,high
+    PRINT-01,print server,low
+    BKP-01,backup server,critical
+- name: siem_sources.csv
+  kind: csv
+  description: SIEM log sources and their last event time (UTC).
+  content: |
+    source,last_event
+    DC-01,2026-10-20T23:58:41Z
+    FW-EDGE-01,2026-10-20T23:59:57Z
+    VPN-GW,2026-10-17T04:12:09Z
+    SQL-02,2026-10-20T23:55:12Z
+    FS-01,2026-10-20T23:41:30Z
+    WEB-01,2026-10-20T23:59:02Z
+    WEB-02,2026-10-20T23:59:40Z
+    APP-03,2026-10-19T11:20:44Z
+    PRINT-01,2026-10-20T22:03:15Z
+tasks:
+- prompt: Which assets are not onboarded to the SIEM at all? List them separated by commas.
+  type: set
+  accepted:
+  - DC-02, BKP-01
+  hint: Compare the inventory with the source list.
+  explanation: DC-02 and BKP-01 send nothing. A second domain controller with no logs is a blind spot for every
+    authentication attack, and backup servers are a prime ransomware target.
+- prompt: Which onboarded sources have been silent for more than 24 hours? List them separated by commas.
+  type: set
+  accepted:
+  - VPN-GW, APP-03
+  hint: Compare each last_event with the report time.
+  explanation: VPN-GW (silent for almost four days) and APP-03 (about 37 hours). Each needs a ticket to find out
+    why, and the silent-source alert evidently is not working.
+- prompt: How many critical assets have a coverage problem (missing or silent)?
+  type: number
+  accepted:
+  - '3'
+  hint: Check the criticality of every asset you found in the two previous answers.
+  explanation: 'Three critical assets: DC-02, BKP-01 and VPN-GW. APP-03 is rated high. Fix the critical ones first.'
+- prompt: How many assets are in the inventory?
+  type: number
+  accepted:
+  - '11'
+  hint: Count the inventory rows (not the header).
+  explanation: Eleven assets, of which nine are onboarded and seven are healthy. Coverage is 7 of 11 in practice,
+    not the 9 of 11 a source count suggests.
+  verify:
+    artifact: asset_inventory.csv
+    op: count
+    pattern: ^[A-Z0-9-]+,
+- prompt: Which design change best prevents this from recurring?
+  type: choice
+  options:
+  - Ask admins to check the SIEM weekly
+  - Reconcile the SIEM source list against the CMDB automatically every day, and alert on any in-scope asset that
+    is missing or silent beyond its expected interval
+  - Increase log retention to one year
+  - Only onboard critical assets
+  answer: 1
+  hint: The failure was that nobody noticed. What notices automatically?
+  explanation: Automated reconciliation of the inventory against sources, with silent-source alerting tuned per
+    source, turns coverage from a one-off audit into a monitored control. Retention does not help with logs that
+    never arrive.

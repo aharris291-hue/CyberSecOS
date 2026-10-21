@@ -32,6 +32,7 @@
             <DataTemplate DataType="{x:Type vm:LessonViewModel}"><views:LessonView /></DataTemplate>
             <DataTemplate DataType="{x:Type vm:ProgressViewModel}"><views:ProgressView /></DataTemplate>
             <DataTemplate DataType="{x:Type vm:PlannerViewModel}"><views:PlannerView /></DataTemplate>
+            <DataTemplate DataType="{x:Type vm:LabsViewModel}"><views:LabsView /></DataTemplate>
             <DataTemplate DataType="{x:Type vm:ExamsViewModel}"><views:ExamsView /></DataTemplate>
             <DataTemplate DataType="{x:Type vm:InsightsViewModel}"><views:InsightsView /></DataTemplate>
         </ResourceDictionary>
