@@ -832,3 +832,96 @@ lessons:
         options: [Volumetric, Protocol (exhausting connection state), Application-layer, Physical]
         answer: 1
         explanation: A SYN flood exhausts the connection-state table, a protocol-layer attack.
+  - slug: net-segmentation-vlans
+    title: Network Segmentation and VLANs
+    order: 11
+    difficulty: intermediate
+    summary: Divide a flat network into segments with VLANs and access control so a compromise in one area cannot reach the rest, and so monitoring concentrates at the boundaries.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:3.1", "secplus:4.4", "cysa:1.3"]
+    learning_objectives:
+      - Explain why a flat network is dangerous and segmentation limits blast radius
+      - Describe how VLANs and inter-VLAN access control implement segmentation
+      - Place monitoring at segment boundaries to catch lateral movement
+    theory: |
+      A **flat network**, where every device can reach every other, is one of the most common and most
+      dangerous conditions in security, because a single compromised host can then reach everything: servers,
+      other users, sensitive systems. **Segmentation** breaks that reachability into zones so that a foothold
+      in one part of the network does not grant access to the rest, directly limiting the **blast radius** of
+      any compromise. It is the network embodiment of least privilege: devices can reach only what they have a
+      genuine need to reach.
+
+      The common building block is the **VLAN** (virtual LAN), which divides one physical switch
+      infrastructure into separate logical networks, so that, for example, user workstations, servers, VoIP
+      phones, and guest devices each sit on their own VLAN even though they share the same switches. VLANs
+      alone only separate broadcast domains; the security comes from **inter-VLAN access control**, a firewall
+      or layer-3 device between VLANs that permits only the traffic that should cross (users reach the
+      application servers they need, but not each other, and guests reach only the internet). The more
+      sensitive the segment, cardholder data, industrial control systems, the stricter and more isolated it is.
+
+      Segmentation also transforms monitoring. When traffic must cross a controlled boundary to move between
+      zones, those boundaries become natural **choke points** where the SOC can watch and enforce: east-west
+      traffic that used to be invisible on a flat network now passes a firewall that logs it, so lateral
+      movement from one segment toward another is far more likely to be seen. For the analyst, the practical
+      upshot is twofold, segmentation contains incidents and it creates visibility, and unexpected traffic
+      attempting to cross from a low-trust segment toward a sensitive one is a high-value signal to confirm
+      against what is normally allowed. Micro-segmentation takes this to its logical end, isolating individual
+      workloads, but even coarse VLAN segmentation is one of the highest-impact architectural controls a
+      network can have.
+    examples:
+      - title: Flat versus segmented
+        body: |
+          Flat:      one compromised desktop -> reaches servers + every other host
+          Segmented: users | servers | guests | sensitive, boundaries controlled
+          A foothold is stuck in its segment unless it defeats a boundary.
+      - title: Boundary as a choke point
+        body: |
+          user VLAN -> [firewall logs + rules] -> server VLAN
+          east-west traffic now crosses a monitored boundary
+          lateral movement toward sensitive zones becomes visible.
+    exercise:
+      title: Design network segmentation and its monitoring
+      environment: A described network with mixed device types (or a lab with VLAN-capable switching), plus a diagram or document
+      tools: [A network description or VLAN lab, a diagram or document, a notes file]
+      steps:
+        - Explain the risk of the current flat network and what a single compromise could reach.
+        - Divide the environment into VLANs by function (users, servers, guests, sensitive) and justify the split.
+        - Specify the inter-VLAN access control, what traffic may cross each boundary and why, applying least privilege.
+        - Identify the most sensitive segment and describe how strictly it is isolated.
+        - Choose one boundary as a monitoring choke point and state the crossing that would be suspicious.
+        - Explain how this segmentation would contain a compromise that started in the user VLAN.
+      deliverable: A segmentation design with VLANs by function, inter-VLAN access rules, the isolation of the sensitive segment, a boundary monitoring point, and the blast-radius containment it provides.
+    expected_outcome: >
+      You can explain why flat networks are dangerous, segment a network with VLANs and inter-VLAN access
+      control to limit blast radius, and use segment boundaries as monitoring choke points that reveal lateral
+      movement.
+    quiz:
+      - prompt: Why is a flat network dangerous?
+        options:
+          - It is slow
+          - A single compromised host can reach every other device, including sensitive systems
+          - It uses too many VLANs
+          - It cannot be monitored at all
+        answer: 1
+        explanation: With no segmentation, one foothold has unrestricted reach across the whole network.
+      - prompt: VLANs provide security only when combined with
+        options:
+          - More switches
+          - Inter-VLAN access control that permits only the traffic that should cross
+          - Faster cabling
+          - Disabled logging
+        answer: 1
+        explanation: VLANs separate networks logically, but a firewall or layer-3 control between them enforces what may cross.
+      - prompt: Segmentation improves monitoring because
+        options:
+          - It deletes logs
+          - Traffic must cross controlled boundaries that act as choke points where the SOC can watch and enforce
+          - It hides east-west traffic
+          - It removes firewalls
+        answer: 1
+        explanation: Boundaries make previously invisible east-west traffic pass a monitored, logged control.
+      - prompt: Traffic attempting to cross from a low-trust segment toward a sensitive one is
+        options: [Always fine, A high-value signal to confirm against what is normally allowed, A backup, A routine broadcast]
+        answer: 1
+        explanation: Unexpected crossings toward sensitive zones are classic lateral-movement signals worth investigating.

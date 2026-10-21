@@ -921,3 +921,98 @@ lessons:
           - In conflict always
         answer: 1
         explanation: Regulations largely codify good security, though compliance is a floor rather than the whole of security.
+  - slug: grc-change-management
+    title: Change and Configuration Management
+    order: 11
+    difficulty: beginner
+    summary: Understand how disciplined change and configuration management prevents outages and security gaps, and why unmanaged change is both an operational risk and an attacker's opportunity.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:5.1", "secplus:4.1", "cysa:4.1"]
+    learning_objectives:
+      - Explain why change management reduces both outage and security risk
+      - Describe a change-management process and configuration baselines
+      - Recognise unauthorised change as a security signal
+    theory: |
+      A large share of outages and security incidents come not from attackers but from **changes**, a
+      misconfiguration pushed to production, a firewall rule edited without review, a setting changed and
+      forgotten. **Change management** is the governance discipline that brings order to this: a defined process
+      for proposing, reviewing, approving, testing and recording changes to systems, so that change happens
+      deliberately rather than accidentally. It is often seen as bureaucracy, but its purpose is concrete,
+      fewer self-inflicted outages, fewer security gaps opened by careless change, and a record of what changed
+      and when that is invaluable when something breaks or is breached.
+
+      A sound process has recognisable parts. A change is **requested** with a description of what and why,
+      **assessed** for risk and impact (including security impact), **approved** by the right authority,
+      **tested** where possible, **implemented** in a controlled window, and **documented**. Emergency changes
+      get a faster path but are still recorded and reviewed afterward. Closely related is **configuration
+      management**: maintaining known-good **baselines** for how systems should be configured and tracking the
+      actual state against them, so drift, systems quietly diverging from the standard, is visible and
+      correctable. Together, change and configuration management keep the environment in a known, intended
+      state rather than an accumulation of undocumented tweaks nobody fully understands.
+
+      There is a direct security dimension. First, change review is where a security-weakening change, opening a
+      port to the world, disabling logging, loosening permissions, can be caught *before* it ships, so security
+      belongs in the change process. Second, and powerfully, **unauthorised change is a security signal**: in a
+      mature environment where all legitimate change goes through the process, a configuration change that did
+      *not* come through it, a new firewall rule, a modified account, an altered setting, is exactly what an
+      attacker's activity looks like, so detecting change outside the process is a detection opportunity. For
+      the analyst, the lesson is that disciplined change and configuration management both prevents
+      self-inflicted risk and creates a baseline of "intended state" against which unauthorised, attacker-driven
+      change stands out.
+    examples:
+      - title: Change review catches a weakening change
+        body: |
+          proposed: open port 3389 (RDP) to 0.0.0.0/0
+          change review (security impact) -> rejected / scoped before it ships
+          the process is where a dangerous change is caught in time.
+      - title: Unauthorised change as a signal
+        body: |
+          all legitimate change -> through the process (recorded)
+          a new firewall rule that did NOT come through it -> attacker activity?
+          "intended state" makes unmanaged change stand out.
+    exercise:
+      title: Design a change process and use it as a control
+      environment: A described organisation (or your own context) and a document or template
+      tools: [A document or template, a reference change process, a notes file]
+      steps:
+        - Explain how unmanaged change causes both outages and security gaps.
+        - Outline a change-management process with its stages (request, assess, approve, test, implement, document) and an emergency path.
+        - Describe where security impact is assessed in the process and give an example of a change it would catch.
+        - Explain configuration baselines and how tracking drift against them keeps systems in a known state.
+        - Explain why, in a mature environment, a change that did not go through the process is a security signal.
+        - Describe how you would detect configuration change outside the process and confirm it before acting.
+      deliverable: A change-and-configuration-management design with the process stages and emergency path, the security-review point, configuration baselines and drift tracking, and the use of unauthorised change as a detection signal.
+    expected_outcome: >
+      You can describe a change-management process and configuration baselines, explain how they reduce outage
+      and security risk, and recognise unauthorised change against an intended-state baseline as a security
+      signal.
+    quiz:
+      - prompt: Change management reduces security risk primarily by
+        options:
+          - Adding bureaucracy for its own sake
+          - Making change deliberate and reviewed, so careless or weakening changes are caught before they ship
+          - Preventing all change
+          - Removing logging
+        answer: 1
+        explanation: A reviewed, recorded process stops many self-inflicted outages and security gaps.
+      - prompt: Configuration management maintains
+        options:
+          - A list of employees
+          - Known-good baselines and tracks actual state against them so drift is visible
+          - Network bandwidth
+          - User passwords
+        answer: 1
+        explanation: Baselines plus drift tracking keep systems in a known, intended configuration.
+      - prompt: Where does security fit in the change process?
+        options:
+          - Nowhere
+          - In the risk/impact assessment, where a security-weakening change can be caught before it ships
+          - Only after an incident
+          - Only in emergencies
+        answer: 1
+        explanation: Assessing security impact during review catches dangerous changes before deployment.
+      - prompt: In a mature environment, a configuration change that did not go through the process is
+        options: [Always fine, A security signal, since legitimate change goes through the process and this did not, A backup, A performance tweak]
+        answer: 1
+        explanation: Against an intended-state baseline, unmanaged change resembles attacker activity and warrants investigation.

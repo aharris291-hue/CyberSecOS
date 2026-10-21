@@ -920,3 +920,98 @@ lessons:
           - It ignores detections
         answer: 1
         explanation: Since most hunts rightly find nothing, outcomes like new detections and closed gaps better reflect value.
+  - slug: hunt-defense-evasion
+    title: Hunting Defense Evasion
+    order: 11
+    difficulty: intermediate
+    summary: Hunt for the things attackers do to stay hidden, clearing logs, disabling security tools, timestomping and hiding in trusted locations, because the act of hiding is itself a detectable signal.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["cysa:1.4", "cysa:3.1", "sc200:4"]
+    learning_objectives:
+      - Describe common defense-evasion techniques attackers use to stay hidden
+      - Hunt for the traces that evasion itself leaves behind
+      - Treat gaps and tampering as signals rather than dead ends
+    theory: |
+      Skilled attackers spend real effort **not being seen**, and that effort is itself huntable. Defense
+      evasion is the set of techniques used to avoid detection and hinder investigation: clearing or disabling
+      logs, killing or blinding security tools, hiding files in trusted locations, masquerading as legitimate
+      processes, and tampering with timestamps. The key insight for a hunter is counter-intuitive but powerful:
+      the act of hiding usually leaves its own trace, so evasion techniques become detection opportunities
+      rather than impenetrable cover.
+
+      The techniques and their traces are specific. **Clearing logs** leaves a tell, the event that records the
+      log being cleared, or a conspicuous gap where events should be. **Disabling security tools** (stopping
+      the EDR or antivirus service, adding exclusions, tampering with the agent) generates its own events and a
+      suspicious silence from a sensor that was reporting a moment ago. **Masquerading** puts a malicious file
+      under a trusted name or in a system directory, detectable by mismatches, the right name in the wrong
+      path, a signed-looking binary that is not actually signed, a system process with the wrong parent.
+      **Timestomping** alters a file's timestamps to blend in, but often leaves inconsistencies between
+      different timestamp fields that forensic analysis spots. Each technique maps to a MITRE ATT&CK
+      defense-evasion behaviour with known artefacts to hunt.
+
+      The decisive shift in mindset is to treat **absence and inconsistency as signals**. A naive monitor sees
+      a host go quiet and assumes all is well; a hunter asks why a machine that always reports stopped, why a
+      log has a gap, why a sensor was disabled. Missing data is not the end of a hunt but a lead pointing at
+      what the attacker wanted to hide. The hunter correlates these evasion tells with other activity, a
+      disabled EDR right before a burst of unexplained process activity is a strong story, and confirms against
+      legitimate causes (an admin did update the agent) before escalating. Hunting defense evasion is where
+      defenders turn the attacker's own caution against them, because the harder someone works to hide, the
+      more traces of hiding they tend to leave.
+    examples:
+      - title: Hiding leaves a trace
+        body: |
+          cleared logs   -> the "log cleared" event, or a conspicuous gap
+          disabled EDR   -> tamper event + sudden silence from a reporting sensor
+          masquerading   -> right name, wrong path; wrong parent process
+          timestomping   -> inconsistent timestamp fields
+      - title: Absence as a signal
+        body: |
+          host that always reports goes quiet -> why?
+          EDR disabled, THEN a burst of unexplained process activity
+          correlate the evasion with what it was hiding; confirm vs an admin update.
+    exercise:
+      title: Hunt a data set for defense evasion
+      environment: Sample endpoint, security-tool and event logs (provided or lab-generated) containing evasion attempts and benign activity
+      tools: [A SIEM or notebook, sample logs including security-tool telemetry, a MITRE ATT&CK reference, a notes file]
+      steps:
+        - List common defense-evasion techniques and the trace each one tends to leave.
+        - Hunt the logs for log-clearing or a conspicuous gap where events should be, and describe what you find.
+        - Hunt for a security tool being disabled or tampered with, and the silence that follows.
+        - Look for a masquerading file (right name, wrong path; wrong parent process) and explain the mismatch.
+        - Correlate one evasion tell with the activity it was likely hiding to build a story.
+        - Confirm against a legitimate cause (such as an admin update) before escalating, and map findings to ATT&CK.
+      deliverable: A hunt write-up listing evasion techniques and their traces, the log-clearing, tool-disabling and masquerading findings, the correlation with hidden activity, and the legitimate-cause check with ATT&CK mapping.
+    expected_outcome: >
+      You can hunt for defense-evasion techniques by the traces that hiding leaves, treat missing data and
+      inconsistencies as leads rather than dead ends, and correlate evasion with the activity it conceals
+      before confirming and escalating.
+    quiz:
+      - prompt: Why is defense evasion itself huntable?
+        options:
+          - Attackers never hide
+          - The act of hiding usually leaves its own trace, turning evasion into a detection opportunity
+          - It is invisible
+          - Only logs matter
+        answer: 1
+        explanation: Clearing logs, disabling tools and masquerading all leave characteristic artefacts to hunt.
+      - prompt: A host that always reports suddenly going silent should be treated as
+        options: [All clear, A lead, since the absence of expected data may be the attacker hiding, A backup, A network upgrade]
+        answer: 1
+        explanation: Unexpected silence can mean a disabled sensor, so absence is a signal, not reassurance.
+      - prompt: Masquerading is often detectable by
+        options:
+          - The file's colour
+          - Mismatches like the right name in the wrong path or a system process with the wrong parent
+          - Its size only
+          - The time of day
+        answer: 1
+        explanation: Masqueraded files betray themselves through path, signature or parent-process inconsistencies.
+      - prompt: Before escalating an evasion finding, the hunter should
+        options:
+          - Nothing
+          - Confirm against legitimate causes, such as an administrator updating the agent
+          - Delete the logs
+          - Disable the sensor
+        answer: 1
+        explanation: Legitimate activity can mimic evasion, so confirmation against normal causes precedes escalation.

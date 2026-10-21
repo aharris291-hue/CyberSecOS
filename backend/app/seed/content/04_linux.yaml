@@ -879,3 +879,92 @@ lessons:
         options: [Routine, A strong signal of a compromise or escape attempt to confirm in context, A backup, A normal update]
         answer: 1
         explanation: Reaching for the host socket or filesystem is a classic escape move worth investigating.
+  - slug: linux-ssh-hardening
+    title: Securing SSH and Remote Access
+    order: 11
+    difficulty: intermediate
+    summary: Harden SSH, the front door to most Linux systems and a constant attack target, with key-based authentication, sensible configuration and monitoring of access attempts.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.1", "secplus:4.6", "cysa:1.3"]
+    learning_objectives:
+      - Explain why SSH is a prime target and how key-based auth hardens it
+      - Configure SSH securely (keys, root login, limits) and monitor access
+      - Recognise brute-force and credential attacks against SSH in logs
+    theory: |
+      SSH is how administrators reach most Linux systems, which makes it both essential and a constant target:
+      any internet-facing SSH service will see automated brute-force attempts within minutes. Hardening it is
+      one of the highest-value Linux tasks, and it starts with authentication. **Password authentication** is
+      the weak point, guessable, reused, brute-forceable, so the single biggest improvement is **key-based
+      authentication**: the server holds the user's public key and only a holder of the matching private key
+      can log in, which defeats password guessing entirely. Keys should themselves be protected with a
+      passphrase, and for the strongest assurance paired with MFA.
+
+      Good SSH configuration closes the common weaknesses. **Disable direct root login** so an attacker cannot
+      target the one account that exists everywhere, and require administrators to log in as themselves and
+      escalate. **Disable password authentication** once keys are in place. **Restrict who may connect**,
+      by user, group, and ideally source address, so SSH is not open to the whole internet, and run it behind
+      a bastion/jump host or VPN for sensitive systems rather than exposing it directly. Smaller settings
+      matter too: sensible idle timeouts, limiting authentication attempts, and keeping the SSH software
+      patched against protocol and implementation flaws.
+
+      Finally, SSH is a rich **monitoring** source because attacks against it are so visible. The auth logs
+      record every attempt, so a flood of failed logins from one address (brute force), failures across many
+      usernames (spraying), or a successful login from an unexpected country or at an odd hour are classic
+      leads. Tools like fail2ban can automatically block repeat offenders, but the analyst's job is to
+      distinguish the constant background noise of internet scanning from an attempt that actually succeeded or
+      that targets a real account, confirming against the user's normal access. The lesson is that SSH is the
+      front door, so locking it with keys, tightening its configuration, and watching who knocks is
+      fundamental Linux hardening.
+    examples:
+      - title: Keys beat passwords
+        body: |
+          password auth: brute-forceable, reused, guessable
+          key auth:      only the private-key holder logs in -> password guessing defeated
+          protect the key with a passphrase; add MFA for the strongest assurance.
+      - title: SSH attacks in the auth log
+        body: |
+          many failures from one IP            -> brute force
+          failures across many usernames       -> password spraying
+          success from an unexpected country    -> confirm against the user's normal access
+    exercise:
+      title: Harden an SSH service and read its logs
+      environment: A Linux VM running SSH (or a provided sshd_config and sample auth logs)
+      tools: [A Linux VM or sshd_config and logs, the auth log, a notes file]
+      steps:
+        - Explain why SSH is a prime target and why key-based authentication is the biggest single improvement.
+        - Review (or set) the SSH configuration, disable root login and password auth, and restrict who and where may connect.
+        - Explain the role of a bastion/jump host or VPN for reaching sensitive systems rather than exposing SSH directly.
+        - Review sample auth logs and distinguish background scanning noise from a brute force or spray against a real account.
+        - Identify a successful login worth investigating and how you would confirm it against the user's normal access.
+        - Describe how automated blocking (such as fail2ban) helps and what it does not solve.
+      deliverable: An SSH-hardening note covering key-based auth, the configuration changes, bastion/VPN placement, a log analysis distinguishing noise from a real attack, and the role and limits of automated blocking.
+    expected_outcome: >
+      You can harden SSH with key-based authentication and sound configuration, place it behind a bastion or
+      VPN for sensitive systems, and read its logs to tell background scanning from a real brute-force or
+      targeted attack.
+    quiz:
+      - prompt: The single biggest improvement to SSH security is usually
+        options:
+          - A longer banner
+          - Key-based authentication, which defeats password guessing
+          - A faster network
+          - Disabling logging
+        answer: 1
+        explanation: Keys mean only the private-key holder can log in, removing the password-guessing attack entirely.
+      - prompt: Disabling direct root login over SSH helps because
+        options:
+          - Root is unimportant
+          - An attacker cannot target the one account that exists on every system; admins log in as themselves and escalate
+          - It speeds up logins
+          - It encrypts the disk
+        answer: 1
+        explanation: Removing direct root login denies attackers the universal, high-value target account.
+      - prompt: Many SSH login failures across many different usernames indicates
+        options: [A backup, Password spraying, A DNS change, A patch]
+        answer: 1
+        explanation: Trying many usernames (often with common passwords) is the spraying pattern.
+      - prompt: A successful SSH login from an unexpected country should be
+        options: [Ignored, Confirmed against the user's normal access as a possible compromise, Deleted, Assumed safe]
+        answer: 1
+        explanation: An anomalous successful login is a lead to confirm against the user's travel and normal behaviour.

@@ -943,3 +943,98 @@ lessons:
           - Rules optional
         answer: 1
         explanation: ATT&CK mapping shows what you can and cannot detect, so gaps become deliberate backlog items.
+  - slug: siem-retention-storage
+    title: Log Retention, Storage Tiers and Compliance
+    order: 11
+    difficulty: beginner
+    summary: Decide how long to keep which logs and where, balancing detection needs, investigation and compliance against the real cost of storing high-volume data.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.4", "cysa:4.1", "sc200:1"]
+    learning_objectives:
+      - Explain why log retention is a deliberate decision, not an afterthought
+      - Balance detection, investigation and compliance needs against storage cost
+      - Use storage tiers and a retention policy to keep the right data affordably
+    theory: |
+      Logs are the raw material of detection and investigation, but they are also voluminous and expensive to
+      store and search, so **how long to keep which logs, and where** is a real decision with security
+      consequences. Keep too little and an investigation hits a wall, you discover a breach that began four
+      months ago but your logs only go back thirty days, so you cannot reconstruct it. Keep everything hot
+      forever and the cost becomes unsustainable and searches slow to a crawl. Retention is the deliberate
+      balancing of these pressures, and getting it wrong is a quiet but serious gap.
+
+      Three forces set the requirement. **Detection** needs recent data readily searchable, most alerting works
+      on a short window. **Investigation** needs a longer history because intrusions are often discovered long
+      after they begin; the industry's dwell-time reality (attackers present for weeks or months before
+      detection) means short retention can make a breach uninvestigable. **Compliance** often sets hard
+      minimums: regulations and standards may require that certain logs be retained for a year or more, turning
+      retention from a preference into an obligation. The right policy satisfies the longest of these for each
+      log type, and different logs warrant different periods, authentication and security events longer,
+      high-volume debug data shorter.
+
+      The way to make this affordable is **storage tiering**. Recent data sits in a **hot** tier, indexed and
+      instantly searchable for detection and active investigation; older data moves to **warm** and then
+      **cold** or archival storage, far cheaper but slower to query, kept to satisfy long investigations and
+      compliance. A good retention policy therefore specifies, per log source, how long it stays in each tier,
+      driven by its detection value, investigative usefulness and any compliance mandate. For the analyst, the
+      practical consequences are concrete: know what is searchable instantly versus what must be restored from
+      archive, ensure the logs that matter for incidents are retained long enough, and recognise that a
+      too-short or inconsistent retention policy is itself a risk that can make an incident impossible to fully
+      understand.
+    examples:
+      - title: The cost of too-short retention
+        body: |
+          breach began 4 months ago, logs only go back 30 days
+          -> cannot reconstruct the intrusion
+          dwell time is often weeks/months, so short retention blinds investigation.
+      - title: Storage tiers
+        body: |
+          hot    recent, indexed, instant search (detection + active IR)
+          warm   older, slower, cheaper
+          cold   archival, cheapest, slow to query (long IR + compliance)
+          policy sets how long each log source stays in each tier.
+    exercise:
+      title: Build a log-retention policy with storage tiers
+      environment: A list of log sources with volumes and sensitivities (or a described environment) and a document or spreadsheet
+      tools: [A list of log sources, a spreadsheet or document, a reference on common compliance retention minimums, a notes file]
+      steps:
+        - Explain the risk of keeping too little log history, using the idea of attacker dwell time.
+        - For several log sources, note each one's detection value, investigative usefulness and any compliance minimum.
+        - Decide a retention period for each source that satisfies the longest applicable need.
+        - Assign each source to hot, warm and cold tiers over its lifetime, balancing searchability against cost.
+        - Identify which data an analyst can search instantly versus what must be restored from archive during an incident.
+        - Explain why a too-short or inconsistent retention policy is itself a security risk.
+      deliverable: A retention policy specifying, per log source, the retention period and the hot/warm/cold tiering, justified by detection, investigation and compliance needs, with the restore implications for incidents noted.
+    expected_outcome: >
+      You can set log retention deliberately, balancing detection, investigation and compliance against
+      storage cost, and use hot, warm and cold tiers so the right data is available at the right speed without
+      unsustainable cost.
+    quiz:
+      - prompt: Why is log retention a security decision, not just an IT cost question?
+        options:
+          - It never matters
+          - Too-short retention can make a breach impossible to investigate, since intrusions are often found long after they begin
+          - Logs are free to store
+          - Only compliance cares
+        answer: 1
+        explanation: Dwell time means short retention can leave an investigation with no history of the intrusion.
+      - prompt: Compliance requirements affect retention by
+        options:
+          - Making it optional
+          - Often setting hard minimum periods certain logs must be kept
+          - Deleting logs faster
+          - Reducing storage cost
+        answer: 1
+        explanation: Regulations and standards may mandate retaining specific logs for a year or more.
+      - prompt: Storage tiering keeps retention affordable by
+        options:
+          - Deleting all old data
+          - Holding recent data hot and instantly searchable while moving older data to cheaper, slower warm/cold tiers
+          - Storing everything hot forever
+          - Avoiding all archival
+        answer: 1
+        explanation: Tiering balances instant searchability for recent data against cheaper long-term storage for the rest.
+      - prompt: During an incident, data in cold/archival storage is
+        options: [Instantly searchable, Cheaper but slower, often needing restoration before querying, Deleted, Unusable]
+        answer: 1
+        explanation: Cold storage is cost-effective for long retention but slower to query, sometimes requiring restore.

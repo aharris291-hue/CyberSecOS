@@ -888,3 +888,101 @@ lessons:
           - Cannot be investigated
         answer: 1
         explanation: User reports act as early detection, letting the SOC contain a campaign before it spreads.
+  - slug: sec-authorization-models
+    title: Authorization Models and Least Privilege
+    order: 11
+    difficulty: beginner
+    summary: Understand how systems decide what an authenticated user may do, discretionary, role-based and attribute-based access control, and why least privilege underpins them all.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.6", "sc900:3", "secplus:3.1"]
+    learning_objectives:
+      - Distinguish authentication from authorization
+      - Compare discretionary, role-based and attribute-based access control
+      - Apply least privilege and separation of duties to a real scenario
+    theory: |
+      Authentication proves who you are; **authorization** decides what you are allowed to do once you are in,
+      and keeping the two ideas separate is the starting point. A system can know perfectly well who a user is
+      and still need a clear, consistent way to decide whether they may read this file, approve that payment,
+      or change a setting. Authorization models are the different schemes for making that decision at scale,
+      and choosing and configuring one well is central to limiting what a compromised or malicious account can
+      do.
+
+      Three models are common. **Discretionary access control** (DAC) lets the owner of a resource decide who
+      may access it, flexible but inconsistent, since control is spread across many individual owners.
+      **Role-based access control** (RBAC) assigns permissions to **roles** (such as "finance clerk" or
+      "server administrator") and assigns users to roles, so access is granted by job function rather than
+      per person, which scales well and is the workhorse of most organisations. **Attribute-based access
+      control** (ABAC) decides dynamically from attributes of the user, resource and context (department, data
+      classification, time of day, device), which is the most granular and powerful but more complex to manage.
+      Most real environments use RBAC as the backbone with some ABAC for fine-grained cases.
+
+      Underpinning every model are two principles. **Least privilege** means granting each user, role or
+      process only the access it genuinely needs and no more, so that a compromised account or an insider can
+      reach only a limited blast radius. **Separation of duties** splits a sensitive action across more than
+      one person so no single account can complete it alone (the person who requests a payment cannot also
+      approve it), which limits both fraud and the damage of one stolen credential. Over time, access tends to
+      accumulate, people change roles but keep old permissions, so **access reviews** periodically prune this
+      "privilege creep". For the analyst, the practical lesson is that well-designed authorization is what
+      makes a stolen credential a contained problem rather than a catastrophe, and over-permissioned accounts
+      are a risk to watch for.
+    examples:
+      - title: Three models at a glance
+        body: |
+          DAC   owner decides (flexible, inconsistent)
+          RBAC  permissions -> roles -> users (scales by job function)
+          ABAC  decide from attributes (user/resource/context) (granular, complex)
+          Most orgs: RBAC backbone + some ABAC.
+      - title: Separation of duties
+        body: |
+          requester of a payment  != approver of a payment
+          one stolen account cannot complete the action alone
+          limits both fraud and the blast radius of a compromise.
+    exercise:
+      title: Design authorization for a scenario
+      environment: A described organisation with several roles and sensitive actions, plus a document
+      tools: [A document or template, a scenario with roles and resources, a notes file]
+      steps:
+        - Explain the difference between authentication and authorization with an example.
+        - For the scenario, choose an authorization model (or mix) and justify it against the organisation's needs.
+        - Define two or three roles with the least-privilege permissions each genuinely needs.
+        - Identify one sensitive action and apply separation of duties so no single account can complete it alone.
+        - Describe how an attribute (such as data classification or device) could refine access with ABAC.
+        - Explain how privilege creep happens and how an access review would catch it.
+      deliverable: An authorization design naming the model, least-privilege roles, a separation-of-duties control on a sensitive action, one ABAC refinement, and an access-review approach to privilege creep.
+    expected_outcome: >
+      You can distinguish authentication from authorization, compare DAC, RBAC and ABAC, and apply least
+      privilege and separation of duties so that a compromised account has a limited blast radius.
+    quiz:
+      - prompt: Authorization (as opposed to authentication) decides
+        options:
+          - Who a user claims to be
+          - What an authenticated user is allowed to do
+          - How fast the network is
+          - Which password to use
+        answer: 1
+        explanation: Authentication proves identity; authorization governs what that identity may do.
+      - prompt: Role-based access control grants permissions by
+        options:
+          - Each resource owner's discretion
+          - Job function, assigning permissions to roles and users to roles
+          - Random assignment
+          - Time of day only
+        answer: 1
+        explanation: RBAC ties permissions to roles and users to those roles, scaling by job function.
+      - prompt: Least privilege means
+        options:
+          - Giving everyone admin to be safe
+          - Granting only the access genuinely needed, so a compromise has a limited blast radius
+          - Removing all access
+          - Sharing one account
+        answer: 1
+        explanation: Minimal necessary access limits what any compromised or malicious account can reach.
+      - prompt: Separation of duties limits fraud and credential misuse by
+        options:
+          - Using longer passwords
+          - Splitting a sensitive action so no single account can complete it alone
+          - Disabling logging
+          - Granting more roles
+        answer: 1
+        explanation: Requiring more than one party for a sensitive action stops a single account from completing it.

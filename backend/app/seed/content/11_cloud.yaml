@@ -912,3 +912,103 @@ lessons:
           - The cloud is unbreakable
         answer: 1
         explanation: Compliance is a baseline to build on, not proof that the environment is fully secure.
+  - slug: cloud-identity-federation
+    title: Cloud Identity Federation and Single Sign-On
+    order: 11
+    difficulty: intermediate
+    summary: Understand how federation and single sign-on let one identity provider control access across many cloud services, why that is powerful for security, and how it is attacked.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["sc900:3", "secplus:4.6", "cysa:1.1"]
+    learning_objectives:
+      - Explain identity federation and single sign-on and the protocols behind them
+      - Describe why centralised identity strengthens security
+      - Recognise how federation and SSO are attacked and monitored
+    theory: |
+      Modern organisations use dozens of cloud services, and giving each its own separate login would be both a
+      usability nightmare and a security disaster. **Federation** and **single sign-on** (SSO) solve this by
+      letting one trusted **identity provider** (IdP) authenticate users and vouch for them to many
+      applications, so a user logs in once and the IdP asserts their identity to each service. The protocols
+      that carry these assertions are **SAML** and **OpenID Connect** (OIDC, built on OAuth 2.0): the
+      application trusts a signed assertion or token from the IdP rather than handling the password itself.
+      This is the backbone of cloud identity.
+
+      Centralising identity this way is a strong security move. It means one place to enforce strong
+      authentication, MFA and conditional access apply at the IdP and protect every connected app at once; one
+      place to **disable** a departing employee's access across all services instantly; and consistent policy
+      and logging rather than scattered per-app accounts. The alternative, separate credentials everywhere,
+      guarantees password reuse, orphaned accounts and inconsistent protection. So federation is not just
+      convenient; done well it is a significant improvement to an organisation's security posture and a core
+      part of zero-trust designs that decide access per request at the identity layer.
+
+      But concentrating identity also concentrates **risk**, and attackers know it. Because the IdP is the key
+      to everything, it is a prime target: phishing that captures IdP credentials and MFA, **token theft**
+      (stealing the session token or assertion to bypass authentication entirely), **consent phishing**
+      (tricking a user into granting a malicious OAuth app access), and attacks on the federation trust itself
+      (forging assertions if signing keys are compromised, the "golden SAML" class). Monitoring therefore
+      centres on IdP logs: impossible-travel and anomalous sign-ins, MFA failures and fatigue, new or unusual
+      OAuth consents, and changes to federation configuration or signing keys. For the analyst, the lesson is
+      that federation makes identity the new perimeter, strong and centralised, but also the single most
+      important thing to protect and watch, because whoever controls the identity provider controls access to
+      everything behind it.
+    examples:
+      - title: One login, many services
+        body: |
+          user -> identity provider (authenticate once, MFA here)
+          IdP asserts identity (SAML / OIDC token) -> app A, app B, app C trust it
+          one place to enforce MFA and to disable access on offboarding.
+      - title: Attacking concentrated identity
+        body: |
+          token theft      -> reuse the session token, bypass auth entirely
+          consent phishing -> user grants a malicious OAuth app access
+          golden SAML      -> forge assertions if signing keys are stolen
+          IdP logs are where these first show.
+    exercise:
+      title: Assess a federated identity setup and its monitoring
+      environment: A described organisation using SSO/federation (or a lab IdP) and sample sign-in/consent logs
+      tools: [An IdP description or lab, sample sign-in and consent logs, a notes file]
+      steps:
+        - Explain how federation and SSO let one identity provider vouch for a user to many applications, naming SAML and OIDC.
+        - Describe three security benefits of centralising identity (MFA everywhere, instant offboarding, consistent policy/logging).
+        - Explain why centralising identity also concentrates risk and makes the IdP a prime target.
+        - Describe two attacks against federation/SSO (such as token theft and consent phishing) and how each bypasses normal login.
+        - Review sample IdP logs and identify one anomalous sign-in and one unusual OAuth consent worth investigating.
+        - State how you would confirm each against normal behaviour and one detection you would build on IdP activity.
+      deliverable: An assessment of the federated setup covering the protocols, the security benefits and concentrated risk, two attacks, and a log review flagging an anomalous sign-in and consent with a proposed detection.
+    expected_outcome: >
+      You can explain identity federation and SSO and the protocols behind them, why centralised identity
+      strengthens security while concentrating risk, and how to monitor the identity provider for the attacks
+      that target it.
+    quiz:
+      - prompt: Single sign-on with federation works by
+        options:
+          - Giving each app its own password
+          - Having one trusted identity provider authenticate the user and assert their identity to many applications
+          - Disabling authentication
+          - Storing passwords in each app
+        answer: 1
+        explanation: Federation centralises authentication at an IdP that vouches for the user to connected apps via SAML/OIDC.
+      - prompt: A security benefit of centralised identity is
+        options:
+          - More passwords to remember
+          - Enforcing MFA and disabling access across all apps from one place
+          - Scattered per-app accounts
+          - No logging
+        answer: 1
+        explanation: One identity provider means consistent strong auth and instant, complete offboarding.
+      - prompt: Token theft is dangerous because the attacker
+        options:
+          - Must still enter the password and MFA
+          - Reuses a stolen session token or assertion to bypass authentication entirely
+          - Can only read email
+          - Is blocked by SSO
+        answer: 1
+        explanation: A stolen valid token lets the attacker act as the user without authenticating again.
+      - prompt: Monitoring a federated identity setup centres on
+        options:
+          - The billing report
+          - Identity-provider logs (anomalous sign-ins, MFA issues, unusual OAuth consents, federation/key changes)
+          - Disk usage
+          - DNS caches
+        answer: 1
+        explanation: Because the IdP is the key to everything, its logs are the primary place attacks appear.

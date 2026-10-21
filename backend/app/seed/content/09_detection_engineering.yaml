@@ -929,3 +929,97 @@ lessons:
         options: [A firewall, A software updater that checks in on a regular interval, A disabled service, A printer]
         answer: 1
         explanation: Regular-interval updaters resemble beaconing, so the detection is tuned rather than disabled.
+  - slug: de-persistence-detection
+    title: Detecting Persistence Mechanisms
+    order: 11
+    difficulty: intermediate
+    summary: Engineer detections for how attackers survive a reboot, autostart entries, scheduled tasks, services, account creation and more, where the challenge is that the system is full of legitimate persistence.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["cysa:1.4", "cysa:3.1", "sc200:2"]
+    learning_objectives:
+      - Describe the main persistence mechanisms attackers use
+      - Engineer detections that separate malicious from legitimate persistence
+      - Use baselining and change detection to find new persistence
+    theory: |
+      An attacker who gains access wants to **keep** it across reboots and logoffs, and **persistence** is how
+      they do it. The mechanisms are a well-catalogued set: autostart locations (registry run keys, startup
+      folders), **scheduled tasks**, **services**, new or modified **accounts**, and more subtle methods like
+      hijacking how a legitimate program loads a library or handles an event. Detecting persistence is high
+      value because it catches an attacker establishing a foothold they intend to reuse, and because
+      persistence is often set up early, catching it can interrupt an intrusion before its objective.
+
+      The difficulty is that systems are **full of legitimate persistence**. Software installs services,
+      schedules update tasks, and adds autostart entries all the time, so an alert on "a new scheduled task"
+      or "a new service" drowns the analyst. The engineering problem is to separate the attacker's persistence
+      from the constant background of legitimate autostart activity. The signals that help: a persistence entry
+      pointing at an unusual location (a user temp directory, not a program-files path), created by an
+      unexpected process, with an obfuscated or script-based command, or appearing on a host where that
+      software is not installed. Enrichment with what is normal for the environment, which services and tasks
+      are expected on this class of machine, turns "a new task" into "a new task no other machine has".
+
+      Two approaches make these detections work. **Baselining and change detection** are especially powerful
+      for persistence: because the set of autostart entries on a given system is relatively stable, a tool that
+      snapshots the baseline and alerts on **new or changed** entries surfaces exactly the additions worth
+      examining, rather than every entry. And **behavioural context** sharpens it, a scheduled task created by
+      a Office document or a service whose binary lives in a temp folder is suspicious regardless of the rest.
+      As with every detection, these are tuned against known-good software behaviour and validated by emulating
+      the persistence techniques. Detecting persistence is a cornerstone of endpoint detection, because almost
+      every intrusion establishes some, and the defender who catches the foothold catches the attacker before
+      they can comfortably return.
+    examples:
+      - title: Legitimate persistence is everywhere
+        body: |
+          software installs services, schedules update tasks, adds run keys (constant, benign)
+          naive alert on "new service" -> floods
+          signal: new task pointing at a temp dir, odd parent, obfuscated command.
+      - title: Baseline and change detection
+        body: |
+          snapshot autostart entries (stable set) -> alert on NEW/changed only
+          "a new task no other machine of this class has" stands out
+          behavioural context: task created by WINWORD.EXE -> suspicious regardless.
+    exercise:
+      title: Engineer a persistence detection with baselining
+      environment: A lab with endpoint telemetry or sample logs/autostart snapshots containing malicious and benign persistence, ideally with an emulation tool
+      tools: [A SIEM/EDR or sample logs and autostart snapshots, an emulation test or samples, a MITRE ATT&CK reference, a notes file]
+      steps:
+        - List the main persistence mechanisms and the telemetry each produces.
+        - Choose one mechanism and explain why a naive "new entry" alert would be too noisy given legitimate persistence.
+        - Engineer a detection that narrows by location, creating process, command characteristics and environment baseline.
+        - Apply baselining or change detection so only new or changed autostart entries are surfaced.
+        - Add behavioural context (such as a task created by an Office document) to sharpen the detection.
+        - Emulate the persistence technique to confirm the detection fires on it and stays quiet on legitimate software, mapping to ATT&CK.
+      deliverable: A tuned persistence detection with its narrowing logic, a baselining/change-detection approach, behavioural context, and a validation showing it fires on the technique but not on normal software, mapped to ATT&CK.
+    expected_outcome: >
+      You can engineer detections for the common persistence mechanisms, separate malicious from the abundant
+      legitimate persistence using baselining and behavioural context, and validate the detections by
+      emulating the techniques.
+    quiz:
+      - prompt: Why is detecting persistence high value?
+        options:
+          - It is rare
+          - It catches an attacker establishing a foothold they intend to reuse, often early in the intrusion
+          - It only matters after encryption
+          - Persistence cannot be detected
+        answer: 1
+        explanation: Catching persistence interrupts the attacker's ability to return and often comes early in the attack.
+      - prompt: The main difficulty in detecting persistence is that
+        options:
+          - Persistence never happens
+          - Systems are full of legitimate persistence (software services, update tasks, autostart entries)
+          - Logs are unavailable
+          - It requires no tuning
+        answer: 1
+        explanation: Constant legitimate autostart activity means naive alerts drown the analyst.
+      - prompt: Baselining and change detection help with persistence because
+        options:
+          - They delete entries
+          - The set of autostart entries is relatively stable, so alerting on new or changed ones surfaces the additions worth examining
+          - They disable logging
+          - They ignore new entries
+        answer: 1
+        explanation: A stable baseline makes new or changed autostart entries stand out as the items to investigate.
+      - prompt: A scheduled task whose binary lives in a user temp folder, created by an Office document, is
+        options: [Routine, Suspicious regardless of the rest, worth detecting, A backup, A normal update]
+        answer: 1
+        explanation: Unusual location and parent process make such persistence suspicious on its own.

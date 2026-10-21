@@ -1,5 +1,11 @@
 # Changelog
 
+## Phase 2 - Eleventh lesson per course (toward 300 hours)
+
+### Catalog to 132 lessons (~145 hours)
+- Added an eleventh lesson to every course (120 → 132 lessons, ~145 hours), each a distinct topic checked against the existing catalog. New lessons: network segmentation and VLANs (Networking); authorization models and least privilege (Security Foundations); Windows event forwarding and centralised logging (Windows); securing SSH and remote access (Linux); log retention, storage tiers and compliance (SIEM); penetration testing versus vulnerability scanning (Vulnerability Management); hunting defense evasion (Threat Hunting); disk and filesystem forensics (Incident Response); detecting persistence mechanisms (Detection Engineering); endpoint security architecture (Security Architecture); cloud identity federation and single sign-on (Cloud); and change and configuration management (Governance, Risk and Compliance).
+- All keep the six education-standard sections and the ~18/82 theory/lab split; content-standard, seeding, lab and full backend suites pass.
+
 ## Phase 2 - Tenth lesson per course, and de-duplicated ninth lessons
 
 ### Catalog to 120 lessons (~132 hours), all distinct

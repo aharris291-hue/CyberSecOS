@@ -935,3 +935,104 @@ lessons:
           - They store logs
         answer: 1
         explanation: Controlled crossings concentrate both enforcement and the telemetry that reveals lateral movement.
+  - slug: arch-endpoint-security
+    title: Endpoint Security Architecture
+    order: 11
+    difficulty: intermediate
+    summary: Design layered endpoint protection, hardening, EDR, application control and least privilege, so that endpoints, the most numerous and most targeted assets, resist and reveal compromise.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.1", "secplus:2.5", "cysa:1.3"]
+    learning_objectives:
+      - Explain why endpoints are a primary target and need layered protection
+      - Describe the layers of an endpoint security architecture
+      - Balance protection, detection and manageability across many endpoints
+    theory: |
+      Endpoints, laptops, desktops, servers, are where users work, where email is opened, and where most
+      intrusions begin, so they are both the most numerous assets and the most targeted. A single endpoint
+      security product is not enough; sound architecture layers several complementary controls so that one
+      endpoint's compromise is hard to achieve, limited in impact, and quickly visible. The design balances
+      three goals that can tension against each other: **protection** (stopping bad things), **detection**
+      (seeing what gets through), and **manageability** (deploying and maintaining it across thousands of
+      machines without breaking users' work).
+
+      The layers build on each other. **Hardening** reduces the attack surface, removing unneeded software and
+      services, disk encryption, secure configuration from a baseline, so there is less to attack.
+      **Preventive protection** (modern anti-malware) blocks known and many unknown threats. **Application
+      control** (allow-listing what may run) is powerful because it stops unauthorised executables outright,
+      though it needs effort to maintain. **Endpoint detection and response** (EDR) is the detection and
+      investigation layer: it records rich telemetry, detects suspicious behaviour, and lets responders
+      investigate and contain a host remotely, crucial because prevention is never complete. **Least
+      privilege**, users not running as local administrators, limits what a compromise can do. Together these
+      mean an attacker must defeat hardening, evade prevention, get past application control, avoid EDR
+      detection, and escape a non-privileged context.
+
+      The architectural judgement is in **balancing** these for the environment. Aggressive application control
+      is excellent for fixed-function servers but hard on developers' machines; EDR everywhere is essential but
+      generates telemetry that must flow to the SOC to be useful; least privilege is high-impact but needs a
+      way for users to get legitimate elevation. The layers also feed the SOC: EDR telemetry is often the
+      richest endpoint detection source, so endpoint architecture and detection engineering are tightly linked.
+      For the analyst, the lesson is that endpoints are defended in depth like everything else, no single agent
+      is a silver bullet, and the strongest posture comes from layered controls that each raise the cost of
+      compromise while feeding visibility back to the SOC.
+    examples:
+      - title: Layers an attacker must defeat
+        body: |
+          hardening (less to attack) -> anti-malware (block known/unknown)
+          -> application control (only allowed runs) -> EDR (detect + contain)
+          -> least privilege (limit impact)
+          No single agent is a silver bullet; the stack is.
+      - title: Balancing by machine type
+        body: |
+          fixed-function server -> aggressive application allow-listing (easy)
+          developer workstation -> allow-listing harder; lean on EDR + least privilege
+          EDR everywhere, but telemetry must reach the SOC to be useful.
+    exercise:
+      title: Design an endpoint security architecture
+      environment: A described organisation with different endpoint types (or your own context), plus a diagram or document
+      tools: [A diagram or document, a reference on endpoint controls, a notes file]
+      steps:
+        - Explain why endpoints are a primary target and why a single product is insufficient.
+        - Lay out the endpoint security layers (hardening, anti-malware, application control, EDR, least privilege) and what each contributes.
+        - Describe how the layers combine so an attacker must defeat several to succeed.
+        - For two different endpoint types (such as a server and a developer workstation), balance the controls appropriately and justify the differences.
+        - Explain how EDR telemetry feeds the SOC and links endpoint architecture to detection engineering.
+        - Identify one tension (for example application control versus developer flexibility) and how you would resolve it.
+      deliverable: An endpoint security architecture describing the layered controls, how they combine, a per-endpoint-type balance, the EDR-to-SOC link, and one resolved tension.
+    expected_outcome: >
+      You can design a layered endpoint security architecture of hardening, prevention, application control,
+      EDR and least privilege, balance those controls across different endpoint types, and connect endpoint
+      telemetry to SOC detection.
+    quiz:
+      - prompt: Why do endpoints need layered protection rather than a single product?
+        options:
+          - Endpoints are rarely attacked
+          - They are the most numerous and targeted assets, and no single control stops everything
+          - One product is always enough
+          - Layering slows them down for no reason
+        answer: 1
+        explanation: Endpoints are where most intrusions begin, so layered controls raise the cost and catch what each misses.
+      - prompt: Application control (allow-listing) is powerful because it
+        options:
+          - Speeds up the machine
+          - Stops unauthorised executables from running outright
+          - Replaces EDR
+          - Needs no maintenance
+        answer: 1
+        explanation: Allow-listing blocks anything not explicitly permitted, though it requires maintenance effort.
+      - prompt: EDR's primary role in the stack is
+        options:
+          - Prevention only
+          - Detection, rich telemetry and remote investigation/containment, since prevention is never complete
+          - Encrypting disks
+          - Managing passwords
+        answer: 1
+        explanation: EDR provides the detection, visibility and response layer that complements imperfect prevention.
+      - prompt: A key architectural judgement for endpoints is
+        options:
+          - Using one agent everywhere identically
+          - Balancing protection, detection and manageability, and tailoring controls to endpoint type
+          - Ignoring developer machines
+          - Disabling least privilege
+        answer: 1
+        explanation: The architecture must balance the three goals and adapt controls to different endpoint types.

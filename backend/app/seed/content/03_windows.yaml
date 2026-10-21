@@ -870,3 +870,95 @@ lessons:
         options: [Routine, A strong lateral-movement indicator to confirm against the host's normal behaviour, A backup, A patch]
         answer: 1
         explanation: Fan-out SMB attempts from one host suggest an attacker spreading, worth confirming in context.
+  - slug: win-event-forwarding
+    title: Windows Event Forwarding and Centralised Logging
+    order: 11
+    difficulty: intermediate
+    summary: Get the right Windows events off the endpoints and into a central place reliably, because logs that stay on a machine an attacker controls are logs you cannot trust or search.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.4", "sc200:1", "cysa:1.3"]
+    learning_objectives:
+      - Explain why Windows logs must be centralised, not left on endpoints
+      - Describe Windows Event Forwarding and what to collect
+      - Decide which events matter so the central store is useful, not just large
+    theory: |
+      Windows records a great deal locally, but logs that live only on the endpoint have two fatal problems:
+      an attacker who compromises the machine can **delete or tamper** with them, and an analyst cannot search
+      across thousands of machines one at a time. **Centralised logging** solves both by shipping events off
+      each host to a collector (and usually onward to the SIEM) as they happen, so the record is preserved
+      beyond the attacker's reach and searchable in one place. Getting logs off the box is therefore a
+      foundational monitoring step, not an optional refinement.
+
+      Windows provides this natively through **Windows Event Forwarding** (WEF): endpoints are configured
+      (typically by Group Policy) to forward selected events to a collector, with no third-party agent
+      required, which makes it attractive at scale. WEF uses **subscriptions** that define which events to
+      forward, and the practical skill is choosing those well. The crown jewels are the security-relevant
+      events: logons and logon failures, process creation (ideally with command lines, and enriched by
+      **Sysmon** for richer process, network and image-load telemetry), account and group changes, service and
+      scheduled-task creation, PowerShell script-block logging, and audit-policy changes. Many of these are
+      off by default, so an audit policy that actually turns them on is a prerequisite.
+
+      The discipline is **collect what matters, not everything**. Forwarding every event overwhelms storage and
+      the SIEM and buries the signal; a focused subscription of security-relevant events gives detections what
+      they need at a manageable volume. There is also a monitoring angle in the pipeline itself: a host that
+      suddenly **stops forwarding** events, or a spike in log-clearing events, can indicate an attacker
+      covering their tracks, so the absence of expected logs is itself a signal. For the analyst, the takeaway
+      is that detection depends on a reliable, centralised, well-scoped log pipeline, because a detection is
+      only as good as its data, and data that stays on a compromised endpoint is data you cannot trust.
+    examples:
+      - title: Why centralise
+        body: |
+          logs on the endpoint: attacker can delete/tamper + you can't search at scale
+          forwarded to a collector: preserved beyond reach + searchable in one place
+          Getting logs off the box is foundational, not optional.
+      - title: Collect what matters
+        body: |
+          forward: logons, process creation (+Sysmon), account/group changes,
+                   service/task creation, PowerShell script-block, audit-policy changes
+          not: every event (buries the signal, floods storage)
+    exercise:
+      title: Design a Windows log-forwarding and collection plan
+      environment: A Windows/AD lab with Event Forwarding (or a provided audit policy, subscription config and sample forwarded events)
+      tools: [A Windows/AD lab or sample config, a reference on security-relevant Windows events, a notes file]
+      steps:
+        - Explain the two problems with leaving logs on the endpoint and how centralisation solves each.
+        - Describe how Windows Event Forwarding moves events to a collector and why Group Policy makes it scale.
+        - Choose the security-relevant events to forward and note which require the audit policy to be enabled first.
+        - Explain why forwarding everything is counterproductive and how a focused subscription helps detections.
+        - Identify a pipeline-health signal (a host that stops forwarding, a spike in log-clearing) and why it matters.
+        - State how you would confirm such a signal against normal behaviour before acting.
+      deliverable: A logging plan covering why to centralise, a WEF subscription of security-relevant events with the audit-policy prerequisites, the collect-what-matters rationale, and a pipeline-health signal with its confirmation step.
+    expected_outcome: >
+      You can explain why Windows logs must be centralised, design a Windows Event Forwarding plan that
+      collects the security-relevant events detections need, and treat gaps in the log pipeline as a signal in
+      their own right.
+    quiz:
+      - prompt: Why centralise Windows logs instead of leaving them on endpoints?
+        options:
+          - To save money
+          - Because an attacker can tamper with local logs and you cannot search thousands of machines individually
+          - Logs are not useful
+          - Endpoints have no storage
+        answer: 1
+        explanation: Centralising preserves logs beyond an attacker's reach and makes them searchable at scale.
+      - prompt: Windows Event Forwarding is attractive at scale because it
+        options:
+          - Requires a third-party agent on every host
+          - Is native and can be configured by Group Policy with no extra agent
+          - Only works on one machine
+          - Deletes events
+        answer: 1
+        explanation: WEF is built in and deployable via Group Policy, forwarding selected events without an added agent.
+      - prompt: Forwarding every possible event is counterproductive because it
+        options:
+          - Improves detection
+          - Overwhelms storage and the SIEM and buries the signal
+          - Is required by WEF
+          - Speeds up searches
+        answer: 1
+        explanation: A focused subscription of security-relevant events keeps volume manageable and the signal visible.
+      - prompt: A host that suddenly stops forwarding events, or a spike in log-clearing, may indicate
+        options: [A faster network, An attacker covering their tracks, worth investigating, A backup, A patch install]
+        answer: 1
+        explanation: Missing expected logs or log-clearing can be an evasion signal, so the absence of logs is itself telling.

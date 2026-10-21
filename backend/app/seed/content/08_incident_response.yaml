@@ -934,3 +934,101 @@ lessons:
         options: [Normal operation, Code injection or process hollowing, a compromise indicator, A backup, A patch]
         answer: 1
         explanation: Unexpected injected executable regions are a classic sign of code injection or hollowing.
+  - slug: ir-disk-forensics
+    title: Disk and Filesystem Forensics
+    order: 11
+    difficulty: advanced
+    summary: Recover the story a disk tells during an incident, what ran, what was created or deleted, and when, using forensic imaging and filesystem artefacts to build a defensible timeline.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["cysa:3.2", "cysa:1.4", "secplus:4.8"]
+    learning_objectives:
+      - Explain sound forensic imaging and why integrity matters
+      - Identify the filesystem and OS artefacts that reveal attacker activity
+      - Build a defensible timeline from disk evidence
+    theory: |
+      When memory forensics captures the live state, **disk forensics** recovers the persistent story: what was
+      installed, created, executed and deleted on a system, and when. It is the backbone of after-the-fact
+      investigation, because much of an intrusion leaves lasting marks on disk even after the attacker is gone.
+      The discipline begins with sound acquisition: taking a **forensic image**, a bit-for-bit copy of the
+      storage, using a method that does not alter the original (a write blocker or a verified read-only
+      process), and **hashing** it so you can prove the evidence is unchanged. Analysis is done on the image,
+      never the original, and the whole chain is documented, because disk evidence may need to stand up to
+      scrutiny later.
+
+      The richness of disk forensics comes from the many **artefacts** an operating system leaves behind, often
+      without the user or attacker realising. Filesystem **metadata** records when files were created, modified
+      and accessed. Execution artefacts (on Windows, prefetch, shimcache and amcache; on Linux, logs and shell
+      histories) show what programs ran and when. Deleted files can often be **recovered** because deletion
+      usually just unlinks rather than erases data. Registry hives, browser history, scheduled tasks, and
+      user-activity records all add pieces. Each artefact answers a specific question, did this program run,
+      was this file here, who logged in, and together they corroborate or contradict a theory of what happened.
+
+      The output that matters is a **timeline**: ordering the artefacts by time to reconstruct the sequence of
+      events, the initial access, what the attacker did, what they took, and when. A timeline turns scattered
+      artefacts into a narrative that answers the incident's core questions and supports decisions about scope
+      and disclosure. The analyst's discipline is to corroborate across multiple artefacts rather than trust
+      one (especially since attackers tamper with timestamps, which is why cross-checking matters), to
+      distinguish normal system activity from attacker activity using knowledge of the baseline, and to keep
+      the analysis defensible. Disk forensics is slower and deeper than live triage, and it is where the
+      definitive account of an incident is usually built.
+    examples:
+      - title: Image first, analyse the copy
+        body: |
+          original disk -> write-blocked bit-for-bit image -> hash (prove unchanged)
+          analyse the IMAGE, never the original
+          document the chain -> evidence stands up to scrutiny.
+      - title: Artefacts corroborate a theory
+        body: |
+          prefetch/amcache: program X executed at 14:02
+          filesystem MFT:   malware.exe created at 14:00
+          recovered deleted file: the exfil archive
+          one artefact is a clue; several together are a timeline.
+    exercise:
+      title: Build a timeline from disk evidence
+      environment: A provided forensic disk image or artefact set (or a lab capture), analysed on an isolated workstation with forensic tooling
+      tools: [A disk image or artefact set, forensic analysis tools, a notes file]
+      steps:
+        - Describe how you would acquire the image soundly (write-blocking, hashing) and why analysis is done on the copy.
+        - Identify the execution artefacts available (such as prefetch/amcache or shell history) and what each tells you.
+        - Examine filesystem metadata to find files created or modified in the incident window.
+        - Recover or identify a deleted file of interest and explain why deletion often leaves data recoverable.
+        - Build a timeline ordering the artefacts to reconstruct the sequence of attacker activity.
+        - Corroborate the timeline across multiple artefacts and note how you would detect timestamp tampering.
+      deliverable: A disk-forensics write-up covering sound acquisition, the execution and filesystem artefacts found, a recovered deleted item, and a corroborated timeline of the incident with a note on timestamp integrity.
+    expected_outcome: >
+      You can acquire a disk image soundly, read the filesystem and OS artefacts that reveal attacker activity,
+      recover deleted evidence, and build a defensible, corroborated timeline of an incident from disk.
+    quiz:
+      - prompt: Why is a forensic image taken with a write blocker and then hashed?
+        options:
+          - To speed up analysis
+          - To avoid altering the original and to prove the evidence is unchanged
+          - To delete the data
+          - To compress the disk
+        answer: 1
+        explanation: Sound acquisition preserves the original and hashing proves integrity so the evidence is defensible.
+      - prompt: Execution artefacts such as Windows prefetch or amcache reveal
+        options:
+          - Network bandwidth
+          - What programs ran and when
+          - The user's password
+          - The disk temperature
+        answer: 1
+        explanation: These artefacts record program execution, a key part of reconstructing activity.
+      - prompt: Deleted files can often be recovered because
+        options:
+          - Deletion encrypts them
+          - Deletion usually just unlinks the file rather than erasing the underlying data
+          - They are backed up automatically
+          - The OS keeps copies in memory
+        answer: 1
+        explanation: Standard deletion removes the reference, leaving the data recoverable until overwritten.
+      - prompt: The main output of disk forensics in an incident is
+        options:
+          - A single artefact
+          - A corroborated timeline reconstructing the sequence of events
+          - A performance report
+          - A list of users
+        answer: 1
+        explanation: Ordering corroborated artefacts into a timeline answers what happened, when and how.
