@@ -31,19 +31,56 @@ jobs:
           dotnet-version: "9.0.x"
       - run: dotnet build CyberSecOS.sln --configuration Release
       - run: dotnet test CyberSecOS.sln --configuration Release --no-build
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Bundle the API server
+        working-directory: backend
+        run: |
+          python -m pip install -r requirements.txt "pyinstaller>=6.10,<7"
+          pyinstaller --noconfirm cybersecos-server.spec
+      - name: Smoke-test the bundled server
+        working-directory: backend
+        shell: pwsh
+        run: |
+          $env:CYBERSECOS_DATA_DIR = Join-Path $env:RUNNER_TEMP "cybersecos-smoke"
+          $server = Start-Process dist/cybersecos-server/cybersecos-server.exe -ArgumentList "--port", "8765" -PassThru -NoNewWindow
+          try {
+            $ok = $false
+            for ($i = 0; $i -lt 90 -and -not $ok; $i++) {
+              try { $ok = (Invoke-RestMethod http://127.0.0.1:8765/api/health).status -eq "ok" } catch { Start-Sleep -Seconds 1 }
+            }
+            if (-not $ok) { throw "Bundled server did not answer /api/health" }
+            $status = Invoke-RestMethod http://127.0.0.1:8765/api/auth/status
+            Write-Host "Bundled server healthy; registered=$($status.registered)"
+          } finally {
+            Stop-Process -Id $server.Id -Force
+          }
       - name: Package Windows build
         shell: pwsh
         run: |
           $out = "../dist/CyberSecOS"
           dotnet publish src/CyberSecOS.Desktop/CyberSecOS.Desktop.csproj -c Release -r win-x64 --self-contained true `
-            -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=none -o "$out/app"
-          New-Item -ItemType Directory "$out/backend" | Out-Null
-          Copy-Item -Recurse ../backend/app "$out/backend/app"
-          Copy-Item ../backend/requirements.txt "$out/backend/"
-          Copy-Item "../scripts/Start CyberSecOS.bat" "$out/"
+            -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=none -o $out
+          Copy-Item -Recurse ../backend/dist/cybersecos-server "$out/server"
           Copy-Item ../docs/15_WINDOWS_QUICKSTART.md "$out/README.md"
+      - name: Build the installer
+        shell: pwsh
+        run: |
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) {
+            choco install innosetup --no-progress -y
+          }
+          $version = (Select-String -Path ../backend/app/__init__.py -Pattern '__version__ = "(.+)"').Matches[0].Groups[1].Value
+          & $iscc "/DAppVersion=$version" ../installer/CyberSecOS.iss
+          if ($LASTEXITCODE -ne 0) { throw "Inno Setup failed" }
       - uses: actions/upload-artifact@v4
         with:
-          name: CyberSecOS-windows
-          path: dist/
+          name: CyberSecOS-Setup
+          path: dist/CyberSecOS-Setup-*.exe
+          retention-days: 30
+      - uses: actions/upload-artifact@v4
+        with:
+          name: CyberSecOS-windows-portable
+          path: dist/CyberSecOS/
           retention-days: 30

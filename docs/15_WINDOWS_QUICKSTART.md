@@ -1,23 +1,32 @@
 # CyberSecOS on Windows: Quick Start
 
-## Option A: download the ready-made build (easiest)
+## Option A: install it (easiest)
 
-1. Install **Python 3.11 or newer** from https://www.python.org/downloads/ and
-   tick **"Add python.exe to PATH"** in the installer. (The desktop app itself
-   needs nothing else; .NET is bundled.)
-2. Open the repository's **Actions** tab on GitHub, open the latest successful
-   **CI** run, and download the **CyberSecOS-windows** artifact at the bottom of
+Nothing else is needed: .NET and the CyberSecOS server are bundled, and Python
+is not required.
+
+1. Open the repository's **Actions** tab on GitHub, open the latest successful
+   **CI** run, and download the **CyberSecOS-Setup** artifact at the bottom of
    the page (you must be signed in to GitHub). Builds are kept for 30 days.
-3. Unzip it anywhere, for example `C:\CyberSecOS`.
-4. Double-click **`Start CyberSecOS.bat`**. The first run installs the backend
-   (about a minute), then starts the API in a minimised window and opens the app.
+2. Unzip it and run **`CyberSecOS-Setup-<version>.exe`**. It installs for your
+   Windows user only, so it does not ask for administrator rights.
+   If SmartScreen warns about an unrecognised app, choose
+   **More info → Run anyway**: the build is not code-signed yet.
+3. Leave **Launch CyberSecOS** ticked on the last page, or start it later from
+   the Start menu (or the desktop shortcut, if you chose one).
+4. A small "Starting CyberSecOS..." window shows while the server starts. The
+   very first start loads the whole course catalogue and can take up to about
+   half a minute.
 5. Create your account on the first screen, then sign in with it from then on.
 
-Your data (database and signing key) lives in `backend\data` inside that
-folder. Keep the folder to keep your progress.
+The app starts its own server when it opens and stops it when you close the
+app. Your data (database, signing key and `server.log`) lives in
+`%LOCALAPPDATA%\CyberSecOS\data`. Uninstalling keeps it; delete that folder too
+if you want a clean slate. Installing a newer build over an old one keeps your
+progress.
 
-If Windows SmartScreen warns about an unrecognised app, choose
-**More info → Run anyway**: the build is not code-signed.
+A portable build (**CyberSecOS-windows-portable**, no installer) is attached to
+the same CI run: unzip it anywhere and run `CyberSecOS.exe`.
 
 ## Option B: build from source
 
@@ -37,11 +46,14 @@ cd frontend
 dotnet run --project src/CyberSecOS.Desktop
 ```
 
+To build the installer yourself, see "Packaging the Windows installer" in
+`docs/10_DEVELOPMENT.md`.
+
 ## Troubleshooting
 
 | Symptom | Fix |
 |---|---|
-| "Cannot reach the CyberSecOS server" on the login screen | Start the API (step 4, or Terminal 1), then press Sign in again |
-| "Python 3.11 or newer is required" | Install Python with "Add python.exe to PATH" ticked, then rerun the launcher |
-| Port 8000 already in use | Stop the other program, or run the API on another port and set `ApiBaseUrl` in `app\appsettings.json` |
-| Forgot your password | Delete `backend\data\cybersecos.db` to start over (this erases progress) |
+| "The CyberSecOS server stopped while starting" | Open `%LOCALAPPDATA%\CyberSecOS\data\server.log` for the reason; antivirus quarantining `cybersecos-server.exe` is the usual one |
+| "Cannot reach the CyberSecOS server" on the login screen | Close and reopen the app; in a source build, start the API (Terminal 1) first |
+| Another program uses port 8000 | Nothing to do: the installed app moves its server to a free port automatically |
+| Forgot your password | Delete `%LOCALAPPDATA%\CyberSecOS\data\cybersecos.db` to start over (this erases progress) |
