@@ -1,0 +1,114 @@
+slug: lab-ir-phishing-scope
+lesson: ir-phishing-triage
+title: Scope a phishing campaign across the company
+pass_mark: 80
+scenario: |
+  Two users reported a "shared payroll document" email. One report is a phish; the question is
+  how far it got. You have the mail gateway's delivery log for the campaign, proxy logs for the
+  morning and the identity provider's sign-ins.
+
+  The office's normal public address is 192.0.2.15. The phishing page collects credentials on
+  its `/submit` path.
+artifacts:
+- name: delivered.csv
+  kind: csv
+  description: Messages delivered from the campaign.
+  content: |
+    time,recipient,subject,sender
+    2026-10-07T08:10:00Z,a.berg,Action required: shared payroll document,payroll@payro11-portal.example
+    2026-10-07T08:11:00Z,b.cole,Action required: shared payroll document,payroll@payro11-portal.example
+    2026-10-07T08:12:00Z,c.diaz,Action required: shared payroll document,payroll@payro11-portal.example
+    2026-10-07T08:13:00Z,d.evans,Action required: shared payroll document,payroll@payro11-portal.example
+    2026-10-07T08:14:00Z,e.fox,Action required: shared payroll document,payroll@payro11-portal.example
+    2026-10-07T08:15:00Z,f.garcia,Action required: shared payroll document,payroll@payro11-portal.example
+    2026-10-07T08:16:00Z,g.hughes,Action required: shared payroll document,payroll@payro11-portal.example
+    2026-10-07T08:17:00Z,h.ito,Action required: shared payroll document,payroll@payro11-portal.example
+    2026-10-07T08:18:00Z,i.jones,Action required: shared payroll document,payroll@payro11-portal.example
+    2026-10-07T08:19:00Z,j.kim,Action required: shared payroll document,payroll@payro11-portal.example
+    2026-10-07T08:20:00Z,k.lee,Action required: shared payroll document,payroll@payro11-portal.example
+    2026-10-07T08:21:00Z,l.marsh,Action required: shared payroll document,payroll@payro11-portal.example
+- name: proxy.csv
+  kind: csv
+  description: Web proxy requests (UTC).
+  content: |
+    time,user,url
+    2026-10-07T08:31:12Z,c.diaz,https://payro11-portal.example/login?id=c3
+    2026-10-07T08:44:50Z,g.hughes,https://payro11-portal.example/login?id=g7
+    2026-10-07T08:45:03Z,g.hughes,https://payro11-portal.example/submit
+    2026-10-07T09:02:19Z,j.kim,https://payro11-portal.example/login?id=j1
+    2026-10-07T09:05:40Z,a.berg,https://intranet.contoso.example/payroll
+- name: signins.csv
+  kind: csv
+  description: Identity provider sign-ins (UTC).
+  content: |
+    time,user,ip,result
+    2026-10-07T08:50:00Z,a.berg,192.0.2.15,success
+    2026-10-07T09:11:47Z,g.hughes,203.0.113.201,success
+    2026-10-07T09:12:30Z,g.hughes,203.0.113.201,success
+    2026-10-07T09:20:05Z,c.diaz,192.0.2.15,success
+    2026-10-07T09:40:00Z,j.kim,203.0.113.201,failure
+tasks:
+- prompt: How many users received the phishing email?
+  type: number
+  accepted:
+  - '12'
+  hint: Count distinct recipients in the delivery log.
+  explanation: Twelve. All twelve messages should be purged from mailboxes now.
+  verify:
+    artifact: delivered.csv
+    op: distinct_count
+    pattern: ^2026-[^,]+,([^,]+),
+- prompt: What is the phishing domain? Note how it imitates a real name.
+  type: text
+  accepted:
+  - payro11-portal.example
+  hint: Read the sender and the clicked URLs carefully, character by character.
+  explanation: payro11-portal.example uses the digits 1 1 in place of the letters l l. Block it at the proxy and
+    the mail gateway.
+  verify:
+    artifact: proxy.csv
+    op: set
+    pattern: https://(payro[^/]+)/
+- prompt: Which users clicked the phishing link? List them separated by commas.
+  type: set
+  accepted:
+  - c.diaz, g.hughes, j.kim
+  hint: Only requests to the phishing domain count.
+  explanation: c.diaz, g.hughes and j.kim. a.berg went to the real intranet payroll page.
+  verify:
+    artifact: proxy.csv
+    op: set
+    pattern: ^[^,]+,([^,]+),https://payro11-portal
+- prompt: Whose account has been taken over?
+  type: text
+  accepted:
+  - g.hughes
+  hint: Who submitted the form and then signed in successfully from an address that is not the office?
+  explanation: g.hughes submitted credentials, and the attacker signed in from 203.0.113.201 twenty-five minutes
+    later. j.kim's attempt from the same IP failed, so j.kim's password was probably entered wrong or MFA stopped
+    it.
+  verify:
+    artifact: signins.csv
+    op: set
+    pattern: ^[^,]+,([^,]+),203\.0\.113\.201,success$
+- prompt: What is the attacker's sign-in IP address?
+  type: text
+  accepted:
+  - 203.0.113.201
+  hint: Not the office address.
+  explanation: 203.0.113.201. Search every account's sign-ins for it, not just the clickers', in case of other victims.
+  verify:
+    artifact: signins.csv
+    op: set
+    pattern: ',(203\.\d+\.\d+\.\d+),'
+- prompt: What is the right response for j.kim?
+  type: choice
+  options:
+  - Nothing, because the sign-in failed
+  - 'Treat the password as exposed: reset it, check MFA registrations and sessions, and watch for further attempts'
+  - Disable the account permanently
+  - Only send phishing training
+  answer: 1
+  hint: A failed attempt from the attacker's IP after a click is still evidence.
+  explanation: The attacker tried j.kim's account from the phishing infrastructure, so they hold something. Reset
+    it and review MFA before they try again.

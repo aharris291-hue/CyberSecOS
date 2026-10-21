@@ -1,0 +1,142 @@
+slug: lab-net-tls-metadata
+lesson: net-encrypted-traffic
+title: Find a malicious TLS session without decrypting it
+pass_mark: 80
+scenario: |
+  Almost all outbound traffic is encrypted, so the SOC cannot read the payloads. The network
+  sensor still records the TLS handshake metadata: the server name the client asked for (SNI),
+  the client's JA3 fingerprint, and the certificate the server presented.
+
+  You have an hour of handshake records from the office subnet. Find the session that does not
+  look like normal browsing. Things to weigh: a missing SNI, a client fingerprint no browser
+  uses, a certificate that the server signed itself, and an unusually long validity period.
+artifacts:
+- name: tls_handshakes.txt
+  kind: csv
+  description: TLS handshake metadata from the network sensor (pipe-separated, UTC).
+  content: |
+    time|client|server_ip|sni|ja3|issuer|subject|valid_days
+    2026-10-06T09:00:31Z|10.40.1.52|52.96.10.4|outlook.office.example|b32309a26951912be7dba376398abc3b|DigiCert TLS RSA SHA256 2020 CA1|CN=outlook.office.example|397
+    2026-10-06T09:01:46Z|10.40.1.48|198.51.100.200|update.vendor.example|cd08e31494f9531f560d64c695473da9|DigiCert TLS RSA SHA256 2020 CA1|CN=update.vendor.example|397
+    2026-10-06T09:04:22Z|10.40.1.48|151.101.1.229|news.example|cd08e31494f9531f560d64c695473da9|Let's Encrypt R11|CN=news.example|90
+    2026-10-06T09:09:18Z|10.40.1.17|192.0.2.80|intranet.contoso.example|cd08e31494f9531f560d64c695473da9|Contoso Issuing CA 01|CN=intranet.contoso.example|365
+    2026-10-06T09:09:41Z|10.40.1.66|203.0.113.45|-|72a589da586844d7f0818ce684948eea|CN=localhost|CN=localhost|3650
+    2026-10-06T09:09:46Z|10.40.1.17|198.51.100.200|update.vendor.example|b32309a26951912be7dba376398abc3b|DigiCert TLS RSA SHA256 2020 CA1|CN=update.vendor.example|397
+    2026-10-06T09:09:47Z|10.40.1.11|198.51.100.200|update.vendor.example|b32309a26951912be7dba376398abc3b|DigiCert TLS RSA SHA256 2020 CA1|CN=update.vendor.example|397
+    2026-10-06T09:14:28Z|10.40.1.66|203.0.113.45|-|72a589da586844d7f0818ce684948eea|CN=localhost|CN=localhost|3650
+    2026-10-06T09:15:55Z|10.40.1.22|151.101.1.229|news.example|cd08e31494f9531f560d64c695473da9|Let's Encrypt R11|CN=news.example|90
+    2026-10-06T09:17:46Z|10.40.1.48|52.96.10.4|outlook.office.example|b32309a26951912be7dba376398abc3b|DigiCert TLS RSA SHA256 2020 CA1|CN=outlook.office.example|397
+    2026-10-06T09:18:12Z|10.40.1.52|52.96.10.4|outlook.office.example|cd08e31494f9531f560d64c695473da9|DigiCert TLS RSA SHA256 2020 CA1|CN=outlook.office.example|397
+    2026-10-06T09:18:55Z|10.40.1.11|192.0.2.80|intranet.contoso.example|cd08e31494f9531f560d64c695473da9|Contoso Issuing CA 01|CN=intranet.contoso.example|365
+    2026-10-06T09:19:18Z|10.40.1.22|52.96.10.4|outlook.office.example|cd08e31494f9531f560d64c695473da9|DigiCert TLS RSA SHA256 2020 CA1|CN=outlook.office.example|397
+    2026-10-06T09:19:31Z|10.40.1.66|203.0.113.45|-|72a589da586844d7f0818ce684948eea|CN=localhost|CN=localhost|3650
+    2026-10-06T09:21:11Z|10.40.1.11|52.96.10.4|outlook.office.example|cd08e31494f9531f560d64c695473da9|DigiCert TLS RSA SHA256 2020 CA1|CN=outlook.office.example|397
+    2026-10-06T09:21:35Z|10.40.1.11|198.51.100.200|update.vendor.example|cd08e31494f9531f560d64c695473da9|DigiCert TLS RSA SHA256 2020 CA1|CN=update.vendor.example|397
+    2026-10-06T09:22:06Z|10.40.1.22|52.96.10.4|outlook.office.example|cd08e31494f9531f560d64c695473da9|DigiCert TLS RSA SHA256 2020 CA1|CN=outlook.office.example|397
+    2026-10-06T09:22:42Z|10.40.1.48|151.101.1.229|news.example|b32309a26951912be7dba376398abc3b|Let's Encrypt R11|CN=news.example|90
+    2026-10-06T09:23:56Z|10.40.1.11|192.0.2.80|intranet.contoso.example|cd08e31494f9531f560d64c695473da9|Contoso Issuing CA 01|CN=intranet.contoso.example|365
+    2026-10-06T09:24:46Z|10.40.1.66|203.0.113.45|-|72a589da586844d7f0818ce684948eea|CN=localhost|CN=localhost|3650
+    2026-10-06T09:28:12Z|10.40.1.11|52.96.10.4|outlook.office.example|b32309a26951912be7dba376398abc3b|DigiCert TLS RSA SHA256 2020 CA1|CN=outlook.office.example|397
+    2026-10-06T09:29:17Z|10.40.1.48|151.101.1.229|news.example|cd08e31494f9531f560d64c695473da9|Let's Encrypt R11|CN=news.example|90
+    2026-10-06T09:29:26Z|10.40.1.66|203.0.113.45|-|72a589da586844d7f0818ce684948eea|CN=localhost|CN=localhost|3650
+    2026-10-06T09:29:52Z|10.40.1.48|192.0.2.80|intranet.contoso.example|cd08e31494f9531f560d64c695473da9|Contoso Issuing CA 01|CN=intranet.contoso.example|365
+    2026-10-06T09:29:57Z|10.40.1.35|52.96.10.4|outlook.office.example|cd08e31494f9531f560d64c695473da9|DigiCert TLS RSA SHA256 2020 CA1|CN=outlook.office.example|397
+    2026-10-06T09:30:15Z|10.40.1.52|52.96.10.4|outlook.office.example|cd08e31494f9531f560d64c695473da9|DigiCert TLS RSA SHA256 2020 CA1|CN=outlook.office.example|397
+    2026-10-06T09:30:18Z|10.40.1.17|198.51.100.200|update.vendor.example|cd08e31494f9531f560d64c695473da9|DigiCert TLS RSA SHA256 2020 CA1|CN=update.vendor.example|397
+    2026-10-06T09:32:37Z|10.40.1.17|192.0.2.80|intranet.contoso.example|cd08e31494f9531f560d64c695473da9|Contoso Issuing CA 01|CN=intranet.contoso.example|365
+    2026-10-06T09:33:13Z|10.40.1.11|192.0.2.80|intranet.contoso.example|b32309a26951912be7dba376398abc3b|Contoso Issuing CA 01|CN=intranet.contoso.example|365
+    2026-10-06T09:34:16Z|10.40.1.66|203.0.113.45|-|72a589da586844d7f0818ce684948eea|CN=localhost|CN=localhost|3650
+    2026-10-06T09:34:29Z|10.40.1.35|151.101.1.229|news.example|cd08e31494f9531f560d64c695473da9|Let's Encrypt R11|CN=news.example|90
+    2026-10-06T09:39:17Z|10.40.1.66|203.0.113.45|-|72a589da586844d7f0818ce684948eea|CN=localhost|CN=localhost|3650
+    2026-10-06T09:40:34Z|10.40.1.48|198.51.100.200|update.vendor.example|cd08e31494f9531f560d64c695473da9|DigiCert TLS RSA SHA256 2020 CA1|CN=update.vendor.example|397
+    2026-10-06T09:41:00Z|10.40.1.22|198.51.100.200|update.vendor.example|b32309a26951912be7dba376398abc3b|DigiCert TLS RSA SHA256 2020 CA1|CN=update.vendor.example|397
+    2026-10-06T09:42:10Z|10.40.1.52|52.96.10.4|outlook.office.example|cd08e31494f9531f560d64c695473da9|DigiCert TLS RSA SHA256 2020 CA1|CN=outlook.office.example|397
+    2026-10-06T09:43:26Z|10.40.1.22|151.101.1.229|news.example|cd08e31494f9531f560d64c695473da9|Let's Encrypt R11|CN=news.example|90
+    2026-10-06T09:43:38Z|10.40.1.52|192.0.2.80|intranet.contoso.example|cd08e31494f9531f560d64c695473da9|Contoso Issuing CA 01|CN=intranet.contoso.example|365
+    2026-10-06T09:43:40Z|10.40.1.11|192.0.2.80|intranet.contoso.example|b32309a26951912be7dba376398abc3b|Contoso Issuing CA 01|CN=intranet.contoso.example|365
+    2026-10-06T09:44:15Z|10.40.1.52|192.0.2.80|intranet.contoso.example|b32309a26951912be7dba376398abc3b|Contoso Issuing CA 01|CN=intranet.contoso.example|365
+    2026-10-06T09:44:24Z|10.40.1.22|192.0.2.80|intranet.contoso.example|cd08e31494f9531f560d64c695473da9|Contoso Issuing CA 01|CN=intranet.contoso.example|365
+    2026-10-06T09:44:27Z|10.40.1.66|203.0.113.45|-|72a589da586844d7f0818ce684948eea|CN=localhost|CN=localhost|3650
+    2026-10-06T09:44:38Z|10.40.1.48|151.101.1.229|news.example|cd08e31494f9531f560d64c695473da9|Let's Encrypt R11|CN=news.example|90
+    2026-10-06T09:46:10Z|10.40.1.17|192.0.2.80|intranet.contoso.example|cd08e31494f9531f560d64c695473da9|Contoso Issuing CA 01|CN=intranet.contoso.example|365
+    2026-10-06T09:47:45Z|10.40.1.17|192.0.2.80|intranet.contoso.example|b32309a26951912be7dba376398abc3b|Contoso Issuing CA 01|CN=intranet.contoso.example|365
+    2026-10-06T09:48:05Z|10.40.1.35|151.101.1.229|news.example|b32309a26951912be7dba376398abc3b|Let's Encrypt R11|CN=news.example|90
+    2026-10-06T09:48:16Z|10.40.1.48|52.96.10.4|outlook.office.example|cd08e31494f9531f560d64c695473da9|DigiCert TLS RSA SHA256 2020 CA1|CN=outlook.office.example|397
+    2026-10-06T09:49:41Z|10.40.1.11|52.96.10.4|outlook.office.example|cd08e31494f9531f560d64c695473da9|DigiCert TLS RSA SHA256 2020 CA1|CN=outlook.office.example|397
+    2026-10-06T09:49:41Z|10.40.1.66|203.0.113.45|-|72a589da586844d7f0818ce684948eea|CN=localhost|CN=localhost|3650
+    2026-10-06T09:50:27Z|10.40.1.17|198.51.100.200|update.vendor.example|cd08e31494f9531f560d64c695473da9|DigiCert TLS RSA SHA256 2020 CA1|CN=update.vendor.example|397
+    2026-10-06T09:51:28Z|10.40.1.17|151.101.1.229|news.example|b32309a26951912be7dba376398abc3b|Let's Encrypt R11|CN=news.example|90
+    2026-10-06T09:51:33Z|10.40.1.48|192.0.2.80|intranet.contoso.example|b32309a26951912be7dba376398abc3b|Contoso Issuing CA 01|CN=intranet.contoso.example|365
+    2026-10-06T09:54:25Z|10.40.1.66|203.0.113.45|-|72a589da586844d7f0818ce684948eea|CN=localhost|CN=localhost|3650
+    2026-10-06T09:55:48Z|10.40.1.48|151.101.1.229|news.example|b32309a26951912be7dba376398abc3b|Let's Encrypt R11|CN=news.example|90
+    2026-10-06T09:56:04Z|10.40.1.48|151.101.1.229|news.example|cd08e31494f9531f560d64c695473da9|Let's Encrypt R11|CN=news.example|90
+    2026-10-06T09:57:45Z|10.40.1.48|52.96.10.4|outlook.office.example|cd08e31494f9531f560d64c695473da9|DigiCert TLS RSA SHA256 2020 CA1|CN=outlook.office.example|397
+    2026-10-06T09:59:39Z|10.40.1.66|203.0.113.45|-|72a589da586844d7f0818ce684948eea|CN=localhost|CN=localhost|3650
+    2026-10-06T10:04:23Z|10.40.1.66|203.0.113.45|-|72a589da586844d7f0818ce684948eea|CN=localhost|CN=localhost|3650
+tasks:
+- prompt: Which internal host made the suspicious TLS connections?
+  type: text
+  accepted:
+  - 10.40.1.66
+  hint: Look for connections with no server name in the SNI column.
+  explanation: 10.40.1.66 is the only client that connects without SNI, to a self-signed certificate, with a fingerprint
+    no other host uses.
+  verify:
+    artifact: tls_handshakes.txt
+    op: set
+    pattern: ^[^|]+\|([^|]+)\|[^|]+\|-\|
+- prompt: Which external server IP did it connect to?
+  type: text
+  accepted:
+  - 203.0.113.45
+  hint: Read the server_ip of the same rows.
+  explanation: 203.0.113.45. Check other hosts' flow and DNS logs for it, and block it at the egress firewall.
+  verify:
+    artifact: tls_handshakes.txt
+    op: set
+    pattern: ^[^|]+\|10\.40\.1\.66\|([^|]+)\|
+- prompt: How many TLS connections had no SNI?
+  type: number
+  accepted:
+  - '12'
+  hint: Count rows where the sni column is a dash.
+  explanation: 'Twelve, about five minutes apart: regular, automated check-ins rather than a person browsing.'
+  verify:
+    artifact: tls_handshakes.txt
+    op: count
+    pattern: ^[^|]+\|[^|]+\|[^|]+\|-\|
+- prompt: What is the JA3 fingerprint of the suspicious client?
+  type: text
+  accepted:
+  - 72a589da586844d7f0818ce684948eea
+  hint: It is the JA3 value on those rows, and it appears nowhere else in the log.
+  explanation: A JA3 hash describes how the client builds its TLS hello. One that no browser on the estate produces
+    points to a custom tool or malware implant, and it can be searched for across every sensor.
+  verify:
+    artifact: tls_handshakes.txt
+    op: set
+    pattern: \|10\.40\.1\.66\|[^|]+\|[^|]+\|([0-9a-f]{32})\|
+- prompt: What makes the server's certificate suspicious?
+  type: choice
+  options:
+  - It uses RSA
+  - The issuer and subject are the same (it is self-signed, CN=localhost) and it is valid for ten years, unlike
+    the public sites
+  - It was issued by Let's Encrypt
+  - Its validity period is 90 days
+  answer: 1
+  hint: Compare the issuer and subject columns, and the validity, with the other servers.
+  explanation: Public sites present certificates from a public CA with validity of about a year or less. A self-signed
+    localhost certificate with a ten-year life is the default of many attacker frameworks.
+- prompt: Why is handshake metadata enough to raise this as an incident?
+  type: choice
+  options:
+  - It is not; only decrypted content proves anything
+  - Several independent signals agree (no SNI, rare JA3, self-signed long-lived cert, regular timing), which together
+    make benign browsing very unlikely
+  - Because any traffic to port 443 is suspicious
+  - Because the server IP is in the documentation range
+  answer: 1
+  hint: How many separate anomalies did you find?
+  explanation: Encrypted-traffic analysis relies on stacking weak signals. Each on its own has benign explanations,
+    but together they justify isolating 10.40.1.66 and collecting its process telemetry.

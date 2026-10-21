@@ -1,0 +1,93 @@
+slug: lab-cloud-k8s-pod-review
+lesson: cloud-containers-serverless
+title: Review Kubernetes workloads for container escape risks
+pass_mark: 80
+scenario: |
+  Before a production cluster passes its security review you have an export of the pod specs
+  in the `prod` namespace. The baseline (in the spirit of the Kubernetes Pod Security
+  Standards "restricted" profile) says:
+
+  - No privileged containers and no containers running as root (user 0).
+  - No host-path mounts, except read-only log directories for the approved log agent.
+  - Images come from the internal registry and are pinned to a version, never `latest`.
+  - Secrets come from the secret store, not as plain values in environment variables.
+artifacts:
+- name: pods.csv
+  kind: csv
+  description: Pod security settings in the prod namespace (pipe-separated).
+  content: |
+    pod|image|privileged|run_as_user|host_path|env_secrets
+    payments-api|registry.contoso.example/payments:2.14.1|false|10001|-|-
+    web-frontend|registry.contoso.example/web:latest|false|10001|-|-
+    log-agent|registry.contoso.example/fluent:1.16.3|false|0|/var/log (read-only)|-
+    debug-tools|docker.io/library/ubuntu:latest|true|0|/ (read-write)|-
+    ci-runner|registry.contoso.example/runner:3.2.0|false|0|/var/run/docker.sock|-
+    reports-job|registry.contoso.example/reports:1.4.0|false|10001|-|DB_PASSWORD (plain value)
+tasks:
+- prompt: Which pod is privileged?
+  type: text
+  accepted:
+  - debug-tools
+  hint: Read the privileged column.
+  explanation: debug-tools is privileged, runs as root and mounts the host's root filesystem read-write. Anyone
+    in that container effectively owns the node. Remove it from production.
+  verify:
+    artifact: pods.csv
+    op: set
+    pattern: ^([^|]+)\|[^|]+\|true\|
+- prompt: Which pod can control the node's container runtime through a socket mount?
+  type: text
+  accepted:
+  - ci-runner
+  hint: Look for a mounted .sock file.
+  explanation: 'ci-runner mounts docker.sock, which lets it start any container on the node, privileged ones included:
+    a well-known escape path.'
+  verify:
+    artifact: pods.csv
+    op: set
+    pattern: ^([^|]+)\|.*docker\.sock
+- prompt: How many pods run as root?
+  type: number
+  accepted:
+  - '3'
+  hint: Count run_as_user 0.
+  explanation: 'Three: log-agent, debug-tools and ci-runner. The log agent''s root is a documented exception only
+    if it truly needs it; the others are findings.'
+  verify:
+    artifact: pods.csv
+    op: count
+    pattern: ^[^|]+\|[^|]+\|[^|]+\|0\|
+- prompt: Which pods use a `latest` image tag? List them separated by commas.
+  type: set
+  accepted:
+  - web-frontend, debug-tools
+  hint: Check the image column for the tag after the colon.
+  explanation: web-frontend and debug-tools. A latest tag means you cannot say which code is running or reproduce
+    it, and a poisoned upstream image is pulled automatically. debug-tools also comes from a public registry.
+  verify:
+    artifact: pods.csv
+    op: set
+    pattern: ^([^|]+)\|[^|]+:latest\|
+- prompt: Which pod exposes a secret as a plain environment value?
+  type: text
+  accepted:
+  - reports-job
+  hint: Read the env_secrets column.
+  explanation: reports-job has the database password in its spec, so anyone who can read pod specs (or the CI repository)
+    has it. Reference a secret from the store instead and rotate the password.
+  verify:
+    artifact: pods.csv
+    op: set
+    pattern: ^([^|]+)\|.*\(plain value\)$
+- prompt: How should the cluster stop these from coming back?
+  type: choice
+  options:
+  - Review the pod list by hand every quarter
+  - Enforce the baseline at admission (Pod Security Admission or a policy engine such as Kyverno or Gatekeeper)
+    so non-compliant pods are rejected, with reviewed exceptions
+  - Give every pod privileged mode so they all behave the same
+  - Rely on network policies
+  answer: 1
+  hint: Prevent rather than detect.
+  explanation: Admission control blocks a bad spec before it runs, every time. Manual reviews find problems after
+    they are already in production.

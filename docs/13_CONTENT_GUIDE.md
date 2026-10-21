@@ -185,3 +185,15 @@ Two labs per course, 24 in total. `test_lab_content.py` fails if any course drop
 | Security Architecture | `arch-zero-trust` | Evaluate access requests against a zero-trust policy |
 | Cloud Security | `cloud-workload-storage` | Review cloud storage buckets for exposure |
 | Governance, Risk and Compliance | `grc-privacy-data-protection` | Review a personal data inventory for privacy risk |
+| Networking | `net-encrypted-traffic` | Find a malicious TLS session without decrypting it |
+| Security Foundations | `sec-malware-types-behaviour` | Classify malware samples from sandbox behaviour |
+| Windows Security | `win-event-logs` | Reconstruct a break-in from the Windows Security log |
+| Linux Security | `linux-live-response` | Triage a live Linux web server |
+| SIEM | `siem-dashboards-metrics` | Calculate SOC response metrics from incident tickets |
+| Vulnerability Management | `vm-threat-intel-exploit-prioritisation` | Prioritise vulnerabilities with exploit intelligence |
+| Threat Hunting | `hunt-ransomware-precursors` | Catch ransomware precursors before encryption starts |
+| Incident Response | `ir-phishing-triage` | Scope a phishing campaign across the company |
+| Detection Engineering | `de-alert-enrichment-correlation` | Correlate and enrich alerts into one incident |
+| Security Architecture | `arch-secure-applications-apis` | Find broken object-level authorization in an API |
+| Cloud Security | `cloud-containers-serverless` | Review Kubernetes workloads for container escape risks |
+| Governance, Risk and Compliance | `grc-continuity-incident-readiness` | Check backups against the business impact analysis |

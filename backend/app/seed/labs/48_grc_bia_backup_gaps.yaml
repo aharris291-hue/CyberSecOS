@@ -1,0 +1,90 @@
+slug: lab-grc-bia-backup-gaps
+lesson: grc-continuity-incident-readiness
+title: Check backups against the business impact analysis
+pass_mark: 80
+scenario: |
+  The business impact analysis (BIA) sets, for each service, the **RTO** (how many hours it can
+  be down) and the **RPO** (how many hours of data the business can afford to lose). The
+  continuity plan is only real if the backups can meet those numbers.
+
+  A backup meets the RPO only if it runs at least as often as the RPO. A backup counts as
+  proven only if a restore test has **passed** in the last six months (review date
+  **2026-10-21**).
+artifacts:
+- name: bia.csv
+  kind: csv
+  description: 'Business impact analysis: RTO and RPO in hours.'
+  content: |
+    service,tier,rto_hours,rpo_hours
+    Order processing,critical,4,1
+    Customer database,critical,4,1
+    Payroll,high,24,24
+    Email,high,8,4
+    Intranet,medium,72,24
+    Data warehouse,medium,48,24
+- name: backups.csv
+  kind: csv
+  description: Backup schedule and last restore test (pipe-separated).
+  content: |
+    service|schedule|interval_hours|last_restore_test|result
+    Order processing|15 minutes (log shipping)|0.25|2026-09-14|pass
+    Customer database|24 hours (nightly)|24|2026-03-02|pass
+    Payroll|24 hours (nightly)|24|2026-08-30|pass
+    Email|1 hour|1|never|-
+    Intranet|24 hours (nightly)|24|2026-06-11|fail
+    Data warehouse|7 days (weekly)|168|2026-07-20|pass
+tasks:
+- prompt: Which services' backups run less often than their RPO allows? List them separated by commas.
+  type: set
+  accepted:
+  - Customer database, Data warehouse
+  hint: Compare interval_hours with rpo_hours for each service.
+  explanation: 'The customer database (nightly backups against a 1-hour RPO: up to 24 hours of customer data could
+    be lost) and the data warehouse (weekly against 24 hours).'
+- prompt: Which service has never had a restore test?
+  type: text
+  accepted:
+  - Email
+  hint: Read the last_restore_test column.
+  explanation: 'Email: its schedule looks fine, but an untested backup is an assumption, not a control.'
+  verify:
+    artifact: backups.csv
+    op: set
+    pattern: ^([^|]+)\|[^|]+\|[^|]+\|never\|
+- prompt: Which service's last restore test failed?
+  type: text
+  accepted:
+  - Intranet
+  hint: Read the result column.
+  explanation: Intranet. A failed test needs a fix and a passing re-test, recorded as evidence.
+  verify:
+    artifact: backups.csv
+    op: set
+    pattern: ^([^|]+)\|.*\|fail$
+- prompt: How many services have a backup that is proven, i.e. a passed restore test within six months of the review
+    date?
+  type: number
+  accepted:
+  - '3'
+  hint: Six months before 2026-10-21 is 2026-04-21. Count passes on or after that date.
+  explanation: 'Three: order processing, payroll and the data warehouse. The customer database''s pass is from March,
+    too old to rely on.'
+- prompt: Which critical service is the biggest continuity risk?
+  type: text
+  accepted:
+  - Customer database
+  hint: Combine both checks for the critical tier.
+  explanation: The customer database fails the RPO and has no recent restore test. Move it to log shipping or frequent
+    snapshots like order processing, then test a restore against its 4-hour RTO.
+- prompt: What should go to the risk owner?
+  type: choice
+  options:
+  - A statement that all services are backed up
+  - The gaps against the BIA (RPO misses, untested and failed restores), the data-loss exposure for each, and a
+    fix or a formal risk acceptance with a date
+  - A request to lower the BIA targets so backups meet them
+  - Nothing until the next audit
+  answer: 1
+  hint: The business set the targets, so the business decides on the gaps.
+  explanation: Report the gaps in business terms (how much data could be lost, how long the outage) and get either
+    funding for the fix or a recorded acceptance. Quietly changing the BIA to match the backups defeats its purpose.

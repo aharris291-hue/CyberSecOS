@@ -1,0 +1,104 @@
+slug: lab-linux-live-response
+lesson: linux-live-response
+title: Triage a live Linux web server
+pass_mark: 80
+scenario: |
+  The EDR flagged an outbound connection from the web server **web02** to a port often used by
+  reverse shells. The server is still running and the owner does not want it rebooted yet. You
+  ran three quick commands: the process list, the open TCP connections and where each
+  process's executable lives.
+
+  Kernel threads (names in square brackets) are children of `kthreadd` (PID 2) and have no
+  executable on disk. A process that only pretends to be one gives itself away.
+artifacts:
+- name: ps.txt
+  kind: text
+  description: Process list.
+  content: |
+    $ ps -eo pid,ppid,user,cmd
+      PID  PPID USER      CMD
+        1     0 root      /sbin/init
+        2     0 root      [kthreadd]
+       45     2 root      [kworker/0:1-events]
+      812     1 root      /usr/sbin/sshd -D
+     1022     1 root      nginx: master process /usr/sbin/nginx
+     1023  1022 www-data  nginx: worker process
+     1290     1 root      /usr/sbin/cron -f
+     4471     1 www-data  [kworker/0:2]
+     4502  4471 www-data  /bin/sh -i
+- name: ss.txt
+  kind: text
+  description: Open TCP connections.
+  content: |
+    $ ss -tnp
+    State   Local Address:Port    Peer Address:Port     Process
+    ESTAB   10.0.5.20:22          10.0.0.8:51522        users:(("sshd",pid=812))
+    ESTAB   10.0.5.20:44122       198.51.100.23:4444    users:(("kworker/0:2",pid=4471))
+    ESTAB   10.0.5.20:44130       198.51.100.23:4444    users:(("kworker/0:2",pid=4471))
+    ESTAB   10.0.5.20:443         192.0.2.77:60110      users:(("nginx",pid=1023))
+- name: proc_exe.txt
+  kind: text
+  description: Executable links under /proc.
+  content: |
+    $ ls -l /proc/*/exe 2>/dev/null | grep -E '/(1|812|1023|1290|4471|4502)/exe'
+    lrwxrwxrwx 1 root     root     0 Oct  8 10:02 /proc/1/exe -> /usr/lib/systemd/systemd
+    lrwxrwxrwx 1 root     root     0 Oct  8 10:02 /proc/812/exe -> /usr/sbin/sshd
+    lrwxrwxrwx 1 www-data www-data 0 Oct  8 10:02 /proc/1023/exe -> /usr/sbin/nginx
+    lrwxrwxrwx 1 root     root     0 Oct  8 10:02 /proc/1290/exe -> /usr/sbin/cron
+    lrwxrwxrwx 1 www-data www-data 0 Oct  8 10:02 /proc/4471/exe -> /tmp/.x (deleted)
+    lrwxrwxrwx 1 www-data www-data 0 Oct  8 10:02 /proc/4502/exe -> /usr/bin/dash
+tasks:
+- prompt: What is the PID of the malicious process?
+  type: number
+  accepted:
+  - '4471'
+  hint: Find the process whose executable on disk no longer exists.
+  explanation: PID 4471 runs from /tmp/.x, which has been deleted, while calling itself a kernel worker. A real
+    kworker has PPID 2 and no exe link.
+  verify:
+    artifact: proc_exe.txt
+    op: set
+    pattern: /proc/(\d+)/exe -> .*\(deleted\)
+- prompt: Which account is it running as?
+  type: text
+  accepted:
+  - www-data
+  hint: The USER column in ps.
+  explanation: 'www-data, the web server''s account: the attacker most likely got in through the web application,
+    and has not (yet) gained root.'
+  verify:
+    artifact: ps.txt
+    op: set
+    pattern: ^\s*4471\s+\d+\s+(\S+)
+- prompt: Which remote IP address is it connected to?
+  type: text
+  accepted:
+  - 198.51.100.23
+  hint: Match pid=4471 in ss.
+  explanation: 198.51.100.23 on port 4444. Block it and look for it in other servers' logs.
+  verify:
+    artifact: ss.txt
+    op: set
+    pattern: \s(\d+\.\d+\.\d+\.\d+):\d+\s+users:\(\(\"kworker/0:2\",pid=4471
+- prompt: How many established connections does it have?
+  type: number
+  accepted:
+  - '2'
+  hint: Count ss lines for pid=4471.
+  explanation: Two, and its child /bin/sh -i (PID 4502) is the interactive shell the attacker types into.
+  verify:
+    artifact: ss.txt
+    op: count
+    pattern: pid=4471\)
+- prompt: The binary has been deleted from /tmp. How can you still preserve it as evidence?
+  type: choice
+  options:
+  - You cannot; it is gone
+  - Copy /proc/4471/exe to evidence storage (and hash it) while the process still runs, together with a memory capture,
+    before killing anything
+  - Reboot and run a file recovery tool
+  - Kill the process, then look in /tmp
+  answer: 1
+  hint: The kernel keeps a running program's file open until it exits.
+  explanation: While the process lives, /proc/<pid>/exe still points to the deleted file's contents. Copy it, capture
+    memory and record connections first; killing or rebooting destroys that evidence.

