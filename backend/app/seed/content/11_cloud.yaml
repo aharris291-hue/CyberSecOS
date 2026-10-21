@@ -1302,3 +1302,628 @@ lessons:
           - Disables scanning
         answer: 1
         explanation: Drift detection flags out-of-band changes so the code remains the authoritative definition.
+  - slug: cloud-threat-detection
+    title: Cloud-Native Threat Detection Services
+    order: 15
+    difficulty: intermediate
+    summary: Understand the managed threat-detection services cloud providers offer, what they do well, their limits, and how they fit alongside the SIEM in a cloud detection strategy.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.4", "sc200:2", "sc900:4"]
+    learning_objectives:
+      - Describe the cloud-native threat-detection services providers offer
+      - Explain what they detect well and their limitations
+      - Fit cloud-native detection alongside the SIEM
+    theory: |
+      Every major cloud provider offers **managed threat-detection services** that watch their own environment and
+      raise findings, and understanding them is central to cloud security operations. These services (such as AWS
+      GuardDuty, Microsoft Defender for Cloud, and Google Security Command Center) continuously analyse the
+      provider's own telemetry, cloud audit logs, network flow logs, DNS, and identity events, using provider-side
+      analytics and threat intelligence that the customer could not easily build. Because they are native, they
+      have deep, low-effort access to signals the customer would struggle to collect, and they are quick to turn
+      on, making them a strong detection baseline for a cloud estate with little setup.
+
+      What they detect **well** is cloud-shaped threats: compromised credentials and anomalous API activity
+      (impossible-travel sign-ins, access keys used from unusual locations), reconnaissance and enumeration of
+      cloud resources, communication with known-malicious infrastructure, cryptomining on compromised workloads,
+      and risky configuration changes. They also often include **posture** findings, flagging misconfigurations
+      like public storage or over-broad permissions, blending detection with configuration assessment. Their
+      **limitations** matter too: each is largely confined to its own provider, so a multi-cloud or hybrid
+      organisation gets a fragmented picture; findings can be noisy and need tuning; they offer limited
+      correlation with on-premises or SaaS activity; and the customer does not control the detection logic, so
+      coverage of custom or novel threats is whatever the provider offers. They are excellent at the common and
+      the provider-specific, less so at the bespoke and the cross-environment.
+
+      The mature approach is therefore **both/and**, not either/or: use the cloud-native service as a high-value,
+      low-effort detection source, and **forward its findings into the central SIEM** alongside the raw cloud
+      logs. This gives the best of both worlds, the provider's native analytics plus the SIEM's ability to
+      correlate across clouds, SaaS and on-premises, apply the organisation's own detection logic, and drive a
+      single investigation and response workflow. In practice teams enable the native services everywhere, tune
+      their findings, and treat them as one enriched input into the SOC rather than as the whole cloud detection
+      strategy. For the analyst, the key judgements are knowing what the native service does and does not cover,
+      treating its findings as leads to validate (and correlate with other sources) rather than as complete
+      verdicts, and ensuring the gaps, cross-environment correlation and custom detections, are filled by the SIEM
+      so cloud threats are not seen only through one provider's narrow, siloed lens.
+    examples:
+      - title: Native detection services
+        body: |
+          GuardDuty / Defender for Cloud / Security Command Center
+          analyse provider telemetry (audit logs, flow logs, DNS, identity) + provider threat intel
+          deep native access, quick to enable -> strong low-effort baseline.
+      - title: Strengths, limits, and the fit
+        body: |
+          good at: compromised creds/anomalous API, resource recon, bad-IP comms, cryptomining, risky config
+          limits: single-provider, noisy, little on-prem correlation, you don't control the logic
+          -> enable it AND forward findings to the SIEM for cross-environment correlation + your own detections.
+    exercise:
+      title: Place cloud-native detection in a strategy
+      environment: A described cloud (or multi-cloud) estate with a central SIEM (or a scenario)
+      tools: [A scenario or sample findings, a document, a notes file]
+      steps:
+        - Describe what a cloud-native threat-detection service analyses and why its access is hard to replicate.
+        - List three threats these services detect well.
+        - Explain two limitations (single-provider scope, no on-prem correlation, uncontrolled logic).
+        - Explain why forwarding native findings into the SIEM gives the best of both.
+        - Describe how you would treat a native finding during an investigation.
+        - Identify one detection gap the SIEM must fill that the native service will not.
+      deliverable: A cloud detection strategy covering what native services do, their strengths and limits, SIEM integration, how to handle a finding, and a gap the SIEM must cover.
+    expected_outcome: >
+      You can describe cloud-native threat-detection services, what they detect well and their limits, and fit
+      them alongside the SIEM so cloud threats are covered natively and correlated across the whole environment.
+    quiz:
+      - prompt: Cloud-native threat-detection services are strong because they
+        options:
+          - Replace the SIEM entirely
+          - Have deep native access to provider telemetry and threat intel that customers cannot easily build
+          - Work across every provider equally
+          - Need no tuning
+        answer: 1
+        explanation: Native access to the provider's own signals and intelligence is their core advantage.
+      - prompt: A key limitation of a cloud-native detection service is that it
+        options:
+          - Detects nothing
+          - Is largely confined to its own provider, giving a fragmented view in multi-cloud or hybrid estates
+          - Controls on-premises systems
+          - Cannot be enabled
+        answer: 1
+        explanation: Each service mostly sees its own cloud, so cross-environment correlation is weak.
+      - prompt: The mature way to use cloud-native detection is to
+        options:
+          - Use it instead of a SIEM
+          - Enable it and forward its findings into the SIEM for cross-environment correlation and custom detections
+          - Ignore its findings
+          - Disable the SIEM
+        answer: 1
+        explanation: Combining native analytics with SIEM correlation covers both the common and the cross-environment.
+      - prompt: An analyst should treat a native-service finding as
+        options:
+          - A complete, final verdict needing no checking
+          - A lead to validate and correlate with other sources
+          - Irrelevant noise always
+          - A reason to stop investigating
+        answer: 1
+        explanation: Findings are high-value leads to confirm and correlate, not standalone conclusions.
+  - slug: cloud-kubernetes-security
+    title: Kubernetes Security Essentials
+    order: 16
+    difficulty: advanced
+    summary: Understand the security model of Kubernetes, the most common container orchestrator, including the control plane, RBAC, network policies, pod security and the workload supply chain.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:3.1", "sc900:4", "cysa:1.1"]
+    learning_objectives:
+      - Describe the Kubernetes components that matter for security
+      - Apply RBAC, network policies and pod security to harden a cluster
+      - Identify common Kubernetes attack paths and defences
+    theory: |
+      Kubernetes orchestrates containers at scale and has become the backbone of cloud-native applications, so
+      understanding its security model is now core cloud-security knowledge. A cluster has a **control plane** (the
+      API server, scheduler, controller manager and the etcd datastore that holds all cluster state) and **worker
+      nodes** running the actual **pods** (groups of containers). The **API server** is the hub through which
+      everything is done, which makes it the most security-critical component: controlling it means controlling the
+      cluster, and **etcd** holds all secrets and configuration, so both must be tightly protected, authenticated
+      and never exposed. Much of Kubernetes security is about controlling access to the API and limiting what
+      workloads can do.
+
+      Several built-in mechanisms provide that control. **Role-based access control (RBAC)** governs who and what
+      can perform which actions on which resources, and least-privilege RBAC is foundational because over-broad
+      roles (especially cluster-admin handed out freely, or permissive service accounts mounted into pods) are a
+      leading cause of cluster compromise. **Network policies** control which pods can talk to which, providing
+      microsegmentation inside the cluster that is off by default, so without them every pod can reach every other
+      pod. **Pod security** controls restrict dangerous pod configurations, running as root, privileged
+      containers, host-network or host-filesystem access, because a container with these can often escape to the
+      node. **Secrets management** must ensure secrets are not left in plain manifests or environment variables
+      unprotected. Each of these addresses a distinct way a cluster gets compromised.
+
+      The common **attack paths** tie these together and point at the defences. An exposed or weakly authenticated
+      API server, or a leaked kubeconfig, gives direct control. An over-permissioned service account token mounted
+      into a compromised pod lets an attacker pivot to the API and escalate across the cluster. A privileged or
+      misconfigured pod lets an attacker escape the container to the node and beyond. And because workloads are
+      built from container **images**, the software supply chain applies in full: a vulnerable or malicious image
+      deployed into the cluster brings its risk with it, so image scanning and trusted registries matter. Defences
+      therefore combine least-privilege RBAC, default-deny network policies, strict pod-security standards,
+      protected secrets, a hardened and private control plane, and a secure image pipeline, backed by audit logging
+      of the API server for detection. For the analyst, the Kubernetes API audit log is a rich and essential
+      telemetry source, and the recurring theme is familiar: identity and least privilege (here, RBAC and service
+      accounts), segmentation (network policies), workload hardening (pod security) and supply chain (images),
+      applied to the specific mechanics of the orchestrator.
+    examples:
+      - title: What to protect
+        body: |
+          control plane: API server (the hub -> control it = control the cluster) + etcd (holds all secrets/state)
+          worker nodes run pods
+          -> protect and authenticate the API server and etcd; never expose them.
+      - title: Built-in controls and attack paths
+        body: |
+          RBAC (least privilege; beware free cluster-admin / permissive service accounts)
+          network policies (OFF by default -> add default-deny microsegmentation)
+          pod security (block root/privileged/host access -> prevent container escape); protect secrets; scan images
+          paths: exposed API / leaked kubeconfig; over-permissioned SA token in a pod; privileged pod escapes to node.
+    exercise:
+      title: Harden a Kubernetes cluster
+      environment: A described Kubernetes cluster and its workloads (or a scenario)
+      tools: [A scenario or sample manifests, a document, a notes file]
+      steps:
+        - Identify the control-plane components that are most security-critical and why.
+        - Explain how RBAC and service-account permissions can lead to cluster compromise if too broad.
+        - Explain why network policies matter given that pod-to-pod traffic is open by default.
+        - Describe two pod-security restrictions that help prevent container escape.
+        - Describe a common attack path and the defence that breaks it.
+        - Explain why image scanning and the API audit log both matter.
+      deliverable: A Kubernetes hardening plan covering control-plane protection, least-privilege RBAC, default-deny network policies, pod-security restrictions, an attack-path defence, and image/audit-log practices.
+    expected_outcome: >
+      You can describe the security-critical Kubernetes components, apply RBAC, network policies and pod security to
+      harden a cluster, and identify common attack paths and the defences that counter them.
+    quiz:
+      - prompt: The most security-critical Kubernetes component is the
+        options:
+          - Logging sidecar
+          - API server, because controlling it means controlling the cluster
+          - Container image registry only
+          - DNS add-on
+        answer: 1
+        explanation: The API server is the hub for all actions, so its compromise means cluster compromise.
+      - prompt: Kubernetes network policies are important because, by default,
+        options:
+          - All pods are isolated
+          - Every pod can talk to every other pod, so microsegmentation must be added explicitly
+          - Networking is disabled
+          - Pods cannot run
+        answer: 1
+        explanation: Pod-to-pod traffic is open by default, so network policies add needed segmentation.
+      - prompt: A privileged or misconfigured pod is dangerous because it
+        options:
+          - Runs faster
+          - Can often escape the container to the underlying node and beyond
+          - Uses less memory
+          - Cannot be scheduled
+        answer: 1
+        explanation: Privileged or host-access pods enable container escape to the node, a common attack path.
+      - prompt: An over-permissioned service account token mounted into a pod lets an attacker
+        options:
+          - Nothing at all
+          - Pivot to the API server and escalate across the cluster if that pod is compromised
+          - Only read logs
+          - Encrypt the cluster safely
+        answer: 1
+        explanation: A broad service-account token is a direct path from a compromised pod to cluster control.
+  - slug: cloud-casb
+    title: Cloud Access Security Brokers and SaaS Security
+    order: 17
+    difficulty: intermediate
+    summary: Understand how a cloud access security broker gives visibility and control over SaaS use, tackling shadow IT, data protection and threats across the many cloud applications an organisation relies on.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:3.1", "sc900:4", "sc200:1"]
+    learning_objectives:
+      - Explain what a CASB does and the problems it addresses
+      - Describe the main CASB capabilities and deployment modes
+      - Apply CASB to shadow IT, data protection and SaaS threat detection
+    theory: |
+      Organisations now run their business across dozens or hundreds of **SaaS applications**, often more than IT
+      formally knows about, and this sprawl creates visibility and control gaps that a **cloud access security
+      broker (CASB)** is designed to close. A CASB sits between users and cloud services as a control point that
+      provides visibility into cloud usage, enforces security policy, protects data, and detects threats across
+      SaaS. It exists because the traditional perimeter does not see or govern a user signing into a cloud app
+      from anywhere on any device, and because each SaaS app has its own patchy, inconsistent security controls,
+      so the CASB provides a consistent layer across them all.
+
+      CASBs typically deliver four kinds of capability, often summarised as visibility, compliance, data security
+      and threat protection. **Visibility** includes discovering **shadow IT**, the unsanctioned cloud apps
+      employees use, by analysing network or log data, so the organisation learns what is actually in use and can
+      assess the risk of each. **Data security** applies data-loss-prevention controls to cloud data, detecting
+      and controlling sensitive data being uploaded to or shared from SaaS apps, and can enforce encryption or
+      access restrictions. **Threat protection** detects risky or malicious activity in cloud apps, such as
+      compromised accounts, impossible-travel logins, mass downloads and anomalous behaviour, complementing the
+      native detection of each app. **Compliance** helps enforce and evidence policy across cloud use. These map
+      onto the recurring cloud concerns, identity, data and configuration, applied specifically to the SaaS layer.
+
+      CASBs are deployed in different **modes** with different trade-offs. **API-based** (out-of-band) integration
+      connects to each SaaS app's API to inspect data and activity after the fact, giving broad coverage and
+      visibility into data already in the app without sitting in the traffic path. **Proxy-based** (inline) modes,
+      forward or reverse proxy, sit in the live traffic flow to enforce policy in real time, which enables
+      blocking and inline DLP but is more intrusive and limited to traffic it can intercept. Many deployments
+      combine modes. For the architect, the CASB is the tool that brings the sprawling SaaS estate under
+      consistent governance, closing the shadow-IT gap and extending data protection and threat detection to apps
+      the organisation does not run. For the analyst, the CASB is both a control and a valuable telemetry source,
+      surfacing SaaS activity, risky sharing and account anomalies that would otherwise be scattered across many
+      apps or invisible entirely, and its findings feed naturally into the SIEM alongside other cloud and identity
+      signals.
+    examples:
+      - title: Why a CASB exists
+        body: |
+          business runs on dozens-hundreds of SaaS apps (often more than IT knows) -> visibility + control gaps
+          CASB sits between users and cloud services: visibility, policy, data protection, threat detection
+          one consistent layer across apps with patchy, inconsistent native controls.
+      - title: Capabilities and deployment modes
+        body: |
+          visibility (discover SHADOW IT), data security (cloud DLP), threat protection (compromised accounts, impossible travel), compliance
+          API-based (out-of-band): broad coverage, inspects data already in the app, not in traffic path
+          proxy-based (inline): real-time enforcement + blocking, but more intrusive; often combined.
+    exercise:
+      title: Apply a CASB to a SaaS estate
+      environment: A described organisation using many SaaS applications (or a scenario)
+      tools: [A scenario, a notes file, a document]
+      steps:
+        - Explain what a CASB is and the visibility and control gaps it addresses.
+        - Describe how a CASB discovers shadow IT and why that matters.
+        - Explain how CASB data-security capabilities protect sensitive data in SaaS apps.
+        - Describe two SaaS threats a CASB helps detect.
+        - Contrast API-based and proxy-based deployment and their trade-offs.
+        - Explain how CASB findings complement native app detection and feed the SIEM.
+      deliverable: A CASB plan covering the gaps it closes, shadow-IT discovery, cloud data protection, SaaS threat detection, a deployment-mode choice, and SIEM integration.
+    expected_outcome: >
+      You can explain what a CASB does and why it exists, describe its capabilities and deployment modes, and apply
+      it to shadow IT, data protection and SaaS threat detection across a sprawling cloud-application estate.
+    quiz:
+      - prompt: A CASB primarily addresses the problem that
+        options:
+          - SaaS apps are never used
+          - An organisation uses many SaaS apps with inconsistent controls and limited central visibility
+          - The data centre is too secure
+          - Email is encrypted
+        answer: 1
+        explanation: A CASB brings consistent visibility and control across a sprawling SaaS estate.
+      - prompt: Discovering shadow IT with a CASB means
+        options:
+          - Buying more servers
+          - Identifying the unsanctioned cloud apps employees are actually using so their risk can be assessed
+          - Encrypting the network
+          - Disabling all SaaS
+        answer: 1
+        explanation: Shadow-IT discovery reveals unapproved apps in use for risk assessment and governance.
+      - prompt: An API-based (out-of-band) CASB deployment
+        options:
+          - Sits inline and blocks traffic in real time
+          - Connects to each SaaS app's API to inspect data and activity without being in the traffic path
+          - Requires re-cabling the network
+          - Only works offline
+        answer: 1
+        explanation: API mode integrates with app APIs for broad visibility without intercepting live traffic.
+      - prompt: For an analyst, a CASB is valuable because it
+        options:
+          - Hides SaaS activity
+          - Surfaces SaaS activity, risky sharing and account anomalies that feed into the SIEM
+          - Replaces identity
+          - Disables logging
+        answer: 1
+        explanation: The CASB centralises otherwise-scattered SaaS telemetry for detection and investigation.
+  - slug: cloud-secrets-management
+    title: Secrets Management in the Cloud
+    order: 18
+    difficulty: intermediate
+    summary: Understand how to manage secrets such as API keys, passwords and tokens securely in cloud and application environments, why hardcoded secrets are so dangerous, and how vaults and dynamic secrets solve it.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:1.4", "sc900:4", "cysa:1.1"]
+    learning_objectives:
+      - Explain the risks of poorly managed secrets
+      - Describe how secrets managers and vaults protect secrets
+      - Apply dynamic secrets, rotation and least privilege to secret access
+    theory: |
+      Modern applications and cloud workloads depend on **secrets**, API keys, database passwords, access tokens,
+      certificates, encryption keys, and mismanaging them is one of the most common and damaging security failures.
+      The cardinal sin is **hardcoded secrets**: credentials embedded in source code, configuration files or
+      container images, which end up in version control, logs and backups where they are easily discovered. Leaked
+      secrets are a leading cause of cloud breaches, an access key committed to a public repository can be found
+      and abused within minutes, and because a secret is often a direct credential to a system or data, its leak
+      can mean immediate compromise. The core problem is that secrets are powerful, portable and easy to copy, so
+      the moment one escapes its intended place, it is a key in an attacker's hands.
+
+      The solution is a dedicated **secrets manager or vault** (such as the cloud providers' secret managers or a
+      tool like HashiCorp Vault). Rather than embedding a secret, an application retrieves it at runtime from the
+      vault, authenticating to prove it is allowed, so the secret lives in one protected, encrypted, access-
+      controlled store rather than scattered through code and config. This gives several wins: **centralisation**
+      (one place to manage and protect secrets), **access control and audit** (who and what can read each secret,
+      logged), **encryption** of secrets at rest and in transit, and the ability to **rotate** secrets, changing
+      them regularly or on compromise, without hunting through code, since applications always fetch the current
+      value. A particularly strong pattern is **dynamic secrets**: the vault generates short-lived, on-demand
+      credentials (for example a database password valid for an hour) unique to each request, so there is no
+      long-lived secret to steal and a leaked credential expires almost immediately.
+
+      Applying this well combines the vault with the broader principles. **Least privilege** governs which
+      workloads and people can access which secrets, so a compromise of one does not expose all. **Rotation**
+      (ideally automated, and immediate on suspected compromise) limits how long a leaked secret is useful. **No
+      hardcoding** is enforced through developer practices and tooling, and **secret scanning** in code
+      repositories and pipelines catches secrets that slip in before they are committed or deployed, an important
+      backstop given how often hardcoding happens by accident. In cloud specifically, workload identity
+      (letting a cloud resource authenticate as itself to access secrets and services, rather than holding a static
+      key) removes many long-lived secrets entirely. For the analyst and engineer, the lessons are that secrets are
+      high-value targets that must never be hardcoded, that a vault centralises and protects them with access
+      control, audit and rotation, that dynamic secrets and workload identity minimise the long-lived credentials
+      that can be stolen, and that secret scanning is an essential backstop, because the cheapest breach to prevent
+      is the one caused by a credential that should never have been in the code at all.
+    examples:
+      - title: The cardinal sin
+        body: |
+          hardcoded secrets in code/config/images -> end up in version control, logs, backups
+          an access key in a public repo is found + abused in MINUTES; a secret is often a direct credential
+          -> leaked secret = immediate compromise.
+      - title: Vault + dynamic secrets
+        body: |
+          app fetches the secret at runtime from a VAULT (auth to prove it may) -> one encrypted, access-controlled, audited store
+          wins: centralise, access control + audit, encrypt, ROTATE without touching code
+          dynamic secrets: short-lived on-demand creds (DB password valid 1 hour) -> nothing long-lived to steal.
+    exercise:
+      title: Design cloud secrets management
+      environment: A described application or cloud workload using several secrets (or a scenario)
+      tools: [A scenario, a notes file, a document]
+      steps:
+        - Explain why hardcoded secrets are so dangerous and where they end up.
+        - Describe how a secrets manager or vault protects secrets and the benefits it brings.
+        - Explain how an application retrieves a secret at runtime instead of embedding it.
+        - Explain dynamic secrets and why short-lived credentials reduce risk.
+        - Apply least privilege and rotation to secret access for the described workload.
+        - Explain the role of secret scanning as a backstop and workload identity in removing long-lived secrets.
+      deliverable: A secrets-management design covering the dangers of hardcoding, a vault-based approach with access control and rotation, dynamic secrets, least privilege, secret scanning, and workload identity.
+    expected_outcome: >
+      You can explain the risks of poorly managed secrets, how vaults centralise and protect them, and apply
+      dynamic secrets, rotation, least privilege, secret scanning and workload identity to minimise exposure.
+    quiz:
+      - prompt: Hardcoded secrets are dangerous mainly because they
+        options:
+          - Improve performance
+          - End up in version control, logs and backups where they are easily discovered and abused
+          - Cannot be used by attackers
+          - Are automatically encrypted
+        answer: 1
+        explanation: Embedded secrets leak into many places and a leaked credential often means direct compromise.
+      - prompt: A secrets manager or vault protects secrets by
+        options:
+          - Printing them to logs
+          - Storing them in one encrypted, access-controlled, audited place that applications retrieve from at runtime
+          - Embedding them in code
+          - Sharing them publicly
+        answer: 1
+        explanation: A vault centralises secrets with encryption, access control, audit and rotation.
+      - prompt: Dynamic secrets reduce risk because they are
+        options:
+          - Permanent and shared
+          - Short-lived, on-demand credentials, so a leaked one expires almost immediately and nothing long-lived exists to steal
+          - Written into the source code
+          - Never rotated
+        answer: 1
+        explanation: Short-lived generated credentials leave no durable secret for an attacker to capture.
+      - prompt: Secret scanning in code repositories and pipelines serves as
+        options:
+          - A replacement for a vault
+          - An essential backstop that catches hardcoded secrets before they are committed or deployed
+          - A way to publish secrets
+          - A performance optimisation
+        answer: 1
+        explanation: Scanning catches accidental hardcoded secrets, backstopping the no-hardcoding practice.
+  - slug: cloud-workload-protection
+    title: Cloud Workload Protection
+    order: 19
+    difficulty: intermediate
+    summary: Understand how cloud workload protection platforms secure the running workloads (VMs, containers and serverless) in the cloud through runtime visibility, vulnerability and configuration checks, and threat detection.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:3.1", "sc200:4", "cysa:1.1"]
+    learning_objectives:
+      - Explain what cloud workload protection covers and why it is needed
+      - Describe the capabilities of a cloud workload protection platform
+      - Place workload protection within a cloud security strategy
+    theory: |
+      Earlier cloud lessons addressed the control plane, identity and posture; **cloud workload protection**
+      addresses the other half, the security of the **running workloads** themselves, the virtual machines,
+      containers and serverless functions that actually run code and process data. Protecting the control plane and
+      configuration is necessary but not sufficient, because an attacker can still exploit a vulnerability in a
+      running application, drop malware on a cloud VM, or abuse a compromised container, and these runtime threats
+      need runtime defences. A **Cloud Workload Protection Platform (CWPP)** is the category of tooling that
+      provides this, extending the visibility and protection that EDR brings to endpoints across the dynamic,
+      diverse and often short-lived workloads of the cloud, VMs, containers and serverless alike, which traditional
+      host agents struggle to cover.
+
+      A CWPP typically combines several **capabilities** across the workload lifecycle. Before deployment, it does
+      **vulnerability and configuration scanning** of workloads and container images (connecting to image scanning
+      met earlier), so vulnerable or misconfigured workloads are caught before they run. At runtime, it provides
+      **runtime protection and threat detection**, monitoring workload behaviour (processes, files, network, often
+      via lightweight agents or the eBPF techniques met in the Linux module) to detect and block suspicious
+      activity, malware, unexpected processes, container escapes, suspicious network connections, much as EDR does
+      for endpoints but adapted to cloud workloads and containers. It enforces **workload hardening and
+      segmentation** (allow-listing expected behaviour, restricting what a workload can do), and it provides
+      visibility into an inventory of workloads that is otherwise hard to keep up with as things scale up and down.
+      The through-line is runtime, behaviour-based protection for things that run, complementing the
+      configuration-focused posture management.
+
+      In a **cloud security strategy**, workload protection is one layer among several that together cover the
+      cloud. Posture management (CSPM) secures configuration and the control plane, identity controls secure access,
+      and workload protection (CWPP) secures the running workloads, these are increasingly combined into broader
+      cloud-native security platforms, but the conceptual division is useful: configuration versus runtime.
+      Workload protection is especially important for containerised and dynamic environments, where workloads are
+      numerous, short-lived and share hosts, and where the eBPF-based, agentless-or-lightweight approaches shine.
+      Its signals feed the SIEM and cloud detection (met in the detection module) and its pre-deployment scanning
+      feeds vulnerability management. The considerations are performance overhead, agent management across diverse
+      workloads, and tuning to control noise, the familiar runtime-detection concerns. For the analyst and
+      architect, the lessons are that securing the cloud control plane and configuration is not enough on its own,
+      that running workloads need runtime, behaviour-based protection, that a CWPP delivers this through
+      pre-deployment scanning and runtime detection across VMs, containers and serverless, and that workload
+      protection sits alongside posture and identity controls as a distinct, necessary layer of cloud security.
+    examples:
+      - title: The other half of cloud security
+        body: |
+          control plane/identity/posture != the running workloads (VMs, containers, serverless) that run code + process data
+          an attacker still exploits a running app, drops malware on a cloud VM, abuses a container -> runtime threats need runtime defences
+          CWPP = EDR-style protection extended across dynamic, short-lived cloud workloads.
+      - title: CWPP capabilities
+        body: |
+          pre-deployment: vulnerability + config scanning of workloads/images (catch before they run)
+          runtime: behaviour monitoring (processes/files/network, often eBPF) -> detect/block malware, odd processes, container escapes, bad connections
+          hardening + segmentation (allow-list expected behaviour); inventory visibility; feeds SIEM + vuln mgmt.
+    exercise:
+      title: Plan cloud workload protection
+      environment: A described cloud environment running VMs, containers and functions (or a scenario)
+      tools: [A scenario, a notes file, a document]
+      steps:
+        - Explain what cloud workload protection covers and why posture and identity controls are not enough.
+        - Describe the pre-deployment scanning a CWPP does and what it catches.
+        - Describe the runtime protection and threat detection a CWPP provides.
+        - Explain why containerised and dynamic environments especially need workload protection.
+        - Place workload protection alongside posture management and identity controls in a cloud strategy.
+        - Note the considerations (overhead, agent management, tuning).
+      deliverable: A workload-protection plan covering what a CWPP does across the workload lifecycle, why it is a distinct layer from posture and identity, and how it fits a cloud security strategy.
+    expected_outcome: >
+      You can explain cloud workload protection and why it is needed, describe a CWPP's pre-deployment and runtime
+      capabilities, and place workload protection alongside posture and identity controls in a cloud strategy.
+    quiz:
+      - prompt: Cloud workload protection addresses
+        options:
+          - Only the control plane and configuration
+          - The security of running workloads (VMs, containers, serverless), which need runtime defences
+          - Only office Wi-Fi
+          - Only billing
+        answer: 1
+        explanation: CWPP secures the running workloads themselves, complementing control-plane and posture controls.
+      - prompt: A CWPP's runtime protection works by
+        options:
+          - Only checking invoices
+          - Monitoring workload behaviour (processes, files, network) to detect and block suspicious activity, much like EDR
+          - Deleting all workloads
+          - Disabling the cloud
+        answer: 1
+        explanation: Runtime, behaviour-based monitoring detects malware, odd processes and container escapes on workloads.
+      - prompt: Workload protection is especially important for containerised environments because
+        options:
+          - Containers never run code
+          - Workloads are numerous, short-lived and share hosts, which traditional host agents struggle to cover
+          - Containers cannot be attacked
+          - They have no network
+        answer: 1
+        explanation: Dynamic, shared-host, short-lived workloads need the lightweight runtime approaches a CWPP provides.
+      - prompt: In a cloud security strategy, CWPP and posture management (CSPM) relate as
+        options:
+          - The same single tool with no distinction
+          - Complementary layers: CSPM secures configuration and the control plane, CWPP secures the running workloads
+          - Competing replacements
+          - Neither is needed
+        answer: 1
+        explanation: The useful division is configuration (CSPM) versus runtime workloads (CWPP), as layered controls.
+  - slug: cloud-sspm
+    title: SaaS Security Posture Management
+    order: 20
+    difficulty: intermediate
+    summary: Understand how the sprawl of SaaS applications creates its own security risks in configuration, identity and third-party app access, and how SaaS security posture management brings visibility and control to them.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:3.1", "sc900:4", "cysa:1.1"]
+    learning_objectives:
+      - Explain the distinct security risks of SaaS sprawl
+      - Describe what SaaS security posture management covers
+      - Manage SaaS configuration, identity and third-party app risk
+    theory: |
+      Organisations now run much of their business on dozens or hundreds of **SaaS applications**, email and
+      collaboration suites, CRM, HR, finance, developer and productivity tools, and this SaaS estate carries its
+      own security risks that differ from both infrastructure cloud and on-premises systems. In SaaS, the provider
+      runs the application, so the customer's security responsibility is concentrated in **configuration, identity
+      and data governance within each app**, and the sheer number and decentralised adoption of SaaS (business
+      units signing up for tools directly) make it easy to lose track of what is in use, how it is configured, and
+      who and what can access the data. **SaaS Security Posture Management (SSPM)** is the discipline and tooling
+      that brings visibility and control to this estate, much as posture management does for infrastructure cloud,
+      but focused on the configuration and access layer of SaaS applications.
+
+      The **risks SSPM addresses** cluster in a few areas. **Misconfiguration** is central: each SaaS app has its
+      own security settings, sharing defaults, external-access controls, MFA enforcement, data-retention and audit
+      options, and insecure configurations (over-permissive sharing, disabled MFA, public links, weak defaults)
+      quietly expose data; with many apps each configured differently, drift and gaps are common. **Identity and
+      access** risks include excessive permissions, dormant or orphaned accounts, weak or missing MFA, and
+      inconsistent enforcement across apps. A distinctive SaaS risk is **third-party application access**: users
+      grant OAuth tokens that let external apps and integrations access SaaS data (for example a productivity
+      add-on granted broad access to email or files), and these grants, often made by users without review, create
+      a large, poorly understood access surface, attackers abuse malicious or over-permissioned OAuth apps to reach
+      data without ever stealing a password. **Shadow SaaS** (unsanctioned apps) and poor visibility compound all of
+      this.
+
+      **Managing SaaS posture** applies familiar discipline to this layer. SSPM tools connect to the organisation's
+      SaaS applications and continuously assess their **configuration against best practice and policy**, flagging
+      insecure settings and drift so they can be fixed, exactly the continuous-posture idea seen for infrastructure
+      cloud. They surface **identity and access issues** (excessive permissions, missing MFA, dormant accounts)
+      across apps for consistent governance. They inventory and assess **third-party OAuth app grants**, so risky
+      or unused integrations can be reviewed and revoked, and they help discover **shadow SaaS**. The goal is
+      continuous visibility and control across the whole SaaS estate rather than hoping each app is configured and
+      governed well in isolation, with the findings prioritised and remediated like any posture issue, and the
+      most sensitive apps (email, file storage, identity) watched most closely. SSPM complements the CASB met
+      earlier (which focuses on access and usage control) by focusing on the security posture within the apps. For
+      the analyst, the lessons are that the SaaS estate is a large, decentralised attack surface whose risks live
+      in configuration, identity and third-party app access rather than in infrastructure, that third-party OAuth
+      grants are a distinctive and under-appreciated SaaS risk, and that SaaS security posture management brings
+      the continuous visibility, configuration assessment and access governance needed to keep a sprawling SaaS
+      estate secure.
+    examples:
+      - title: Why SaaS is its own problem
+        body: |
+          dozens/hundreds of SaaS apps; provider runs the app -> your responsibility = CONFIG + IDENTITY + data governance within each app
+          decentralised adoption -> easy to lose track of what's in use, how it's configured, who/what can access data
+          SSPM = posture management for the SaaS config + access layer.
+      - title: Risks and management
+        body: |
+          misconfig (over-permissive sharing, disabled MFA, public links, drift); identity (excess perms, dormant accounts, weak MFA); THIRD-PARTY OAUTH app grants (external apps reach your data without a password); shadow SaaS
+          SSPM: connect to apps, continuously assess config vs policy + flag drift, surface identity/access issues, inventory + review OAuth grants, find shadow SaaS.
+    exercise:
+      title: Manage SaaS security posture
+      environment: A described organisation using many SaaS applications (or a scenario)
+      tools: [A scenario or sample SaaS settings and OAuth grants, a document, a notes file]
+      steps:
+        - Explain why the SaaS estate is a distinct attack surface and where the customer's responsibility lies.
+        - Describe common SaaS misconfiguration risks.
+        - Describe the identity and access risks across many SaaS apps.
+        - Explain the third-party OAuth app access risk and why it is distinctive.
+        - Describe how SSPM continuously assesses configuration and surfaces access issues.
+        - Explain how SSPM complements a CASB and how you would prioritise findings.
+      deliverable: An SSPM plan covering SaaS misconfiguration, identity and OAuth app risks, continuous posture assessment, shadow-SaaS discovery, and prioritised remediation across the estate.
+    expected_outcome: >
+      You can explain the distinct risks of SaaS sprawl, describe what SaaS security posture management covers, and
+      manage SaaS configuration, identity and third-party OAuth app risk with continuous posture assessment.
+    quiz:
+      - prompt: In SaaS applications, the customer's security responsibility is concentrated in
+        options:
+          - Running the application servers
+          - Configuration, identity and data governance within each app
+          - Patching the provider's code
+          - The physical data center
+        answer: 1
+        explanation: The provider runs the app, so the customer secures its configuration, identity and data settings.
+      - prompt: A distinctive SaaS risk is third-party OAuth app access, where
+        options:
+          - No external app can ever connect
+          - Users grant tokens letting external apps access SaaS data, creating a large access surface attackers abuse without a password
+          - Only the provider has access
+          - MFA is always enforced
+        answer: 1
+        explanation: OAuth grants let external apps reach data directly, a poorly understood and abused access surface.
+      - prompt: SaaS security posture management works by
+        options:
+          - Running the SaaS apps itself
+          - Continuously assessing SaaS configuration against policy, surfacing identity and OAuth risks, and flagging drift
+          - Deleting all SaaS apps
+          - Ignoring configuration
+        answer: 1
+        explanation: SSPM brings continuous visibility and configuration/access governance to the SaaS estate.
+      - prompt: SSPM complements a CASB by
+        options:
+          - Doing exactly the same thing
+          - Focusing on the security posture (configuration and access) within the apps, while a CASB focuses on access and usage control
+          - Replacing all identity controls
+          - Blocking the internet
+        answer: 1
+        explanation: SSPM assesses in-app posture; a CASB governs access and usage, so they are complementary.

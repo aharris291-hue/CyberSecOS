@@ -1273,3 +1273,612 @@ lessons:
           - Disable the cellular network
         answer: 1
         explanation: MDM enforces the security baseline and can lock or wipe enrolled devices remotely.
+  - slug: sec-virtualization-security
+    title: Virtualization and Hypervisor Security
+    order: 15
+    difficulty: intermediate
+    summary: Understand how virtualization works, the security benefits and new risks it introduces, and how to protect the hypervisor, virtual machines and their management plane.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:3.1", "secplus:2.5", "sc900:1"]
+    learning_objectives:
+      - Explain how virtualization and hypervisors work
+      - Describe the security benefits and the new risks virtualization introduces
+      - Recommend controls for the hypervisor, VMs and management plane
+    theory: |
+      Virtualization underpins almost all modern infrastructure, including the cloud, so understanding its
+      security model is foundational. A **hypervisor** runs multiple **virtual machines (VMs)** on one physical
+      host, giving each VM its own virtual hardware while sharing the real hardware underneath. There are two
+      broad types: a **type 1** (bare-metal) hypervisor runs directly on the hardware and is used in data centres
+      and cloud, while a **type 2** hypervisor runs as an application on a host operating system. The hypervisor's
+      job is to keep VMs **isolated** from each other and to mediate their access to shared resources, and that
+      isolation is the security property everything else depends on.
+
+      Virtualization brings real security **benefits**: strong isolation between workloads, easy snapshots and
+      rollback (useful for recovery and for malware analysis in disposable VMs), rapid rebuilding of compromised
+      systems from known-good images, and consolidation that can simplify patching. But it also introduces **new
+      risks**. **VM escape**, where an attacker breaks out of a VM to the hypervisor or other VMs, is the most
+      serious because it defeats the core isolation guarantee, though it is rare and usually requires a hypervisor
+      vulnerability. **VM sprawl** creates many unmanaged, unpatched VMs that become weak points. Snapshots can
+      capture and later restore sensitive data or roll a system back to a vulnerable state. And crucially, the
+      **management plane**, the console or API that controls all VMs, becomes an extremely high-value target: an
+      attacker who controls it controls every VM at once.
+
+      The controls therefore focus on the layers virtualization adds. **Harden and patch the hypervisor**
+      diligently, because a flaw there threatens every VM on it. **Protect the management plane** with strong
+      authentication, least privilege and network isolation, treating it as tier-zero infrastructure. **Manage VM
+      lifecycle** to avoid sprawl, with inventory, patching and decommissioning. **Segment** VMs of different
+      trust levels so that compromising one does not expose others, rather than relying on the hypervisor alone.
+      And handle snapshots and images as sensitive assets. For the analyst, the lesson is that virtualization does
+      not remove security concerns but relocates and adds to them: the host, the hypervisor and especially the
+      management plane are now part of the attack surface, and the same isolation that protects workloads becomes
+      a single point of catastrophic failure if the layer beneath it is breached.
+    examples:
+      - title: The model
+        body: |
+          hypervisor runs many VMs on one host; each VM gets virtual hardware
+          type 1 (bare-metal, data centre/cloud) vs type 2 (app on a host OS)
+          core security property: ISOLATION between VMs.
+      - title: New risks and where to focus
+        body: |
+          VM escape -> break isolation to hypervisor/other VMs (rare, needs a flaw) = worst case
+          VM sprawl -> unmanaged unpatched VMs; snapshots can restore vulnerable/sensitive state
+          management plane controls ALL VMs -> tier-zero target
+          -> patch hypervisor, lock down management plane, manage VM lifecycle, segment by trust.
+    exercise:
+      title: Secure a virtualized environment
+      environment: A described virtualization deployment (or a scenario)
+      tools: [A scenario, an architecture notes file, a document]
+      steps:
+        - Explain how a hypervisor runs VMs and what isolation guarantee it provides.
+        - Distinguish type 1 and type 2 hypervisors and where each is used.
+        - Describe two security benefits virtualization provides.
+        - Describe VM escape and VM sprawl and why each is a concern.
+        - Explain why the management plane is a tier-zero target and how to protect it.
+        - Recommend three controls covering the hypervisor, VM lifecycle and segmentation.
+      deliverable: A virtualization security plan covering the isolation model, benefits, VM escape and sprawl risks, management-plane protection, and three concrete controls.
+    expected_outcome: >
+      You can explain virtualization and hypervisors, the benefits and new risks they bring, and recommend
+      controls for the hypervisor, VM lifecycle, segmentation and especially the management plane.
+    quiz:
+      - prompt: The core security property a hypervisor must provide is
+        options:
+          - Faster graphics
+          - Isolation between the virtual machines it runs
+          - Unlimited storage
+          - Automatic encryption of all data
+        answer: 1
+        explanation: VMs depend on the hypervisor keeping them isolated from one another.
+      - prompt: VM escape is the most serious virtualization risk because it
+        options:
+          - Slows the host
+          - Breaks the isolation guarantee, letting an attacker reach the hypervisor or other VMs
+          - Fills the disk
+          - Only affects type 2 hypervisors
+        answer: 1
+        explanation: Escaping a VM defeats the fundamental isolation that all other security relies on.
+      - prompt: The virtualization management plane deserves tier-zero protection because
+        options:
+          - It is rarely used
+          - Controlling it means controlling every VM at once
+          - It has no network access
+          - It stores no credentials
+        answer: 1
+        explanation: The console or API that governs all VMs is a single point of total compromise.
+      - prompt: A good control against VM sprawl is
+        options:
+          - Creating as many VMs as possible
+          - Lifecycle management with inventory, patching and decommissioning of VMs
+          - Disabling the hypervisor
+          - Never taking snapshots
+        answer: 1
+        explanation: Tracking, patching and retiring VMs prevents unmanaged, vulnerable machines accumulating.
+  - slug: sec-iot-ot-embedded
+    title: Securing IoT, OT and Embedded Systems
+    order: 16
+    difficulty: intermediate
+    summary: Understand why Internet of Things, operational technology and embedded devices are hard to secure, the risks they carry, and the compensating controls that protect them when patching is not an option.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:3.1", "secplus:2.5", "sc900:1"]
+    learning_objectives:
+      - Explain why IoT, OT and embedded devices resist traditional security
+      - Describe the risks these devices introduce
+      - Apply compensating controls where patching and agents are impossible
+    theory: |
+      A growing share of the devices on networks are not general-purpose computers but **IoT** (smart cameras,
+      sensors, building systems), **OT** (operational technology running physical processes in factories,
+      utilities and hospitals) and **embedded** systems (purpose-built computers inside other equipment). They
+      share traits that make traditional security hard: they often cannot run an endpoint agent, are rarely or
+      never patched, ship with default or hard-coded credentials, run old and unsupported software, and may stay
+      in service for a decade or more. Worse, OT historically prioritised **availability and safety** over
+      confidentiality, so systems were designed to run continuously and were never meant to be exposed to normal
+      IT threats, yet many are now connected.
+
+      The **risks** are both familiar and distinctive. These devices expand the attack surface with poorly secured
+      endpoints that are hard to see and harder to fix, and a compromised camera or sensor can be a foothold or a
+      botnet recruit. What makes OT especially serious is that an attack can have **physical consequences**:
+      stopping a production line, manipulating a safety system, or disrupting critical infrastructure, so the
+      impact is not just data loss but potential safety and continuity failures. The convergence of IT and OT
+      networks means an intrusion that starts in email can, without proper separation, reach systems that control
+      physical processes, which is the scenario that keeps critical-infrastructure defenders awake.
+
+      Because you often **cannot** apply the usual controls (patch promptly, install an agent, change a hard-coded
+      password), the strategy shifts to **compensating controls** built around the device. The most important is
+      **network segmentation and isolation**: put these devices on separate, tightly controlled network segments
+      so they cannot be reached from, or reach into, the general network, and so OT is strongly separated from IT.
+      **Monitoring** their network traffic (since you cannot put an agent on them) detects anomalies, and
+      specialised OT monitoring understands industrial protocols. **Strict access control** limits who and what
+      can communicate with them, and robust **asset inventory** is foundational because you cannot protect devices
+      you do not know exist. For the architect and analyst, the mindset is to accept that the device itself may be
+      unfixable and to wrap it in controls that limit exposure and detect abuse, while treating OT with extra care
+      because the stakes include physical safety, not just information.
+    examples:
+      - title: Why they are hard to secure
+        body: |
+          can't run an agent; rarely/never patched; default or hard-coded creds; old unsupported software; 10+ year life
+          OT historically prioritised availability + safety over confidentiality, never meant for IT threats.
+      - title: Strategy shifts to compensating controls
+        body: |
+          can't patch/agent/change creds -> wrap the device instead:
+          segment + isolate (separate OT from IT), monitor NETWORK traffic (industrial-protocol aware),
+          strict access control, solid asset inventory (can't protect what you don't know exists).
+    exercise:
+      title: Protect IoT and OT devices with compensating controls
+      environment: A described environment with IoT or OT devices (or a scenario)
+      tools: [A scenario, an architecture notes file, a document]
+      steps:
+        - Explain three traits that make IoT, OT or embedded devices resist traditional security.
+        - Explain why OT attacks can have physical consequences that IT attacks usually do not.
+        - Explain the risk of converged IT and OT networks.
+        - Recommend a segmentation and isolation approach for the described devices.
+        - Explain why network monitoring and asset inventory are especially important here.
+        - Identify one control you would apply because patching the device is not possible.
+      deliverable: A protection plan for IoT or OT devices covering why they resist normal controls, the physical-impact risk, a segmentation approach, monitoring and inventory, and a compensating control for the unpatchable device.
+    expected_outcome: >
+      You can explain why IoT, OT and embedded devices resist traditional security, the risks (including physical
+      impact) they carry, and the segmentation, monitoring and inventory controls that protect them when patching
+      is impossible.
+    quiz:
+      - prompt: A reason IoT and OT devices resist traditional security is that they
+        options:
+          - Patch themselves automatically
+          - Often cannot run an agent, are rarely patched, and ship with default or hard-coded credentials
+          - Have no network connection
+          - Are replaced every month
+        answer: 1
+        explanation: These devices typically cannot be patched or agent-managed and ship with weak defaults.
+      - prompt: OT security is especially serious because an attack can
+        options:
+          - Only leak documents
+          - Have physical consequences, disrupting processes or safety systems
+          - Never affect anything
+          - Only slow email
+        answer: 1
+        explanation: OT controls physical processes, so compromise can cause safety and continuity failures.
+      - prompt: When a device cannot be patched or run an agent, the primary strategy is
+        options:
+          - Ignore it
+          - Wrap it in compensating controls such as segmentation, isolation and network monitoring
+          - Connect it directly to the internet
+          - Give it admin rights everywhere
+        answer: 1
+        explanation: Unfixable devices are protected by isolating and monitoring them rather than hardening the device.
+      - prompt: Asset inventory is foundational for IoT/OT security because
+        options:
+          - It speeds up the devices
+          - You cannot protect or segment devices you do not know exist
+          - It replaces segmentation
+          - It encrypts the devices
+        answer: 1
+        explanation: Unknown devices cannot be segmented, monitored or controlled, so inventory comes first.
+  - slug: sec-deception-honeypots
+    title: Deception Technology, Honeypots and Honeytokens
+    order: 17
+    difficulty: intermediate
+    summary: Understand how deception turns the tables on attackers using honeypots, honeytokens and decoys that are valuable precisely because any interaction with them is suspicious.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:1.2", "secplus:4.4", "cysa:1.4"]
+    learning_objectives:
+      - Explain the principle behind deception technology
+      - Describe honeypots, honeytokens and decoys and their uses
+      - Explain why deception produces high-fidelity, low-noise alerts
+    theory: |
+      Most detection tries to pick malicious activity out of a flood of legitimate activity, which is inherently
+      noisy. **Deception technology** takes a cleverly different approach: it plants things that have **no
+      legitimate purpose**, so that any interaction with them is, by definition, suspicious. This flips the
+      signal-to-noise problem on its head. A **honeypot** is a decoy system designed to look like an attractive
+      target (a server, a database, an exposed service) but that no real user or process should ever touch; when
+      an attacker probes or compromises it, the interaction itself is the alert, with almost no false positives.
+      Because the honeypot has no production role, a connection to it is not ambiguous the way a connection to a
+      real server is.
+
+      Deception comes in several forms suited to different places. **Honeypots** range from low-interaction
+      (simulated services that just record probes) to high-interaction (real systems that let an attacker engage,
+      yielding rich intelligence about their techniques at the cost of more risk and management). **Honeytokens**
+      are the same idea applied to data and credentials: a fake set of credentials, a decoy document, a bogus API
+      key, or a planted database record that is monitored, so that if it is ever used or accessed, you know
+      someone is somewhere they should not be, often catching an attacker who has already gotten inside and is
+      looting. **Decoys** scattered through the real environment, fake file shares, fake accounts, fake network
+      services, act as tripwires for lateral movement, because an attacker exploring the network cannot tell the
+      decoys from the real assets and will eventually touch one. Modern deception platforms automate spreading
+      such breadcrumbs widely.
+
+      The great value of deception is **fidelity**: its alerts are high-confidence and low-noise because
+      legitimate users have no reason to touch a decoy, so a honeypot or honeytoken alert is worth investigating
+      immediately in a way an ordinary alert often is not. Deception is also especially good at catching attackers
+      who are already **inside**, during the reconnaissance and lateral-movement phases that are otherwise hard to
+      detect, and at gathering intelligence on attacker behaviour. Its limits are that it is a complement, not a
+      replacement, for primary defences (an attacker might avoid the decoys), it needs careful placement and
+      believability to be effective, and high-interaction honeypots carry risk if not isolated. For the analyst
+      and architect, deception is a high-leverage addition to a mature programme: cheap to alert on, strong for
+      detecting insiders and lateral movement, and valuable for understanding adversaries, precisely because it
+      exploits the one thing attackers cannot know, which of the things they find are real and which are traps.
+    examples:
+      - title: The core principle
+        body: |
+          normal detection: pick malice out of a flood of legitimate activity (noisy)
+          deception: plant things with NO legitimate purpose -> ANY interaction is suspicious by definition
+          honeypot touched = the interaction itself is the alert, almost no false positives.
+      - title: The forms
+        body: |
+          honeypots: low-interaction (record probes) to high-interaction (real systems -> rich intel, more risk)
+          honeytokens: fake creds/documents/API keys/records monitored -> use = someone is where they shouldn't be
+          decoys: fake shares/accounts/services as tripwires for lateral movement.
+    exercise:
+      title: Design a deception layer
+      environment: A described environment where you want earlier, higher-fidelity detection (or a scenario)
+      tools: [A scenario, an architecture notes file, a document]
+      steps:
+        - Explain the principle that makes deception high-fidelity and low-noise.
+        - Describe the difference between low- and high-interaction honeypots and their trade-offs.
+        - Give two examples of honeytokens and what each would reveal if triggered.
+        - Explain how decoys act as tripwires for lateral movement.
+        - Explain why deception is especially good at catching attackers already inside.
+        - State one limitation and why deception complements rather than replaces primary defences.
+      deliverable: A deception design placing honeypots, honeytokens and decoys, explaining the fidelity benefit, the insider/lateral-movement strength, and one limitation.
+    expected_outcome: >
+      You can explain the principle of deception technology, describe honeypots, honeytokens and decoys, and
+      explain why deception produces high-fidelity alerts that are especially effective against insiders and lateral movement.
+    quiz:
+      - prompt: Deception technology produces high-fidelity alerts because
+        options:
+          - It inspects all traffic
+          - The decoys have no legitimate purpose, so any interaction with them is suspicious by definition
+          - It uses machine learning
+          - It blocks all attacks
+        answer: 1
+        explanation: Since nothing legitimate should touch a decoy, interaction is inherently a strong signal.
+      - prompt: A honeytoken is
+        options:
+          - A real production credential
+          - A fake credential, document, key or record that is monitored so its use reveals an intruder
+          - A type of firewall
+          - A backup system
+        answer: 1
+        explanation: Honeytokens are planted fake assets whose use shows someone is where they should not be.
+      - prompt: Deception is especially effective at catching attackers who are
+        options:
+          - Still outside the perimeter only
+          - Already inside, during reconnaissance and lateral movement
+          - Using valid MFA
+          - Reading public web pages
+        answer: 1
+        explanation: Decoys and honeytokens trip up intruders exploring the internal environment.
+      - prompt: A limitation of deception is that it
+        options:
+          - Produces constant false positives
+          - Complements rather than replaces primary defences, since an attacker might avoid the decoys
+          - Cannot generate any alerts
+          - Requires no placement thought
+        answer: 1
+        explanation: Deception is a high-value addition, not a substitute, and needs believable placement.
+  - slug: sec-federation-sso
+    title: Federation and Single Sign-On
+    order: 18
+    difficulty: intermediate
+    summary: Understand how federation and single sign-on let users authenticate once and access many services, the protocols involved (SAML, OIDC, OAuth), and the security benefits and risks they bring.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.6", "sc900:2", "cysa:1.3"]
+    learning_objectives:
+      - Explain federation and single sign-on and how they relate
+      - Describe SAML, OAuth and OpenID Connect at a high level
+      - Weigh the security benefits and risks of federated identity
+    theory: |
+      Modern users access dozens of applications, and **single sign-on (SSO)** lets them authenticate once to a
+      central identity provider and then reach many services without logging in again, while **federation**
+      extends this across organisational or domain boundaries, letting one organisation's identity provider grant
+      access to another's services through an established trust. The two concepts are closely linked: federation
+      is the trust relationship that makes cross-domain SSO possible. The central idea is that a trusted
+      **identity provider (IdP)** authenticates the user and then vouches for them to the **service providers
+      (relying parties)**, which trust the IdP's assertion rather than handling the credentials themselves. This
+      is why you can log in to many third-party apps with a corporate or major-provider account.
+
+      A few protocols make this work, and knowing their roles matters. **SAML** is a mature, XML-based standard
+      widely used for enterprise web SSO, where the IdP sends the service provider a signed assertion that the
+      user is authenticated and who they are. **OAuth 2.0** is an **authorization** framework, it lets a user
+      grant an application limited access to resources (via tokens) without sharing their password, and is the
+      basis of delegated access. **OpenID Connect (OIDC)** is an authentication layer built on top of OAuth 2.0
+      that adds identity, providing a verifiable token about who the user is, and is the common choice for modern
+      web and mobile SSO. A useful shorthand: OAuth is about authorization (what an app may do), OIDC adds
+      authentication (who the user is), and SAML is the established enterprise equivalent.
+
+      Federation and SSO bring strong **security benefits** but concentrate risk. On the benefit side, users have
+      fewer passwords to manage and reuse, central authentication means strong controls (MFA, conditional access,
+      monitoring) are applied once and everywhere, and access can be granted and, crucially, revoked centrally,
+      disabling one account cuts off many services at once, which is invaluable at offboarding. The flip side is
+      that the IdP becomes a **single point of trust and failure**: compromise the IdP or a user's SSO session and
+      the attacker potentially reaches everything that trusts it, which is why attacks increasingly target
+      identity providers, session tokens and the federation trust itself (for example forging assertions if signing
+      keys are stolen). The defences follow: protect the IdP as tier-zero, enforce strong authentication and
+      conditional access there, protect and monitor tokens and sessions, and guard the signing keys and trust
+      configuration. For the analyst and architect, the lesson is that federated identity is powerful and now
+      standard, delivering real security and usability gains by centralising authentication, but it makes identity
+      the decisive perimeter, so the IdP and the trust it anchors must be among the most carefully protected and
+      closely watched parts of the environment.
+    examples:
+      - title: How SSO and federation work
+        body: |
+          IdP authenticates the user once -> vouches for them to service providers (relying parties) that trust the IdP
+          SSO: one login -> many apps; federation: that trust extended across org/domain boundaries.
+      - title: The protocols
+        body: |
+          SAML: mature XML enterprise web SSO (signed assertion)
+          OAuth 2.0: AUTHORIZATION (delegated access via tokens, no password sharing)
+          OIDC: authentication layer ON TOP of OAuth (who the user is) -> modern web/mobile SSO.
+    exercise:
+      title: Design federated access and assess its risk
+      environment: A described organisation adopting SSO across many apps (or a scenario)
+      tools: [A scenario, a notes file, a document]
+      steps:
+        - Explain the relationship between single sign-on and federation.
+        - Describe the roles of the identity provider and service providers.
+        - Distinguish SAML, OAuth and OpenID Connect and what each is for.
+        - List two security benefits of centralising authentication.
+        - Explain why the identity provider becomes a single point of trust and failure.
+        - Recommend how to protect the IdP, tokens and federation trust.
+      deliverable: A federated-access design explaining SSO and federation, the IdP/SP roles, the three protocols, the benefits, the single-point-of-trust risk, and protections for the IdP and trust.
+    expected_outcome: >
+      You can explain federation and single sign-on, distinguish SAML, OAuth and OIDC, and weigh the benefits of
+      centralised authentication against the concentrated risk of the identity provider as the decisive perimeter.
+    quiz:
+      - prompt: In federated SSO, service providers grant access by
+        options:
+          - Handling each user's password themselves
+          - Trusting an assertion from a central identity provider that authenticated the user
+          - Ignoring authentication
+          - Issuing their own certificates
+        answer: 1
+        explanation: Relying parties trust the IdP's assertion rather than handling credentials directly.
+      - prompt: OAuth 2.0 is fundamentally a framework for
+        options:
+          - Authentication (who the user is)
+          - Authorization (granting an app limited access via tokens without sharing a password)
+          - Disk encryption
+          - Network routing
+        answer: 1
+        explanation: OAuth is about delegated authorization; OIDC adds the authentication/identity layer on top.
+      - prompt: A major security benefit of centralised SSO is that access can be
+        options:
+          - Never revoked
+          - Granted and revoked centrally, so disabling one account cuts off many services at once
+          - Only granted manually per app
+          - Shared freely
+        answer: 1
+        explanation: Central control means one change (especially at offboarding) propagates across many services.
+      - prompt: Federation concentrates risk because the identity provider is
+        options:
+          - Irrelevant to security
+          - A single point of trust and failure, so its compromise can reach everything that trusts it
+          - Never targeted
+          - Unable to enforce MFA
+        answer: 1
+        explanation: Compromising the IdP or an SSO session can unlock all federated services, so it is tier-zero.
+  - slug: sec-threat-modeling
+    title: Threat Modeling Fundamentals
+    order: 19
+    difficulty: intermediate
+    summary: Learn how threat modeling systematically identifies what could go wrong with a system before it is built or attacked, using structured approaches like STRIDE to find and prioritise threats early.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:2.3", "secplus:3.1", "cysa:1.3"]
+    learning_objectives:
+      - Explain what threat modeling is and why it is done early
+      - Apply a structured approach such as STRIDE to find threats
+      - Prioritise and address the threats a model surfaces
+    theory: |
+      **Threat modeling** is the practice of thinking through, in a structured way, what could go wrong with a
+      system, who might attack it, how, and what the impact would be, ideally **before** the system is built, so
+      that security is designed in rather than bolted on after an incident. Instead of waiting to discover
+      weaknesses through testing or breaches, a team deliberately asks, for a given design, where the valuable
+      assets are, how data flows, where trust boundaries lie, and what an attacker could do at each point. The
+      value is leverage: a threat found on a whiteboard costs almost nothing to address, while the same flaw found
+      in production, or exploited by an attacker, is far more expensive and damaging. Threat modeling turns
+      security from reactive to proactive.
+
+      A common way to structure the thinking is a **framework like STRIDE**, which prompts the team to consider
+      six categories of threat for each component and data flow: Spoofing (pretending to be someone else),
+      Tampering (altering data or code), Repudiation (denying an action without a trace), Information disclosure
+      (leaking data), Denial of service (disrupting availability), and Elevation of privilege (gaining rights one
+      should not have). Walking through these against a diagram of the system, often a data-flow diagram showing
+      components, data stores and trust boundaries, systematically surfaces threats that ad-hoc thinking would
+      miss. Other approaches exist (attack trees, PASTA, and simply asking the "four questions": what are we
+      building, what can go wrong, what will we do about it, and did we do a good job), but the common thread is a
+      structured, repeatable process rather than relying on one expert's intuition.
+
+      The output of threat modeling is not just a list of threats but **prioritised, actionable mitigations**. Each
+      identified threat is assessed for likelihood and impact (connecting to risk management), and the team decides
+      how to address it, by a design change, a control, or an accepted risk, so the model drives real decisions.
+      Threat modeling is most valuable early and when repeated as a design evolves, and it is a collaborative
+      activity, best done by the people who understand the system together, not a security team working alone. For
+      the analyst and the broader security practitioner, the lessons are that threat modeling is how teams
+      anticipate attacks by design rather than discover them by incident, that a structured framework like STRIDE
+      makes the search for threats systematic and repeatable, and that its real value comes from turning the
+      threats it finds into prioritised mitigations, because the cheapest and most effective place to stop an
+      attack is in the design, long before an attacker ever arrives.
+    examples:
+      - title: Why model threats early
+        body: |
+          deliberately ask (before building): where are the assets, how does data flow, where are trust boundaries, what could an attacker do
+          a threat found on a whiteboard = almost free; the same flaw in production or exploited = expensive
+          -> security designed IN, not bolted on; proactive not reactive.
+      - title: STRIDE
+        body: |
+          Spoofing, Tampering, Repudiation, Information disclosure, Denial of service, Elevation of privilege
+          walk the six against a data-flow diagram (components, stores, trust boundaries) -> systematic threat discovery
+          then assess likelihood/impact and decide a mitigation for each (design change, control, or accepted risk).
+    exercise:
+      title: Threat-model a small system
+      environment: A described small system or application with its data flows (or a scenario)
+      tools: [A scenario, a data-flow sketch, a notes file, a document]
+      steps:
+        - Explain what threat modeling is and why doing it early gives leverage.
+        - Sketch or describe the system's components, data flows and trust boundaries.
+        - Apply the STRIDE categories to find threats at the components and flows.
+        - Pick the most serious threats and assess their likelihood and impact.
+        - Propose a mitigation for each prioritised threat (design change, control, or accepted risk).
+        - Explain why threat modeling is collaborative and repeated as the design evolves.
+      deliverable: A threat model for the system covering its data flows and trust boundaries, STRIDE-based threats, a prioritisation, and a mitigation for each top threat.
+    expected_outcome: >
+      You can explain threat modeling and why it is done early, apply STRIDE to systematically find threats in a
+      design, and turn those threats into prioritised mitigations that drive real security decisions.
+    quiz:
+      - prompt: Threat modeling is most valuable when done
+        options:
+          - Only after a breach
+          - Early, ideally before a system is built, so security is designed in rather than bolted on
+          - Never
+          - Only by one expert in isolation
+        answer: 1
+        explanation: Finding threats in the design is far cheaper than discovering them in production or via incidents.
+      - prompt: STRIDE helps a team by
+        options:
+          - Encrypting data
+          - Prompting consideration of six threat categories against each component and data flow
+          - Replacing all testing
+          - Removing trust boundaries
+        answer: 1
+        explanation: STRIDE structures the search for threats (spoofing, tampering, repudiation, disclosure, DoS, elevation).
+      - prompt: The real value of a threat model comes from
+        options:
+          - A long list of threats with no action
+          - Turning the identified threats into prioritised, actionable mitigations that drive decisions
+          - Ignoring the findings
+          - Doing it only once and never again
+        answer: 1
+        explanation: Threat modeling must lead to prioritised mitigations, not just a catalogue of risks.
+      - prompt: A data-flow diagram is useful in threat modeling because it
+        options:
+          - Hides the system design
+          - Shows components, data stores and trust boundaries so threats can be found systematically
+          - Replaces the mitigations
+          - Measures CPU usage
+        answer: 1
+        explanation: Mapping flows and trust boundaries reveals where threats can occur.
+  - slug: sec-supply-chain-risk
+    title: Supply Chain Security and Third-Party Software Risk
+    order: 20
+    difficulty: intermediate
+    summary: Understand how modern systems depend on a vast supply chain of third-party software, libraries and vendors, why this creates a major attack surface, and the practices that manage supply-chain risk.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:2.3", "secplus:5.1", "cysa:1.3"]
+    learning_objectives:
+      - Explain why the software and vendor supply chain is a major risk
+      - Describe common supply-chain attack patterns
+      - Describe practices that manage supply-chain risk
+    theory: |
+      No modern organisation builds everything itself; it relies on a vast **supply chain** of third-party
+      software, open-source libraries, hardware, cloud services and vendors, and that dependence is a major and
+      growing security risk because a weakness anywhere in the chain can become the organisation's weakness. The
+      essential problem is **transitive trust**: when you install a vendor's product or pull in an open-source
+      library, you inherit the security of everything it depends on, and of the processes that built and delivered
+      it, often without visibility into any of it. A single widely used component or vendor, if compromised,
+      becomes a path into everyone who uses it, which is why supply-chain attacks are attractive to sophisticated
+      adversaries, one compromise yields many victims.
+
+      The **attack patterns** are varied. In a **software supply-chain attack**, an attacker compromises a trusted
+      product or its build and distribution pipeline so that the legitimate, signed update delivered to customers
+      contains malicious code, as in several high-profile incidents, which is devastating because customers trust
+      and automatically install updates. In the **open-source** ecosystem, attackers publish malicious packages
+      (sometimes typosquatting popular names), take over abandoned but widely used packages, or slip malicious
+      changes into dependencies, and because projects pull in deep trees of transitive dependencies, a poisoned
+      package deep in the tree can reach many systems. **Vendor and third-party risk** more broadly includes a
+      service provider with access to your systems or data being breached, or a vendor's poor security becoming
+      your incident. Hardware supply-chain tampering is a further, harder-to-address concern. The common thread is
+      that the attacker does not breach you directly, they breach something you trust and depend on.
+
+      Managing supply-chain risk combines **visibility, vetting and controls**. **Know your dependencies**: maintain
+      an inventory, increasingly a Software Bill of Materials (SBOM) listing the components in your software, so
+      that when a vulnerability or compromise in a component is announced you can tell whether and where you are
+      affected, something impossible without that visibility. **Vet and monitor vendors and components**: assess
+      the security of significant vendors and open-source dependencies, prefer well-maintained components, and
+      watch for advisories. **Apply controls to the pipeline**: verify integrity of updates and packages (signing,
+      checksums), pin and review dependencies, and limit the access third parties and their software have (least
+      privilege), so a compromised component or vendor is contained. **Plan for it**: include supply-chain
+      scenarios in risk assessment and incident response, because some supply-chain compromises are discovered only
+      after the fact. For the analyst and the organisation, the lessons are that dependence on third-party software
+      and vendors creates transitive trust that attackers exploit to turn one compromise into many, that the attack
+      patterns, poisoned updates, malicious packages, breached vendors, all come through something you trust, and
+      that managing the risk requires knowing your dependencies (SBOM), vetting and monitoring vendors and
+      components, verifying integrity, limiting third-party access, and planning for the compromises that still get
+      through, because in a connected software world, your security is only as strong as the weakest link you depend on.
+    examples:
+      - title: Transitive trust
+        body: |
+          you depend on third-party software, open-source libraries, vendors, cloud, hardware -> you inherit their security + their build/delivery processes
+          one widely used compromised component/vendor = a path into everyone who uses it -> one compromise, many victims.
+      - title: Attack patterns and management
+        body: |
+          poisoned signed update (compromise the build/distribution pipeline); malicious/typosquatted open-source packages; breached vendor with access to you
+          manage: SBOM/dependency inventory (know if a component affects you), vet + monitor vendors/components, verify integrity (signing/checksums), limit third-party access, plan for it.
+    exercise:
+      title: Assess and manage supply-chain risk
+      environment: A described organisation relying on vendors and open-source software (or a scenario)
+      tools: [A scenario, a dependency or vendor list, a notes file, a document]
+      steps:
+        - Explain why dependence on third-party software and vendors creates transitive-trust risk.
+        - Describe a software supply-chain attack via a poisoned update and why it is so effective.
+        - Describe an open-source supply-chain attack pattern.
+        - Explain how an SBOM or dependency inventory helps when a component vulnerability is announced.
+        - Describe how vetting vendors, verifying integrity and limiting access reduce the risk.
+        - Explain why supply-chain scenarios belong in risk assessment and incident response.
+      deliverable: A supply-chain risk plan covering transitive trust, the main attack patterns, and management practices (SBOM, vetting, integrity verification, least-privilege access, planning).
+    expected_outcome: >
+      You can explain why the software and vendor supply chain is a major risk, describe common supply-chain attack
+      patterns, and describe the practices (SBOM, vetting, integrity verification, access limits, planning) that manage it.
+    quiz:
+      - prompt: The core reason the supply chain is a major risk is
+        options:
+          - Organisations build everything themselves
+          - Transitive trust: you inherit the security of the software, components and vendors you depend on
+          - Third-party software is always secure
+          - Dependencies have no security impact
+        answer: 1
+        explanation: Depending on others means inheriting their security, so a weakness in the chain becomes yours.
+      - prompt: A software supply-chain attack via a poisoned update is devastating because
+        options:
+          - Customers never install updates
+          - Customers trust and automatically install the legitimate, signed update that now contains malicious code
+          - It only affects the vendor
+          - Updates cannot carry code
+        answer: 1
+        explanation: Trusted auto-installed updates deliver the attacker's code to many customers at once.
+      - prompt: An SBOM (Software Bill of Materials) helps primarily by
+        options:
+          - Encrypting the software
+          - Letting you tell whether and where you use a component when a vulnerability or compromise is announced
+          - Removing all dependencies
+          - Replacing vendor contracts
+        answer: 1
+        explanation: Knowing your components lets you assess exposure when a component issue emerges.
+      - prompt: A key control to contain a compromised component or vendor is to
+        options:
+          - Grant third parties full access
+          - Limit the access third parties and their software have (least privilege) and verify update integrity
+          - Disable all logging
+          - Trust all packages without review
+        answer: 1
+        explanation: Least-privilege access and integrity verification contain a compromise in the chain.

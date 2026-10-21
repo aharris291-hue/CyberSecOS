@@ -1318,3 +1318,527 @@ lessons:
           - Disable the rule
         answer: 1
         explanation: Escalation rarely stands alone in an attack, so surrounding context strongly raises confidence.
+  - slug: de-discovery-detection
+    title: Detecting Discovery and Reconnaissance
+    order: 15
+    difficulty: advanced
+    summary: Engineer detections for the discovery tactic, the enumeration an attacker performs after gaining access to map the environment, which is quiet, uses built-in tools, and is often the earliest internal signal.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.4", "sc200:2", "cysa:1.3"]
+    learning_objectives:
+      - Explain what discovery is and why detecting it is valuable
+      - Identify common discovery techniques and their telemetry
+      - Engineer detections that separate attacker enumeration from normal activity
+    theory: |
+      After gaining a foothold, an attacker rarely knows the environment, so they **discover** it: enumerating
+      users, groups, hosts, shares, privileges, security tooling and trust relationships to plan where to go next.
+      Detecting this **discovery** tactic is valuable because it often happens early, before lateral movement and
+      impact, so catching it buys time to respond before real damage. The difficulty is that discovery is quiet
+      and uses **built-in, legitimate tools**: commands like `whoami`, `net group`, `nltest`, `arp -a`, and
+      PowerShell Active Directory queries on Windows, or `id`, `uname`, `cat /etc/passwd` and network enumeration
+      on Linux, are exactly what administrators and scripts run too. There is no malware to catch, so detection
+      must focus on the pattern and context of ordinary commands rather than any single command being bad.
+
+      The signals that distinguish attacker discovery from normal use are mostly about **clustering and
+      anomaly**. A single `whoami` is meaningless; a **burst** of enumeration commands run in quick succession
+      from one process or user, especially shortly after a suspicious logon or an initial-access event, is a
+      strong pattern, because attackers typically run reconnaissance as a flurry while admins run such commands
+      sparingly and in context. The **source** matters enormously: discovery commands spawned by a document
+      process, a web server, or an unusual parent are suspicious in a way the same commands from an interactive
+      admin shell are not. Specific high-value targets of enumeration, such as queries for domain admins, domain
+      trusts, or the presence of security products, are more suspicious than generic commands. Tools that automate
+      domain enumeration leave their own recognisable patterns of rapid, broad querying.
+
+      Engineering these detections is a careful exercise in **context and correlation** because the false-positive
+      risk is high. Effective rules look for the combination, several discovery commands in a short window from a
+      non-interactive or unusual parent, rather than any one command, and they gain confidence by correlating with
+      what came before (initial access) and after (credential access, lateral movement), since discovery sits
+      between them in the attack chain. Enrichment, is this host a workstation where admin enumeration is odd, or
+      a jump box where it is normal, further reduces noise. Coverage is measured against the discovery techniques
+      in ATT&CK, and because many discovery commands are individually benign, these detections are often tuned to
+      feed investigation and correlation rather than to page an analyst on every hit. For the analyst, discovery
+      detection is high-leverage early warning, and the craft is recognising the shape of enumeration, a burst of
+      ordinary commands from the wrong place at the wrong time, rather than hunting for a forbidden command that
+      does not exist.
+    examples:
+      - title: Discovery uses built-in tools
+        body: |
+          Windows: whoami, net group, nltest, arp -a, AD PowerShell queries
+          Linux: id, uname, cat /etc/passwd, network enumeration
+          same commands admins run -> no malware -> detect the PATTERN + CONTEXT, not the command.
+      - title: What makes it suspicious
+        body: |
+          a BURST of enumeration from one process/user, right after a suspicious logon
+          spawned by a document/web-server/odd parent (not an interactive admin shell)
+          targets domain admins / trusts / security products
+          -> correlate with before (initial access) + after (cred access, lateral movement).
+    exercise:
+      title: Engineer discovery detections
+      environment: A described environment with endpoint command telemetry (or a scenario)
+      tools: [A scenario or sample process/command events, the ATT&CK reference, a document, a notes file]
+      steps:
+        - Explain what the discovery tactic is and why detecting it early is valuable.
+        - List common discovery commands on Windows and Linux and note that they are legitimate tools.
+        - Explain why a single discovery command is not a detection but a burst can be.
+        - Write a detection idea based on clustering and an unusual parent process.
+        - Explain how correlation with preceding and following activity raises confidence.
+        - Describe a tuning or enrichment step that reduces false positives from legitimate administration.
+      deliverable: A discovery-detection plan covering the tactic, common commands, a clustering-plus-context detection idea, correlation across the attack chain, and a false-positive-reduction step.
+    expected_outcome: >
+      You can explain the discovery tactic, identify its built-in-tool telemetry, and engineer context- and
+      correlation-based detections that separate attacker enumeration from legitimate administrative activity.
+    quiz:
+      - prompt: Detecting discovery is valuable mainly because it
+        options:
+          - Happens only after data theft
+          - Often occurs early, before lateral movement and impact, buying time to respond
+          - Involves obvious malware
+          - Cannot be logged
+        answer: 1
+        explanation: Discovery precedes serious actions, so catching it gives an early chance to intervene.
+      - prompt: Discovery is hard to detect because it
+        options:
+          - Always uses custom malware
+          - Uses built-in, legitimate tools that administrators and scripts also run
+          - Produces no logs at all
+          - Only happens offline
+        answer: 1
+        explanation: Enumeration uses normal commands, so there is no inherently malicious tool to flag.
+      - prompt: A strong discovery detection focuses on
+        options:
+          - A single whoami command
+          - A burst of enumeration commands in a short window from a non-interactive or unusual parent
+          - Any use of PowerShell ever
+          - Disabling the rule
+        answer: 1
+        explanation: Clustering plus an unusual source distinguishes attacker recon from routine admin use.
+      - prompt: Confidence in a discovery detection rises most when it is correlated with
+        options:
+          - Nothing else
+          - Preceding initial access and following credential access or lateral movement
+          - Only the time of day
+          - The size of the log file
+        answer: 1
+        explanation: Discovery sits between initial access and later stages, so surrounding activity confirms it.
+  - slug: de-yara-rules
+    title: Writing YARA Rules for File and Memory Detection
+    order: 16
+    difficulty: advanced
+    summary: Learn how YARA rules describe and detect malicious files and memory patterns, how to write effective rules by strings and conditions, and where YARA fits alongside behavioural detection.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.4", "sc200:2", "cysa:1.3"]
+    learning_objectives:
+      - Explain what YARA is and what it detects
+      - Write a YARA rule using strings and a condition
+      - Balance specificity against generality to control false positives
+    theory: |
+      **YARA** is a pattern-matching tool, often called the pattern-matching swiss-army knife for malware, that
+      lets an analyst describe the characteristics of malicious files or memory and then scan for anything
+      matching. Where behavioural detection watches what code *does* at runtime, YARA examines what content *is*:
+      the bytes, strings and structure of a file or a region of memory. It is widely used to identify malware
+      families, detect specific tools and implants on disk or in memory, hunt across an estate for known-bad
+      content, and triage suspicious files. Understanding YARA complements the behavioural detection skills from
+      earlier lessons, because some things are best caught by their content and others by their behaviour.
+
+      A YARA rule has a simple, readable structure built around two parts. The **strings** section defines the
+      patterns to look for, which can be text strings, hexadecimal byte sequences (useful for code or headers), or
+      regular expressions, each given an identifier. The **condition** section is a logical expression that
+      decides when the rule matches, for example requiring that a certain number of the defined strings are
+      present, that specific ones appear together, or that a pattern occurs at a particular offset such as a file
+      header. A rule might say: match if this unique code sequence and either of these two characteristic strings
+      are present. This structure makes rules both expressive and auditable, and because they are plain text they
+      are easy to share, which is why threat-intelligence providers publish YARA rules for new malware.
+
+      The craft of writing good rules is **balancing specificity against generality**. A rule tied to content too
+      specific (a single hard-coded string or hash) catches only one exact sample and misses trivial variants; a
+      rule too broad (a common string that also appears in legitimate software) generates false positives. The
+      skill is to key on characteristics that are **distinctive to the malware but stable across its variants**,
+      such as a unique decryption routine, an unusual combination of strings, or a structural quirk, so the rule
+      catches the family without flagging benign files. Good practice includes testing rules against both known
+      malware and a large set of clean files to measure false positives, using meaningful rule names and metadata,
+      and keeping rules maintainable. For the analyst, YARA is valuable for hunting (sweep every endpoint or every
+      file for a known implant), for enriching detections (a file that triggers a behavioural alert can be YARA-
+      scanned for family attribution), and for incident response (search memory captures and disk images for
+      indicators), so writing clear, well-balanced rules is a practical, high-leverage detection-engineering
+      skill, used alongside, not instead of, behaviour-based detection.
+    examples:
+      - title: What YARA matches
+        body: |
+          behavioural detection: what code DOES at runtime
+          YARA: what content IS -> bytes, strings, structure of a file or memory region
+          uses: identify malware families, find implants on disk/in memory, hunt, triage files.
+      - title: Rule structure and the balance
+        body: |
+          strings: text, hex byte sequences, or regex (each named)
+          condition: logical expression (N of the strings, specific ones together, pattern at an offset)
+          balance: too specific (one hash) misses variants; too broad (common string) -> false positives
+          -> key on distinctive-but-stable traits (unique routine, odd string combo).
+    exercise:
+      title: Write and tune a YARA rule
+      environment: A described malware sample's characteristics and a set of clean files (or a scenario)
+      tools: [A scenario or sample strings/bytes, the YARA reference, a document, a notes file]
+      steps:
+        - Explain what YARA detects and how it differs from behavioural detection.
+        - Describe the strings and condition sections of a YARA rule.
+        - Sketch a rule for a described sample using a couple of distinctive strings and a condition.
+        - Explain why keying on a single hard-coded string or hash makes a poor rule.
+        - Explain how you would test the rule against clean files to control false positives.
+        - Describe one way an analyst would use the rule (hunting, enrichment or incident response).
+      deliverable: A YARA rule sketch for a sample with strings and a condition, a critique of an overly specific or broad approach, a false-positive testing plan, and a use case.
+    expected_outcome: >
+      You can explain what YARA detects, write a rule with strings and a condition balanced for specificity and
+      generality, test it against clean files, and apply it for hunting, enrichment and incident response.
+    quiz:
+      - prompt: YARA detects malware primarily by
+        options:
+          - Watching runtime behaviour
+          - Matching the content (bytes, strings, structure) of files or memory against defined patterns
+          - Monitoring network timing
+          - Checking user logins
+        answer: 1
+        explanation: YARA is content pattern-matching on files and memory, complementing behavioural detection.
+      - prompt: The condition section of a YARA rule
+        options:
+          - Lists only the file name
+          - Is a logical expression deciding when the rule matches (for example N of the defined strings present)
+          - Encrypts the file
+          - Deletes the match
+        answer: 1
+        explanation: The condition combines the defined strings into the logic that triggers a match.
+      - prompt: A rule keyed to a single hard-coded string or hash is poor because it
+        options:
+          - Is too general
+          - Catches only one exact sample and misses trivial variants
+          - Always produces false positives
+          - Cannot be written in YARA
+        answer: 1
+        explanation: Over-specific rules match one sample and fail on minor variants of the same malware.
+      - prompt: Good YARA rules key on characteristics that are
+        options:
+          - Common to all software
+          - Distinctive to the malware but stable across its variants
+          - Randomly chosen
+          - Only the file size
+        answer: 1
+        explanation: Distinctive-but-stable traits catch the family without flagging benign files.
+  - slug: de-command-execution
+    title: Detecting Command and Script Execution
+    order: 17
+    difficulty: advanced
+    summary: Engineer detections for the execution tactic, how attackers run commands and scripts through interpreters, scripting engines and native tooling, which is central to nearly every intrusion.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.4", "sc200:2", "cysa:1.3"]
+    learning_objectives:
+      - Explain the execution tactic and why detecting it is high-value
+      - Identify command- and script-execution telemetry and patterns
+      - Engineer detections that catch malicious execution amid heavy legitimate use
+    theory: |
+      Nearly every intrusion involves the attacker **running commands or scripts** at some point, so the
+      **execution** tactic is one of the richest and most central places to detect malice. Attackers execute code
+      through command interpreters (cmd, bash), scripting engines (PowerShell, Windows Script Host, Python), and
+      native tools, often chaining them, a document launching PowerShell, which downloads and runs the next stage.
+      Detecting execution well pays off because it sits early and recurs throughout an attack, but it is also one
+      of the hardest areas because these same interpreters are used constantly and legitimately by administrators,
+      scripts and software, so the challenge is separating malicious execution from the enormous volume of benign
+      execution.
+
+      The telemetry is primarily **process creation** enriched with command lines, plus script-engine-specific
+      logging. The highest-value signals are in the **relationships and the content**, not the mere fact that an
+      interpreter ran. **Parent-child relationships** are revealing: an Office application or a PDF reader spawning
+      a command interpreter or PowerShell is a classic malicious execution pattern, as is a web server process
+      spawning a shell, because these parents have no legitimate reason to launch interpreters. **Command-line
+      content** carries strong signals: encoded or obfuscated commands (base64 blobs, excessive escaping),
+      download-and-execute one-liners, execution from suspicious paths (temp directories, user profiles), and
+      known malicious tooling patterns. **Script-engine logging**, such as PowerShell script-block logging, exposes
+      what scripts actually do even when obfuscated at the command line, which is why enabling it is a major
+      detection enabler. Each of these turns raw execution events into something a detection can key on.
+
+      Engineering these detections is an exercise in **behaviour and context over blocklists**, because you cannot
+      simply forbid PowerShell. Effective rules target the suspicious combination, an unusual parent spawning an
+      interpreter, an interpreter running an encoded command, execution from a temp path, rather than the
+      interpreter alone, and they lean on enrichment (is this parent-child pair ever normal here) and correlation
+      (execution following a suspicious email or preceding network activity). The approach is the same
+      behaviour-based thinking used across detection engineering, and coverage is measured against the execution
+      techniques in ATT&CK, with PowerShell and other scripting given particular attention because they are so
+      heavily abused. Tuning is critical given the volume, so these detections are scoped and enriched to avoid
+      drowning the SOC in legitimate administrative scripting. For the analyst, the lesson is that execution is
+      where much of an attack becomes visible if you are watching the right signals, parent-child anomalies,
+      command-line content and script-block logs, and that the craft is distinguishing the malicious use of
+      universal tools from their constant legitimate use through context, not through pretending the tools
+      themselves are forbidden.
+    examples:
+      - title: Where execution shows up
+        body: |
+          interpreters (cmd, bash), script engines (PowerShell, WSH, Python), native tools, often chained
+          classic: document -> PowerShell -> download + run next stage
+          central + early + recurring -> high value; but heavily used legitimately -> hard.
+      - title: The high-value signals
+        body: |
+          parent-child: Office/PDF/web-server spawning an interpreter or shell (no legit reason)
+          command line: encoded/obfuscated (base64), download-and-execute one-liners, temp-path execution
+          script-block logging (PowerShell) reveals what obfuscated scripts actually do -> enable it.
+    exercise:
+      title: Engineer command and script execution detections
+      environment: A described environment with process-creation and script-engine telemetry (or a scenario)
+      tools: [A scenario or sample process/command events, the ATT&CK reference, a document, a notes file]
+      steps:
+        - Explain the execution tactic and why detecting it is both high-value and difficult.
+        - Identify the telemetry that reveals command and script execution.
+        - Describe a suspicious parent-child execution pattern and why it is malicious.
+        - Describe two command-line content signals that suggest malicious execution.
+        - Explain why PowerShell script-block logging is a major detection enabler.
+        - Describe how you would tune these detections to avoid drowning in legitimate scripting.
+      deliverable: A set of execution detection ideas based on parent-child relationships and command-line content, the role of script-block logging, and a tuning approach for the high volume.
+    expected_outcome: >
+      You can explain the execution tactic, identify command- and script-execution telemetry and patterns, and
+      engineer behaviour- and context-based detections that catch malicious execution amid heavy legitimate use.
+    quiz:
+      - prompt: Detecting the execution tactic is high-value but difficult because
+        options:
+          - Attackers never run commands
+          - Code execution is central and early in attacks, but the same interpreters are used constantly and legitimately
+          - Interpreters leave no telemetry
+          - It only happens after data theft
+        answer: 1
+        explanation: Execution recurs throughout attacks, yet legitimate interpreter use is enormous, so separation is hard.
+      - prompt: A classic malicious execution pattern is
+        options:
+          - A user opening a web page
+          - An Office application or PDF reader spawning a command interpreter or PowerShell
+          - A scheduled backup running
+          - A normal login
+        answer: 1
+        explanation: Document applications have no legitimate reason to launch interpreters, so this is suspicious.
+      - prompt: PowerShell script-block logging is valuable because it
+        options:
+          - Blocks all PowerShell
+          - Reveals what scripts actually do even when the command line is obfuscated
+          - Encrypts the scripts
+          - Deletes the logs
+        answer: 1
+        explanation: Script-block logging exposes deobfuscated script content, a major detection enabler.
+      - prompt: Because interpreters are used legitimately all the time, execution detections should
+        options:
+          - Forbid all scripting
+          - Target suspicious combinations (unusual parent, encoded command, temp-path execution) with context, not the interpreter alone
+          - Ignore command lines
+          - Alert on every PowerShell launch
+        answer: 1
+        explanation: Behaviour and context distinguish malicious execution from constant legitimate interpreter use.
+  - slug: de-impact-detection
+    title: Detecting the Impact Tactic - Ransomware and Destruction
+    order: 18
+    difficulty: advanced
+    summary: Engineer detections for the impact tactic, where an attacker encrypts, destroys or disrupts data and systems, catching ransomware and wipers fast because at this stage every minute of delay means more damage.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.4", "sc200:2", "cysa:1.3"]
+    learning_objectives:
+      - Explain the impact tactic and why fast detection is critical
+      - Identify the behavioural signals of ransomware and destructive attacks
+      - Engineer detections that catch impact early enough to limit damage
+    theory: |
+      The **impact** tactic is the attacker's end goal in destructive operations, encrypting data for ransom,
+      wiping systems, destroying backups, or disrupting services, and detecting it is unlike other tactics in one
+      crucial respect: by the time impact begins, damage is actively happening, so detection speed matters more
+      than anywhere else. A ransomware encryption routine can render thousands of files unusable in minutes, so a
+      detection that fires quickly and triggers automated containment can be the difference between a contained
+      incident and an organisation-wide outage. Ideally impact is prevented by catching earlier tactics, but as a
+      last line, fast impact detection limits the blast radius, making it a high-priority, if late, signal.
+
+      The behavioural signals of destructive impact are often **loud**, which helps. **Ransomware encryption**
+      produces a distinctive pattern: a process rapidly opening, reading and writing (or replacing) a large number
+      of files across directories, often changing file extensions, dropping ransom notes (new identical files
+      appearing in many folders), and a spike in file I/O and entropy as files become encrypted. **Shadow-copy and
+      backup deletion** is a near-universal ransomware precursor, attackers delete Volume Shadow Copies and try to
+      destroy backups so victims cannot recover, so commands that delete shadow copies or disable recovery are a
+      very strong, specific signal. **Destruction and wiping** show as mass file deletion or overwriting, and
+      **disruption** as stopping critical services or mass system shutdowns. Because these behaviours are extreme
+      and rare in normal operation, they are comparatively detectable, the challenge is less false positives than
+      speed and automated response.
+
+      Engineering impact detections therefore emphasises **high-fidelity behavioural rules and fast response**.
+      Detect the mass-file-modification pattern of encryption (a single process touching very many files rapidly,
+      extension changes, ransom-note creation), detect shadow-copy deletion and recovery-disabling commands as a
+      specific high-confidence rule, detect mass deletion and service-stoppage patterns, and wherever possible wire
+      these to **automated containment** (isolate the host immediately) because manual response is too slow once
+      encryption is underway. These detections lean on endpoint telemetry (file and process activity) and are a
+      prime use case for automated response. Coverage is measured against the impact techniques in ATT&CK, with
+      ransomware behaviours given priority. The honest caveat is that impact detection is a last line, far better
+      to catch the intrusion earlier, but it is an essential safety net, and the shadow-copy-deletion signal in
+      particular is valuable because it often fires in the brief window between an attacker gaining control and
+      beginning encryption. For the analyst, the lesson is that impact is where speed is everything: the signals
+      are loud and detectable, so the engineering priority is firing fast and triggering automated containment to
+      limit damage that is, by definition, already beginning.
+    examples:
+      - title: Why speed is everything
+        body: |
+          impact = encrypt/wipe/destroy/disrupt -> damage is ACTIVELY happening when it starts
+          ransomware encrypts thousands of files in minutes -> fast detection + auto-containment limits blast radius
+          a late signal, but an essential last line.
+      - title: Loud, detectable signals
+        body: |
+          encryption: one process rapidly read/writes MANY files, extension changes, ransom notes in many folders, I/O + entropy spike
+          shadow-copy / backup deletion + recovery-disabling commands = very strong, specific precursor
+          destruction: mass deletion/overwrite; disruption: stopping critical services / mass shutdown
+          -> wire to AUTOMATED containment (manual is too slow).
+    exercise:
+      title: Engineer impact and ransomware detections
+      environment: A described environment with endpoint file and process telemetry (or a scenario)
+      tools: [A scenario or sample events, the ATT&CK reference, a document, a notes file]
+      steps:
+        - Explain the impact tactic and why detection speed matters more than for other tactics.
+        - Describe the behavioural pattern of ransomware encryption.
+        - Explain why shadow-copy and backup deletion is such a strong, specific signal.
+        - Write a detection idea for the mass-file-modification pattern of encryption.
+        - Explain why impact detections should trigger automated containment.
+        - Acknowledge why impact detection is a last line and what should ideally catch the attack sooner.
+      deliverable: A set of impact detection ideas covering encryption, shadow-copy deletion and destruction, wired to automated containment, with an acknowledgement of its last-line role.
+    expected_outcome: >
+      You can explain the impact tactic and why speed is critical, identify the loud behavioural signals of
+      ransomware and destruction, and engineer high-fidelity detections wired to automated containment to limit damage.
+    quiz:
+      - prompt: Detecting the impact tactic differs from other tactics mainly because
+        options:
+          - It is the easiest to prevent
+          - Damage is actively happening once it begins, so detection speed and automated response matter most
+          - It leaves no signals
+          - It never causes harm
+        answer: 1
+        explanation: Impact is live damage, so firing fast and auto-containing is more important than elsewhere.
+      - prompt: A very strong, specific ransomware precursor signal is
+        options:
+          - A normal file read
+          - Deletion of Volume Shadow Copies and commands that disable recovery
+          - A DNS lookup
+          - A software update
+        answer: 1
+        explanation: Attackers delete shadow copies and disable recovery before encrypting, a high-confidence signal.
+      - prompt: Ransomware encryption shows up behaviourally as
+        options:
+          - One file opened once
+          - A single process rapidly reading and writing many files, changing extensions and dropping ransom notes
+          - A reboot
+          - A normal login
+        answer: 1
+        explanation: Mass rapid file modification with extension changes and ransom notes is the encryption pattern.
+      - prompt: Impact detections should ideally trigger
+        options:
+          - A weekly report
+          - Automated containment, because manual response is too slow once encryption is underway
+          - Nothing at all
+          - A password reset only
+        answer: 1
+        explanation: Since damage is immediate, automated isolation limits the blast radius faster than manual action.
+  - slug: de-cloud-detection
+    title: Detecting Threats in Cloud Environments
+    order: 19
+    difficulty: advanced
+    summary: Engineer detections for cloud environments, where the control plane, identity and provider logs replace host and network telemetry, and the threats and signals differ from on-premises detection.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.4", "sc200:2", "cysa:1.3"]
+    learning_objectives:
+      - Explain how cloud detection differs from on-premises detection
+      - Identify the key cloud threats and the logs that reveal them
+      - Engineer detections against the cloud control plane and identity
+    theory: |
+      Most of the detection engineering met so far focuses on endpoint and network telemetry, but in the cloud the
+      ground shifts: there is often no traditional host or network tap to watch, and instead the richest, and
+      sometimes only, telemetry is the provider's **control-plane audit log**, the record of every API call that
+      creates, changes, accesses or deletes a resource. Cloud detection is therefore largely about engineering
+      detections against **API activity and identity**, because a cloud attack typically unfolds as a sequence of
+      API calls made with compromised credentials rather than as malware on a box. This reframes the detection
+      engineer's job: the data source is the audit log (and identity and resource logs), and the behaviours to
+      detect are suspicious patterns of API and identity activity.
+
+      The **key cloud threats** and their signals are distinct. **Credential and identity abuse** is central: a
+      stolen access key or account used from a new location or in anomalous ways, impossible-travel sign-ins, use
+      of long-dormant credentials, or a surge of failed then successful authentications. **Privilege escalation in
+      IAM** shows as an identity granting itself or another new permissions, attaching powerful policies, or
+      creating new credentials, high-value detections because IAM escalation is how cloud attackers gain control.
+      **Reconnaissance** appears as a burst of enumeration API calls (listing buckets, roles, instances).
+      **Resource abuse** such as cryptojacking shows as unexpected creation of expensive compute, and **data
+      access and exfiltration** as unusual reads or downloads from storage, or making a resource public.
+      **Defense evasion** in the cloud includes disabling logging, deleting trails, or changing security
+      configurations, and detecting tampering with the logging itself is critical because it is both an attack
+      step and a threat to your own visibility. Mapping these to a cloud-focused view of ATT&CK gives coverage
+      targets just as on-premises.
+
+      Engineering cloud detections follows the same disciplined approach, adapted to the data. Detections are
+      written against the audit and identity logs (ideally normalised into the SIEM via the cloud onboarding met
+      earlier), combining specific high-confidence rules (logging disabled, a root or break-glass account used, a
+      new admin policy attached) with behavioural and anomaly detection (unusual API patterns, impossible travel,
+      first-time actions for an identity), since baselining normal API and identity behaviour is especially
+      powerful in the cloud. Cloud-native detection services provided by the platforms generate many of these
+      signals out of the box and feed the SIEM, so the engineer's role is often to tune, enrich and correlate them
+      with the rest of the picture rather than build everything from scratch. The considerations mirror
+      on-premises, tuning for noise, and ensuring the logs exist in the first place (detection is impossible
+      without the audit log enabled). For the analyst, the lessons are that cloud detection centres on the control
+      plane and identity rather than hosts and networks, that the audit log is the primary source and its own
+      integrity a priority, that the key cloud threats, credential abuse, IAM escalation, recon, resource abuse,
+      data access, and logging tampering, each have recognisable API signals, and that engineering detections
+      against normalised cloud logs, blending precise rules with behavioural baselining, is how a SOC gains
+      visibility into attacks that never touch a traditional host.
+    examples:
+      - title: What changes for cloud detection
+        body: |
+          often no host/network tap -> the richest telemetry is the control-plane AUDIT LOG (every API call) + identity logs
+          a cloud attack = a sequence of API calls with compromised creds, not malware on a box
+          -> detect suspicious API + identity patterns; protect the log's own integrity.
+      - title: Key cloud threats and signals
+        body: |
+          credential/identity abuse (new location, impossible travel, dormant key); IAM privilege escalation (self-granting permissions, new admin policy, new keys)
+          recon (burst of enumeration calls); resource abuse (unexpected expensive compute); data access/exfil (unusual storage reads, making a resource public)
+          defense evasion (disabling logging, deleting trails) -> blend precise rules + behavioural baselining; cloud-native services feed many signals.
+    exercise:
+      title: Engineer cloud detections
+      environment: A described cloud environment with sample control-plane and identity logs (or a scenario)
+      tools: [A scenario or sample cloud logs, the ATT&CK reference, a document, a notes file]
+      steps:
+        - Explain why cloud detection centres on the control-plane audit log and identity rather than hosts and networks.
+        - Identify three key cloud threats and the API or identity signals that reveal each.
+        - Explain why detecting tampering with logging itself is critical in the cloud.
+        - Write a high-confidence detection idea (for example a new admin policy attached or logging disabled).
+        - Write a behavioural detection idea based on baselining normal API or identity activity.
+        - Explain the role of cloud-native detection services and why the logs must be enabled first.
+      deliverable: A cloud-detection plan covering the shift to control-plane and identity telemetry, key threats and their signals, a high-confidence rule, a behavioural detection, and the role of cloud-native services.
+    expected_outcome: >
+      You can explain how cloud detection differs from on-premises, identify the key cloud threats and the logs
+      that reveal them, and engineer detections against the control plane and identity blending rules with baselining.
+    quiz:
+      - prompt: Cloud detection centres on the control-plane audit log because
+        options:
+          - Hosts are the only cloud telemetry
+          - There is often no traditional host or network tap, and the audit log records the API calls an attack is made of
+          - Audit logs contain no useful data
+          - Cloud has no identities
+        answer: 1
+        explanation: Cloud attacks unfold as API calls with credentials, so the audit and identity logs are the key source.
+      - prompt: A high-value cloud detection is IAM privilege escalation, which shows as
+        options:
+          - A normal read of one file
+          - An identity granting itself new permissions, attaching powerful policies or creating new credentials
+          - A scheduled backup
+          - A DNS lookup
+        answer: 1
+        explanation: IAM escalation is how cloud attackers gain control, so self-granted permissions are a strong signal.
+      - prompt: Detecting the disabling or deletion of logging is critical because it is
+        options:
+          - Harmless routine activity
+          - Both an attacker defense-evasion step and a direct threat to your own visibility
+          - Only a performance issue
+          - Never possible to detect
+        answer: 1
+        explanation: Tampering with logging both hides the attacker and blinds the defender, so it must be detected.
+      - prompt: Behavioural detection is especially powerful in the cloud because
+        options:
+          - API activity is random and unbaselinable
+          - Baselining normal API and identity behaviour makes anomalies like impossible travel and first-time actions stand out
+          - It replaces the need for logs
+          - It only works on endpoints
+        answer: 1
+        explanation: Baselining identity and API patterns surfaces the anomalies typical of cloud credential abuse.

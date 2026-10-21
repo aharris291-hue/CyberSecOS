@@ -1259,3 +1259,608 @@ lessons:
           - Disables logging
         answer: 1
         explanation: With fewer capabilities, a compromised process grants the attacker far less power.
+  - slug: linux-web-server-security
+    title: Web Server Log Analysis and Hardening on Linux
+    order: 15
+    difficulty: intermediate
+    summary: Learn to read web server access and error logs to spot attacks, and to harden a Linux web server, since public web servers are among the most attacked systems.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:3.2", "secplus:4.1", "cysa:1.1"]
+    learning_objectives:
+      - Read web server access and error logs to identify attacks
+      - Recognise common web attack signatures in logs
+      - Harden a Linux web server against common threats
+    theory: |
+      A public web server is one of the most exposed systems an organisation runs, reachable by anyone on the
+      internet, so its logs are a front-line detection source and its hardening is high priority. **Access logs**
+      record every request: the client IP, timestamp, the HTTP method and path, the status code returned, the
+      user-agent and often the referrer. **Error logs** record server-side problems. Reading these fluently is a
+      core analyst skill because attacks against web applications leave distinctive traces here before they
+      succeed, and the server log is often the only place a reconnaissance or probing phase is visible.
+
+      Several attack patterns have recognisable **signatures** in access logs. A burst of requests to many
+      different paths, especially to admin pages, backup files and common vulnerabilities, is **scanning or
+      directory enumeration**, often with a scanner's user-agent. Requests whose paths or parameters contain
+      `../`, SQL fragments (`' OR 1=1`), script tags, or long encoded strings signal attempts at **path
+      traversal, SQL injection or cross-site scripting**. A spike of failed logins against a login endpoint is
+      **brute forcing or credential stuffing**. A sudden stream of 500 errors in the error log may mean an attack
+      is triggering faults, and a 200 where you would expect a 404 may mean an attacker found something real.
+      Correlating status codes with paths and volumes turns a wall of log lines into a story of what was tried and
+      what worked.
+
+      **Hardening** reduces both the attack surface and the blast radius. Run the web server as an unprivileged,
+      dedicated user so a compromise does not yield root; keep the server and application patched; disable unused
+      modules and remove default content and verbose version banners that aid reconnaissance; enforce TLS with
+      sound configuration; and set sensible limits (request size, rate limiting) to blunt abuse. A **web
+      application firewall** in front adds signature and anomaly filtering for the application-layer attacks seen
+      above. File and directory permissions should prevent the web process from writing where it executes, and
+      logging should be complete and shipped off the host so an attacker cannot simply erase their traces. For the
+      analyst, the combination matters: hardening makes attacks less likely to succeed, and good logging makes the
+      attempts that do occur visible, so reading the logs and tightening the configuration are two halves of
+      defending the most-attacked box on the network.
+    examples:
+      - title: Attack signatures in access logs
+        body: |
+          many paths / admin / backup files + scanner user-agent -> scanning/enumeration
+          path or params with ../ , ' OR 1=1 , <script> , long encoded blobs -> traversal/SQLi/XSS
+          burst of failed logins -> brute force / credential stuffing
+          200 where you expected 404 -> attacker found something real.
+      - title: Hardening a web server
+        body: |
+          run as unprivileged dedicated user (compromise != root); patch server + app
+          disable unused modules, remove default content + version banner; enforce TLS
+          rate limit + request-size limits; WAF in front; ship logs off-host (can't be erased).
+    exercise:
+      title: Analyse web server logs and harden the server
+      environment: A Linux web server or sample access and error logs (or a scenario)
+      tools: [A scenario or sample web logs, a terminal or notes file, a document]
+      steps:
+        - Explain what the access log and error log each record and why both matter.
+        - Identify a scanning or enumeration pattern in the sample and the signal that gives it away.
+        - Identify an injection or traversal attempt in the sample by its path or parameters.
+        - Interpret a suspicious status-code pattern (for example a 200 where a 404 was expected).
+        - Recommend three hardening measures and the risk each reduces.
+        - Explain why shipping logs off the host matters for investigation.
+      deliverable: A web server analysis identifying a scan and an injection attempt from sample logs, an interpretation of a status-code anomaly, and a hardening plan with three measures.
+    expected_outcome: >
+      You can read web server access and error logs to spot scanning, injection and brute-force attacks, interpret
+      status-code patterns, and harden a Linux web server to reduce both the attack surface and the blast radius.
+    quiz:
+      - prompt: In a web server access log, a path containing a sequence like ../ most likely indicates
+        options:
+          - A normal image request
+          - A path-traversal attempt to reach files outside the web root
+          - A successful login
+          - A DNS query
+        answer: 1
+        explanation: The ../ sequence is the classic signature of directory or path traversal.
+      - prompt: A burst of requests to many admin and backup paths with a scanner user-agent suggests
+        options:
+          - A search engine indexing
+          - Scanning or directory enumeration by an attacker
+          - A software update
+          - A backup job
+        answer: 1
+        explanation: Rapid probing of many sensitive paths with a scanner agent is enumeration.
+      - prompt: Running the web server as an unprivileged dedicated user mainly
+        options:
+          - Speeds up the server
+          - Limits the blast radius so a web compromise does not immediately yield root
+          - Encrypts the traffic
+          - Removes the need for patching
+        answer: 1
+        explanation: Least privilege for the web process contains the damage if it is compromised.
+      - prompt: Shipping web server logs off the host is important because it
+        options:
+          - Saves disk space only
+          - Preserves the evidence so an attacker who compromises the host cannot erase their traces
+          - Makes the site faster
+          - Disables the error log
+        answer: 1
+        explanation: Off-host logs survive host compromise, keeping the attack trail intact for investigation.
+  - slug: linux-package-supply-chain
+    title: Package Management and Software Supply Chain on Linux
+    order: 16
+    difficulty: intermediate
+    summary: Understand how Linux software is installed and trusted through package managers and repositories, the supply-chain risks involved, and how signing, pinning and provenance protect the chain.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:2.3", "secplus:4.1", "cysa:1.3"]
+    learning_objectives:
+      - Explain how Linux package managers install and verify software
+      - Describe software supply-chain risks on Linux
+      - Apply signing, trusted repositories and provenance to protect the chain
+    theory: |
+      On Linux, almost all software arrives through **package managers** (apt, yum/dnf, apk and others) pulling
+      from **repositories**, and understanding this chain is essential because it is both a security strength and
+      a target. The strength is that mainstream repositories distribute **signed** packages: the package manager
+      verifies each package against the repository's cryptographic key before installing, so a package that was
+      tampered with in transit or served by an impostor mirror is rejected. This is why adding a third-party
+      repository means adding and trusting its signing key, and why doing that casually is risky: you are
+      extending your trust to whoever controls that repository and key.
+
+      The **supply-chain risks** are where modern attacks increasingly live, because compromising the software
+      everyone installs is far more efficient than attacking each target. Risks include installing from
+      **untrusted or compromised repositories**, pulling in a **malicious or typo-squatted package** (a name close
+      to a popular one), a **dependency** several layers down being malicious or vulnerable, and, at the extreme, a
+      legitimate upstream project being compromised so that even the official package carries a backdoor. The same
+      concerns apply strongly to **language package ecosystems** (pip, npm and similar) that developers use
+      alongside the OS package manager, which often pull directly from the internet with weaker vetting and are a
+      frequent vector. A single poisoned dependency can reach enormous numbers of systems, as real incidents have
+      shown.
+
+      Protecting the chain combines **trust, verification and provenance**. Prefer official, signed repositories
+      and add third-party ones sparingly and deliberately, verifying their keys. **Pin** versions and use lock
+      files so builds are reproducible and an attacker cannot silently slip in a new malicious version. Scan
+      dependencies for known vulnerabilities (software composition analysis) and increasingly track
+      **provenance**, a verifiable record of where a package came from and how it was built, with emerging
+      standards and software bills of materials (SBOMs) that inventory exactly what is installed. For the analyst,
+      the practical signals are packages installed from unexpected repositories, unsigned or key-mismatch
+      warnings, and newly added repository keys, while the architectural lesson is that trusting software is a
+      deliberate decision: every repository and dependency you accept is part of your attack surface, so the chain
+      must be curated, verified and inventoried rather than trusted by default.
+    examples:
+      - title: The trust chain
+        body: |
+          package manager pulls from repositories; packages are SIGNED -> verified against the repo key before install
+          tampered or impostor-served packages are rejected
+          adding a third-party repo = adding and trusting its signing key (extends your trust).
+      - title: Supply-chain risks and defences
+        body: |
+          risks: untrusted/compromised repo, typo-squatted package, malicious deep dependency, poisoned upstream
+          (language ecosystems pip/npm pull from the internet with weaker vetting -> frequent vector)
+          defend: official signed repos, pin versions + lock files, SCA scanning, provenance + SBOM inventory.
+    exercise:
+      title: Secure a Linux software supply chain
+      environment: A described Linux system or build pipeline and its software sources (or a scenario)
+      tools: [A scenario or sample package sources, a terminal or notes file, a document]
+      steps:
+        - Explain how a package manager verifies a package before installing it.
+        - Explain why adding a third-party repository extends your trust and the risk that carries.
+        - Describe three supply-chain risks (typo-squatting, malicious dependency, compromised upstream).
+        - Explain why language ecosystems like pip and npm are a frequent additional vector.
+        - Recommend defences including signed repositories, version pinning and dependency scanning.
+        - Explain how provenance or an SBOM helps after a supply-chain incident is announced.
+      deliverable: A supply-chain security plan covering package verification, repository trust, the main risks, language-ecosystem exposure, and defences including pinning, scanning and provenance/SBOM.
+    expected_outcome: >
+      You can explain how Linux package managers verify software, the supply-chain risks across OS and language
+      ecosystems, and the signing, pinning, scanning and provenance practices that protect the chain.
+    quiz:
+      - prompt: Mainstream Linux repositories protect installs by
+        options:
+          - Installing any package without checks
+          - Distributing signed packages that the package manager verifies against the repository key before installing
+          - Disabling the network
+          - Encrypting the disk
+        answer: 1
+        explanation: Package signing lets the manager reject tampered or impostor-served packages.
+      - prompt: Adding a third-party repository is risky mainly because it
+        options:
+          - Speeds up installs
+          - Extends your trust to whoever controls that repository and its signing key
+          - Removes all packages
+          - Disables apt or dnf
+        answer: 1
+        explanation: You trust the third party's key, so a compromise there can push malicious packages to you.
+      - prompt: A typo-squatted package is one that
+        options:
+          - Has a verified SBOM
+          - Uses a name close to a popular package to trick users into installing malicious code
+          - Is always signed
+          - Cannot be installed
+        answer: 1
+        explanation: Typo-squatting relies on a near-identical name to a trusted package to deceive installers.
+      - prompt: Version pinning and lock files protect the supply chain by
+        options:
+          - Encrypting dependencies
+          - Making builds reproducible so an attacker cannot silently substitute a new malicious version
+          - Removing all dependencies
+          - Disabling signing
+        answer: 1
+        explanation: Pinning fixes exact versions, preventing silent introduction of a malicious update.
+  - slug: linux-shell-forensics
+    title: Shell History and Command Forensics on Linux
+    order: 17
+    difficulty: intermediate
+    summary: Learn to reconstruct what happened on a Linux host from shell history, command logging and related artifacts, and understand how attackers try to hide their tracks.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.8", "sc200:3", "cysa:1.2"]
+    learning_objectives:
+      - Locate and interpret shell history and command-logging artifacts
+      - Reconstruct a user or attacker's command activity
+      - Recognise anti-forensic attempts to hide command history
+    theory: |
+      When investigating a compromised or suspicious Linux host, one of the most revealing questions is simply
+      what **commands** were run, and several artifacts can answer it. The most familiar is **shell history**:
+      files like `.bash_history` in each user's home directory record the commands a shell has run, often with
+      timestamps if the shell is configured for them. History is a quick first look that can show an attacker's
+      exact actions, reconnaissance, downloads, privilege escalation attempts, in their own words. But history has
+      real limitations as evidence: it is written on shell exit (so a still-open or killed session may not have
+      flushed), it is per-user and per-shell, it can be disabled or redirected, and the user can edit or delete
+      it, so it is a valuable lead but not a trustworthy complete record on its own.
+
+      More reliable sources exist when they have been enabled in advance. The Linux **audit system (auditd)** can
+      log command execution (via execve) with full detail, user, command, arguments, time, in a way the user
+      cannot simply erase, and shipping those logs off the host makes them tamper-resistant. Other artifacts fill
+      the picture: `/var/log` authentication and sudo logs show who became root and when, process accounting if
+      enabled records executed commands, and timestamps across the filesystem (when files were created, modified
+      or accessed) help build a timeline. Correlating shell history against these independent sources is how an
+      analyst distinguishes a genuine record from one that has been tampered with, and how they fill the gaps that
+      history alone leaves.
+
+      Attackers know about these artifacts and attempt **anti-forensics**. Common tricks include clearing or
+      truncating history files, setting the history size to zero or pointing `HISTFILE` at `/dev/null`, running
+      commands with a leading space (which, with a common setting, keeps them out of history), using shells or
+      techniques that do not log, and deleting logs. Crucially, these evasions often leave their own traces, a
+      suspiciously empty or truncated history, a gap in logs, the command that disabled history still captured by
+      auditd, which is why having independent, tamper-resistant logging (auditd shipped off-host) matters so much:
+      it survives the attacker's attempt to cover the local history. For the analyst, the practical approach is to
+      treat shell history as a useful but untrustworthy first lead, to lean on auditd and off-host logs for the
+      authoritative record, to correlate multiple sources into a timeline, and to read the absence or manipulation
+      of history as itself a finding, because an attacker's effort to hide their commands is often as telling as
+      the commands themselves.
+    examples:
+      - title: Command artifacts
+        body: |
+          shell history (.bash_history): quick first look, commands in the attacker's own words
+            BUT: flushed on exit, per-user/shell, editable/deletable -> a lead, not a trustworthy record.
+          auditd (execve): full command logging the user can't easily erase; ship OFF-HOST -> tamper-resistant
+          + auth/sudo logs, process accounting, filesystem timestamps -> correlate into a timeline.
+      - title: Anti-forensics and its traces
+        body: |
+          clear/truncate history; HISTSIZE=0; HISTFILE=/dev/null; leading-space commands; delete logs
+          but evasions leave traces: empty/truncated history, log gaps, the disabling command captured by auditd
+          -> absence/manipulation of history is itself a finding.
+    exercise:
+      title: Reconstruct command activity on a host
+      environment: A described compromised Linux host with history and logs (or a scenario)
+      tools: [A scenario or sample history/auditd/auth logs, a terminal or notes file, a document]
+      steps:
+        - Locate shell history and explain what it shows and its limitations as evidence.
+        - Explain why auditd execve logging shipped off-host is a more reliable record.
+        - Use auth and sudo logs to determine who gained root and when.
+        - Correlate history, auditd and filesystem timestamps into a short timeline of attacker activity.
+        - Identify an anti-forensic attempt (cleared history, HISTFILE redirected) and the trace it left.
+        - Explain why the manipulation of history is itself an investigative finding.
+      deliverable: A command-forensics reconstruction building a timeline from history, auditd and auth logs, identifying an anti-forensic attempt and its residual trace.
+    expected_outcome: >
+      You can locate and interpret shell history and command-logging artifacts, reconstruct command activity into
+      a timeline using tamper-resistant sources, and recognise anti-forensic attempts and the traces they leave.
+    quiz:
+      - prompt: Shell history (.bash_history) is a useful but untrustworthy record because it
+        options:
+          - Cannot be read at all
+          - Is flushed on exit, is per-user and per-shell, and can be edited or deleted by the user
+          - Is cryptographically signed
+          - Logs every process on the system
+        answer: 1
+        explanation: History is a quick lead but easily incomplete or altered, so it is not authoritative.
+      - prompt: A more reliable, tamper-resistant record of executed commands comes from
+        options:
+          - The desktop wallpaper
+          - The audit system (auditd) logging execve, especially when shipped off the host
+          - The history file alone
+          - The screensaver
+        answer: 1
+        explanation: Auditd records commands the user cannot easily erase, and off-host storage resists tampering.
+      - prompt: An attacker pointing HISTFILE at /dev/null is attempting to
+        options:
+          - Speed up the shell
+          - Prevent their commands from being recorded in shell history
+          - Encrypt the history
+          - Back up the history
+        answer: 1
+        explanation: Redirecting HISTFILE discards history so the commands are not saved.
+      - prompt: A suspiciously empty or truncated history should be treated as
+        options:
+          - Proof nothing happened
+          - Itself a finding, since anti-forensic manipulation is often as telling as the commands
+          - A reason to stop investigating
+          - A normal state always
+        answer: 1
+        explanation: Missing or manipulated history signals an attacker covering tracks, which is significant.
+  - slug: linux-ebpf-monitoring
+    title: Runtime Security Monitoring with eBPF
+    order: 18
+    difficulty: advanced
+    summary: Understand how eBPF enables deep, low-overhead visibility into the Linux kernel for security monitoring, and how modern runtime security and detection tools use it to see process, file and network activity.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.4", "sc200:3", "cysa:1.1"]
+    learning_objectives:
+      - Explain what eBPF is and why it suits security monitoring
+      - Describe the kernel-level visibility eBPF provides
+      - Apply eBPF-based tooling for Linux runtime detection
+    theory: |
+      **eBPF** (extended Berkeley Packet Filter) is a technology that lets small, safe programs run inside the
+      **Linux kernel** in response to events, without modifying the kernel or loading risky kernel modules, and it
+      has become the foundation of modern Linux observability and runtime security. For security, its appeal is
+      deep visibility with low overhead: because eBPF programs attach directly to kernel events, they can observe,
+      with high fidelity and at the source, exactly what processes do, system calls, process creation, file
+      access, network connections, as it happens, rather than inferring it from logs after the fact. The kernel
+      verifies each eBPF program before running it, so this power comes with safety guarantees that traditional
+      kernel modules lacked, which is why it is now trusted in production.
+
+      The **visibility** eBPF provides is precisely what security monitoring wants. By hooking kernel functions and
+      system calls, eBPF-based tools see process execution (every program launched, with its arguments and
+      lineage), file activity (what was read, written, or executed), and network activity (connections, their
+      processes and destinations), all correlated at the kernel level where it cannot easily be hidden. This is
+      especially valuable on Linux servers and in containers, where it provides the runtime visibility that EDR
+      brings to endpoints: a single eBPF-based agent can watch an entire host and its containers from the kernel,
+      seeing into containers without needing an agent inside each one, because containers share the host kernel.
+      This makes eBPF a natural fit for cloud-native and containerised environments where traditional
+      host-based agents struggle.
+
+      In practice, security teams use eBPF through **tools rather than by writing raw programs**: runtime security
+      and detection projects and commercial products build on eBPF to provide detections, alerting on suspicious
+      process execution, unexpected network connections, container escapes, privilege changes and the behavioural
+      patterns covered in earlier detection lessons, now observed directly from the kernel. The benefits are
+      fidelity (seeing the real syscall-level truth), low performance cost, and container-awareness, while the
+      considerations include needing a sufficiently modern kernel and the usual tuning to control noise. For the
+      analyst, the key point is conceptual: eBPF is how modern Linux and container runtime detection gets its
+      high-quality telemetry, delivering the process, file and network visibility that behaviour-based detection
+      and hunting depend on, from inside the kernel where activity is hardest to hide, so understanding that eBPF
+      underpins today's Linux runtime security explains where that rich telemetry comes from and why it is trusted.
+    examples:
+      - title: What eBPF is
+        body: |
+          small, kernel-verified programs run inside the Linux kernel on events (no kernel module, no kernel changes)
+          deep visibility + low overhead; observe at the SOURCE, as it happens (not inferred from logs later).
+      - title: Visibility it gives (and containers)
+        body: |
+          hooks syscalls/kernel funcs -> process execution + lineage, file read/write/exec, network connections
+          one kernel-level agent watches the host AND its containers (shared kernel) -> no agent inside each container
+          = EDR-grade runtime visibility for Linux servers and cloud-native/containerised environments.
+    exercise:
+      title: Plan eBPF-based runtime monitoring
+      environment: A described Linux or containerised environment needing runtime visibility (or a scenario)
+      tools: [A scenario, a notes file, a document]
+      steps:
+        - Explain what eBPF is and why kernel verification makes it safer than traditional kernel modules.
+        - Describe the process, file and network visibility eBPF provides and why observing at the kernel matters.
+        - Explain why eBPF is especially valuable for containers.
+        - Give two detections an eBPF-based tool could provide for Linux runtime threats.
+        - Note the practical considerations (kernel version, tuning for noise).
+        - Explain how eBPF telemetry supports the behaviour-based detection and hunting from earlier lessons.
+      deliverable: A plan for eBPF-based runtime monitoring covering what it is, the visibility it gives, its container advantage, example detections, practical considerations, and its role in behaviour-based detection.
+    expected_outcome: >
+      You can explain what eBPF is and why it suits security monitoring, describe the kernel-level process, file
+      and network visibility it provides, and apply eBPF-based tooling for Linux and container runtime detection.
+    quiz:
+      - prompt: eBPF is attractive for security monitoring because it
+        options:
+          - Requires risky kernel modules
+          - Runs kernel-verified programs inside the kernel to observe activity with high fidelity and low overhead
+          - Only works on Windows
+          - Infers activity from logs after the fact
+        answer: 1
+        explanation: eBPF observes directly at kernel events, safely and efficiently, rather than inferring later.
+      - prompt: eBPF is especially valuable for containers because
+        options:
+          - Containers have their own kernels
+          - Containers share the host kernel, so one kernel-level agent sees into all of them without an agent inside each
+          - It disables containers
+          - It only sees network traffic
+        answer: 1
+        explanation: Shared-kernel visibility lets a single eBPF agent monitor the host and all its containers.
+      - prompt: The kind of visibility eBPF provides includes
+        options:
+          - Only CPU temperature
+          - Process execution and lineage, file activity, and network connections observed at the kernel
+          - Only disk space
+          - Only user passwords
+        answer: 1
+        explanation: eBPF hooks syscalls and kernel functions to see process, file and network activity.
+      - prompt: Security teams typically use eBPF by
+        options:
+          - Writing raw eBPF programs for every detection
+          - Using runtime-security and detection tools built on eBPF that provide detections and alerting
+          - Avoiding it entirely
+          - Disabling the kernel
+        answer: 1
+        explanation: Teams consume eBPF through tools and products rather than hand-writing kernel programs.
+  - slug: linux-auditd
+    title: Linux Auditing with auditd
+    order: 19
+    difficulty: advanced
+    summary: Learn how the Linux audit system (auditd) records detailed security-relevant events at the kernel level, how to write audit rules, and how auditd underpins Linux detection and forensics.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.4", "sc200:3", "cysa:1.1"]
+    learning_objectives:
+      - Explain what auditd is and the visibility it provides
+      - Write audit rules to capture security-relevant events
+      - Use auditd data for Linux detection and investigation
+    theory: |
+      The Linux **audit system**, with its daemon **auditd**, is the kernel's built-in facility for recording
+      security-relevant events, and it provides the detailed, authoritative telemetry that Linux detection and
+      forensics depend on. Ordinary logs (auth.log, application logs) capture a lot, but auditd goes deeper by
+      recording events at the kernel level: system calls, file access, command execution, authentication events,
+      and changes to sensitive files, with details like which user and process did what, when, and with what
+      result. Because it sees system calls as they happen, auditd can record things higher-level logs miss, and its
+      records are harder for an attacker to avoid producing, making it a cornerstone of serious Linux monitoring
+      and a primary source for many Linux detections and investigations.
+
+      The power of auditd comes from **audit rules**, which tell it what to record. Rules can watch specific files
+      or directories for access or modification (a **watch**, useful for sensitive files like /etc/passwd,
+      /etc/shadow, SSH configs and binaries), or trigger on specific **system calls** with filters (for example,
+      record every execve to capture command execution, or every change to file permissions). Well-designed rule
+      sets, such as those derived from security benchmarks or mapped to ATT&CK, capture the events that matter,
+      command execution, sensitive file changes, privilege changes, module loading, without drowning the system in
+      noise, which is the central tuning challenge: auditd can record almost everything, so rules must be chosen to
+      capture high-value events at an acceptable volume. Each rule can carry a key so matching events are easy to
+      search and attribute to a detection purpose.
+
+      For the analyst, auditd is both a **detection feed and a forensic record**. Forwarded into a SIEM, auditd
+      events power detections for suspicious command execution, tampering with sensitive files, unexpected
+      privilege use and more, complementing the eBPF-based runtime monitoring and the log triage covered earlier.
+      In an investigation, auditd logs can reconstruct exactly what a user or process did, what commands ran, what
+      files were touched, which is invaluable for understanding a Linux compromise. The considerations are the
+      volume and performance cost (so rules are tuned), and that auditd logs, like any, must be protected and
+      ideally shipped off-host so an attacker who gains root cannot simply erase them. The recurring lessons are
+      that auditd is the Linux kernel's authoritative security-event recorder, that the quality of what it captures
+      depends entirely on well-chosen, tuned audit rules, and that its detailed, hard-to-avoid records make it a
+      foundational source for both detecting Linux attacks and investigating them after the fact.
+    examples:
+      - title: Why auditd goes deeper
+        body: |
+          kernel-level recording of syscalls, file access, command execution, auth, sensitive-file changes (who/what/when/result)
+          sees what higher-level logs miss; records harder for an attacker to avoid producing
+          -> cornerstone of serious Linux monitoring and a primary forensic source.
+      - title: Audit rules
+        body: |
+          watch a file/dir for access or change (e.g. /etc/shadow, SSH config, binaries)
+          trigger on a syscall with filters (e.g. record every execve = command execution; permission changes)
+          tune to capture high-value events at acceptable volume; tag rules with a key for easy search; ship logs off-host.
+    exercise:
+      title: Configure and use auditd
+      environment: A described Linux host needing audit coverage (or a scenario with sample audit logs)
+      tools: [A scenario or sample auditd logs, a document, a notes file]
+      steps:
+        - Explain what auditd records and why it goes deeper than ordinary logs.
+        - Write an audit rule (in words) that watches a sensitive file for modification.
+        - Write an audit rule that records command execution via a system call.
+        - Explain the tuning challenge of capturing high-value events without excessive volume.
+        - Describe a detection you could build from auditd events in a SIEM.
+        - Explain why auditd logs should be protected and shipped off-host.
+      deliverable: An auditd plan with example watch and syscall rules, a tuning rationale, a SIEM detection idea, and log-protection measures.
+    expected_outcome: >
+      You can explain auditd and the kernel-level visibility it provides, write audit rules to capture
+      security-relevant events, and use auditd data for Linux detection and forensic investigation.
+    quiz:
+      - prompt: auditd provides deeper visibility than ordinary logs because it
+        options:
+          - Only records uptime
+          - Records security-relevant events at the kernel level, including system calls, file access and command execution
+          - Cannot see file access
+          - Runs only in the cloud
+        answer: 1
+        explanation: Kernel-level auditing captures detailed events that higher-level logs often miss.
+      - prompt: Audit rules determine
+        options:
+          - The server's IP address
+          - What auditd records, such as watching sensitive files or triggering on specific system calls
+          - The CPU speed
+          - The desktop wallpaper
+        answer: 1
+        explanation: Rules (watches and syscall triggers) decide which events auditd captures.
+      - prompt: The central tuning challenge with auditd is that
+        options:
+          - It cannot record anything
+          - It can record almost everything, so rules must capture high-value events without excessive volume
+          - It only records one event
+          - It needs no configuration
+        answer: 1
+        explanation: Because auditd can log nearly everything, rules must be chosen to balance value against noise.
+      - prompt: auditd logs should be shipped off-host because
+        options:
+          - It improves CPU performance
+          - An attacker who gains root could otherwise erase them, so off-host copies preserve the record
+          - It makes them unreadable
+          - It disables auditing
+        answer: 1
+        explanation: Centralising audit logs protects them from tampering by an attacker with local root.
+  - slug: linux-pam-authentication
+    title: PAM and Linux Authentication Hardening
+    order: 20
+    difficulty: intermediate
+    summary: Understand how Pluggable Authentication Modules (PAM) control authentication on Linux, why PAM is a powerful security control point, and how to harden and monitor Linux authentication through it.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.6", "sc200:3", "cysa:1.2"]
+    learning_objectives:
+      - Explain what PAM is and why it is central to Linux authentication
+      - Harden Linux authentication through PAM configuration
+      - Monitor authentication and recognise PAM as an attack surface
+    theory: |
+      On Linux, the question of how a user proves who they are, at login, over SSH, when using sudo, is answered by
+      **PAM**, Pluggable Authentication Modules, a flexible framework that sits between applications and the actual
+      authentication methods. Rather than each program implementing its own password checking, applications call
+      PAM, and PAM runs a configurable **stack** of modules that decide whether authentication succeeds and what
+      else happens (checking passwords, enforcing password quality, limiting login times, locking accounts after
+      failures, requiring a second factor, logging the attempt). This makes PAM a single, powerful control point:
+      change the PAM configuration and you change how authentication works across the system, which is exactly why
+      it is central both to hardening Linux authentication and, if abused, to subverting it.
+
+      **Hardening through PAM** applies several controls at this chokepoint. Enforce **strong password policy**
+      (complexity, length, history, preventing reuse) via the relevant modules. Implement **account lockout or
+      rate limiting** so repeated failed attempts (the brute force met in the auth-log lesson) are slowed or
+      blocked. Add **multi-factor authentication** by inserting an MFA module into the stack, so even SSH or console
+      logins require a second factor. Restrict **who can log in and when** (limiting access to certain users,
+      groups, or times) and control resource limits. Because sudo also uses PAM, these controls extend to privilege
+      elevation. The common theme is that PAM lets an administrator impose consistent, strong authentication
+      policy across the system from one framework, rather than hoping each application does the right thing.
+
+      PAM is also an **attack surface and a monitoring source**, which defenders must appreciate. Because PAM
+      governs authentication, an attacker with root may try to subvert it, a **malicious PAM module** or a modified
+      configuration can create a backdoor (for example a module that accepts a secret password for any account, or
+      that silently harvests credentials as users authenticate), a stealthy and dangerous persistence and
+      credential-theft technique. So the integrity of PAM configuration and modules is something to protect and
+      monitor (file integrity monitoring, met earlier, applies directly), and unexpected changes to PAM are a
+      strong signal. On the detection side, PAM-driven authentication events feed the logs analysed for brute
+      force, unusual logins and privilege use. For the analyst, the lessons are that PAM is the configurable heart
+      of Linux authentication and a single powerful place to enforce strong password policy, lockout, MFA and
+      access restrictions, that because it controls authentication it is a prized target, so its integrity must be
+      protected and monitored, and that authentication is both hardened and attacked at this chokepoint, which is
+      why understanding PAM is essential to securing Linux systems.
+    examples:
+      - title: PAM as the authentication chokepoint
+        body: |
+          apps (login, SSH, sudo) call PAM -> PAM runs a configurable STACK of modules deciding success + side effects
+          one control point: change PAM config -> change authentication system-wide
+          -> central to hardening AND, if abused, to subverting authentication.
+      - title: Harden and the attack surface
+        body: |
+          harden: strong password policy, account lockout/rate limiting (brute force), insert an MFA module, restrict who/when can log in (sudo too)
+          attack: a malicious PAM module or modified config = backdoor (accept a secret password for any account) or credential harvester -> stealthy persistence
+          -> protect + monitor PAM integrity (FIM); PAM events feed auth-log detections.
+    exercise:
+      title: Harden and monitor Linux authentication via PAM
+      environment: A described Linux host and its authentication requirements (or a scenario)
+      tools: [A scenario or sample PAM config and auth logs, a document, a notes file]
+      steps:
+        - Explain what PAM is and why calling it a single control point is accurate.
+        - Describe how you would enforce strong password policy and account lockout via PAM.
+        - Explain how MFA and access restrictions are added through the PAM stack.
+        - Explain why PAM also governs sudo privilege elevation.
+        - Describe how a malicious PAM module or config change creates a backdoor and why it is stealthy.
+        - Explain how you would protect and monitor PAM integrity and use its events for detection.
+      deliverable: A PAM hardening and monitoring plan covering password policy, lockout, MFA and access restrictions, plus protecting PAM integrity against malicious modules and using PAM events for detection.
+    expected_outcome: >
+      You can explain PAM and its central role in Linux authentication, harden authentication through PAM
+      configuration, and recognise PAM as both an attack surface to protect and a source of detection telemetry.
+    quiz:
+      - prompt: PAM is central to Linux authentication because
+        options:
+          - Each application implements its own password checking
+          - Applications call PAM, which runs a configurable stack of modules governing authentication system-wide
+          - It only controls the desktop background
+          - It disables SSH
+        answer: 1
+        explanation: PAM is the single configurable framework through which Linux authentication flows.
+      - prompt: Which is a PAM-based hardening control?
+        options:
+          - Disabling all logging
+          - Enforcing strong password policy, account lockout and inserting an MFA module into the stack
+          - Granting everyone root
+          - Removing authentication
+        answer: 1
+        explanation: PAM is where password policy, lockout, MFA and access restrictions are enforced.
+      - prompt: A malicious PAM module is dangerous because it can
+        options:
+          - Only change the hostname
+          - Create a backdoor (for example accept a secret password for any account) or harvest credentials stealthily
+          - Improve authentication security
+          - Do nothing
+        answer: 1
+        explanation: Because PAM governs authentication, subverting it yields stealthy persistence and credential theft.
+      - prompt: Because PAM controls authentication, defenders should
+        options:
+          - Ignore changes to PAM
+          - Protect and monitor PAM configuration and module integrity, treating unexpected changes as a strong signal
+          - Delete PAM
+          - Share the PAM config publicly
+        answer: 1
+        explanation: PAM integrity is security-critical, so changes to it must be monitored and investigated.

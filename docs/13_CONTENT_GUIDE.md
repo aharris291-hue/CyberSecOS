@@ -14,20 +14,20 @@ progress is kept because lessons are matched by `slug`.
 
 | # | Course | Domain | Lessons |
 |---|---|---|---|
-| 1 | Networking Foundations for SOC Analysts | Networking | 14 |
-| 2 | Security Foundations | Security Foundations | 14 |
-| 3 | Windows Security Monitoring | Windows Security | 14 |
-| 4 | Linux Security Operations | Linux Security | 14 |
-| 5 | SIEM Fundamentals | SIEM | 14 |
-| 6 | Vulnerability Management | Vulnerability Management | 14 |
-| 7 | Threat Hunting | Threat Hunting | 14 |
-| 8 | Incident Response | Incident Response | 14 |
-| 9 | Detection Engineering | Detection Engineering | 14 |
-| 10 | Security Architecture | Security Architecture | 14 |
-| 11 | Cloud Security Operations | Cloud Security | 14 |
-| 12 | Governance, Risk and Compliance | Governance, Risk and Compliance | 14 |
+| 1 | Networking Foundations for SOC Analysts | Networking | 20 |
+| 2 | Security Foundations | Security Foundations | 20 |
+| 3 | Windows Security Monitoring | Windows Security | 20 |
+| 4 | Linux Security Operations | Linux Security | 20 |
+| 5 | SIEM Fundamentals | SIEM | 20 |
+| 6 | Vulnerability Management | Vulnerability Management | 20 |
+| 7 | Threat Hunting | Threat Hunting | 18 |
+| 8 | Incident Response | Incident Response | 20 |
+| 9 | Detection Engineering | Detection Engineering | 19 |
+| 10 | Security Architecture | Security Architecture | 20 |
+| 11 | Cloud Security Operations | Cloud Security | 20 |
+| 12 | Governance, Risk and Compliance | Governance, Risk and Compliance | 20 |
 
-12 courses, 168 lessons, about 18% theory and 82% lab time overall. The catalog is being built out on a deliberate per-course split (weighted by certification-objective coverage and distinct material) toward a 300-hour total; courses currently range around fourteen lessons each as that split fills in.
+12 courses, 237 lessons, about 18% theory and 82% lab time overall. The catalog is being built out on a deliberate per-course split (weighted by certification-objective coverage and distinct material) toward a 300-hour total. Courses cap as their genuinely distinct SOC material runs out (so far Threat Hunting at 18, Detection Engineering at 19, SIEM and GRC at 20) while the broader foundational courses keep growing toward their larger targets.
 
 The catalog is being built out toward a target of roughly 300 hours of lesson
 time in total (about 66 minutes per lesson), steered by the official exam

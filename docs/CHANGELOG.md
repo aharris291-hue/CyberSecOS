@@ -1,5 +1,13 @@
 # Changelog
 
+## Phase 2 - Catalog to 237 lessons (~260 hours) on a deliberate per-course split
+
+### Lessons 15 through 20 per course
+- Grew the catalog from 168 lessons (14 per course) to 237 lessons (~260 hours), adding the fifteenth through twentieth lesson to each course on the deliberate per-course hour split (weighted by certification-objective coverage and genuinely distinct hands-on material) rather than an even one. Every new topic was checked against the whole catalog so no slug or topic repeats.
+- Courses now cap as their genuinely distinct SOC material is exhausted rather than padding: Threat Hunting at 18, Detection Engineering at 19, SIEM and GRC at 20; the broader foundational courses (Networking, Security Foundations, Windows, Linux, Vulnerability Management, Incident Response, Security Architecture, Cloud) are at 20 and still growing toward their larger targets.
+- Representative additions: DNS architecture, routing/BGP security and network security monitoring with Zeek (Networking); threat modeling, federation/SSO, supply-chain risk and secure configuration (Security Foundations); PowerShell security, registry forensics, privilege escalation, ETW telemetry and AD attack paths (Windows); auditd, eBPF runtime monitoring, PAM and centralised logging (Linux); threat-intel platforms, parsing/data models and SIEM health monitoring (SIEM); API security testing, secrets/exposure scanning and the CVE lifecycle (Vulnerability Management); cloud incident response, threat-intel integration and OT/ICS response (Incident Response); the impact tactic and cloud-threat detection (Detection Engineering); PAM, WAF/API-gateway, PKI and high-availability architecture (Security Architecture); workload protection, SSPM and cloud identity attack paths (Cloud); and breach notification, GRC tooling/compliance automation and cyber insurance (Governance, Risk and Compliance).
+- Every lesson keeps the six education-standard sections and the ~18/82 theory/lab split; content-standard, seeding, graded-lab, exam and full backend suites pass.
+
 ## Phase 2 - One-step Windows installer
 
 ### Install and run with no Python and no launcher script
