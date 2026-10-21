@@ -14,20 +14,20 @@ progress is kept because lessons are matched by `slug`.
 
 | # | Course | Domain | Lessons |
 |---|---|---|---|
-| 1 | Networking Foundations for SOC Analysts | Networking | 9 |
-| 2 | Security Foundations | Security Foundations | 9 |
-| 3 | Windows Security Monitoring | Windows Security | 9 |
-| 4 | Linux Security Operations | Linux Security | 9 |
-| 5 | SIEM Fundamentals | SIEM | 9 |
-| 6 | Vulnerability Management | Vulnerability Management | 9 |
-| 7 | Threat Hunting | Threat Hunting | 9 |
-| 8 | Incident Response | Incident Response | 9 |
-| 9 | Detection Engineering | Detection Engineering | 9 |
-| 10 | Security Architecture | Security Architecture | 9 |
-| 11 | Cloud Security Operations | Cloud Security | 9 |
-| 12 | Governance, Risk and Compliance | Governance, Risk and Compliance | 9 |
+| 1 | Networking Foundations for SOC Analysts | Networking | 10 |
+| 2 | Security Foundations | Security Foundations | 10 |
+| 3 | Windows Security Monitoring | Windows Security | 10 |
+| 4 | Linux Security Operations | Linux Security | 10 |
+| 5 | SIEM Fundamentals | SIEM | 10 |
+| 6 | Vulnerability Management | Vulnerability Management | 10 |
+| 7 | Threat Hunting | Threat Hunting | 10 |
+| 8 | Incident Response | Incident Response | 10 |
+| 9 | Detection Engineering | Detection Engineering | 10 |
+| 10 | Security Architecture | Security Architecture | 10 |
+| 11 | Cloud Security Operations | Cloud Security | 10 |
+| 12 | Governance, Risk and Compliance | Governance, Risk and Compliance | 10 |
 
-12 courses, 108 lessons, about 18% theory and 82% lab time overall. Every course now has nine lessons.
+12 courses, 120 lessons, about 18% theory and 82% lab time overall. Every course now has ten lessons.
 
 The catalog is being built out toward a target of roughly 300 hours of lesson
 time in total (about 66 minutes per lesson), steered by the official exam

@@ -839,3 +839,99 @@ lessons:
           - Only run yearly
         answer: 1
         explanation: Automated per-change checks catch most issues cheaply, with human review and documented exceptions for the rest.
+  - slug: arch-defense-in-depth-zones
+    title: Defense in Depth and Security Zones
+    order: 10
+    difficulty: beginner
+    summary: Design layered security with multiple independent controls and network zones of differing trust, so that no single failure exposes everything and an attacker must defeat control after control.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:3.1", "secplus:2.1", "cysa:1.1"]
+    learning_objectives:
+      - Explain defense in depth and why layered, independent controls matter
+      - Design security zones of differing trust with controlled boundaries
+      - Recognise how zoning limits the blast radius of a compromise
+    theory: |
+      No single security control is perfect, so sound architecture never relies on one. **Defense in depth** is
+      the principle of layering multiple, independent controls so that if one fails or is bypassed, others still
+      stand between the attacker and the asset. The layers are deliberately different in kind, prevention,
+      detection, and response; technical, physical, and administrative, so that a weakness in one type does not
+      collapse the whole. The goal is not to make any single wall impenetrable but to make the attacker defeat a
+      series of them, raising cost and the chance of detection at every step.
+
+      A central expression of this in networks is **security zones**: dividing the environment into regions of
+      differing trust with controlled boundaries between them. A classic design places public-facing services in
+      a **DMZ** (demilitarised zone) that is isolated from the internal network, so a compromised web server
+      cannot reach internal systems directly; internal user networks, server networks, and highly sensitive
+      zones (cardholder data, control systems) each sit in their own segment with firewalls or gateways
+      governing what may cross. Traffic between zones is allowed only where there is a need, and the more
+      sensitive the zone, the stricter the boundary. This is the architectural form of least privilege applied to
+      the network itself.
+
+      The payoff is a limited **blast radius**. When zones are well designed, a compromise in a low-trust area,
+      a public web server, a user's workstation, does not translate into access to the crown jewels, because the
+      attacker still has to cross guarded boundaries to get there, and those crossings are exactly where
+      monitoring and controls concentrate. This is why flat networks are dangerous: one foothold reaches
+      everything. Defense in depth and zoning together mean that breaches, which will happen, stay contained and
+      visible rather than catastrophic. For the analyst, zone boundaries are also prime monitoring points,
+      unexpected traffic crossing from a low-trust to a high-trust zone is a strong signal worth investigating.
+    examples:
+      - title: Layers that each must be defeated
+        body: |
+          email filter -> endpoint protection -> least privilege -> network segmentation -> monitoring
+          one layer fails -> the next still stands
+          The attacker must beat a series, not a single wall.
+      - title: Zones and blast radius
+        body: |
+          DMZ (web) | internal users | servers | sensitive (card data)
+          compromised web server -> stuck in DMZ, cannot reach sensitive zone directly
+          Flat network: one foothold reaches everything.
+    exercise:
+      title: Design layered controls and security zones for a network
+      environment: A described organisation and its services, plus a diagramming tool or document
+      tools: [A diagram or document, a reference architecture, a notes file]
+      steps:
+        - Explain defense in depth and why the layered controls should be independent and of different kinds.
+        - For a sample environment, list a chain of layered controls an attacker would have to defeat to reach a sensitive asset.
+        - Design security zones of differing trust (for example DMZ, user, server, sensitive) with the boundaries between them.
+        - Specify what traffic may cross one boundary and why, applying least privilege to the network.
+        - Explain how this zoning limits the blast radius of a compromise in a low-trust zone.
+        - Identify a zone boundary that would be a high-value monitoring point and the crossing that would be suspicious.
+      deliverable: A layered-defence and zoning design showing the control chain, the zones and their boundaries with a least-privilege crossing rule, the blast-radius benefit, and one boundary monitoring point.
+    expected_outcome: >
+      You can explain defense in depth, design security zones of differing trust with controlled boundaries,
+      and show how layered controls and zoning limit the blast radius of a compromise while creating prime
+      monitoring points.
+    quiz:
+      - prompt: Defense in depth means
+        options:
+          - Relying on one strong control
+          - Layering multiple independent controls so that if one fails, others still protect the asset
+          - Removing all controls
+          - Using only firewalls
+        answer: 1
+        explanation: Layered, independent controls ensure no single failure exposes everything.
+      - prompt: Placing public-facing services in a DMZ
+        options:
+          - Speeds up the website
+          - Isolates them so a compromised public server cannot directly reach the internal network
+          - Removes the need for firewalls
+          - Encrypts all data
+        answer: 1
+        explanation: A DMZ separates exposed services from internal systems, containing a web-server compromise.
+      - prompt: Why is a flat network dangerous?
+        options:
+          - It is slow
+          - A single foothold can reach everything because there are no guarded boundaries
+          - It uses too many zones
+          - It cannot be monitored
+        answer: 1
+        explanation: Without zones, one compromise has unrestricted reach across the whole environment.
+      - prompt: Zone boundaries are valuable monitoring points because
+        options:
+          - Nothing crosses them
+          - Unexpected traffic crossing from low-trust to high-trust zones is a strong signal to investigate
+          - They slow the network
+          - They store logs
+        answer: 1
+        explanation: Controlled crossings concentrate both enforcement and the telemetry that reveals lateral movement.

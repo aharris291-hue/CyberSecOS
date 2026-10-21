@@ -823,3 +823,101 @@ lessons:
           - List employees
         answer: 1
         explanation: The register keeps risks named, owned, decided and re-reviewed rather than forgotten.
+  - slug: grc-legal-regulatory
+    title: Legal, Regulatory and Contractual Obligations
+    order: 10
+    difficulty: beginner
+    summary: Understand the external obligations, laws, regulations and contracts, that compel specific security and privacy controls, and how breach-notification duties shape incident response.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:5.4", "secplus:5.1", "cysa:4.1"]
+    learning_objectives:
+      - Distinguish legal, regulatory and contractual sources of security obligations
+      - Explain how these obligations translate into required controls
+      - Describe breach-notification duties and their effect on incident response
+    theory: |
+      Not all security requirements come from inside the organisation; many are imposed from **outside**, and
+      failing to meet them carries fines, lawsuits and lost business on top of the security risk. These external
+      obligations come from three sources. **Laws and regulations** are set by governments and regulators, data
+      protection laws (such as GDPR), sector rules for health or finance, breach-notification statutes, and they
+      are mandatory with legal penalties. **Contractual** obligations come from agreements with customers and
+      partners, a client contract or a framework like PCI DSS (imposed by the payment-card industry) can require
+      specific controls as a condition of doing business. Understanding which apply is the starting point,
+      because they define a floor the security program must meet regardless of internal preference.
+
+      These obligations **translate into required controls**. A data-protection law may mandate encryption of
+      personal data, access controls, data-retention limits, and the ability to delete a person's data on
+      request; PCI DSS prescribes network segmentation, logging, and regular testing around cardholder data; a
+      customer contract may require specific certifications or security measures. The governance job is to map
+      each obligation to the concrete controls that satisfy it and to maintain evidence that they are in place,
+      which is exactly what an audit checks. This is why compliance and security, while not identical, are deeply
+      intertwined: much of what regulations demand is good security expressed as a legal requirement.
+
+      One area reshapes incident response directly: **breach-notification** duties. Many laws and contracts
+      require that, when certain data is compromised, the organisation notify regulators and affected individuals
+      within a defined window, sometimes as little as 72 hours. This turns a breach into a legal clock, not just
+      a technical event, so the incident-response plan must include determining what data was affected, whether a
+      notification threshold is met, and who, legal, regulators, customers, must be told and by when. For the
+      analyst, the lesson is that obligations outside the organisation shape what controls are required and how an
+      incident must be handled, so security work is done with an awareness of the legal and contractual landscape,
+      not in a vacuum.
+    examples:
+      - title: Three sources of obligation
+        body: |
+          Law/regulation:  GDPR, breach-notification statutes (mandatory, legal penalties)
+          Contractual:     client contracts, PCI DSS (condition of doing business)
+          Each defines a floor the program must meet.
+      - title: A breach starts a legal clock
+        body: |
+          personal data compromised -> notification threshold met?
+          -> notify regulator + individuals within the required window (e.g. 72h)
+          IR must determine scope, threshold and who to tell, by when.
+    exercise:
+      title: Map obligations to controls and a notification plan
+      environment: A described organisation handling regulated data (or your own context) and a document or template
+      tools: [A document or template, references on relevant laws/standards, a notes file]
+      steps:
+        - For a sample organisation, identify which legal, regulatory and contractual obligations likely apply and their source.
+        - Pick one obligation and map it to the concrete security controls that would satisfy it.
+        - Explain the evidence you would maintain to demonstrate compliance to an auditor.
+        - Describe the breach-notification duty that applies and the window it imposes.
+        - Add the notification steps to an incident-response outline, who determines scope and threshold, and who must be told by when.
+        - Explain why compliance is intertwined with, but not identical to, good security.
+      deliverable: An obligations map linking sources to required controls with evidence, plus a breach-notification plan folded into an incident-response outline with the scope, threshold and notification timeline.
+    expected_outcome: >
+      You can distinguish legal, regulatory and contractual obligations, map them to the controls and evidence
+      that satisfy them, and build breach-notification duties into incident response so a breach is handled as
+      a legal clock, not just a technical event.
+    quiz:
+      - prompt: External security obligations come from
+        options:
+          - Only internal policy
+          - Laws and regulations, and contractual agreements such as PCI DSS or client contracts
+          - The IT budget only
+          - Nowhere in particular
+        answer: 1
+        explanation: Laws/regulations and contracts impose mandatory requirements from outside the organisation.
+      - prompt: Obligations such as a data-protection law typically translate into
+        options:
+          - Nothing concrete
+          - Required controls like encryption, access control and data-retention limits that must be evidenced
+          - Faster networks
+          - Optional suggestions
+        answer: 1
+        explanation: Regulations map to concrete controls the program must implement and evidence for audit.
+      - prompt: A breach-notification duty turns a breach into
+        options:
+          - A purely technical event
+          - A legal clock requiring notification of regulators and individuals within a defined window
+          - A billing question
+          - An optional disclosure
+        answer: 1
+        explanation: Notification laws impose a deadline, so IR must determine scope, threshold and who to tell by when.
+      - prompt: Compliance and good security are
+        options:
+          - Completely unrelated
+          - Deeply intertwined, since much of what regulations demand is good security expressed as a legal requirement
+          - The same thing exactly
+          - In conflict always
+        answer: 1
+        explanation: Regulations largely codify good security, though compliance is a floor rather than the whole of security.

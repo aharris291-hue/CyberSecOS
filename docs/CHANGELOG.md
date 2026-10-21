@@ -1,5 +1,12 @@
 # Changelog
 
+## Phase 2 - Tenth lesson per course, and de-duplicated ninth lessons
+
+### Catalog to 120 lessons (~132 hours), all distinct
+- Added a tenth lesson to every course (108 → 120 lessons, ~132 hours), continuing the build-out toward ~300 hours. New lessons: defending against DDoS and volumetric attacks (Networking); security awareness and the human firewall (Security Foundations); Windows firewall and network hardening (Windows); container security on Linux (Linux); SIEM use-case development and the detection backlog (SIEM); vulnerability-management metrics and SLAs (Vulnerability Management); building and measuring a hunt program (Threat Hunting); memory forensics in incident response (Incident Response); detecting data exfiltration and command-and-control (Detection Engineering); defense in depth and security zones (Security Architecture); cloud compliance and security benchmarks (Cloud); and legal, regulatory and contractual obligations (Governance, Risk and Compliance).
+- De-duplicated the previous batch: seven ninth lessons landed too close to existing lessons, so they were replaced with distinct topics — network access control and 802.1X (Networking), Group Policy and security baselines (Windows), writing and managing correlation rules (SIEM), cloud and container image scanning (Vulnerability Management), hunting for initial access (Threat Hunting), detecting lateral movement and remote execution (Detection Engineering), and securing cloud APIs and the management plane (Cloud). Every lesson slug and topic in the catalog is now unique.
+- All keep the six education-standard sections and the ~18/82 theory/lab split; content-standard, seeding, lab and full backend suites pass.
+
 ## Phase 2 - Eighth and ninth lessons for every course (toward 300 hours)
 
 ### Building the catalog out toward 300 hours of lessons

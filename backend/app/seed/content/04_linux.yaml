@@ -787,3 +787,95 @@ lessons:
         options: [Routine, A strong sign of malware or scanning to confirm against intended behaviour, A backup, A DNS update]
         answer: 1
         explanation: Many blocked egress attempts suggest a compromised host beaconing or scanning, worth investigating.
+  - slug: linux-container-security
+    title: Container Security on Linux
+    order: 10
+    difficulty: intermediate
+    summary: Understand how Linux containers are built and isolated, where that isolation is weaker than a VM, and how to run containers so a compromise stays contained.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:3.1", "secplus:4.1", "cysa:1.3"]
+    learning_objectives:
+      - Explain how Linux containers isolate workloads and how that differs from VMs
+      - Identify the common container misconfigurations that break isolation
+      - Harden container runtime so a compromise cannot escape to the host
+    theory: |
+      Containers package an application with its dependencies and run it isolated on a shared Linux kernel, and
+      understanding that last part is the key to securing them. Unlike a virtual machine, which has its own
+      kernel and a strong hardware-enforced boundary, containers are isolated by **kernel features**,
+      **namespaces** (which give each container its own view of processes, network and filesystem) and
+      **cgroups** (which limit its resources). This is lighter and faster than a VM but the boundary is softer:
+      every container shares the host kernel, so a kernel vulnerability or a misconfiguration can let a
+      container **escape** to the host, which is the central risk to reason about.
+
+      Most container compromises come from **misconfiguration**, not exotic kernel exploits. Running a container
+      as **root** (the default in many images) means a process that breaks out has host root; running with the
+      **privileged** flag or mounting the Docker socket or host filesystem hands the container the keys to the
+      host directly; and pulling untrusted or unscanned images brings in vulnerable or malicious code. Each of
+      these quietly dissolves the isolation that is the whole point of a container. The defensive mindset is to
+      treat the container boundary as real but thin, and to avoid the configurations that remove it.
+
+      Hardening follows directly. Run containers as a **non-root** user and drop unnecessary Linux
+      **capabilities**, so even a breakout has little power. Never run privileged or mount the host's sensitive
+      paths unless genuinely required. Use **read-only** filesystems and resource limits to constrain behaviour,
+      apply a **seccomp** or AppArmor/SELinux profile to restrict the system calls a container can make, and run
+      only **scanned, trusted images** from known registries. For the analyst, containers are also a monitoring
+      surface: a container spawning an unexpected shell, making outbound connections it never should, or
+      attempting to access the host filesystem or Docker socket are strong signals of compromise or an escape
+      attempt, confirmed against what that workload normally does.
+    examples:
+      - title: Container isolation versus a VM
+        body: |
+          VM:        own kernel, hardware-enforced boundary (strong)
+          Container: shared host kernel, namespaces + cgroups (lighter, softer)
+          A kernel bug or misconfig can let a container escape to the host.
+      - title: Misconfigurations that dissolve isolation
+        body: |
+          run as root + --privileged + mount /var/run/docker.sock
+          -> a breakout has host root and full control
+          Non-root + drop capabilities + no privileged = a real boundary.
+    exercise:
+      title: Harden a container and spot an escape attempt
+      environment: A Linux VM with a container runtime (or provided container configs and runtime logs)
+      tools: [A container runtime or sample configs, a seccomp/AppArmor reference, sample runtime logs, a notes file]
+      steps:
+        - Explain how namespaces and cgroups isolate a container and why that boundary is softer than a VM's.
+        - Review a container's run configuration and identify misconfigurations that break isolation (root, privileged, host mounts, untrusted image).
+        - Rewrite the configuration to run non-root, drop unnecessary capabilities and avoid privileged mode, explaining each change.
+        - Add a read-only filesystem, resource limits and a seccomp or MAC profile, and state what each constrains.
+        - Review sample runtime logs and identify one signal of a compromise or escape attempt (unexpected shell, host-socket access).
+        - State how you would confirm that signal against the workload's normal behaviour before acting.
+      deliverable: A container-hardening note explaining the isolation model, the misconfigurations found and fixed, the added runtime constraints, and one escape-attempt signal with its confirmation step.
+    expected_outcome: >
+      You can explain how Linux containers are isolated and why the boundary is softer than a VM's, find and
+      fix the misconfigurations that break isolation, and harden the runtime so a container compromise stays
+      contained.
+    quiz:
+      - prompt: Container isolation differs from a VM's because containers
+        options:
+          - Have their own kernel
+          - Share the host kernel and are isolated by namespaces and cgroups, a softer boundary
+          - Cannot be isolated at all
+          - Run on separate hardware
+        answer: 1
+        explanation: Containers share the host kernel, so a kernel bug or misconfiguration can break the boundary.
+      - prompt: Most container compromises come from
+        options:
+          - Exotic kernel exploits
+          - Misconfiguration such as running as root, privileged mode or mounting the host
+          - Slow networks
+          - Too many images
+        answer: 1
+        explanation: Dangerous run configurations dissolve isolation far more often than kernel exploits.
+      - prompt: Running a container as a non-root user with dropped capabilities helps because
+        options:
+          - It is faster
+          - Even a breakout then has little power on the host
+          - It disables logging
+          - It removes the kernel
+        answer: 1
+        explanation: Least privilege inside the container limits the impact of any escape.
+      - prompt: A container attempting to access the Docker socket or host filesystem is
+        options: [Routine, A strong signal of a compromise or escape attempt to confirm in context, A backup, A normal update]
+        answer: 1
+        explanation: Reaching for the host socket or filesystem is a classic escape move worth investigating.

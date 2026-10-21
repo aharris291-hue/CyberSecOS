@@ -843,3 +843,94 @@ lessons:
           - It cannot run files
         answer: 1
         explanation: Evasive malware may behave benignly in a sandbox, so novel samples may need deeper analysis.
+  - slug: ir-memory-forensics
+    title: Memory Forensics in Incident Response
+    order: 10
+    difficulty: advanced
+    summary: Capture and analyse a system's memory to find what disk forensics misses, running malware, injected code, decrypted secrets and network connections, during an incident.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["cysa:3.2", "cysa:1.4", "secplus:4.8"]
+    learning_objectives:
+      - Explain what volatile memory holds that disk forensics cannot provide
+      - Capture memory soundly and know the order-of-volatility trade-offs
+      - Analyse a memory image for the common signs of compromise
+    theory: |
+      Much of what matters during an active compromise exists only in **memory** and vanishes when the machine
+      powers off. Running processes, injected or fileless malware that never touched disk, network connections,
+      decrypted data and credentials, command history, these are in RAM, so memory forensics reaches evidence
+      that disk forensics simply cannot. As attackers increasingly operate **fileless**, living in memory to
+      avoid leaving files, the memory image has become one of the richest sources of truth in an incident, and
+      capturing it is often a priority before anything disturbs the running state.
+
+      This is governed by the **order of volatility**: the most ephemeral evidence is collected first because it
+      is the first to disappear. Memory is near the top, so a sound response often **captures RAM early**, with a
+      trusted acquisition tool, before shutting down or even extensively interacting with the host, since every
+      action changes memory. The capture itself must be handled like any evidence, documented, hashed, preserved,
+      and analysts weigh the trade-off that acquisition slightly perturbs the very memory it reads. The output is
+      a memory image: a frozen snapshot of the system's live state at the moment of capture.
+
+      Analysis of that image, with a framework built for the purpose, looks for well-known tells. **Process
+      analysis** finds hidden or unlinked processes, a process masquerading under a system name, or a legitimate
+      process hollowed out and replaced. **Injected code** shows as executable memory in a process that should
+      not have it. **Network artefacts** reveal connections and listening ports, including those a compromised OS
+      was hiding. Analysts also recover **command lines, loaded modules, and secrets** left in memory. Each of
+      these maps to an attacker technique, and because fileless and in-memory attacks leave little elsewhere,
+      memory analysis is frequently where the clearest evidence of a sophisticated compromise is found,
+      confirmed, as always, against what the system should normally be running.
+    examples:
+      - title: What lives only in memory
+        body: |
+          running processes, fileless malware, network connections,
+          decrypted secrets, command history
+          Power off and it is gone -> capture RAM before disturbing the host.
+      - title: A memory-analysis tell
+        body: |
+          process "svchost.exe" with executable, writable injected region
+          and an outbound connection to an unknown IP
+          -> code injection / hollowing, a strong compromise indicator.
+    exercise:
+      title: Analyse a memory image for compromise
+      environment: A provided memory image (or a lab capture) and a memory-forensics framework, used on an isolated analysis system
+      tools: [A memory image, a memory-forensics framework, a notes file]
+      steps:
+        - Explain what evidence memory holds that disk forensics cannot, and why it matters for fileless attacks.
+        - Describe the order of volatility and why memory is often captured early, including the trade-off that acquisition perturbs memory.
+        - Analyse the image's process list for hidden, unlinked or masquerading processes and note anything suspicious.
+        - Look for injected or executable memory regions in processes that should not have them.
+        - Examine network artefacts (connections, listening ports) for signs of C2 or hidden activity.
+        - Recover any command lines or secrets of interest, map your findings to attacker techniques, and state how you would confirm against the system's normal state.
+      deliverable: A memory-forensics write-up covering what memory adds over disk, the capture trade-offs, and the process, injection, network and artefact findings mapped to techniques with a confirmation approach.
+    expected_outcome: >
+      You can explain what volatile memory holds, capture it soundly with the order of volatility in mind, and
+      analyse a memory image for hidden processes, injected code, network artefacts and secrets, finding
+      evidence that disk forensics misses.
+    quiz:
+      - prompt: Memory forensics reaches evidence disk forensics cannot because memory holds
+        options:
+          - Only the operating system
+          - Running processes, fileless malware, network connections and decrypted secrets that vanish on power-off
+          - Nothing useful
+          - Just the clock
+        answer: 1
+        explanation: Volatile state like fileless malware and live connections exists only in RAM.
+      - prompt: The order of volatility means
+        options:
+          - Collect disk first
+          - Collect the most ephemeral evidence (like memory) first because it disappears soonest
+          - Never collect memory
+          - Order does not matter
+        answer: 1
+        explanation: The most volatile evidence is captured first, so memory is often acquired early.
+      - prompt: An attacker operating "fileless" is best caught by
+        options:
+          - Disk imaging only
+          - Memory analysis, since the malware lives in RAM and leaves little on disk
+          - Checking file hashes
+          - Reading the registry only
+        answer: 1
+        explanation: Fileless malware resides in memory, so a memory image is often the clearest evidence.
+      - prompt: Executable, injected memory in a process that should not have it indicates
+        options: [Normal operation, Code injection or process hollowing, a compromise indicator, A backup, A patch]
+        answer: 1
+        explanation: Unexpected injected executable regions are a classic sign of code injection or hollowing.

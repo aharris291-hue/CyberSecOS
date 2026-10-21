@@ -685,94 +685,188 @@ lessons:
         options: [Still fully protects, Protects nothing until verified as in effect, Is safer that way, Needs no checking]
         answer: 1
         explanation: Verification matters because a feature not actually enabled provides no protection.
-  - slug: win-active-directory-security
-    title: Active Directory Security and Monitoring
+  - slug: win-group-policy-baselines
+    title: Group Policy and Security Baselines
     order: 9
     difficulty: intermediate
-    summary: Understand why Active Directory is the prime target in Windows environments, the attacks against it, and the events that reveal those attacks in progress.
+    summary: Use Group Policy and security baselines to configure Windows securely at scale, and monitor for the GPO changes an attacker uses to weaken defences or persist.
     theory_minutes: 12
     lab_minutes: 54
-    objectives: ["secplus:4.1", "cysa:1.3", "sc200:2"]
+    objectives: ["secplus:4.1", "secplus:2.5", "cysa:1.3"]
     learning_objectives:
-      - Explain why Active Directory is central to Windows attacks
-      - Describe common AD attacks and the privilege they target
-      - Monitor the AD events that reveal reconnaissance and abuse
+      - Explain how Group Policy configures Windows at scale
+      - Describe security baselines and why they standardise hardening
+      - Monitor Group Policy for changes that weaken security or persist
     theory: |
-      In most Windows environments, **Active Directory** (AD) is the heart of identity: it decides who every
-      user and computer is and what they can access. That makes it the prize, an attacker who controls AD
-      controls the environment, so AD security and monitoring are central skills. The structure matters:
-      users, groups and computers live in a directory, domain controllers hold the authoritative copy
-      (including password material), and privileged groups like **Domain Admins** are the keys to the
-      kingdom. Kerberos is the main authentication protocol, and most AD attacks abuse how it issues
-      tickets.
+      Configuring one Windows machine securely is easy; configuring thousands consistently is the real
+      problem, and **Group Policy** is how Active Directory solves it. A Group Policy Object (GPO) is a set of
+      settings, password rules, audit logging, service configuration, software restrictions, that is linked to
+      part of the directory and applied automatically to every computer or user it covers. This is how an
+      organisation enforces a standard everywhere at once: turn on a setting in a GPO and it reaches every
+      machine in scope, rather than relying on each being configured by hand. For defenders it is the
+      backbone of hardening at scale.
 
-      The attack catalogue is well known and each targets privilege. **Kerberoasting** requests service
-      tickets to crack service-account passwords offline. **Pass-the-hash** and **pass-the-ticket** reuse
-      stolen credential material to authenticate without the password. **DCSync** impersonates a domain
-      controller to pull password hashes straight from AD. **Golden** and **silver tickets** forge Kerberos
-      tickets for persistent, hard-to-detect access once an attacker has the right key. Underpinning all of
-      them is **enumeration**: attackers map users, groups, trusts and privileged accounts first, because AD
-      is designed to be queryable by any authenticated user.
+      Rather than invent every setting, teams start from a **security baseline**, a published, vetted set of
+      recommended settings (Microsoft's own baselines and the CIS benchmarks are the common ones) that
+      represents a sensible hardened starting point. A baseline standardises the hundreds of individual
+      choices, enabling audit logging that detections depend on, disabling weak protocols, enforcing account
+      policies, so that compliance becomes measurable: you can compare a machine against the baseline and see
+      exactly where it drifts. Baselines are tailored, not applied blindly, because an over-aggressive setting
+      can break a business application, but they turn "configure securely" into a concrete, reviewable target.
 
-      Monitoring AD means watching for both the enumeration and the abuse. Key signals include a spike in
-      directory queries from one host (recon), unusual service-ticket request patterns (Kerberoasting),
-      replication requests from a host that is not a domain controller (DCSync), changes to privileged group
-      membership, and logons that do not fit a user's baseline. The defensive principles are tiering
-      administrative accounts so a workstation compromise cannot reach Domain Admin, minimising privileged
-      group membership, and alerting on changes to those groups, because in AD, privilege is the whole game.
+      Because Group Policy is so powerful, it is also an attacker's lever, and monitoring it is essential. An
+      attacker with the right privilege can modify a GPO to disable logging, weaken password policy, add
+      themselves to local administrators across every machine, or deploy a malicious scheduled task
+      domain-wide, powerful persistence and evasion in a single change. So changes to GPOs, especially to
+      audit policy, privileged group membership delivered by policy, or startup scripts, are high-value
+      detections. The analyst watches for GPO modification events and compares live configuration against the
+      baseline, because a quiet change that turns off the logging your detections rely on is exactly the kind
+      of move that precedes a larger attack.
     examples:
-      - title: DCSync from the wrong host
+      - title: One GPO, applied everywhere
         body: |
-          Replication request (DsGetNCChanges) between domain controllers -> normal
-          Same request from a workstation -> DCSync: pulling hashes from AD
-          Asset context (is the source a DC?) turns this into a high-confidence alert.
-      - title: Privileged group change to watch
+          GPO "Audit Policy" -> linked to the Workstations OU
+          -> every workstation logs process creation and logons automatically
+          Change it once; it reaches every machine in scope.
+      - title: A GPO change worth alerting on
         body: |
-          Event 4728/4732: member added to "Domain Admins"
-          Expected?  rarely and with change control
-          Unexpected -> likely privilege escalation / persistence; investigate at once.
+          GPO modified: audit logging for logons turned OFF
+          Expected? almost never -> an attacker blinding the detections
+          GPO change events + baseline comparison catch this.
     exercise:
-      title: Map AD attack surface and build monitoring
-      environment: An AD lab (or a provided directory structure and sample security-event logs)
-      tools: [An AD lab or sample event logs, a notes file, a MITRE ATT&CK reference]
+      title: Apply a baseline via Group Policy and monitor for drift
+      environment: A Windows/AD lab (or a provided baseline, GPO export and sample change events)
+      tools: [A Windows/AD lab or sample GPO data, a published security baseline (Microsoft or CIS), a notes file]
       steps:
-        - Identify the most privileged groups in the directory and who belongs to them, and judge whether membership is minimal.
-        - Describe how an attacker would enumerate the directory and what telemetry that recon produces.
-        - For two AD attacks (for example Kerberoasting and DCSync), state the event or pattern that reveals each.
-        - Review sample security events for a change to privileged group membership and decide whether it is expected.
-        - Explain how administrative tiering limits the damage of a compromised workstation.
-        - Propose three AD detections (recon spike, DCSync from a non-DC, privileged group change) and why each matters.
-      deliverable: An AD security assessment covering privileged-group exposure, the recon and abuse telemetry, one reviewed privileged-group change, and three proposed detections with rationale.
+        - Explain how a single GPO enforces a setting across many machines and why that matters for hardening at scale.
+        - Take a published security baseline and identify three settings it standardises that a detection or audit would rely on.
+        - Describe how you would compare a live machine against the baseline to find configuration drift.
+        - Explain why a baseline is tailored rather than applied blindly, with one example of a setting that could break an application.
+        - Review sample GPO change events and identify one modification that would weaken security or aid persistence.
+        - State how you would confirm that change was unauthorised and the detection you would build for GPO modifications.
+      deliverable: A note covering how GPO enforces settings at scale, three baseline settings that matter for detection, a drift-comparison method, one risky GPO change found, and a GPO-modification detection.
     expected_outcome: >
-      You can explain why Active Directory is the prime Windows target, describe the main AD attacks and the
-      privilege they chase, and monitor the events that reveal enumeration and abuse before an attacker
-      reaches domain control.
+      You can explain how Group Policy configures Windows at scale, use a security baseline to standardise and
+      measure hardening, and monitor Group Policy for the changes an attacker uses to disable logging, escalate
+      privilege or persist.
     quiz:
-      - prompt: Why is Active Directory the prime target in Windows environments?
-        options:
-          - It stores files
-          - Controlling AD means controlling identity and access across the whole environment
-          - It is rarely used
-          - It only manages printers
-        answer: 1
-        explanation: AD governs who everyone is and what they can access, so its compromise is environment-wide.
-      - prompt: A replication request from a host that is not a domain controller indicates
-        options: [A normal backup, Possible DCSync pulling password hashes from AD, A DNS change, A printer install]
-        answer: 1
-        explanation: Only DCs should replicate; such a request from elsewhere signals DCSync abuse.
-      - prompt: Kerberoasting works by
-        options:
-          - Deleting tickets
-          - Requesting service tickets to crack service-account passwords offline
-          - Disabling Kerberos
-          - Resetting all passwords
-        answer: 1
-        explanation: Service tickets are encrypted with the service account's key, which can be cracked offline.
-      - prompt: Administrative tiering helps because it
+      - prompt: Group Policy's main value for security is that it
         options:
           - Speeds up logons
-          - Stops a compromised workstation from reaching Domain Admin credentials
-          - Removes all admins
-          - Encrypts the directory
+          - Enforces a consistent configuration across many machines automatically
+          - Encrypts disks
+          - Replaces antivirus
         answer: 1
-        explanation: Separating admin tiers prevents credential exposure from cascading up to domain control.
+        explanation: A GPO applies its settings to every machine in scope, enabling hardening at scale.
+      - prompt: A security baseline is
+        options:
+          - A network diagram
+          - A published, vetted set of recommended settings that standardises hardening
+          - A single password
+          - A backup schedule
+        answer: 1
+        explanation: Baselines (Microsoft, CIS) give a concrete, measurable hardened starting point.
+      - prompt: Why monitor Group Policy for changes?
+        options:
+          - GPOs never change
+          - An attacker can modify a GPO to disable logging, weaken policy or persist across every machine at once
+          - To speed up the network
+          - Changes are always safe
+        answer: 1
+        explanation: A single malicious GPO change is powerful persistence and evasion, so GPO changes are high-value detections.
+      - prompt: Comparing a live machine against the baseline reveals
+        options: [Its IP address, Configuration drift, where settings no longer match the hardened standard, Its uptime, Its disk size]
+        answer: 1
+        explanation: Baseline comparison surfaces where a machine has drifted from the intended secure configuration.
+  - slug: win-firewall-network-hardening
+    title: Windows Firewall and Network Hardening
+    order: 10
+    difficulty: intermediate
+    summary: Use Windows Defender Firewall and network hardening to limit what a Windows host accepts and initiates, and to contain lateral movement between workstations.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.4", "secplus:4.1", "cysa:1.3"]
+    learning_objectives:
+      - Configure Windows Defender Firewall with inbound and outbound rules and profiles
+      - Explain how host firewalling contains lateral movement
+      - Harden Windows networking by disabling weak protocols and services
+    theory: |
+      Windows ships a capable host firewall, **Windows Defender Firewall with Advanced Security**, and using it
+      well is a core hardening task that the network firewall cannot replace, because it protects each host even
+      from threats already inside the network. It filters by **profile** (Domain, Private, Public), so a laptop
+      can be stricter on untrusted networks than on the corporate domain, and it supports both inbound and
+      outbound rules keyed on program, port, protocol and even the authenticated identity of the remote
+      machine. The default stance should be the familiar one: allow only what the host genuinely needs, inbound
+      and outbound, and deny the rest.
+
+      The most valuable thing a Windows host firewall does in an enterprise is **contain lateral movement**.
+      Most workstations have no legitimate reason to connect directly to each other, yet by default they often
+      can, which is exactly the path an attacker uses to spread from one compromised desktop to the next over
+      SMB or RPC. Blocking workstation-to-workstation traffic, so that desktops talk to servers but not to one
+      another, dramatically limits how far a single compromise can reach, turning the host firewall into a
+      segmentation control deployed at scale (usually via Group Policy). This is one of the highest-impact,
+      lowest-cost hardening steps available.
+
+      Network hardening on Windows goes beyond the firewall. Legacy and weak protocols are a recurring
+      liability, SMBv1, LLMNR and NetBIOS name resolution, and older authentication protocols are abused for
+      relay and poisoning attacks, so disabling what is not needed closes real attack paths. Unneeded network
+      services and open ports are reduced, and remote-management surfaces (RDP, WinRM) are restricted to known
+      sources. The analyst's view is that each of these is both a control and a source of signal: the firewall
+      logs blocked connections, and a workstation suddenly attempting SMB connections to many peers, now blocked
+      and logged, is a strong lateral-movement indicator to confirm against what that host normally does.
+    examples:
+      - title: Containing lateral movement
+        body: |
+          Default: workstation can reach workstation over SMB -> attacker's spread path
+          Hardened: desktops talk to servers, NOT to each other
+          One compromise can no longer hop desktop to desktop.
+      - title: Weak protocols to disable
+        body: |
+          SMBv1, LLMNR, NetBIOS -> abused for relay and name-poisoning attacks
+          Disable what is not needed -> closes real attack paths
+          Restrict RDP/WinRM to known management sources.
+    exercise:
+      title: Harden a Windows host's firewall and network configuration
+      environment: A Windows VM (or a provided firewall-rule export and network configuration)
+      tools: [A Windows VM or config export, the firewall tooling or its policy, a notes file]
+      steps:
+        - Review the host's firewall profiles and inbound/outbound rules and state what is allowed and what should be denied by default.
+        - Design a rule that blocks workstation-to-workstation traffic and explain how it contains lateral movement.
+        - Identify which legacy or weak protocols (SMBv1, LLMNR, NetBIOS) are present and which you would disable, with the attack each enables.
+        - Restrict a remote-management surface (RDP or WinRM) to known sources and explain the risk you are reducing.
+        - Describe how these rules would be deployed consistently across many machines (for example via Group Policy).
+        - Identify one firewall-log signal (a host attempting SMB to many peers) that would indicate lateral movement and how you would confirm it.
+      deliverable: A Windows network-hardening note covering the firewall default stance, a workstation-isolation rule, weak protocols to disable, a restricted management surface, scaled deployment, and one lateral-movement log signal.
+    expected_outcome: >
+      You can configure Windows Defender Firewall with profiles and rules, use host firewalling to contain
+      lateral movement between workstations, and harden Windows networking by disabling weak protocols and
+      restricting management surfaces.
+    quiz:
+      - prompt: Why does a host firewall complement the network firewall?
+        options:
+          - It is faster
+          - It protects each host even from threats already inside the network
+          - It replaces antivirus
+          - It only works offline
+        answer: 1
+        explanation: Host firewalling defends a machine from internal threats the perimeter firewall never sees.
+      - prompt: Blocking workstation-to-workstation traffic on Windows hosts primarily
+        options:
+          - Speeds up logons
+          - Contains lateral movement by removing the desktop-to-desktop path attackers use to spread
+          - Disables the domain
+          - Encrypts disks
+        answer: 1
+        explanation: Most desktops need not talk to each other, so isolating them limits how far a compromise spreads.
+      - prompt: Disabling SMBv1, LLMNR and NetBIOS is worthwhile because they
+        options:
+          - Speed up the network
+          - Are weak legacy protocols abused for relay and name-poisoning attacks
+          - Are required for RDP
+          - Encrypt traffic
+        answer: 1
+        explanation: These legacy protocols enable real relay and poisoning attacks, so disabling unneeded ones closes attack paths.
+      - prompt: A Windows host suddenly attempting SMB connections to many peers (now blocked and logged) is
+        options: [Routine, A strong lateral-movement indicator to confirm against the host's normal behaviour, A backup, A patch]
+        answer: 1
+        explanation: Fan-out SMB attempts from one host suggest an attacker spreading, worth confirming in context.

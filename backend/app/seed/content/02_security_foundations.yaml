@@ -793,3 +793,98 @@ lessons:
           - Stored in email
         answer: 1
         explanation: With no shared secret and binding to the legitimate domain, a phishing site cannot use the passkey.
+  - slug: sec-security-awareness-training
+    title: Security Awareness and the Human Firewall
+    order: 10
+    difficulty: beginner
+    summary: Understand why people are both the biggest attack surface and a powerful line of defence, and how awareness programs, phishing simulations and a reporting culture turn users into sensors.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:5.6", "secplus:2.2", "sc900:1"]
+    learning_objectives:
+      - Explain why the human layer is central to security outcomes
+      - Describe what an effective security-awareness program contains
+      - Build a reporting culture that turns users into a detection source
+    theory: |
+      Most breaches involve a person, a clicked link, a reused password, a wire sent on a convincing request,
+      because attackers target people as the path of least resistance. That makes the **human layer** both the
+      largest attack surface and, done right, a powerful line of defence. Technical controls stop a great deal,
+      but they cannot catch everything, and the user is often the one who sees the suspicious email or the odd
+      request first. Security awareness is the discipline of turning that human layer from a liability into a
+      sensor, and it is a recognised security control in its own right, not a poster on the wall.
+
+      An effective **awareness program** is specific and ongoing, not an annual slideshow. It teaches the
+      threats people actually face, phishing and its variants, social engineering, safe handling of data,
+      password and MFA hygiene, in short, relevant pieces rather than a once-a-year dump, and it is tailored to
+      roles (finance staff face invoice fraud; developers face credential leaks). **Phishing simulations** are
+      a core tool: sending realistic but safe test phishing to measure who clicks and to give immediate,
+      non-punitive teaching when they do. The measure of success is behaviour change, fewer clicks, more
+      reports, over time, which is why programs track metrics and repeat.
+
+      The highest-value outcome is a **reporting culture**. A user who spots a phishing email and reports it
+      gives the SOC an early warning that may protect everyone else, so the goal is to make reporting easy (a
+      one-click button) and safe (never punishing someone who reports, even if they also clicked). A blame-free
+      culture is essential: if people fear punishment they hide mistakes, and a hidden click is far more
+      dangerous than a reported one. The lesson for an analyst is that users are part of the detection
+      pipeline, every reported phish is a lead, and the organisations that defend best are the ones where
+      people feel safe raising their hand the moment something looks wrong.
+    examples:
+      - title: The human layer, both ways
+        body: |
+          Liability: user clicks a phishing link -> foothold
+          Sensor:    user reports a phishing email -> early warning for everyone
+          Awareness turns the same person from the first into the second.
+      - title: Blame-free reporting
+        body: |
+          User clicks AND reports it -> thank them, investigate fast, contain
+          Punish the click -> next time they hide it -> far more dangerous
+          Easy + safe reporting is the whole point.
+    exercise:
+      title: Design a security-awareness program and reporting flow
+      environment: A described organisation (or your own context) and a document or template
+      tools: [A document or template, a reference on common threats, a notes file]
+      steps:
+        - Explain why the human layer is both the biggest attack surface and a potential line of defence.
+        - Outline an ongoing awareness program, the topics, the cadence, and how it is tailored to at least two roles.
+        - Design a phishing-simulation approach and state what you would measure and how you would teach non-punitively.
+        - Define the metrics that show the program is working (click rate, report rate over time).
+        - Design an easy, safe reporting flow that feeds reported phishing to the SOC as leads.
+        - Explain why a blame-free culture matters and what happens to detection if people fear punishment.
+      deliverable: An awareness-program design with role-tailored topics and cadence, a phishing-simulation and metrics plan, a reporting flow into the SOC, and the rationale for a blame-free culture.
+    expected_outcome: >
+      You can explain why the human layer is central to security, design an ongoing awareness program with
+      simulations and metrics, and build a blame-free reporting culture that turns users into an early
+      detection source.
+    quiz:
+      - prompt: Why is the human layer central to security outcomes?
+        options:
+          - People never make mistakes
+          - Attackers target people as the path of least resistance, and users often see threats first
+          - Humans are irrelevant to breaches
+          - Only technology matters
+        answer: 1
+        explanation: Most breaches involve a person, so the human layer is both the main target and a key defence.
+      - prompt: An effective awareness program is
+        options:
+          - A single annual slideshow
+          - Ongoing, relevant and tailored to the threats different roles actually face
+          - Only for executives
+          - A one-time poster
+        answer: 1
+        explanation: Awareness works when it is continuous, relevant and role-specific, not a yearly formality.
+      - prompt: A blame-free reporting culture matters because
+        options:
+          - It avoids all training
+          - If people fear punishment they hide mistakes, and a hidden click is more dangerous than a reported one
+          - It punishes clicks
+          - It removes the SOC
+        answer: 1
+        explanation: Safe reporting surfaces incidents early; fear drives them underground where they do more harm.
+      - prompt: A reported phishing email is valuable to the SOC because it
+        options:
+          - Wastes time
+          - Is an early warning that may protect everyone else who received it
+          - Must be ignored
+          - Cannot be investigated
+        answer: 1
+        explanation: User reports act as early detection, letting the SOC contain a campaign before it spreads.
