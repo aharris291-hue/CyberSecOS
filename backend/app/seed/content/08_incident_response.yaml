@@ -560,3 +560,97 @@ lessons:
         options: [They are identical, In BEC the account is already compromised and must be taken back, BEC only analyses an email, BEC needs no containment]
         answer: 1
         explanation: Phishing triage analyses a suspicious message; BEC response reclaims an account that is already under attacker control.
+  - slug: ir-insider-threat
+    title: Responding to an Insider Threat
+    order: 7
+    difficulty: intermediate
+    summary: Work a suspected insider data-theft case where the user is authorised, so evidence handling, discretion and HR and legal coordination matter as much as the technical work.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["cysa:3.1", "cysa:4.2", "secplus:4.8"]
+    learning_objectives:
+      - Explain how an insider incident differs from an external intrusion
+      - Build a defensible case from authorised activity without tipping off the subject
+      - Coordinate with HR and legal and preserve evidence for possible proceedings
+    theory: |
+      An insider incident breaks the usual assumption that access itself is the anomaly. The
+      subject is a legitimate user doing things they are **allowed** to do, so the signal is not
+      "who got in" but **intent and pattern**: a departing employee bulk-downloading a customer
+      database, a disgruntled admin copying source code to personal storage, an account quietly
+      emailing files to a private address. Because the actions are authorised, detection leans on
+      **behaviour against a baseline** (volume, timing, destination) rather than on a blocked or
+      failed event.
+
+      The response is as much procedural as technical. The first rule is **discretion**: an
+      insider who realises they are being watched can destroy evidence or accelerate, so the
+      investigation is kept need-to-know and the subject is usually not confronted until the case
+      is built. This is the point where security stops acting alone, **HR and legal** are brought
+      in early, because the outcome may be disciplinary or legal, and actions like reviewing a
+      person's activity or accessing their files have policy and privacy constraints that vary by
+      jurisdiction. Security gathers facts; HR and legal decide what happens to the person.
+
+      Evidence handling is therefore stricter than in a routine alert. Logs, file-access records
+      and endpoint data are preserved with a **chain of custody** so they hold up if the case goes
+      to proceedings, and the analyst records what they did and when. Containment is chosen to
+      preserve evidence and avoid alerting the subject, for example monitoring more closely, or
+      disabling access at a planned moment coordinated with HR, rather than an abrupt lockout.
+      After the case, the lessons feed controls, data-loss prevention, joiners-movers-leavers
+      access reviews, and least privilege, that make the next insider harder.
+    examples:
+      - title: The same action, two readings
+        body: |
+          Event:   user downloads 4 GB from the CRM on a Friday evening
+          Benign:  sales lead building a quarter-end report (matches their role and history)
+          Insider: user resigned yesterday; destination is a personal cloud drive
+          Baseline and context, not the action alone, decide which it is.
+      - title: A discreet, evidence-preserving response path
+        body: |
+          Do:    keep need-to-know; loop in HR+legal; preserve logs with chain of custody
+          Do:    increase monitoring; plan access removal with HR for a set time
+          Avoid: confronting the subject early or an abrupt lockout that tips them off and loses evidence
+    exercise:
+      title: Work a suspected insider case to a hand-off
+      environment: A sample data set of file-access, DLP and sign-in logs for one user (provided or lab-generated) and a document for the case file
+      tools: [Sample user-activity logs, a document for the case file, your organisation's (or a sample) insider-threat and evidence policy]
+      steps:
+        - From a tip or an anomaly, state what authorised-but-suspicious behaviour you are investigating and the baseline you will compare it against.
+        - Gather the relevant activity (file access, data movement, sign-ins) and build a timeline, noting volume, timing and destinations against the user's normal pattern.
+        - Decide at each step what you may and may not do under policy and privacy constraints, and record who outside security (HR, legal) must be involved and when.
+        - Preserve the evidence with a chain of custody, writing down what you collected, from where, and when.
+        - Choose a containment approach that preserves evidence and does not tip off the subject, and justify it.
+        - Reach a verdict (malicious insider, policy violation, or benign) from the evidence, and write the hand-off to HR and legal with the timeline and preserved evidence.
+        - List two controls (for example DLP tuning or a leaver access review) that would reduce the risk of a repeat.
+      deliverable: A case file with the baseline and timeline, the policy and coordination notes, the chain-of-custody record, the containment choice with justification, the verdict, and the HR and legal hand-off.
+    expected_outcome: >
+      You can investigate a suspected insider from authorised activity, build a discreet and
+      evidence-sound case, coordinate with HR and legal, and hand off a defensible result while
+      preserving evidence throughout.
+    quiz:
+      - prompt: What makes an insider incident different from an external intrusion?
+        options:
+          - There are never any logs
+          - The subject is an authorised user, so the signal is intent and pattern, not a blocked access
+          - It is always accidental
+          - It cannot be detected
+        answer: 1
+        explanation: Insiders act within their permissions, so detection relies on behaviour against a baseline rather than failed or blocked events.
+      - prompt: Why is discretion emphasised in an insider investigation?
+        options:
+          - To save storage
+          - Because a subject who knows they are watched may destroy evidence or accelerate
+          - Because insiders are never dangerous
+          - To skip documentation
+        answer: 1
+        explanation: Tipping off the subject risks evidence destruction and escalation, so the case is kept need-to-know until built.
+      - prompt: Who should security coordinate with early in an insider case?
+        options: [Only the subject, HR and legal, The press, No one]
+        answer: 1
+        explanation: Insider outcomes are disciplinary or legal and constrained by policy and privacy, so HR and legal are involved early.
+      - prompt: Why maintain a chain of custody for the evidence?
+        options:
+          - To make queries faster
+          - So the evidence holds up if the case leads to disciplinary or legal proceedings
+          - To delete the logs sooner
+          - To avoid involving HR
+        answer: 1
+        explanation: A documented chain of custody keeps evidence defensible for any proceedings that follow.

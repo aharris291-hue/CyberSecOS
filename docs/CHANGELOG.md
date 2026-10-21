@@ -1,5 +1,12 @@
 # Changelog
 
+## Phase 2 - A seventh lesson for the core SOC courses
+
+### Seventh lessons for the SOC daily-driver courses
+- Started the pass past six lessons on the courses a SOC analyst lives in, adding a seventh to SIEM, Threat Hunting, Incident Response and Detection Engineering, so those four now have seven lessons each (76 lessons total).
+- New lessons: automating response with SOAR playbooks (enrich-decide-act with a human checkpoint and safe guardrails); hunting identity and cloud threats (token theft, OAuth consent abuse and anomalous sign-ins versus their legitimate twins); responding to an insider threat (building a discreet, evidence-sound case with HR and legal); and purple-teaming to drive detections (adversary emulation to find gaps and build tested detections with honest ATT&CK coverage).
+- All keep the six education-standard sections and the ~18/82 theory/lab split (catalog theory ratio 0.18); content-standard, seeding and coverage tests still pass (432 backend tests).
+
 ## Phase 2 - Insights page in the desktop app
 
 ### See your analytics in the app

@@ -550,3 +550,97 @@ lessons:
         options: [Just a hunch, The host, destination, data touched, a timeline and containment, A reboot, Nothing]
         answer: 1
         explanation: The useful output scopes the incident with the host, destination, affected data, timeline and containment steps.
+  - slug: hunt-identity-cloud
+    title: Hunting Identity and Cloud Threats
+    order: 7
+    difficulty: intermediate
+    summary: Hunt for account and cloud abuse in sign-in and audit logs, where the attacker is a valid credential rather than a process on a host.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["sc200:4", "cysa:1.4", "cysa:3.1"]
+    learning_objectives:
+      - Explain why identity is the primary attack surface in cloud environments
+      - Hunt sign-in and audit logs for token theft, consent abuse and anomalous access
+      - Separate attacker behaviour from legitimate admin and travel patterns
+    theory: |
+      In the cloud there is often no malware to find; the attacker signs in as a valid user.
+      That makes **identity the perimeter**, and the hunting ground is the **sign-in log** and
+      the **audit log** of the identity provider (Entra ID, Okta, Google) and the cloud control
+      plane. The hunter looks for a credential being used in ways the real owner would not: from
+      a new country, a new device, an odd hour, or from an IP tied to an anonymiser.
+
+      Several behaviours are worth a standing hunt. **Impossible travel** is two sign-ins too far
+      apart to be the same person in the time between them. **Token theft** shows up as a session
+      reused from a new location without a fresh authentication, which is why MFA alone does not
+      end the story. **OAuth consent abuse** is a user granting a malicious app broad, lasting
+      access, which survives a password reset. And **privilege escalation** in the control plane,
+      a new global admin, a added credential on a service principal, or a mailbox forwarding rule,
+      is where an intruder turns a foothold into persistence.
+
+      The hard part is that nearly all of this activity has a legitimate twin: people really do
+      travel, admins really do create accounts, and apps really are granted consent. So a cloud
+      hunt leans on **baselines** (what is normal for this user, this tenant, this role) and on
+      **correlation** (a risky sign-in *and* a new inbox rule *and* a consent grant in one hour is
+      a story, any one alone may be noise). As with any hunt, a finding becomes either an incident
+      or a new detection, and repeated benign hits feed tuning.
+    examples:
+      - title: Correlating a cloud account-takeover story
+        body: |
+          09:02  risky sign-in for user from new country (no MFA prompt - reused token)
+          09:05  new mailbox forwarding rule to external address
+          09:11  OAuth consent granted to unverified app with Mail.Read
+          One event is noise; the three together are an account takeover.
+      - title: Impossible travel vs a real trip
+        body: |
+          Sign-in A  London 08:00    Sign-in B  Sydney 09:30   -> impossible in 90 min
+          But: a corporate VPN egress in Sydney can fake this -> check the device and the ASN
+          Baseline the user's usual locations before calling it malicious.
+    exercise:
+      title: Hunt a cloud identity data set
+      environment: Sample sign-in and audit logs (a lab tenant's exported logs, the Microsoft demo workspace, or a provided identity data set)
+      tools: [SIEM or notebook, sample sign-in and audit logs, a notes file]
+      steps:
+        - State a hypothesis for an identity threat (for example "a stolen session is being reused from a new location") and the log fields that would show it.
+        - Query the sign-in logs for risky or anomalous sign-ins and baseline each flagged user's normal locations, devices and hours.
+        - Hunt the audit log for control-plane changes (new admin role, added app credential, new mailbox forwarding rule, OAuth consent grants).
+        - Correlate sign-in anomalies with audit changes on the same account within a short window and assemble a timeline.
+        - For each lead, decide whether it is an attack or a legitimate twin (real travel, an admin's expected change) and justify it from the evidence.
+        - Write either the incident hand-off (timeline and affected identities) or the detection you would build for a true finding, and note any benign pattern to tune out.
+      deliverable: A hunt write-up with the hypothesis, the anomalies and audit changes found, the correlated timeline, your true/false calls with justification, and the detection or tuning that results.
+    expected_outcome: >
+      You can hunt sign-in and audit logs for identity and cloud abuse, correlate a risky
+      sign-in with control-plane changes into a story, and tell attacker behaviour from its
+      legitimate twin before escalating.
+    quiz:
+      - prompt: Why is identity described as the perimeter in cloud environments?
+        options:
+          - Because cloud has no logs
+          - Because an attacker often uses a valid credential rather than malware on a host
+          - Because firewalls are unnecessary
+          - Because MFA removes all risk
+        answer: 1
+        explanation: With no host to compromise, access turns on credentials, so identity is the main attack surface.
+      - prompt: Why does MFA alone not rule out account compromise?
+        options:
+          - MFA is never used in the cloud
+          - A stolen session token can be reused without a fresh authentication
+          - MFA deletes the sign-in logs
+          - MFA only applies to admins
+        answer: 1
+        explanation: Token theft reuses an already-authenticated session, so the attacker never faces the MFA prompt.
+      - prompt: OAuth consent abuse is dangerous mainly because
+        options:
+          - It changes the user's password
+          - The granted app access is broad and persists through a password reset
+          - It only affects one email
+          - It disables logging
+        answer: 1
+        explanation: A consent grant gives an app lasting access that survives credential resets, making it stealthy persistence.
+      - prompt: What most reliably separates a cloud attack from its legitimate twin?
+        options:
+          - Acting on any single risky sign-in immediately
+          - Baselining normal behaviour and correlating multiple events into one story
+          - Ignoring the audit log
+          - Trusting the IP geolocation alone
+        answer: 1
+        explanation: Baselines plus correlation turn ambiguous single events into a defensible finding and cut false positives.

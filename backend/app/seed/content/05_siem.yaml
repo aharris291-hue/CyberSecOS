@@ -567,3 +567,100 @@ lessons:
           - A duplicate of three other feeds
         answer: 1
         explanation: Confidence, recency, specificity and context make an indicator actionable; volume alone does not.
+  - slug: siem-soar-automation
+    title: Automating Response with SOAR Playbooks
+    order: 7
+    difficulty: intermediate
+    summary: Turn a repeatable alert response into a SOAR playbook that enriches, contains and escalates while keeping the analyst in control.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.4", "sc200:4", "cysa:1.5"]
+    learning_objectives:
+      - Explain what SOAR adds on top of a SIEM and when automation is worth it
+      - Design a playbook that enriches, decides and acts with a human checkpoint
+      - Keep automated actions safe with scoping, approvals and an audit trail
+    theory: |
+      A SIEM detects; a **SOAR** (Security Orchestration, Automation and Response) acts on
+      what the SIEM finds. In Microsoft Sentinel these are **playbooks** (Logic Apps) run by
+      **automation rules**; other stacks call them workflows. The point is to take the
+      repetitive, well-understood part of a response, the enrichment and the first safe
+      actions, off the analyst's hands so they spend their attention on judgement instead of
+      copy-paste.
+
+      A good playbook follows a shape: **trigger** on an alert, **enrich** by pulling context
+      (the user's recent sign-ins, the IP's reputation, the host's owner), **decide** with
+      simple logic, then **act**. Low-risk actions, posting the enriched summary to the ticket,
+      tagging the alert, opening a case, are safe to fully automate. High-impact actions,
+      disabling an account, isolating a host, blocking an IP, belong behind a **human
+      checkpoint**: the playbook prepares the action and an analyst approves it. This keeps
+      speed without handing containment decisions to a rule that cannot see context.
+
+      Automation that can change your environment has to be governed. Each playbook runs with
+      an **identity** whose permissions should be the least it needs, actions should be
+      **scoped** so a bug cannot disable every account, and every run must leave an **audit
+      trail** of what fired, what it did and who approved it. The measure of success is not how
+      much is automated but whether mean time to respond falls while false actions stay near
+      zero; an over-eager playbook that isolates a domain controller on a false positive costs
+      more than it saves.
+    examples:
+      - title: An enrich-decide-act playbook outline
+        body: |
+          Trigger:  "impossible travel" sign-in alert
+          Enrich:   last 24h sign-ins, IP reputation, user's manager and department
+          Decide:   risky sign-in AND no recent MFA?  -> prepare account-disable
+          Act:      post enriched summary to ticket (auto); account-disable (needs approval)
+      - title: A guardrail that keeps automation safe
+        body: |
+          Playbook identity:  can disable users, cannot delete them (least privilege)
+          Scope:              one account per run; refuse if >5 in 10 min (runaway guard)
+          Audit:              every run logs alert id, actions, approver, outcome
+    exercise:
+      title: Design and dry-run a response playbook
+      environment: Your SIEM lab (Sentinel free tier with Logic Apps, or a paper/notebook design plus a scripting runtime for a mock enrichment)
+      tools: [SIEM automation feature or a notebook, sample alert, a notes file]
+      steps:
+        - Pick one repeatable alert from an earlier lesson and write down the manual steps an analyst takes today to work it.
+        - Split those steps into enrich, decide and act, and mark which actions are low-risk (safe to automate) and which are high-impact (need approval).
+        - Design the playbook trigger and the enrichment it would gather, naming each data source.
+        - Write the decision logic as plain conditions and define the human checkpoint for any containment action.
+        - Dry-run it against a sample alert (really in the SIEM, or on paper), recording what each step would output.
+        - Add guardrails: the identity's least-privilege permissions, a scope limit, and the audit fields each run must record.
+        - State how you would measure whether the playbook helps (time-to-respond, false-action rate) over its first month.
+      deliverable: A playbook design (trigger, enrichment, decision, actions with the approval checkpoint), its guardrails, and the dry-run output on one sample alert.
+    expected_outcome: >
+      You can take a repeatable alert response and turn it into a SOAR playbook that enriches
+      and acts safely, keeping a human checkpoint on high-impact actions and an audit trail on
+      every run.
+    quiz:
+      - prompt: What does SOAR add on top of a SIEM?
+        options:
+          - More log storage
+          - Orchestration and automation that act on what the SIEM detects
+          - A replacement for analysts
+          - Faster KQL queries
+        answer: 1
+        explanation: SOAR orchestrates enrichment and response actions around the alerts a SIEM raises.
+      - prompt: Which action is best left behind a human approval checkpoint?
+        options:
+          - Posting an enriched summary to the ticket
+          - Tagging the alert
+          - Isolating a host or disabling an account
+          - Opening a case
+        answer: 2
+        explanation: High-impact containment actions need a human decision; low-risk enrichment can be fully automated.
+      - prompt: Why should a playbook's identity have least-privilege permissions?
+        options:
+          - To make it run faster
+          - So a bug or abuse cannot take actions far beyond what the playbook needs
+          - To reduce log volume
+          - To skip the audit trail
+        answer: 1
+        explanation: Least privilege limits the blast radius if the automation misfires or is abused.
+      - prompt: The real measure of a good response playbook is
+        options:
+          - How many actions it automates
+          - That time-to-respond falls while false actions stay near zero
+          - That it never needs approval
+          - That it disables accounts quickly
+        answer: 1
+        explanation: Automation is worth it only if it speeds real response without causing wrong actions.

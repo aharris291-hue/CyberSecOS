@@ -551,3 +551,101 @@ lessons:
         options: [The same thing, The workflow and lifecycle around all the rules, A type of malware, A dashboard]
         answer: 1
         explanation: Detection-as-code is the review, CI, rollout and deprecation process around the whole rule set, not one rule.
+  - slug: de-adversary-emulation
+    title: Purple-Teaming to Drive Detections
+    order: 7
+    difficulty: intermediate
+    summary: Use adversary emulation and purple-team exercises to find detection gaps and build evidence-backed detections for real attacker techniques.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["cysa:1.4", "cysa:3.1", "sc200:2"]
+    learning_objectives:
+      - Explain how adversary emulation and purple-teaming drive detection engineering
+      - Run a safe emulation of an ATT&CK technique and capture the telemetry it produces
+      - Turn an observed technique into a tested detection and measure coverage honestly
+    theory: |
+      Writing detections from imagination leaves gaps you cannot see. **Adversary emulation**
+      closes them by safely reproducing real attacker techniques in your own environment and
+      watching what telemetry they leave. A **purple team** is the collaboration that makes this
+      productive: the **red** side runs the technique, the **blue** side watches whether it is
+      detected, and the two work together in the open rather than red scoring points off blue.
+      The output is not a report card but a list of concrete detection improvements.
+
+      The method is **threat-informed**. You pick techniques that matter to your organisation,
+      usually from **MITRE ATT&CK** and from the groups known to target your sector, and emulate
+      them one at a time. Tools like Atomic Red Team provide small, reversible tests for individual
+      techniques; a controlled lab or an explicitly authorised test window keeps it safe. For each
+      technique you record three things: did an existing detection fire, what raw telemetry was
+      produced (process events, command lines, network connections), and where the visibility gaps
+      are. A technique that produced telemetry but no alert is a detection you are missing; a
+      technique that produced no telemetry at all is a logging gap to fix first.
+
+      Each gap then becomes a **tested detection**. You write the rule against the telemetry the
+      emulation produced, confirm it fires on a re-run, and check it does not drown the analyst in
+      false positives, the same discipline as any detection work. Mapping results back to ATT&CK
+      lets you show **coverage honestly**: not "we cover ATT&CK" but "we detect these techniques,
+      with this confidence, and here are the known gaps." Run regularly, purple-teaming turns a
+      detection catalogue from a guess into something measured against real adversary behaviour.
+    examples:
+      - title: One emulated technique, three findings
+        body: |
+          Technique: T1059.001 PowerShell (encoded command)
+          Fired?     no existing alert
+          Telemetry: Event 4104 script block + process cmdline with -enc
+          Result:    write a detection on encoded PowerShell; gap closed, re-test to confirm
+      - title: Purple-team loop, not a scoreboard
+        body: |
+          Red:   runs the technique in an authorised window
+          Blue:  checks SIEM/EDR for an alert and for raw telemetry
+          Both:  agree the gap, build the detection, re-run until it fires cleanly
+          Output: new tested detections + an honest coverage map, not a win/lose score
+    exercise:
+      title: Run a mini purple-team cycle on one technique
+      environment: An isolated lab VM with endpoint logging and your SIEM/EDR (or sample telemetry), plus an authorised, reversible test such as an Atomic Red Team atomic
+      tools: [A lab VM with logging, a SIEM or EDR, an adversary-emulation test (e.g. Atomic Red Team), a notes file]
+      steps:
+        - Choose one ATT&CK technique relevant to your environment and state why it matters and what telemetry you expect it to produce.
+        - Confirm the test is safe and reversible and that you have authorisation and a logging-enabled lab to run it in.
+        - Run the emulation and check whether any existing detection fired; record the result.
+        - Collect the raw telemetry the technique produced (process events, command lines, network connections) and identify any logging gap where expected telemetry was missing.
+        - Write a detection against that telemetry and re-run the emulation to confirm it fires, then check it against benign activity for false positives.
+        - Map the technique and your result to ATT&CK and record it as detected (with confidence) or a remaining gap.
+        - Summarise the coverage change and the next technique you would emulate.
+      deliverable: A purple-team note covering the technique and expectation, whether it was detected, the telemetry and any logging gap, the new tested detection, and the honest ATT&CK coverage update.
+    expected_outcome: >
+      You can run a safe adversary emulation of an ATT&CK technique, capture the telemetry it
+      produces, turn a gap into a tested detection, and report detection coverage honestly
+      against real attacker behaviour.
+    quiz:
+      - prompt: How does purple-teaming improve detection engineering?
+        options:
+          - It replaces the SIEM
+          - Red emulates real techniques while blue checks detection, producing concrete detection improvements
+          - It scores red against blue
+          - It removes the need for ATT&CK
+        answer: 1
+        explanation: Purple-teaming is a collaboration whose output is detection gaps closed, not a win/lose score.
+      - prompt: A technique that produced telemetry but fired no alert is
+        options:
+          - Fully covered
+          - A missing detection to build
+          - A logging gap
+          - A false positive
+        answer: 1
+        explanation: The telemetry exists, so a detection can and should be written against it.
+      - prompt: A technique that produced no telemetry at all means you should first
+        options:
+          - Write a detection anyway
+          - Fix the logging or visibility gap before a detection is even possible
+          - Ignore the technique
+          - Lower the severity
+        answer: 1
+        explanation: With no telemetry there is nothing to detect on, so visibility must be fixed first.
+      - prompt: What does honest ATT&CK coverage reporting look like?
+        options:
+          - Claiming the whole matrix is covered
+          - Stating which techniques are detected, with what confidence, and the known gaps
+          - Hiding the gaps
+          - Counting rules written
+        answer: 1
+        explanation: Honest coverage names detected techniques and remaining gaps rather than claiming blanket coverage.
