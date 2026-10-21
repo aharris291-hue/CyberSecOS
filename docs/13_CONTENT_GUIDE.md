@@ -14,20 +14,23 @@ progress is kept because lessons are matched by `slug`.
 
 | # | Course | Domain | Lessons |
 |---|---|---|---|
-| 1 | Networking Foundations for SOC Analysts | Networking | 14 |
-| 2 | Security Foundations | Security Foundations | 14 |
-| 3 | Windows Security Monitoring | Windows Security | 14 |
-| 4 | Linux Security Operations | Linux Security | 14 |
-| 5 | SIEM Fundamentals | SIEM | 14 |
-| 6 | Vulnerability Management | Vulnerability Management | 14 |
-| 7 | Threat Hunting | Threat Hunting | 14 |
-| 8 | Incident Response | Incident Response | 14 |
-| 9 | Detection Engineering | Detection Engineering | 14 |
-| 10 | Security Architecture | Security Architecture | 14 |
-| 11 | Cloud Security Operations | Cloud Security | 14 |
-| 12 | Governance, Risk and Compliance | Governance, Risk and Compliance | 14 |
+| 1 | Networking Foundations for SOC Analysts | Networking | 22 |
+| 2 | Security Foundations | Security Foundations | 23 |
+| 3 | Windows Security Monitoring | Windows Security | 23 |
+| 4 | Linux Security Operations | Linux Security | 22 |
+| 5 | SIEM Fundamentals | SIEM | 20 |
+| 6 | Vulnerability Management | Vulnerability Management | 22 |
+| 7 | Threat Hunting | Threat Hunting | 18 |
+| 8 | Incident Response | Incident Response | 23 |
+| 9 | Detection Engineering | Detection Engineering | 19 |
+| 10 | Security Architecture | Security Architecture | 23 |
+| 11 | Cloud Security Operations | Cloud Security | 23 |
+| 12 | Governance, Risk and Compliance | Governance, Risk and Compliance | 20 |
+| 13 | Microsoft Security Operations (SC-900 and SC-200) | Microsoft Security | 6 |
 
-12 courses, 168 lessons, about 18% theory and 82% lab time overall. The catalog is being built out on a deliberate per-course split (weighted by certification-objective coverage and distinct material) toward a 300-hour total; courses currently range around fourteen lessons each as that split fills in.
+13 courses, 264 lessons (~290 hours), about 18% theory and 82% lab time overall. The first twelve courses were built out on a deliberate per-course split (weighted by certification-objective coverage and distinct material) toward the 300-hour target. Each was taken to the point where its genuinely distinct SOC material ran out rather than padded: Threat Hunting caps at 18, Detection Engineering at 19, SIEM and GRC at 20, Networking, Linux and Vulnerability Management at 22, and Security Foundations, Windows, Incident Response, Security Architecture and Cloud at 23. That distinct-material ceiling for the vendor-neutral courses (~283 hours) sits a little short of the literal 300-hour target; closing the last gap would mean repeating topics, so the build stopped there rather than padding.
+
+Course 13 is a focused, product-specific track for the two Microsoft exams (SC-900 fundamentals and SC-200 operations), added after the certification gap audit (`14_CERTIFICATION_GAP_AUDIT.md`) found those exams need Microsoft-product depth a vendor-neutral catalog cannot give. Its six lessons cover the Microsoft stack, Entra ID identity and governance, Defender XDR, Microsoft Sentinel and Microsoft Purview.
 
 The catalog is being built out toward a target of roughly 300 hours of lesson
 time in total (about 66 minutes per lesson), steered by the official exam
@@ -144,7 +147,7 @@ lab points at a real system.
 
 ### Current labs
 
-Two labs per course, 24 in total. `test_lab_content.py` fails if any course drops below two.
+Four labs per course, 52 in total. `test_lab_content.py` fails if any course drops below four.
 
 
 | Course | Lesson | Lab |
@@ -197,3 +200,7 @@ Two labs per course, 24 in total. `test_lab_content.py` fails if any course drop
 | Security Architecture | `arch-secure-applications-apis` | Find broken object-level authorization in an API |
 | Cloud Security | `cloud-containers-serverless` | Review Kubernetes workloads for container escape risks |
 | Governance, Risk and Compliance | `grc-continuity-incident-readiness` | Check backups against the business impact analysis |
+| Microsoft Security | `ms-entra-governance-protection` | Audit Entra sign-ins against a Conditional Access baseline |
+| Microsoft Security | `ms-defender-xdr-portal` | Triage a multi-workload Defender XDR incident |
+| Microsoft Security | `ms-sentinel-operations` | Tune a noisy Microsoft Sentinel analytics rule |
+| Microsoft Security | `ms-purview-compliance` | Investigate Microsoft Purview DLP alerts |

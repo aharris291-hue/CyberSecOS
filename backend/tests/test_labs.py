@@ -4,10 +4,11 @@ import pytest
 
 from app.models import Lab, LabAttempt, Lesson
 from app.services import lab as lab_service
-from app.services.seed import load_lab_files
+from app.services.seed import load_course_files, load_lab_files
 
 SLUG = "linux-auth-logs"
 LAB_COUNT = len(load_lab_files())
+COURSE_COUNT = len(load_course_files())
 
 
 def _lesson(db, slug=SLUG):
@@ -79,7 +80,7 @@ def test_grade_rejects_the_wrong_number_of_answers():
 def test_every_course_gets_a_lab_attached_to_a_lesson(db):
     labs = db.query(Lab).all()
     assert len(labs) == LAB_COUNT
-    assert len({lab.lesson.course_id for lab in labs}) == 12
+    assert len({lab.lesson.course_id for lab in labs}) == COURSE_COUNT
 
 
 def test_reseeding_labs_is_idempotent_and_keeps_attempts(client, auth_headers, db):

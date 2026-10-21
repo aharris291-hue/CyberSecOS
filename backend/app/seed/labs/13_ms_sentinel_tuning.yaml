@@ -1,0 +1,125 @@
+slug: lab-ms-sentinel-tuning
+lesson: ms-sentinel-operations
+title: Tune a noisy Microsoft Sentinel analytics rule
+pass_mark: 80
+scenario: 'A Microsoft Sentinel scheduled analytics rule called ''Failed sign-in spike'' is burying the
+
+  SOC in incidents. You exported the incidents it created as CSV (IncidentId, CreatedTime,
+
+  RuleName, Account, SourceIP, Verdict, Severity) alongside the rule''s KQL. The Verdict column
+
+  is the analyst''s closing classification: TruePositive, BenignPositive or FalsePositive.
+
+  Measure how noisy the rule is, find what is tripping it, and decide how to tune it before
+
+  you would automate any response.'
+artifacts:
+- name: incidents.csv
+  kind: csv
+  description: Incidents created by the analytics rule, with the analyst verdict for each.
+  content: 'IncidentId,CreatedTime,RuleName,Account,SourceIP,Verdict,Severity
+
+    INC-001,2026-09-06T01:00:00Z,Failed sign-in spike,svc-backup@contoso.example,192.0.2.10,BenignPositive,Low
+
+    INC-002,2026-09-06T02:00:00Z,Failed sign-in spike,svc-backup@contoso.example,192.0.2.10,BenignPositive,Low
+
+    INC-003,2026-09-06T03:00:00Z,Failed sign-in spike,svc-backup@contoso.example,192.0.2.10,BenignPositive,Low
+
+    INC-004,2026-09-06T04:00:00Z,Failed sign-in spike,svc-sync@contoso.example,192.0.2.11,BenignPositive,Low
+
+    INC-005,2026-09-06T05:00:00Z,Failed sign-in spike,rjones@contoso.example,198.51.100.60,FalsePositive,Low
+
+    INC-006,2026-09-06T06:00:00Z,Failed sign-in spike,tbaker@contoso.example,198.51.100.61,FalsePositive,Low
+
+    INC-007,2026-09-06T07:00:00Z,Failed sign-in spike,pmehta@contoso.example,198.51.100.62,FalsePositive,Low
+
+    INC-008,2026-09-06T08:00:00Z,Failed sign-in spike,udavis@contoso.example,198.51.100.63,FalsePositive,Low
+
+    INC-009,2026-09-06T09:00:00Z,Failed sign-in spike,wkim@contoso.example,198.51.100.64,FalsePositive,Low
+
+    INC-010,2026-09-06T10:00:00Z,Failed sign-in spike,aadmin@contoso.example,203.0.113.44,TruePositive,High
+
+    INC-011,2026-09-06T11:00:00Z,Failed sign-in spike,bfinance@contoso.example,203.0.113.44,TruePositive,High
+
+    '
+- name: rule.kql
+  kind: config
+  description: The scheduled analytics rule's KQL query and entity mapping.
+  content: '// Scheduled analytics rule: Failed sign-in spike
+
+    // Runs every 1 hour, lookback 1 hour.
+
+    SigninLogs
+
+    | where ResultType == "50126"
+
+    | summarize Failures = count() by UserPrincipalName, IPAddress, bin(TimeGenerated, 1h)
+
+    | where Failures > 10
+
+    // Entity mapping: Account = UserPrincipalName, IP = IPAddress
+
+    // Problem: service accounts svc-backup and svc-sync retry on schedule and trip it every run.
+
+    '
+tasks:
+- prompt: How many incidents did the rule create?
+  type: number
+  hint: Count the incident rows in the export.
+  explanation: The rule produced eleven incidents in the window, most of them not worth an analyst's time.
+  verify:
+    artifact: incidents.csv
+    op: count
+    pattern: ^INC-
+  accepted:
+  - '11'
+- prompt: How many incidents were closed as false positives?
+  type: number
+  hint: Count the rows with the false-positive verdict.
+  explanation: These were genuine noise, neither a real attack nor an expected benign activity.
+  verify:
+    artifact: incidents.csv
+    op: count
+    pattern: ',FalsePositive,'
+  accepted:
+  - '5'
+- prompt: Which account generated the most incidents?
+  type: text
+  hint: Tally the account column and take the most frequent.
+  explanation: A scheduled service account retries on a timer and trips the rule every run; it should be suppressed, not alerted
+    on.
+  verify:
+    artifact: incidents.csv
+    op: top
+    pattern: ^INC-[^,]+,[^,]+,[^,]+,([^,]+),
+  accepted:
+  - svc-backup@contoso.example
+- prompt: Which source IPs should be suppressed because they only ever produced benign-positive incidents?
+  type: set
+  hint: List the addresses tied to the benign-positive verdict.
+  explanation: These are the service-account addresses; suppressing them removes the bulk of the noise without hiding real
+    attacks.
+  verify:
+    artifact: incidents.csv
+    op: set
+    pattern: ',([0-9.]+),BenignPositive,'
+  accepted:
+  - 192.0.2.10, 192.0.2.11
+- prompt: What percentage of the incidents were true positives?
+  type: number
+  accepted:
+  - '18'
+  tolerance: 1
+  hint: Divide the real detections by the total and express it as a percentage.
+  explanation: Two of eleven incidents were true positives, about 18%, far too low to automate a response on without tuning.
+- prompt: What is the best tuning action for this rule?
+  type: choice
+  options:
+  - Suppress the service-account source IPs and raise the failure threshold
+  - Disable the rule entirely
+  - Delete the Sentinel workspace
+  - Lower the threshold so it fires more often
+  answer: 0
+  hint: Cut the predictable noise without losing the real detections.
+  explanation: Suppressing the known service-account addresses and raising the threshold removes the benign noise while keeping
+    the true positives; disabling or widening the rule is wrong.

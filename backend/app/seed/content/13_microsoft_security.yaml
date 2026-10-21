@@ -1,0 +1,772 @@
+slug: microsoft-security
+title: Microsoft Security Operations (SC-900 and SC-200)
+domain: Microsoft Security
+order: 13
+description: 'A focused track for the two Microsoft certifications: SC-900 fundamentals and SC-200 operations.
+  Build on the vendor-neutral courses by learning the Microsoft stack itself, Entra, Defender XDR, Sentinel
+  and Purview, as the exams test it.'
+lessons:
+- slug: ms-security-fundamentals
+  title: The Microsoft Security Stack for SC-900
+  order: 1
+  difficulty: beginner
+  summary: Map Microsoft's security, compliance and identity products and how they fit together.
+  theory_minutes: 12
+  lab_minutes: 54
+  objectives:
+  - sc900:1
+  - sc900:3
+  - secplus:1.2
+  - secplus:5.4
+  learning_objectives:
+  - Describe the security, compliance and identity concepts SC-900 is built on
+  - Name the four pillars of the Microsoft stack (Entra, Defender, Sentinel, Purview) and what each does
+  - Explain where shared responsibility, Zero Trust and defence in depth sit in Microsoft's model
+  theory: 'SC-900 (Security, Compliance and Identity Fundamentals) is a concept exam, not a
+
+    configuration one. It expects you to recognise Microsoft''s portfolio and the ideas behind
+
+    it. The rest of this course is hands-on, but you first need the map.
+
+
+    The portfolio has four pillars. **Microsoft Entra** is identity: who can sign in and what
+
+    they can reach. **Microsoft Defender XDR** is threat protection across endpoints,
+
+    identities, email and cloud apps. **Microsoft Sentinel** is the cloud SIEM and SOAR that
+
+    collects signals from everything and automates response. **Microsoft Purview** is data
+
+    security, governance and compliance: labels, data loss prevention, insider risk and audit.
+
+    Microsoft Intune manages the devices those identities use.
+
+
+    Three concepts run through all of it. **Shared responsibility** splits duties between you
+
+    and the provider and shifts as you move from IaaS to SaaS. **Defence in depth** layers
+
+    controls so no single failure is fatal. **Zero Trust** assumes breach and verifies every
+
+    request explicitly using identity, device, location and risk signals. The Service Trust
+
+    Portal publishes Microsoft''s own audit reports so customers can meet their compliance
+
+    obligations. Knowing which product owns which job is most of SC-900.'
+  examples:
+  - title: Which product owns the job
+    body: 'Need                                   Product
+
+      Enforce MFA and Conditional Access     Microsoft Entra
+
+      Investigate a phished mailbox          Defender for Office 365
+
+      Correlate alerts into one incident     Microsoft Defender XDR
+
+      Collect firewall + SaaS logs, automate Microsoft Sentinel
+
+      Label and stop egress of PII           Microsoft Purview
+
+      '
+  - title: Zero Trust in one line
+    body: 'Never trust, always verify: authenticate and authorise every request on identity,
+
+      device health, location and real-time risk, and grant the least access needed.'
+  quiz:
+  - prompt: Which Microsoft product is the cloud-native SIEM and SOAR?
+    options:
+    - Microsoft Entra
+    - Microsoft Sentinel
+    - Microsoft Purview
+    - Microsoft Intune
+    answer: 1
+    explanation: Sentinel collects signals from across the estate and automates response; Entra is identity,
+      Purview is data/compliance, Intune is device management.
+  - prompt: A team needs to apply sensitivity labels and stop PII leaving the tenant. Which pillar?
+    options:
+    - Microsoft Defender XDR
+    - Microsoft Entra
+    - Microsoft Purview
+    - Microsoft Sentinel
+    answer: 2
+    explanation: Data classification, labelling and DLP are Microsoft Purview.
+  - prompt: What does Zero Trust assume about the network?
+    options:
+    - The internal network is trusted once you are on the VPN
+    - Breach is possible, so every request must be verified explicitly
+    - Perimeter firewalls make internal verification unnecessary
+    - Only external traffic needs authentication
+    answer: 1
+    explanation: Zero Trust assumes breach and verifies every request on identity, device, location and
+      risk rather than trusting the network location.
+  - prompt: Where does Microsoft publish the audit reports customers use for their own compliance?
+    options:
+    - The Service Trust Portal
+    - The Entra admin centre
+    - The Sentinel workspace
+    - The Intune company portal
+    answer: 0
+    explanation: The Service Trust Portal hosts Microsoft's independent audit reports and compliance documentation.
+  exercise:
+    title: Build a one-page Microsoft security stack map
+    environment: Any text editor or diagram tool; the free Microsoft Learn SC-900 pages for reference.
+    tools:
+    - Microsoft Learn
+    - a diagram or document tool
+    steps:
+    - List the four pillars (Entra, Defender XDR, Sentinel, Purview) and write one sentence on what each
+      secures.
+    - For each pillar, note one concrete capability a SOC analyst would use it for.
+    - Draw where shared responsibility shifts across IaaS, PaaS and SaaS and mark which pillar covers
+      identity in each.
+    - Add the three cross-cutting concepts (shared responsibility, defence in depth, Zero Trust) and link
+      each to a pillar.
+    - Note where Microsoft Intune and the Service Trust Portal fit around the four pillars.
+    - Write a two-line summary of which product you would reach for first in an identity-based incident
+      and why.
+    deliverable: A one-page map of the Microsoft stack with each pillar, one capability each, and the
+      three Zero Trust concepts placed.
+  expected_outcome: 'You can name the four pillars of the Microsoft security stack, say what each secures,
+    and
+
+    place shared responsibility, defence in depth and Zero Trust against them. This is the
+
+    orientation the rest of the course and the SC-900 exam assume.'
+- slug: ms-entra-identity-authentication
+  title: 'Microsoft Entra ID: Identities and Authentication'
+  order: 2
+  difficulty: beginner
+  summary: Entra editions, identity types and the authentication methods the exams expect you to know.
+  theory_minutes: 12
+  lab_minutes: 54
+  objectives:
+  - sc900:2
+  - sc900:1
+  - secplus:4.6
+  learning_objectives:
+  - 'Distinguish Entra identity types: member, guest, service principal and managed identity'
+  - Compare authentication methods from passwords to passwordless (FIDO2, Windows Hello, Authenticator)
+  - Explain SSPR, SSO and what the Free, P1 and P2 editions add
+  theory: '**Microsoft Entra ID** (formerly Azure AD) is the identity provider behind Microsoft 365
+
+    and Azure. SC-900 expects you to know its building blocks; SC-200 expects you to operate
+
+    on the signals they produce.
+
+
+    **Identity types.** A **member** is an internal user of the tenant. A **guest** is an
+
+    external user invited through B2B collaboration. A **service principal** is the local
+
+    representation of an application that needs to authenticate. A **managed identity** is a
+
+    service principal whose credentials Azure rotates for you, so code never stores a secret.
+
+
+    **Authentication methods** run from weakest to strongest: passwords, then password plus a
+
+    second factor (SMS, Microsoft Authenticator push or code), then **passwordless** methods
+
+    (FIDO2 security keys, Windows Hello for Business, Authenticator passkeys) that resist
+
+    phishing because there is no shared secret to steal. **Self-service password reset**
+
+    (SSPR) lets users recover their own accounts against pre-registered methods.
+
+
+    **Single sign-on** lets one Entra authentication grant access to many connected apps.
+
+    Editions matter for the exam: **Free** gives core directory and SSO; **P1** adds
+
+    Conditional Access and dynamic groups; **P2** adds Identity Protection risk policies and
+
+    Privileged Identity Management. Choosing the right method and edition is an identity
+
+    design decision an analyst should be able to read in the logs.'
+  examples:
+  - title: Identity types side by side
+    body: 'Type                Who/what it is                 Credential managed by
+
+      Member              Internal user                  User / admin
+
+      Guest (B2B)         Invited external user          Their home tenant
+
+      Service principal   An app''s identity              App owner (secret/cert)
+
+      Managed identity    An Azure resource''s identity   Azure (auto-rotated)
+
+      '
+  - title: Why passwordless resists phishing
+    body: 'A FIDO2 key signs a challenge bound to the real site''s origin. A look-alike phishing
+
+      site gets a different origin, so the signature will not validate and nothing is sent
+
+      that the attacker can replay.'
+  quiz:
+  - prompt: Which identity should application code in Azure use so no secret is stored?
+    options:
+    - A member account
+    - A guest account
+    - A managed identity
+    - A shared password
+    answer: 2
+    explanation: A managed identity is a service principal whose credentials Azure creates and rotates,
+      so code never holds a secret.
+  - prompt: Which authentication method is considered phishing-resistant?
+    options:
+    - SMS one-time code
+    - Password plus security question
+    - FIDO2 security key
+    - Email one-time code
+    answer: 2
+    explanation: FIDO2 binds the signature to the real site's origin, so a phishing site cannot replay
+      it; SMS and email codes can be phished or intercepted.
+  - prompt: What does an external user invited through B2B collaboration appear as in the tenant?
+    options:
+    - A member
+    - A guest
+    - A service principal
+    - A managed identity
+    answer: 1
+    explanation: B2B collaboration adds the external user as a guest; their credentials stay in their
+      home tenant.
+  - prompt: Which Entra edition is required for Conditional Access?
+    options:
+    - Free
+    - P1 (or higher)
+    - No edition supports it
+    - It is a separate Sentinel feature
+    answer: 1
+    explanation: Conditional Access requires Entra ID P1 or higher; P2 adds Identity Protection and PIM
+      on top.
+  exercise:
+    title: Inventory identities and authentication in a developer tenant
+    environment: A free Microsoft 365 Developer Program tenant, or the Entra admin centre documentation
+      if no tenant is available.
+    tools:
+    - Microsoft Entra admin centre
+    - Microsoft Authenticator
+    steps:
+    - List the member and guest accounts in the tenant and note how each guest was invited.
+    - Find one service principal (an enterprise application) and record what it is allowed to do.
+    - Review the authentication methods registered for your own account and identify the strongest one.
+    - Register a passwordless method (Authenticator passkey or a FIDO2 key) and note the sign-in experience.
+    - Confirm whether SSPR is enabled and which methods it accepts for recovery.
+    - Write down which edition features (Conditional Access, PIM) the tenant has available.
+    deliverable: A short inventory listing each identity type present, the authentication methods in use,
+      and whether passwordless and SSPR are enabled.
+  expected_outcome: 'You can tell Entra identity types apart, rank authentication methods by strength,
+    and say
+
+    what each edition unlocks. You are ready to read the governance and protection controls
+
+    that sit on top of them.'
+- slug: ms-entra-governance-protection
+  title: Conditional Access, PIM and Identity Protection
+  order: 3
+  difficulty: intermediate
+  summary: Govern access with Conditional Access, just-in-time roles and risk-based policies in Entra.
+  theory_minutes: 12
+  lab_minutes: 54
+  objectives:
+  - sc900:2
+  - sc200:2
+  - secplus:4.6
+  - secplus:1.2
+  learning_objectives:
+  - Read a Conditional Access policy and predict whether a given sign-in is allowed, blocked or challenged
+  - Explain Privileged Identity Management just-in-time activation and access reviews
+  - Describe how Identity Protection scores user and sign-in risk and what risk policies do
+  theory: 'Entra governance decides not just who you are but whether this particular request is safe.
+
+
+    **Conditional Access** is the policy engine. Each policy has **assignments** (which users,
+
+    which apps, and conditions such as location, device platform or sign-in risk) and **access
+
+    controls** (block, or grant with requirements like MFA, a compliant device or a
+
+    password change). Policies combine: if any matching policy blocks, the request is blocked;
+
+    otherwise all grant requirements must be met. Analysts read these to explain why a sign-in
+
+    was challenged or denied.
+
+
+    **Privileged Identity Management** (PIM, Entra P2) removes standing admin rights. A user is
+
+    made **eligible** for a role and must **activate** it just in time, often with MFA,
+
+    justification and an approval, for a limited window. **Access reviews** periodically
+
+    re-certify who still needs access, and entitlement management packages access for request
+
+    and expiry.
+
+
+    **Identity Protection** (P2) uses Microsoft''s signal to score **sign-in risk** (is this
+
+    sign-in suspicious: anonymous IP, impossible travel, a leaked credential match) and **user
+
+    risk** (is this account likely compromised). Risk feeds Conditional Access: a high-risk
+
+    sign-in can be blocked or forced through MFA and a secure password change. Together these
+
+    turn identity from a static gate into a risk-aware control, which is exactly what Zero
+
+    Trust asks for.'
+  examples:
+  - title: Reading a Conditional Access decision
+    body: 'Policy: require MFA for all users accessing Office 365 from outside trusted locations.
+
+      Sign-in: user at a cafe (untrusted IP) opening Outlook.
+
+      Result: grant with MFA required -> user is challenged, not blocked.'
+  - title: PIM just-in-time activation
+    body: 'Alice is eligible for Global Reader, not assigned it. To investigate, she activates the
+
+      role for 2 hours with a justification; an approver accepts; the grant expires
+
+      automatically, leaving an audit trail and no standing privilege.'
+  quiz:
+  - prompt: In Conditional Access, what happens if one matching policy says block and another says grant
+      with MFA?
+    options:
+    - The grant wins and MFA is required
+    - The request is blocked
+    - The user chooses
+    - Both policies are ignored
+    answer: 1
+    explanation: Block always wins in Conditional Access; a single blocking policy denies the request
+      regardless of other grants.
+  - prompt: What is the main benefit of PIM activation for an admin role?
+    options:
+    - It gives permanent admin rights faster
+    - It removes standing privilege by granting the role just in time, with approval and expiry
+    - It disables MFA for admins
+    - It replaces Conditional Access
+    answer: 1
+    explanation: PIM makes users eligible rather than permanently assigned, so privilege is granted just
+      in time with justification, approval and automatic expiry.
+  - prompt: Identity Protection flags a sign-in from an anonymous IP with a credential found in a leak.
+      What does this most directly affect?
+    options:
+    - Device compliance
+    - Sign-in and user risk, which Conditional Access can act on
+    - The Purview sensitivity label
+    - The Sentinel data connector
+    answer: 1
+    explanation: Those signals raise sign-in and user risk in Identity Protection; risk-based Conditional
+      Access can then block or force MFA and a password reset.
+  - prompt: Which feature periodically re-certifies that users still need their access?
+    options:
+    - Access reviews
+    - Self-service password reset
+    - Single sign-on
+    - Managed identities
+    answer: 0
+    explanation: Access reviews re-certify access on a schedule so entitlements do not accumulate unchecked.
+  exercise:
+    title: Design a risk-based Conditional Access baseline
+    environment: A developer tenant with Entra P2 trial, or paper design using the Conditional Access
+      documentation.
+    tools:
+    - Microsoft Entra admin centre
+    - Conditional Access report-only mode
+    steps:
+    - Write a policy requiring MFA for all users, with a break-glass account excluded.
+    - Add a policy blocking legacy authentication protocols.
+    - 'Add a risk-based policy: high sign-in risk requires MFA; high user risk requires a secure password
+      change.'
+    - Put the new policies in report-only mode and review what they would have done against recent sign-ins.
+    - Make two admin roles eligible rather than assigned in PIM and require approval to activate.
+    - Schedule an access review for guest accounts and record who would be removed.
+    deliverable: A Conditional Access baseline (at least three policies) plus a PIM and access-review
+      plan, with report-only findings noted before enforcement.
+  expected_outcome: 'You can predict Conditional Access outcomes, explain just-in-time privilege with
+    PIM, and
+
+    describe how Identity Protection risk drives access decisions. The lab has you apply this
+
+    to real sign-in data.'
+- slug: ms-defender-xdr-portal
+  title: 'Microsoft Defender XDR: the Unified SOC Portal'
+  order: 4
+  difficulty: intermediate
+  summary: Correlate alerts across endpoint, identity, email and cloud apps into one incident in Defender
+    XDR.
+  theory_minutes: 12
+  lab_minutes: 54
+  objectives:
+  - sc200:1
+  - sc200:2
+  - sc200:3
+  - secplus:4.8
+  - cysa:3.2
+  learning_objectives:
+  - Describe the Defender XDR workloads and what each detects
+  - Explain how XDR correlates alerts across workloads into a single incident
+  - 'Triage a Defender incident: find patient zero, scope and the recommended response'
+  theory: '**Microsoft Defender XDR** unifies several detection products under one portal at
+
+    security.microsoft.com. The point of XDR is correlation: instead of four separate alert
+
+    queues, related alerts are stitched into one **incident** with a shared timeline and
+
+    entity graph.
+
+
+    The workloads: **Defender for Endpoint** (device EDR: processes, files, network from the
+
+    endpoint), **Defender for Identity** (on-prem Active Directory and identity attacks such
+
+    as pass-the-hash, DCSync and lateral movement), **Defender for Office 365** (phishing,
+
+    malicious links and attachments in email and Teams), and **Defender for Cloud Apps** (SaaS
+
+    activity, OAuth app abuse and shadow IT). Each raises alerts; XDR groups alerts that share
+
+    entities (a user, a device, a file hash) into one incident so an analyst sees the whole
+
+    attack, not fragments.
+
+
+    Triage in the portal follows the incident: read the **attack story** and timeline, find
+
+    **patient zero** (the first affected entity), establish **scope** (how many devices and
+
+    identities are involved), and read the mapped MITRE ATT&CK techniques. **Automated
+
+    investigation and response** (AIR) can remediate low-risk items for you, and analysts take
+
+    actions such as isolating a device, disabling a user or submitting a mail for
+
+    reanalysis. Reading an incident quickly and correctly is the core SC-200 skill.'
+  examples:
+  - title: One incident, four workloads
+    body: 'Phish email (Defender for Office 365) -> credential entered -> risky sign-in (Entra/
+
+      Identity Protection) -> malware run on laptop (Defender for Endpoint) -> OAuth app
+
+      consent (Defender for Cloud Apps). XDR links all four into a single incident.'
+  - title: Scoping from the incident graph
+    body: 'The graph shows user jmorgan, device FIN-LT-07 and file invoice.hta. Expanding the file
+
+      node reveals it also ran on FIN-LT-12, so the scope is two devices, not one.'
+  quiz:
+  - prompt: Which Defender workload detects pass-the-hash and DCSync against on-prem Active Directory?
+    options:
+    - Defender for Endpoint
+    - Defender for Identity
+    - Defender for Office 365
+    - Defender for Cloud Apps
+    answer: 1
+    explanation: Defender for Identity monitors on-prem AD and identity attacks such as pass-the-hash,
+      DCSync and lateral movement.
+  - prompt: What is the main advantage of an XDR incident over separate alert queues?
+    options:
+    - It deletes low-severity alerts
+    - It correlates related alerts across workloads into one attack story
+    - It replaces the need for a SIEM entirely
+    - It disables automated response
+    answer: 1
+    explanation: XDR stitches alerts that share entities into a single incident with one timeline and
+      graph, so the analyst sees the whole attack.
+  - prompt: During triage, what does finding patient zero tell you?
+    options:
+    - The least important alert
+    - The first affected entity, where the attack began
+    - The number of false positives
+    - Which license you need
+    answer: 1
+    explanation: Patient zero is the first affected entity; it anchors the timeline and often reveals
+      the initial access vector.
+  - prompt: Which action would an analyst take in Defender XDR to contain a compromised laptop?
+    options:
+    - Apply a sensitivity label
+    - Isolate the device
+    - Create a Conditional Access policy
+    - Run a Purview DLP scan
+    answer: 1
+    explanation: Device isolation cuts the laptop off from the network while keeping it reachable for
+      investigation; labels and DLP are Purview, Conditional Access is Entra.
+  exercise:
+    title: Triage a multi-workload incident in the Defender portal
+    environment: A Microsoft Defender XDR trial tenant, or the Defender portal walk-through documentation
+      with sample data.
+    tools:
+    - Microsoft Defender portal (security.microsoft.com)
+    - the incident graph and timeline
+    steps:
+    - Open an incident and read its attack story summary and severity.
+    - Use the timeline to find the first alert and the entity it names (patient zero).
+    - Expand the incident graph and list every device and identity involved to establish scope.
+    - Record the MITRE ATT&CK techniques mapped to the alerts.
+    - Decide and note the containment action for each affected entity (isolate device, disable user, remediate
+      mail).
+    - Check whether automated investigation already remediated anything and what it left for you.
+    deliverable: 'An incident triage note: patient zero, full scope of devices and identities, techniques
+      observed, and the response actions taken or recommended.'
+  expected_outcome: 'You can read a Defender XDR incident end to end: find where it started, how far it
+    spread,
+
+    what techniques were used, and what to do. The lab gives you a real multi-workload incident
+
+    to scope.'
+- slug: ms-sentinel-operations
+  title: 'Microsoft Sentinel: Connectors, Analytics Rules and SOAR'
+  order: 5
+  difficulty: intermediate
+  summary: 'Operate Sentinel as a cloud SIEM: connect data, write analytics rules, hunt and automate response.'
+  theory_minutes: 12
+  lab_minutes: 54
+  objectives:
+  - sc200:1
+  - sc200:2
+  - sc200:4
+  - secplus:4.4
+  - secplus:4.7
+  learning_objectives:
+  - 'Describe Sentinel''s architecture: workspace, data connectors, analytics rules and incidents'
+  - Compare analytics rule types and explain how a rule becomes an incident
+  - Explain hunting queries, automation rules and playbooks and when to tune a noisy rule
+  theory: '**Microsoft Sentinel** is the cloud-native SIEM and SOAR. It runs on a **Log Analytics
+
+    workspace** that stores the data and is queried with **KQL**. SC-200 expects you to
+
+    operate it, not just query it.
+
+
+    **Data connectors** bring signals in: Microsoft sources (Entra, Defender XDR, Office 365)
+
+    connect natively, and third-party sources arrive by Syslog/CEF, agents or the API.
+
+    **Analytics rules** turn data into alerts and **incidents**. Rule types include
+
+    **scheduled** (a KQL query on a timer), **near-real-time (NRT)** (runs about every minute),
+
+    **Microsoft security** (pass through alerts from Defender products) and **Fusion**
+
+    (machine-learning multi-stage attack detection). A rule''s query, threshold and entity
+
+    mappings decide when it fires and what the incident shows.
+
+
+    **Hunting queries** are KQL you run proactively against stored data to find threats no
+
+    rule caught; promising results become bookmarks or new rules. **UEBA** adds behavioural
+
+    baselines. On the response side, **automation rules** decide what happens when an incident
+
+    is created (assign, change severity, run a playbook), and **playbooks** are Logic Apps
+
+    that take action: post to Teams, open a ticket, isolate a device or disable a user.
+
+
+    Operating Sentinel well means tuning: a rule that fires mostly false positives wastes
+
+    analysts, so you tighten its query or threshold, or suppress known-good patterns, until
+
+    its precision is high enough to automate.'
+  examples:
+  - title: A scheduled analytics rule
+    body: 'SigninLogs
+
+      | where ResultType == "50126"
+
+      | summarize Failures = count() by UserPrincipalName, bin(TimeGenerated, 1h)
+
+      | where Failures > 20   // fires an incident per noisy account per hour
+
+      '
+  - title: Automation on incident creation
+    body: 'Trigger: incident created by the ''password spray'' rule.
+
+      Automation rule: set severity High, assign to tier-1 queue, run the ''notify-SOC'' playbook
+
+      that posts the incident link to the Teams channel.'
+  quiz:
+  - prompt: What underlies a Microsoft Sentinel workspace?
+    options:
+    - A SQL database
+    - A Log Analytics workspace queried with KQL
+    - A Defender for Endpoint sensor
+    - An Entra directory
+    answer: 1
+    explanation: Sentinel is built on a Log Analytics workspace; data is stored there and queried with
+      KQL.
+  - prompt: Which analytics rule type is designed for multi-stage attack detection using machine learning?
+    options:
+    - Scheduled
+    - Near-real-time (NRT)
+    - Fusion
+    - Microsoft security
+    answer: 2
+    explanation: Fusion correlates low-fidelity signals with ML to surface multi-stage attacks; scheduled
+      and NRT run KQL, Microsoft security passes through product alerts.
+  - prompt: A playbook in Sentinel is implemented as what?
+    options:
+    - A KQL query
+    - An Azure Logic App
+    - A Conditional Access policy
+    - A sensitivity label
+    answer: 1
+    explanation: Playbooks are Logic Apps triggered by automation rules or alerts to take automated response
+      actions.
+  - prompt: An analytics rule fires 50 incidents a day and 48 are benign. What is the right first step?
+    options:
+    - Disable all alerting
+    - 'Tune the rule: tighten the query or threshold, or suppress known-good patterns'
+    - Delete the workspace
+    - Increase the severity to High
+    answer: 1
+    explanation: A low-precision rule should be tuned (tighter query/threshold or suppression) so analysts
+      are not buried; disabling or raising severity does not fix the noise.
+  exercise:
+    title: Stand up a detection and tune it in Sentinel
+    environment: A Microsoft Sentinel workspace (trial), or the Sentinel documentation with the sample
+      SigninLogs dataset.
+    tools:
+    - Microsoft Sentinel
+    - KQL
+    - an automation rule and a playbook template
+    steps:
+    - Connect the Entra ID sign-in logs data connector (or confirm the sample data is present).
+    - Create a scheduled analytics rule that fires when an account has more than 20 failed sign-ins in
+      an hour.
+    - Map the account and IP as entities so the incident is investigable.
+    - Run the rule, then review how many incidents are true positives versus noise.
+    - Tune the query or threshold to cut the false positives and re-run.
+    - Add an automation rule that assigns new incidents and runs a notify playbook.
+    deliverable: A working analytics rule with entity mappings, a before-and-after false-positive count
+      from tuning, and an automation rule wired to a playbook.
+  expected_outcome: 'You can describe Sentinel''s architecture, choose the right analytics rule type,
+    hunt with
+
+    KQL and automate response, and you understand why tuning a noisy rule matters. The lab has
+
+    you tune one against real incident data.'
+- slug: ms-purview-compliance
+  title: 'Microsoft Purview: Information Protection and Compliance'
+  order: 6
+  difficulty: intermediate
+  summary: Classify and protect data with sensitivity labels, DLP, insider risk and compliance tooling.
+  theory_minutes: 12
+  lab_minutes: 54
+  objectives:
+  - sc900:1
+  - sc900:4
+  - secplus:5.4
+  - secplus:3.3
+  learning_objectives:
+  - Explain sensitivity labels and data loss prevention and how they protect data
+  - Describe data lifecycle management, insider risk management and eDiscovery
+  - Use Compliance Manager and audit to evidence a control and investigate an action
+  theory: '**Microsoft Purview** is the data security, governance and compliance pillar. Where Entra
+
+    protects identities and Defender protects endpoints, Purview protects the data itself and
+
+    the organisation''s compliance posture.
+
+
+    **Sensitivity labels** classify content (Public, Confidential, Highly Confidential) and
+
+    can enforce protection: encryption, watermarks and access limits that travel with the
+
+    file. Labels can be applied by users or automatically when content matches a classifier.
+
+    **Data loss prevention** (DLP) policies watch for sensitive data (credit-card numbers,
+
+    national IDs, labelled files) leaving through email, Teams, endpoints or SharePoint, and
+
+    block, warn or audit the attempt. Together they stop the common ''confidential file emailed
+
+    outside'' leak.
+
+
+    **Data lifecycle management** retains or deletes content on a schedule to meet legal
+
+    requirements. **Insider risk management** scores risky user behaviour (mass downloads
+
+    before a resignation, for example) while protecting privacy. **eDiscovery** finds and
+
+    holds content for legal cases, and the **audit** log records who did what across Microsoft
+
+    365. **Compliance Manager** tracks your posture against frameworks (ISO 27001, NIST, GDPR)
+
+    as improvement actions with a score. For a SOC, Purview answers the questions that come
+
+    after containment: what data was exposed, was it labelled, and can we prove our controls.'
+  examples:
+  - title: A DLP policy decision
+    body: 'Policy: block external email containing 3+ credit-card numbers.
+
+      Event: user emails a spreadsheet with 40 card numbers to a personal address.
+
+      Result: send blocked, user shown a policy tip, incident logged for review.'
+  - title: Label that travels with the file
+    body: 'A document labelled Highly Confidential is encrypted so only the finance group can open
+
+      it. Forwarded outside the company, it still demands an authorised sign-in; the label and
+
+      protection move with the file.'
+  quiz:
+  - prompt: What can a sensitivity label enforce beyond classification?
+    options:
+    - Network segmentation
+    - Encryption and access restrictions that travel with the file
+    - Conditional Access policies
+    - EDR isolation
+    answer: 1
+    explanation: Sensitivity labels can apply encryption, watermarks and access limits that stay with
+      the content wherever it goes.
+  - prompt: Which Purview capability blocks sensitive data from leaving through email or endpoints?
+    options:
+    - Data loss prevention (DLP)
+    - Privileged Identity Management
+    - Fusion analytics
+    - Self-service password reset
+    answer: 0
+    explanation: DLP policies detect sensitive or labelled data in motion and block, warn or audit it;
+      PIM and Fusion are unrelated identity/SIEM features.
+  - prompt: A SOC needs to prove who accessed a mailbox during an investigation. Which Purview tool?
+    options:
+    - Compliance Manager
+    - The audit log
+    - Sensitivity labels
+    - Data lifecycle management
+    answer: 1
+    explanation: The Purview audit log records user and admin activity across Microsoft 365, including
+      mailbox access.
+  - prompt: What does Compliance Manager give you?
+    options:
+    - A list of open incidents
+    - A posture score against frameworks, broken into improvement actions
+    - A set of KQL hunting queries
+    - A device isolation control
+    answer: 1
+    explanation: Compliance Manager tracks your posture against regulations and standards as scored improvement
+      actions.
+  exercise:
+    title: Protect labelled data and investigate a leak with Purview
+    environment: A Microsoft Purview compliance portal trial, or the Purview documentation with sample
+      DLP data.
+    tools:
+    - Microsoft Purview compliance portal
+    - DLP policy editor
+    - the audit log
+    steps:
+    - Create a sensitivity label 'Confidential' that applies encryption limited to an internal group.
+    - Publish a label policy so users can apply it, and auto-apply it to content with credit-card numbers.
+    - Create a DLP policy that blocks external sharing of content carrying that label or 3+ card numbers.
+    - Trigger the policy with a test message and read the DLP alert and policy tip.
+    - Use the audit log to list who accessed a specified document in the last week.
+    - Open Compliance Manager and record one improvement action that would raise the score.
+    deliverable: A sensitivity label and DLP policy that demonstrably block a test leak, plus an audit-log
+      extract and one Compliance Manager improvement action.
+  expected_outcome: 'You can classify and protect data with labels and DLP, investigate access through
+    the audit
+
+    log, and evidence controls in Compliance Manager. The lab has you build a policy that blocks
+
+    a real leak and read the resulting alert.'

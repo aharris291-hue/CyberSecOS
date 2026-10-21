@@ -1,5 +1,21 @@
 # Changelog
 
+## Phase 2 - Microsoft certification track (SC-900 and SC-200)
+
+### Course 13: Microsoft Security Operations
+- Added a focused, product-specific track for the two Microsoft exams, prompted by the certification gap audit (`docs/14_CERTIFICATION_GAP_AUDIT.md`), which found SC-900 and SC-200 need Microsoft-product depth a vendor-neutral catalog cannot give. The existing courses still teach the underlying concepts; this track names the Microsoft product surface the exams test.
+- Six lessons: the Microsoft security stack for SC-900; Entra ID identities and authentication; Conditional Access, PIM and Identity Protection; Microsoft Defender XDR (the unified SOC portal); Microsoft Sentinel (connectors, analytics rules and SOAR); and Microsoft Purview (information protection and compliance). Each maps to the relevant SC-900, SC-200, Security+ and CySA+ objectives.
+- Four graded labs on safe, synthetic exported data: auditing Entra sign-ins against a Conditional Access baseline, triaging a multi-workload Defender XDR incident, tuning a noisy Microsoft Sentinel analytics rule, and investigating Microsoft Purview DLP alerts.
+- Catalog is now 264 lessons (~290 hours) across 13 courses, with 52 graded labs (four per course). Two tests that hardcoded a 12-course count (dashboard, labs) now derive the count from the seed. Content-standard, seeding, graded-lab, exam and full backend suites pass.
+
+## Phase 2 - Catalog to 258 lessons (~283 hours) on a deliberate per-course split
+
+### Lessons 15 through 23 per course
+- Grew the catalog from 168 lessons (14 per course) to 258 lessons (~283 hours), adding the fifteenth through (up to) twenty-third lesson to each course on the deliberate per-course hour split (weighted by certification-objective coverage and genuinely distinct hands-on material) rather than an even one. Every new topic was checked against the whole catalog so no slug or topic repeats, and per-course lesson `order` stays contiguous.
+- Each course was taken to the point its genuinely distinct SOC material ran out rather than padded. Final per-course counts: Threat Hunting 18, Detection Engineering 19, SIEM 20, GRC 20, Networking 22, Linux 22, Vulnerability Management 22, Security Foundations 23, Windows 23, Incident Response 23, Security Architecture 23, Cloud 23. The realistic distinct-material ceiling (~283 hours) sits a little short of the literal 300-hour target; closing that last gap would mean repeating topics, so the build stopped at genuinely distinct coverage.
+- Representative additions: DNS architecture, routing/BGP security and network security monitoring with Zeek (Networking); threat modeling, federation/SSO, supply-chain risk and secure configuration (Security Foundations); PowerShell security, registry forensics, privilege escalation, ETW telemetry and AD attack paths (Windows); auditd, eBPF runtime monitoring, PAM and centralised logging (Linux); threat-intel platforms, parsing/data models and SIEM health monitoring (SIEM); API security testing, secrets/exposure scanning and the CVE lifecycle (Vulnerability Management); cloud incident response, threat-intel integration and OT/ICS response (Incident Response); the impact tactic and cloud-threat detection (Detection Engineering); PAM, WAF/API-gateway, PKI and high-availability architecture (Security Architecture); workload protection, SSPM and cloud identity attack paths (Cloud); and breach notification, GRC tooling/compliance automation and cyber insurance (Governance, Risk and Compliance).
+- Every lesson keeps the six education-standard sections and the ~18/82 theory/lab split; content-standard, seeding, graded-lab, exam and full backend suites pass.
+
 ## Phase 2 - One-step Windows installer
 
 ### Install and run with no Python and no launcher script
