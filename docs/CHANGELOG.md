@@ -1,5 +1,12 @@
 # Changelog
 
+## Phase 2 - Advanced learning analytics
+
+### See how your studying is trending over time
+- Added `GET /api/analytics`, which looks across the learner's history rather than the current snapshot the dashboard shows: a weekly study trend (minutes, active days and a four-week rolling average), when-you-study patterns (minutes by weekday and by part of the day, with the peak), learning velocity (lessons completed in the last four weeks, the resulting per-week pace and a projected finish date at that actual pace), and quiz weak-spots (the domains and objectives with the lowest average quiz scores, to point revision).
+- Read-only and derived live from the same activity, progress and quiz records, so the numbers always agree with the rest of the app. Accepts `tz_offset_minutes` and a `weeks` window (1–52, default 8).
+- 8 new backend tests cover the trend bucketing and rolling average, the patterns, the velocity projection, the quiz trend and weak-area ranking, the empty-account payload and the `weeks` bound (416 backend tests).
+
 ## Phase 2 - Tests for the desktop converters
 
 ### Cover the WPF value and chart converters

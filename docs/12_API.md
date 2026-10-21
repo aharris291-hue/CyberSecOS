@@ -120,3 +120,28 @@ pace check and a schedule. Read-only; derived live, so nothing new is stored.
 - **Schedule:** remaining lessons packed into weeks at the weekly goal, with
   soonest-exam work first; each week lists its lessons with their theory and
   lab minutes. A lesson longer than the whole weekly budget takes its own week.
+
+## Advanced analytics
+
+Looks across the learner's history — rather than the current snapshot the
+dashboard shows — to surface how study is trending, when they study, how fast
+they are really moving and what their quiz scores say to revise. Read-only;
+derived live from the same activity, progress and quiz records.
+
+| Method | Path | Description |
+|---|---|---|
+| GET | `/api/analytics` | Study trend, patterns, learning velocity and quiz weak-spots. Accepts `tz_offset_minutes` and `weeks` (1–52, default 8) |
+
+- **Study trend:** the last `weeks` weeks, each with total minutes, active days
+  and a four-week rolling average of minutes, oldest week first.
+- **Study patterns:** minutes by weekday (Monday first) and by part of the day
+  (Morning / Afternoon / Evening / Night), plus the `peak_part_of_day` (null
+  until there is any activity).
+- **Learning velocity:** total, completed and remaining lessons, lessons
+  completed in the last four weeks, the resulting `lessons_per_week`, and a
+  projection of the weeks and date to finish the rest at that actual pace
+  (null while the recent pace is zero).
+- **Quiz performance:** total attempts, average score, a `score_trend` (the
+  later half of attempts minus the earlier half, null under four attempts),
+  and the weakest domains and objectives — up to five each, ranked by the
+  average best quiz score of the attempted lessons in them.

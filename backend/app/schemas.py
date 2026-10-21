@@ -392,3 +392,69 @@ class StudyPlan(BaseModel):
     certifications: list[CertificationPace]
     schedule: list[PlanWeek]
 
+
+# --- Advanced analytics ----------------------------------------------------
+
+
+class WeeklyStudy(BaseModel):
+    week_start: str
+    minutes: int
+    active_days: int
+    rolling_average_minutes: int
+
+
+class WeekdayStudy(BaseModel):
+    weekday: int  # 0 = Monday
+    label: str
+    minutes: int
+
+
+class PartOfDayStudy(BaseModel):
+    part: str  # Morning | Afternoon | Evening | Night
+    minutes: int
+
+
+class StudyPatterns(BaseModel):
+    by_weekday: list[WeekdayStudy]
+    by_part_of_day: list[PartOfDayStudy]
+    peak_part_of_day: str | None = None
+
+
+class LearningVelocity(BaseModel):
+    total_lessons: int
+    completed_lessons: int
+    remaining_lessons: int
+    completed_last_4_weeks: int
+    lessons_per_week: float
+    projected_weeks_to_finish: int | None = None
+    projected_finish_date: date | None = None
+
+
+class WeakDomain(BaseModel):
+    domain: str
+    average_score: int
+    lessons_attempted: int
+
+
+class WeakObjective(BaseModel):
+    id: str
+    title: str
+    certification: str
+    average_score: int
+    lessons_attempted: int
+
+
+class QuizPerformance(BaseModel):
+    total_attempts: int
+    average_score: int | None = None
+    score_trend: int | None = None
+    weakest_domains: list[WeakDomain]
+    weakest_objectives: list[WeakObjective]
+
+
+class Analytics(BaseModel):
+    study_trend: list[WeeklyStudy]
+    study_patterns: StudyPatterns
+    velocity: LearningVelocity
+    quiz_performance: QuizPerformance
+
