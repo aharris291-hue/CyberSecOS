@@ -134,4 +134,53 @@ public static class Samples
                 new PlannedLesson(3, "Identity Fundamentals", "Cloud Security", 10, 55, null),
             ]),
         ]);
+
+    public static Analytics Analytics() => new(
+        StudyTrend:
+        [
+            new WeeklyStudy("2026-10-05", 0, 0, 0),
+            new WeeklyStudy("2026-10-12", 120, 2, 60),
+            new WeeklyStudy("2026-10-19", 180, 3, 100),
+        ],
+        StudyPatterns: new StudyPatterns(
+            ByWeekday:
+            [
+                new WeekdayStudy(0, "Mon", 60),
+                new WeekdayStudy(1, "Tue", 0),
+                new WeekdayStudy(2, "Wed", 90),
+                new WeekdayStudy(3, "Thu", 0),
+                new WeekdayStudy(4, "Fri", 30),
+                new WeekdayStudy(5, "Sat", 120),
+                new WeekdayStudy(6, "Sun", 0),
+            ],
+            ByPartOfDay:
+            [
+                new PartOfDayStudy("Morning", 60),
+                new PartOfDayStudy("Afternoon", 30),
+                new PartOfDayStudy("Evening", 180),
+                new PartOfDayStudy("Night", 30),
+            ],
+            PeakPartOfDay: "Evening"),
+        Velocity: new LearningVelocity(
+            TotalLessons: 72,
+            CompletedLessons: 8,
+            RemainingLessons: 64,
+            CompletedLast4Weeks: 4,
+            LessonsPerWeek: 1.0,
+            ProjectedWeeksToFinish: 64,
+            ProjectedFinishDate: new DateOnly(2028, 1, 10)),
+        QuizPerformance: new QuizPerformance(
+            TotalAttempts: 6,
+            AverageScore: 72,
+            ScoreTrend: 15,
+            WeakestDomains:
+            [
+                new WeakDomain("Linux Security", 55, 2),
+                new WeakDomain("Networking", 70, 3),
+            ],
+            WeakestObjectives:
+            [
+                new WeakObjective("secplus:4.9", "Incident response", "CompTIA Security+", 50, 1),
+                new WeakObjective("cysa:2.1", "Threat intelligence", "CompTIA CySA+", 65, 2),
+            ]));
 }

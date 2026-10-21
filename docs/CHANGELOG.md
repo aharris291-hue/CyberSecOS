@@ -1,5 +1,12 @@
 # Changelog
 
+## Phase 2 - Insights page in the desktop app
+
+### See your analytics in the app
+- Added an **Insights** page to the desktop app (new side-bar entry) that surfaces the `/api/analytics` data the backend already computes: a weekly study-trend chart, a when-you-study chart by weekday, a learning-velocity summary with the projected finish date at your recent pace, and your quiz performance with the weakest objectives and domains to revise.
+- Follows the existing MVVM pattern: a testable `InsightsViewModel` in `CyberSecOS.Core` builds chart-neutral `ChartData` and display records, the WPF `InsightsView` renders them with the existing LiveCharts converters, and `ICyberSecApi` gains `GetAnalyticsAsync`.
+- 10 new Core tests (9 view-model, 1 API client) cover the load, the headline/velocity/quiz phrasing, the empty-quiz and stalled-learner cases, the default eight-week request and the snake-case key mapping (`completed_last_4_weeks`). Core suite: 121 tests; full solution builds clean.
+
 ## Phase 2 - Advanced learning analytics
 
 ### See how your studying is trending over time

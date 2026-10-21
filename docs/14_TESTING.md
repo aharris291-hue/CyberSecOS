@@ -38,6 +38,7 @@ View models and the API client are tested without WPF:
 - `DashboardViewModelTests`: tiles, chart data, next lesson, empty state.
 - `ExamsViewModelTests`: certification selection, length capping, timer, answering, grading, focus areas, the setup/taking/results flow, and target-date set/clear with countdown.
 - `PlannerViewModelTests`: plan load, on-track / behind / complete headlines, per-certification pace phrasing, week summaries, and navigation to a lesson or the exam dates.
+- `InsightsViewModelTests`: analytics load into the trend and weekday charts and the weak-area lists, the recent-pace headline, the stalled-learner nudge, the velocity finish projection, the quiz average/trend phrasing, the empty-quiz and peak-time wording, the default eight-week request, and API-error surfacing.
 - `MarkdownTextTests`: lesson-theory parsing into paragraphs with bold and inline-code runs, including unmatched markers and wrapped lines.
 
 `Fakes/FakeApi` is an in-memory `ICyberSecApi`; `Fakes/StubHttpHandler` fakes HTTP.

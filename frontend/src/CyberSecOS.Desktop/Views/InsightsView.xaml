@@ -1,0 +1,99 @@
+<UserControl x:Class="CyberSecOS.Desktop.Views.InsightsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:CyberSecOS.Core.ViewModels;assembly=CyberSecOS.Core"
+             xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.WPF;assembly=LiveChartsCore.SkiaSharpView.WPF"
+             x:Name="Root">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="32" MaxWidth="1000" HorizontalAlignment="Left">
+            <TextBlock Text="Insights" Style="{StaticResource HeadingText}" />
+            <TextBlock Text="{Binding Headline}" Style="{StaticResource BodyText}" Margin="0,4,0,4" TextWrapping="Wrap" />
+            <TextBlock Text="{Binding PeakStudyTime}" Style="{StaticResource MutedText}" Margin="0,0,0,16"
+                       Visibility="{Binding PeakStudyTime, Converter={StaticResource NotEmptyToVisibility}}" />
+            <TextBlock Text="{Binding ErrorMessage}" Foreground="{StaticResource DangerBrush}" Margin="0,0,0,12"
+                       Visibility="{Binding ErrorMessage, Converter={StaticResource NotEmptyToVisibility}}" />
+
+            <Border Style="{StaticResource Card}" Margin="0,0,0,16">
+                <StackPanel>
+                    <TextBlock Text="Study trend" Style="{StaticResource SubheadingText}" Margin="0,0,0,4" />
+                    <TextBlock Text="Minutes studied each week." Style="{StaticResource MutedText}" Margin="0,0,0,8" />
+                    <lvc:CartesianChart Height="240"
+                                        Series="{Binding TrendChart, Converter={StaticResource ChartSeries}, ConverterParameter=stacked}"
+                                        XAxes="{Binding TrendChart, Converter={StaticResource ChartAxis}, ConverterParameter=category}"
+                                        YAxes="{Binding TrendChart, Converter={StaticResource ChartAxis}, ConverterParameter=value}" />
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource Card}" Margin="0,0,0,16">
+                <StackPanel>
+                    <TextBlock Text="When you study" Style="{StaticResource SubheadingText}" Margin="0,0,0,4" />
+                    <TextBlock Text="Minutes by day of the week." Style="{StaticResource MutedText}" Margin="0,0,0,8" />
+                    <lvc:CartesianChart Height="240"
+                                        Series="{Binding WeekdayChart, Converter={StaticResource ChartSeries}, ConverterParameter=stacked}"
+                                        XAxes="{Binding WeekdayChart, Converter={StaticResource ChartAxis}, ConverterParameter=category}"
+                                        YAxes="{Binding WeekdayChart, Converter={StaticResource ChartAxis}, ConverterParameter=value}" />
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource Card}" Margin="0,0,0,16">
+                <StackPanel>
+                    <TextBlock Text="Learning velocity" Style="{StaticResource SubheadingText}" Margin="0,0,0,4" />
+                    <TextBlock Text="{Binding VelocitySummary}" Style="{StaticResource BodyText}" TextWrapping="Wrap" />
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource Card}" Margin="0,0,0,16">
+                <StackPanel>
+                    <TextBlock Text="Quiz performance" Style="{StaticResource SubheadingText}" Margin="0,0,0,4" />
+                    <TextBlock Text="{Binding QuizSummary}" Style="{StaticResource BodyText}" TextWrapping="Wrap" Margin="0,0,0,12" />
+
+                    <StackPanel Visibility="{Binding HasQuizData, Converter={StaticResource BoolToVisibility}}">
+                        <TextBlock Text="Weakest objectives" Style="{StaticResource BodyText}" FontWeight="SemiBold" Margin="0,0,0,6" />
+                        <ItemsControl ItemsSource="{Binding WeakestObjectives}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type vm:WeakAreaItem}">
+                                    <Grid Margin="0,0,0,8">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Title}" Style="{StaticResource BodyText}" TextWrapping="Wrap" />
+                                            <TextBlock Text="{Binding Caption}" Style="{StaticResource MutedText}" />
+                                        </StackPanel>
+                                        <Border Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Right"
+                                                Background="{StaticResource SurfaceRaisedBrush}" CornerRadius="4" Padding="10,4">
+                                            <TextBlock Text="{Binding ScoreLabel}" Style="{StaticResource MutedText}" />
+                                        </Border>
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <TextBlock Text="Weakest domains" Style="{StaticResource BodyText}" FontWeight="SemiBold" Margin="0,8,0,6" />
+                        <ItemsControl ItemsSource="{Binding WeakestDomains}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type vm:WeakAreaItem}">
+                                    <Grid Margin="0,0,0,8">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Title}" Style="{StaticResource BodyText}" TextWrapping="Wrap" />
+                                            <TextBlock Text="{Binding Caption}" Style="{StaticResource MutedText}" />
+                                        </StackPanel>
+                                        <Border Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Right"
+                                                Background="{StaticResource SurfaceRaisedBrush}" CornerRadius="4" Padding="10,4">
+                                            <TextBlock Text="{Binding ScoreLabel}" Style="{StaticResource MutedText}" />
+                                        </Border>
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>
