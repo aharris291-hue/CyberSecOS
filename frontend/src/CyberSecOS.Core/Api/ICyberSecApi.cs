@@ -39,4 +39,6 @@ public interface ICyberSecApi
     Task ClearExamTargetAsync(string certId, CancellationToken ct = default);
 
     Task<StudyPlan> GetStudyPlanAsync(CancellationToken ct = default);
+
+    Task<Analytics> GetAnalyticsAsync(int weeks = 8, CancellationToken ct = default);
 }

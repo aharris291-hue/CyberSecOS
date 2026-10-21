@@ -29,7 +29,7 @@ Low Priority
 | Study Planner | Medium | Done: per-certification pace check (on track / behind / overdue) and a week-by-week schedule from the weekly goal, exam dates and remaining lessons (`GET /api/plan`, Study Plan page) |
 | Certification Tracking | Medium | Done: readiness by objective coverage (all 4 exams), timed practice exams with per-objective scoring, and target exam dates with a countdown on exams and progress |
 | Cyber Range | Low | Phase 6 |
-| Advanced Analytics | Low | Done: `GET /api/analytics` — weekly study trend with a rolling average, when-you-study patterns (weekday and part of day), learning velocity with a finish projection from the recent pace, and quiz weak-spots (weakest domains and objectives) |
+| Advanced Analytics | Low | Done: `GET /api/analytics` — weekly study trend with a rolling average, when-you-study patterns (weekday and part of day), learning velocity with a finish projection from the recent pace, and quiz weak-spots (weakest domains and objectives); surfaced in the desktop app as an **Insights** page (trend and weekday charts, velocity summary, quiz weak-spots) |
 | More lessons per course (target 5-10 each) | High | In progress: 72 lessons; every one of the 12 courses now has 6 (well within the 5-10 target); can keep building toward the upper bound |
 | Render lesson Markdown richly in the desktop app | Medium | Done: theory shows bold and inline code; paragraphs spaced (Core Markdown parser, unit-tested) |
 | Invalidate existing sessions after a password change | Medium | Done: each token carries a `token_version`; a password change bumps it so older tokens are rejected, and the change returns a fresh token so the current session stays signed in |

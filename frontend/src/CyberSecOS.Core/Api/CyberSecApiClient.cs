@@ -104,6 +104,9 @@ public sealed class CyberSecApiClient : ICyberSecApi
     public Task<StudyPlan> GetStudyPlanAsync(CancellationToken ct = default) =>
         SendAsync<StudyPlan>(HttpMethod.Get, $"api/plan?tz_offset_minutes={LocalOffsetMinutes()}", null, ct);
 
+    public Task<Analytics> GetAnalyticsAsync(int weeks = 8, CancellationToken ct = default) =>
+        SendAsync<Analytics>(HttpMethod.Get, $"api/analytics?weeks={weeks}&tz_offset_minutes={LocalOffsetMinutes()}", null, ct);
+
     /// <summary>Lets the server bucket study days and streaks in the learner's own time zone.</summary>
     internal static int LocalOffsetMinutes() => (int)TimeZoneInfo.Local.GetUtcOffset(DateTime.Now).TotalMinutes;
 

@@ -113,4 +113,25 @@ public class ApiClientTests
 
         Assert.Contains("does not understand", ex.Message);
     }
+
+    [Fact]
+    public async Task AnalyticsRequestsWeeksAndMapsSnakeCaseKeys()
+    {
+        var handler = new StubHttpHandler(HttpStatusCode.OK, """
+            {"study_trend":[{"week_start":"2026-10-19","minutes":180,"active_days":3,"rolling_average_minutes":100}],
+             "study_patterns":{"by_weekday":[{"weekday":0,"label":"Mon","minutes":60}],"by_part_of_day":[{"part":"Evening","minutes":180}],"peak_part_of_day":"Evening"},
+             "velocity":{"total_lessons":72,"completed_lessons":8,"remaining_lessons":64,"completed_last_4_weeks":4,"lessons_per_week":1.0,"projected_weeks_to_finish":64,"projected_finish_date":"2028-01-10"},
+             "quiz_performance":{"total_attempts":6,"average_score":72,"score_trend":15,"weakest_domains":[{"domain":"Linux Security","average_score":55,"lessons_attempted":2}],"weakest_objectives":[{"id":"secplus:4.9","title":"Incident response","certification":"CompTIA Security+","average_score":50,"lessons_attempted":1}]}}
+            """);
+        var api = new CyberSecApiClient(handler.CreateClient());
+
+        var analytics = await api.GetAnalyticsAsync();
+
+        Assert.Contains("api/analytics?weeks=8", handler.Requests[0].Request.RequestUri!.ToString());
+        Assert.Contains("tz_offset_minutes=", handler.Requests[0].Request.RequestUri!.ToString());
+        // The digit-bearing key round-trips only with the explicit JsonPropertyName.
+        Assert.Equal(4, analytics.Velocity.CompletedLast4Weeks);
+        Assert.Equal(new DateOnly(2028, 1, 10), analytics.Velocity.ProjectedFinishDate);
+        Assert.Equal("Evening", analytics.StudyPatterns.PeakPartOfDay);
+    }
 }

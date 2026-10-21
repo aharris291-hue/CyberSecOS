@@ -48,6 +48,7 @@ public partial class App : Application
         services.AddTransient<ProgressViewModel>();
         services.AddTransient<PlannerViewModel>();
         services.AddTransient<ExamsViewModel>();
+        services.AddTransient<InsightsViewModel>();
         return services.BuildServiceProvider();
     }
 
