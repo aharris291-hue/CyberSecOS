@@ -721,3 +721,98 @@ lessons:
         options: [Routine, A lead to confirm, possibly a destruction or ransomware action, A billing event, A success message]
         answer: 1
         explanation: Disabling or deleting keys can destroy data access, so such actions are investigated against normal usage.
+  - slug: cloud-posture-misconfiguration
+    title: Cloud Security Posture and Misconfiguration
+    order: 9
+    difficulty: intermediate
+    summary: Find and fix the misconfigurations that cause most cloud breaches, using posture management to continuously check cloud resources against secure baselines.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:3.1", "cysa:2.1", "sc900:2"]
+    learning_objectives:
+      - Explain why misconfiguration is the leading cause of cloud breaches
+      - Describe cloud security posture management (CSPM) and what it checks
+      - Prioritise and remediate the misconfigurations that matter most
+    theory: |
+      Most cloud breaches are not clever exploits; they are **misconfigurations**, a storage bucket left
+      public, a database exposed to the internet, over-permissive access, logging switched off. The cloud's
+      speed and self-service are the cause: anyone can spin up resources in minutes, and a single wrong
+      setting exposes data at internet scale. So a central cloud-security discipline is continuously checking
+      that resources match a **secure baseline**, which is exactly what **cloud security posture management**
+      (CSPM) does.
+
+      CSPM tools connect to the cloud account through its API and continuously evaluate every resource
+      against a library of checks drawn from provider best practice and benchmarks like the CIS foundations:
+      are any storage buckets public, are databases reachable from the internet, is encryption enabled, is
+      logging and monitoring turned on, are there identities with excessive permissions, are there unused
+      credentials. Because the cloud exposes its whole configuration through the API, this assessment is
+      comprehensive in a way on-premises rarely is, the tool can see every resource and its settings, not a
+      sample. The output is a prioritised list of findings mapped to the resources and accounts they affect.
+
+      The skill, as always, is **prioritisation and remediation**, not drowning in findings. A public bucket
+      holding customer data is an emergency; the same setting on an empty test bucket is noise, so findings
+      are triaged by the sensitivity and exposure of what they affect, not the raw rule. The strongest
+      programmes shift this left, checking infrastructure-as-code templates before deployment so the
+      misconfiguration never reaches production, and wiring CSPM alerts into the SOC so a newly public bucket
+      raises an alarm in minutes. The lesson is that in the cloud, configuration *is* security: watching and
+      fixing posture continuously prevents the single most common way organisations get breached.
+    examples:
+      - title: The classic cloud breach
+        body: |
+          storage bucket: "public read" + customer data inside
+          one wrong setting -> data exposed at internet scale
+          No exploit required; the misconfiguration is the breach.
+      - title: Prioritising posture findings
+        body: |
+          Public bucket, empty test data   -> low (noise)
+          Public bucket, customer PII       -> EMERGENCY
+          Triage by sensitivity + exposure, not the raw rule count.
+    exercise:
+      title: Assess cloud posture and remediate misconfigurations
+      environment: A cloud free tier or a provided set of cloud configuration/CSPM findings
+      tools: [A cloud account or sample config/findings, a CSPM tool or a CIS benchmark checklist, a notes file]
+      steps:
+        - Explain why misconfiguration, rather than exploitation, causes most cloud breaches.
+        - Review a set of resources (or CSPM findings) against a baseline and list the misconfigurations found.
+        - Identify the highest-risk finding by the sensitivity and exposure of the resource it affects, not the raw rule.
+        - Write the remediation for that finding and describe how you would verify it is fixed.
+        - Describe how checking infrastructure-as-code before deployment would have prevented one finding.
+        - Propose one CSPM alert to wire into the SOC (for example a newly public bucket) and why it matters.
+      deliverable: A posture assessment listing the misconfigurations, the highest-risk one with its remediation and verification, a prevent-at-deploy example, and one SOC alert to add.
+    expected_outcome: >
+      You can explain why misconfiguration drives most cloud breaches, use posture management to check
+      resources against a baseline, and prioritise and remediate the misconfigurations that actually expose
+      sensitive data.
+    quiz:
+      - prompt: The leading cause of cloud breaches is
+        options:
+          - Zero-day exploits
+          - Misconfiguration, such as public storage or over-permissive access
+          - Slow networks
+          - Weak encryption algorithms
+        answer: 1
+        explanation: Most cloud breaches stem from wrong settings exposing data, not sophisticated exploits.
+      - prompt: Cloud security posture management (CSPM) works by
+        options:
+          - Scanning network ports from outside
+          - Continuously evaluating cloud resources via the API against a secure baseline
+          - Reading application source code
+          - Testing user passwords
+        answer: 1
+        explanation: CSPM uses the cloud API to check every resource's configuration against best-practice baselines.
+      - prompt: Posture findings should be prioritised by
+        options:
+          - The raw number of rules broken
+          - The sensitivity and exposure of the resources they affect
+          - Alphabetical order
+          - The time of day
+        answer: 1
+        explanation: A public bucket of customer data is an emergency; the same on empty test data is noise.
+      - prompt: Checking infrastructure-as-code before deployment helps because
+        options:
+          - It is slower
+          - The misconfiguration is caught before it ever reaches production
+          - It disables logging
+          - It replaces CSPM entirely
+        answer: 1
+        explanation: Shifting posture checks left stops bad configurations from being deployed in the first place.

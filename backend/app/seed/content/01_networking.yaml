@@ -652,3 +652,91 @@ lessons:
         options: [Always fine, A lead to confirm against travel and device as possible account takeover, Proof of a firewall fault, A reason to disable logging]
         answer: 1
         explanation: Impossible concurrent sessions are a classic takeover tell, confirmed against context before action.
+  - slug: net-dns-security
+    title: DNS Security and Abuse Detection
+    order: 9
+    difficulty: intermediate
+    summary: Understand how DNS is abused for command-and-control and exfiltration, how DNSSEC and encrypted DNS change the picture, and how to spot malicious DNS in logs.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:3.2", "secplus:4.1", "cysa:1.1"]
+    learning_objectives:
+      - Explain how DNS works and why attackers abuse it
+      - Describe DNSSEC, DNS over HTTPS and their security trade-offs
+      - Detect DNS tunnelling, DGA and other malicious DNS in logs
+    theory: |
+      DNS turns names into addresses, and because almost every network allows it outbound, attackers lean
+      on it heavily. The protocol was built without security, so three problems follow. First, answers can
+      be **forged or poisoned**, sending users to attacker servers. Second, DNS is a near-universal
+      **covert channel**: malware encodes data or commands into the names it looks up, so **DNS tunnelling**
+      smuggles command-and-control and stolen data past firewalls that trust port 53. Third, malware uses
+      **domain generation algorithms** (DGA) to compute hundreds of random-looking domains so defenders
+      cannot simply block one hard-coded address.
+
+      Two technologies change the defensive picture. **DNSSEC** signs DNS records so a resolver can verify
+      an answer was not forged, addressing poisoning, though it does not encrypt anything. **DNS over HTTPS**
+      (DoH) and DNS over TLS encrypt the queries themselves for privacy, which is good for users but a
+      double-edged sword for defenders: it hides DNS inside HTTPS where the usual DNS monitoring cannot see
+      it, so enterprises often force internal resolvers and block external DoH to keep visibility.
+
+      For the SOC, DNS logs are one of the richest detection sources precisely because malware cannot avoid
+      using names. The tells are specific: abnormally long or high-entropy subdomains (the signature of
+      tunnelling), a host querying hundreds of never-before-seen random domains (DGA), queries to known-bad
+      or newly registered domains, and a huge volume of TXT-record lookups. As always a single odd query is
+      a lead, confirmed against the host's normal behaviour, but DNS is where a lot of otherwise-hidden C2
+      first becomes visible.
+    examples:
+      - title: DNS tunnelling in the logs
+        body: |
+          Normal:  www.example.com  -> short, dictionary-like
+          Tunnel:  a7f3k9x2.e91bq.exfil.bad.com -> long, high-entropy, repeated
+          Data is encoded in the subdomain and carried out over port 53.
+      - title: DNSSEC versus DoH
+        body: |
+          DNSSEC  signs answers -> detects forgery/poisoning (no encryption)
+          DoH     encrypts queries -> privacy, but hides DNS from monitoring
+          Different goals; enterprises often force internal resolvers to keep visibility.
+    exercise:
+      title: Hunt DNS logs for abuse
+      environment: A SIEM or notebook with sample DNS query logs containing some benign and some malicious patterns
+      tools: [A SIEM or notebook, sample DNS logs, a notes file]
+      steps:
+        - Describe how DNS tunnelling and DGA each appear differently in query logs.
+        - Search the logs for abnormally long or high-entropy subdomains and flag candidate tunnelling.
+        - Identify a host querying many never-before-seen random domains and explain why that suggests DGA.
+        - Pick out queries to newly registered or known-bad domains and note how you would enrich them with threat intel.
+        - For your strongest finding, state how you would confirm it against the host's normal DNS behaviour before acting.
+        - Recommend one control (DNSSEC, forced internal resolver, blocking external DoH, DNS filtering) and the problem it addresses.
+      deliverable: A DNS hunt write-up identifying one tunnelling and one DGA candidate, the enrichment and confirmation steps, and one recommended control with its rationale.
+    expected_outcome: >
+      You can explain why DNS is abused, describe what DNSSEC and encrypted DNS do and do not protect, and
+      detect tunnelling, DGA and malicious lookups in DNS logs while confirming against normal behaviour.
+    quiz:
+      - prompt: Why is DNS a favoured covert channel for attackers?
+        options:
+          - It is encrypted by default
+          - It is almost always allowed outbound and can carry encoded data in queries
+          - It is never logged
+          - It blocks malware
+        answer: 1
+        explanation: DNS is near-universally permitted, so malware can tunnel C2 and data through it.
+      - prompt: DNSSEC primarily protects against
+        options:
+          - Eavesdropping on queries
+          - Forged or poisoned DNS answers
+          - Slow lookups
+          - Malware downloads
+        answer: 1
+        explanation: DNSSEC signs records so forgery is detectable; it does not encrypt the queries.
+      - prompt: A host suddenly querying hundreds of random-looking, never-seen domains suggests
+        options: [A faster network, A domain generation algorithm used by malware, A DNSSEC upgrade, Normal browsing]
+        answer: 1
+        explanation: DGA produces many random domains so defenders cannot block a single hard-coded address.
+      - prompt: Why can DNS over HTTPS reduce a defender's visibility?
+        options:
+          - It deletes logs
+          - It hides DNS queries inside HTTPS where normal DNS monitoring cannot see them
+          - It disables DNS
+          - It slows the network
+        answer: 1
+        explanation: Encrypting DNS inside HTTPS removes the plaintext DNS the SOC usually monitors, so enterprises force internal resolvers.

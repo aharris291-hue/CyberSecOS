@@ -747,3 +747,99 @@ lessons:
           - Change its IP address
         answer: 1
         explanation: Closing the hole and rebuilding from a trusted image avoids trusting a potentially still-compromised host.
+  - slug: ir-malware-triage
+    title: Malware Triage and Dynamic Analysis Basics
+    order: 9
+    difficulty: intermediate
+    summary: Safely triage a suspicious file during an incident, static and dynamic basics in a sandbox, to answer what it is, what it does and what to hunt for, without becoming a reverse engineer.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["cysa:3.2", "cysa:1.4", "secplus:4.8"]
+    learning_objectives:
+      - Triage a suspicious file safely to decide what it is and does
+      - Use basic static and dynamic analysis to extract indicators
+      - Produce the indicators and context the response needs, safely
+    theory: |
+      During an incident you often have a suspicious file and three urgent questions: what is it, what does
+      it do, and what should we hunt for elsewhere. Answering them is **triage**, not full reverse
+      engineering, the goal is enough understanding to drive the response, fast and safely. The overriding
+      rule is **containment of the analysis itself**: malware is handled only in an isolated sandbox (an
+      offline or disposable VM with no access to production or the internet unless deliberately and safely
+      provided), because running or even carelessly opening it on a real host just spreads the incident.
+
+      Triage starts with **static analysis**, examining the file without running it. Its **hash** checked
+      against threat-intel services may identify it instantly. **Strings** inside it can reveal URLs, IP
+      addresses, file paths or commands. File type and metadata, and whether it is packed or obfuscated,
+      hint at its nature. Static analysis is safe (nothing executes) and often enough to classify a file,
+      but a packed or encrypted sample may give up little until it runs. Then comes **dynamic analysis**:
+      detonating the sample in the sandbox and observing behaviour, what files it creates, what registry or
+      persistence it sets, what processes it spawns, and crucially what network connections it attempts.
+      Automated sandboxes do this and produce a behaviour report, which is ideal for triage.
+
+      The output that matters is **indicators and context** for the response: the C2 domains and IPs to block
+      and hunt for, the files and registry keys that show infection on other hosts, the persistence to
+      remove, and a classification (ransomware, stealer, loader) that tells responders what to expect. A
+      responder does not need to understand every instruction, they need the behavioural indicators that let
+      them scope the incident and contain it. The discipline is to extract that quickly and safely, know the
+      limits (sophisticated malware detects sandboxes and hides), and escalate truly novel samples to deeper
+      analysis rather than guessing.
+    examples:
+      - title: Static triage, no execution
+        body: |
+          hash -> threat-intel match? instant identification
+          strings -> http://bad-c2.com, \Run persistence key, "encrypt"
+          Safe (nothing runs) and often enough to classify the file.
+      - title: Dynamic triage in a sandbox
+        body: |
+          detonate in isolated VM -> observe:
+            drops file, sets Run key (persistence), beacons to 185.x.x.x:443
+          Output: C2 to block + indicators to hunt + "likely loader" classification.
+    exercise:
+      title: Triage a sample safely and extract indicators
+      environment: An isolated analysis VM or an online sandbox service, with a benign test sample or a provided safe malware simulation (never on a production host)
+      tools: [An isolated sandbox VM or online sandbox, hashing and strings tools, a notes file]
+      steps:
+        - State the safety rules for handling the sample and why analysis happens only in an isolated environment.
+        - Perform static triage, record the file's hash and check it against a threat-intel service, and extract notable strings.
+        - From the static results, make an initial guess at what the file is and note what static analysis could not tell you.
+        - Detonate the sample in the sandbox (or review a provided sandbox report) and record its file, persistence and network behaviour.
+        - Produce the indicators (C2 domains/IPs, files, registry keys, persistence) the response team would use to hunt and contain.
+        - State the classification and one limitation (for example sandbox evasion) and when you would escalate to deeper analysis.
+      deliverable: A triage report with the safety approach, static findings (hash, strings), dynamic behaviour, a list of response indicators, a classification, and the limits with an escalation trigger.
+    expected_outcome: >
+      You can safely triage a suspicious file with basic static and dynamic analysis, extract the indicators
+      and context the response needs to scope and contain an incident, and know when a sample must be
+      escalated beyond triage.
+    quiz:
+      - prompt: The overriding rule when handling a suspicious file is to
+        options:
+          - Run it on a spare production host
+          - Analyse it only in an isolated sandbox with no production or uncontrolled network access
+          - Email it to colleagues
+          - Open it immediately to see what happens
+        answer: 1
+        explanation: Malware is handled in isolation so analysis does not spread the incident.
+      - prompt: Static analysis of a file
+        options:
+          - Always runs the file
+          - Examines the file without executing it (hash, strings, metadata)
+          - Requires a sandbox detonation
+          - Cannot identify known malware
+        answer: 1
+        explanation: Static analysis inspects the file safely without execution and can often classify it by hash or strings.
+      - prompt: The most useful output of malware triage during an incident is
+        options:
+          - A full disassembly
+          - Indicators and a classification responders use to hunt for and contain the infection
+          - The file's icon
+          - A performance benchmark
+        answer: 1
+        explanation: Triage aims to produce actionable indicators and context, not a complete reverse-engineering.
+      - prompt: A limitation of sandbox-based dynamic analysis is that
+        options:
+          - It never shows network activity
+          - Sophisticated malware can detect the sandbox and hide its behaviour
+          - It is always unsafe
+          - It cannot run files
+        answer: 1
+        explanation: Evasive malware may behave benignly in a sandbox, so novel samples may need deeper analysis.

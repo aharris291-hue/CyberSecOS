@@ -737,3 +737,97 @@ lessons:
         options: [Disable it, Re-tune it with allow-lists and context rather than switch it off, Delete the logs, Lower all severities]
         answer: 1
         explanation: These detections are too valuable to drop, so they are tuned for precision instead of disabled.
+  - slug: de-detection-tuning
+    title: Reducing False Positives and Tuning Detections
+    order: 9
+    difficulty: intermediate
+    summary: Make detections precise, tuning out false positives without silencing real threats, because an alert pipeline that cries wolf is as dangerous as having no detection at all.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["cysa:1.3", "cysa:3.1", "sc200:2"]
+    learning_objectives:
+      - Explain how alert fatigue from false positives harms security
+      - Apply tuning techniques that cut noise without losing true positives
+      - Measure a detection's quality and decide when to tune, not disable
+    theory: |
+      A detection that fires constantly on benign activity is not a minor annoyance; it is a security risk.
+      **Alert fatigue** is real: when analysts face hundreds of false positives a day, they start to
+      rubber-stamp or ignore alerts, and the one true positive in the pile gets closed with the rest. So the
+      quality of a detection is not just whether it catches the attack, but whether it does so without
+      drowning the team, and tuning, the deliberate reduction of false positives, is a core detection-engineering
+      skill that directly improves the SOC's ability to catch real threats.
+
+      The techniques are specific and preferred in roughly this order. First, **narrow the logic**: make the
+      rule more precise so it matches the attack and not its benign twin, requiring a suspicious parent
+      process, a specific argument, or a sequence rather than a single common event. Second, use
+      **allow-lists** for the known-good causes, the backup tool that legitimately touches the files, the
+      vulnerability scanner that trips the rule nightly, so those specific, verified cases are excluded by
+      identity rather than by weakening the detection for everyone. Third, add **context and thresholds**,
+      fire only when the behaviour exceeds a baseline, or raise severity with asset criticality, so routine
+      low-level occurrences do not page anyone. The order matters: tightening logic and allow-listing
+      specific causes keep the detection sharp, whereas crude broadening dulls it.
+
+      Underpinning tuning is **measurement**. You cannot tune what you do not measure, so good teams track
+      each detection's volume and its true-positive rate, and treat a detection that is all noise as a bug to
+      fix, not a fact to live with. The crucial discipline, carried over from every detection lesson, is that
+      the answer to a noisy high-value detection is to **tune it, never to disable it**: disabling blinds you
+      to the attack it was built for. Equally, tuning must not quietly cut true positives, so each change is
+      validated against known attack samples to confirm the detection still fires on the real thing. Precise,
+      measured, continually tuned detections are what make an alert queue something analysts can actually
+      trust and work.
+    examples:
+      - title: Tune by narrowing, not broadening
+        body: |
+          Noisy:  alert on any use of PsExec
+          Tuned:  alert on PsExec from a non-admin host to many targets in a short window
+          Sharper logic keeps the attack, drops the routine admin use.
+      - title: Allow-list a specific known-good cause
+        body: |
+          Rule trips nightly on the vuln scanner's traffic
+          Fix: exclude THAT scanner's identity/host -> noise gone
+          Wrong fix: disable the rule -> blind to the real attack it catches
+    exercise:
+      title: Tune a noisy detection without losing coverage
+      environment: A SIEM/EDR or sample alerts from a detection that is firing with many false positives, plus known attack samples or test events
+      tools: [A SIEM/EDR or sample alerts, known attack/benign samples, a notes file]
+      steps:
+        - Take a noisy detection and review a sample of its alerts to identify the benign causes of the false positives.
+        - Explain how alert fatigue from this detection could cause a real threat to be missed.
+        - Tune it first by narrowing the logic so it better separates the attack from the benign twin.
+        - Add an allow-list for a specific verified known-good cause and explain why that is better than broadening the rule.
+        - Validate the tuned detection against a known attack sample to confirm it still fires on the real thing.
+        - Define the metrics (alert volume, true-positive rate) you would track, and state why you tune rather than disable.
+      deliverable: A tuning write-up identifying the false-positive causes, the narrowed logic and allow-list applied, a validation showing the attack is still caught, and the metrics plus the tune-not-disable rationale.
+    expected_outcome: >
+      You can reduce a detection's false positives by narrowing logic, allow-listing verified causes and
+      adding context, validate that it still catches the real attack, measure its quality, and always tune
+      rather than disable a noisy high-value detection.
+    quiz:
+      - prompt: Why is a detection that fires constantly on benign activity a security risk?
+        options:
+          - It uses disk space
+          - Alert fatigue leads analysts to ignore or rubber-stamp alerts, so a real one gets missed
+          - It is always wrong
+          - It slows the network
+        answer: 1
+        explanation: Flooding analysts with false positives causes the true positive to be closed with the noise.
+      - prompt: The preferred first tuning technique is to
+        options:
+          - Disable the rule
+          - Narrow the logic so it matches the attack and not its benign twin
+          - Lower every severity
+          - Delete the logs
+        answer: 1
+        explanation: Tightening the logic keeps the detection sharp while removing benign matches.
+      - prompt: Allow-listing a known-good cause is better than broadening the rule because
+        options:
+          - It is faster to type
+          - It excludes a specific verified case by identity without weakening the detection for everyone
+          - It disables the rule
+          - It raises false positives
+        answer: 1
+        explanation: Excluding a specific verified cause preserves detection strength, unlike crude broadening.
+      - prompt: When a high-value detection is noisy, the correct response is to
+        options: [Disable it, Tune it and validate it still fires on real attacks, Ignore all its alerts, Delete the detection]
+        answer: 1
+        explanation: Disabling blinds you to the attack; tuning with validation keeps coverage while cutting noise.

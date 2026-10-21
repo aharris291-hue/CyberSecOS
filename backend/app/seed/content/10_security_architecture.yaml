@@ -742,3 +742,100 @@ lessons:
           - Because DMARC is optional
         answer: 1
         explanation: Layered defence catches threats that any single control would let through.
+  - slug: arch-secure-sdlc
+    title: Secure Software Development Lifecycle
+    order: 9
+    difficulty: intermediate
+    summary: Build security into how software is made, from threat modelling and secure coding through SAST, dependency scanning and a security gate, so flaws are caught before release.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:2.3", "secplus:3.1", "cysa:1.1"]
+    learning_objectives:
+      - Explain why security must be built into the development lifecycle
+      - Describe the security activities at each phase of the SDLC
+      - Design a pipeline security gate that catches flaws before release
+    theory: |
+      Security bolted on after software ships is expensive and leaky; a **secure software development
+      lifecycle** (SSDLC) builds it into each phase instead, on the simple economics that a flaw caught in
+      design costs a fraction of one found in production. The shift is cultural as much as technical, often
+      called "shift left", moving security activity earlier so developers find and fix issues as they build
+      rather than having security thrown over the wall at the end.
+
+      Each phase has its activity. In **design**, **threat modelling** asks what could go wrong, what an
+      attacker would target, what trust boundaries the data crosses, so the architecture addresses it from
+      the start. In **development**, **secure coding** standards and input validation prevent the common
+      flaws, and **SAST** (static analysis) scans the source for dangerous patterns as it is written. In
+      **build**, **software composition analysis** scans third-party dependencies for known-vulnerable
+      versions, which matters enormously because most code in a modern app is someone else's. In **test**,
+      DAST exercises the running application, and before **release** a security review or gate decides
+      whether the risk is acceptable. In **operation**, monitoring and patching continue the cycle.
+
+      The architectural piece that ties this together is the **pipeline security gate**: automated checks in
+      CI/CD that run SAST, dependency scanning and secret detection on every change, and fail the build when
+      something serious appears. Designed well, the gate catches the bulk of issues automatically and cheaply,
+      reserving human review for the judgement calls, with a clear, documented path for risk-accepting an
+      exception rather than silently bypassing. The goal is not perfect code but a process where security is
+      continuous and early, so that reaching production without an obvious, catchable flaw is the default,
+      not the exception.
+    examples:
+      - title: Security activity by phase
+        body: |
+          Design   threat modelling (what could go wrong?)
+          Develop  secure coding + SAST on the source
+          Build    dependency scanning (someone else's code)
+          Test     DAST on the running app
+          Release  security gate; Operate: monitor + patch
+      - title: A pipeline gate that fails the build
+        body: |
+          commit -> CI runs SAST + dependency scan + secret detection
+          critical finding -> build FAILS, developer fixes before merge
+          exception needed -> documented risk-acceptance, not a silent bypass
+    exercise:
+      title: Design SSDLC activities and a pipeline gate for a project
+      environment: A described software project or your own, plus a diagram or document and (optionally) a CI pipeline to inspect
+      tools: [A document or diagram, a sample project or pipeline, a notes file]
+      steps:
+        - For a sample application, do a lightweight threat model, name the assets, the attackers and one trust boundary to defend.
+        - List the security activity you would add at each SDLC phase (design, develop, build, test, release, operate).
+        - Design a CI/CD security gate specifying which automated checks run on every change and what fails the build.
+        - Explain why dependency (composition) scanning is so important for a modern application.
+        - Decide which checks should block automatically and which need human judgement, and why.
+        - Define the documented exception path for risk-accepting a finding rather than silently bypassing the gate.
+      deliverable: An SSDLC design with a lightweight threat model, per-phase activities, a pipeline security gate (blocking versus human-review checks), and a documented exception path.
+    expected_outcome: >
+      You can explain why security belongs throughout the development lifecycle, place the right activity in
+      each phase, and design a pipeline security gate that catches the bulk of flaws automatically before
+      release with a clear exception path.
+    quiz:
+      - prompt: Why build security into the development lifecycle ("shift left")?
+        options:
+          - It looks good
+          - A flaw caught in design costs far less than one found in production
+          - It slows developers for no reason
+          - It replaces testing
+        answer: 1
+        explanation: Finding issues earlier is dramatically cheaper and more effective than fixing them after release.
+      - prompt: Software composition analysis scans
+        options:
+          - The network
+          - Third-party dependencies for known-vulnerable versions
+          - User passwords
+          - Firewall rules
+        answer: 1
+        explanation: Most of a modern app is third-party code, so scanning dependencies for known flaws is essential.
+      - prompt: Threat modelling in the design phase asks
+        options:
+          - How fast the app runs
+          - What could go wrong, what an attacker would target and which trust boundaries data crosses
+          - What colour the UI is
+          - How many servers are needed
+        answer: 1
+        explanation: Threat modelling identifies risks early so the architecture addresses them from the start.
+      - prompt: A well-designed pipeline security gate should
+        options:
+          - Never fail a build
+          - Run automated checks on every change and fail the build on serious findings, with a documented exception path
+          - Replace all human review
+          - Only run yearly
+        answer: 1
+        explanation: Automated per-change checks catch most issues cheaply, with human review and documented exceptions for the rest.

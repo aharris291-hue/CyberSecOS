@@ -702,3 +702,94 @@ lessons:
           - It is only for paper
         answer: 1
         explanation: Data persists on media, so secure disposal prevents leakage from retired equipment.
+  - slug: sec-authentication-passwordless
+    title: Authentication Factors and Passwordless
+    order: 9
+    difficulty: beginner
+    summary: Understand authentication factors, why passwords fail, and how MFA and passwordless methods such as FIDO2 raise the bar against the most common attacks.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.6", "sc900:3", "secplus:2.4"]
+    learning_objectives:
+      - Distinguish the authentication factors and what each proves
+      - Explain why passwords fail and how MFA mitigates it
+      - Describe passwordless and phishing-resistant authentication such as FIDO2
+    theory: |
+      Authentication answers "are you who you claim to be", and it does so with **factors**: something you
+      **know** (a password or PIN), something you **have** (a phone, token or security key), and something
+      you **are** (a fingerprint or face). Strong authentication combines factors from different categories,
+      because each covers the others' weakness, a stolen password is useless without the physical key, and
+      a stolen phone is useless without the PIN. Using two of the *same* category (a password and a security
+      question, both "know") is not true multi-factor.
+
+      Passwords alone fail constantly, and understanding why motivates everything else. They are reused
+      across sites, so one breach unlocks many accounts (**credential stuffing**); they are phished; and
+      weak ones are guessed or cracked. **Multi-factor authentication** (MFA) is the single highest-impact
+      control against account takeover because it breaks the attacker's usual path: knowing the password is
+      no longer enough. But not all MFA is equal, SMS codes can be intercepted or SIM-swapped, and
+      push-notification MFA is vulnerable to **MFA fatigue**, where an attacker spams approvals until a tired
+      user taps yes.
+
+      The direction of travel is **passwordless** and **phishing-resistant** authentication. **FIDO2** and
+      passkeys use a cryptographic key pair bound to the device and the specific site, so there is no shared
+      secret to phish and the credential simply will not work on a look-alike domain, defeating the
+      phishing that beats even code-based MFA. For a learner this is the practical takeaway: authentication
+      strength is a ladder, from a lone password at the bottom, through code and push MFA, up to
+      phishing-resistant passkeys, and moving up the ladder is one of the most effective security
+      investments an organisation can make.
+    examples:
+      - title: True multi-factor versus not
+        body: |
+          Password + security question  -> both "know"  -> NOT real MFA
+          Password + phone push         -> know + have   -> MFA
+          Passkey (device + biometric)  -> have + are    -> phishing-resistant
+      - title: Why FIDO2 resists phishing
+        body: |
+          Code MFA on fake-bank.com: user types the code -> attacker relays it -> in
+          Passkey on fake-bank.com:  key is bound to the REAL domain -> simply won't sign
+          No shared secret to phish; the credential refuses the wrong site.
+    exercise:
+      title: Assess and strengthen authentication for a set of accounts
+      environment: Your own accounts or a described scenario, plus a notes template
+      tools: [A list of accounts/services, a notes file, a reference on MFA types]
+      steps:
+        - List several accounts and identify which authentication factors each currently uses.
+        - For one password-only account, explain the specific attacks it is exposed to.
+        - Identify an account using two factors of the same category and explain why that is not true MFA.
+        - Rank the MFA methods in use (SMS, code app, push, passkey) from weakest to strongest and justify the order.
+        - Pick one account and describe the move up the ladder you would make and the attack it defeats.
+        - Explain how a passkey would behave if the user were lured to a look-alike login page.
+      deliverable: An authentication assessment ranking the methods in use, one true-MFA correction, and one concrete upgrade with the attack it defeats.
+    expected_outcome: >
+      You can distinguish authentication factors, explain why passwords fail and how MFA mitigates it, and
+      describe how passwordless, phishing-resistant methods like FIDO2 defeat the attacks that beat
+      code-based MFA.
+    quiz:
+      - prompt: Which pair is true multi-factor authentication?
+        options:
+          - A password and a security question
+          - A password and a phone-based security key
+          - Two different passwords
+          - A PIN and a memorable word
+        answer: 1
+        explanation: True MFA combines different categories; a password (know) plus a key (have) qualifies.
+      - prompt: MFA is the highest-impact control against account takeover because it
+        options:
+          - Makes passwords longer
+          - Means knowing the password alone is no longer enough to log in
+          - Encrypts the network
+          - Removes all logins
+        answer: 1
+        explanation: MFA breaks the attacker's usual path by requiring a second factor beyond the password.
+      - prompt: MFA fatigue attacks target
+        options: [SMS codes only, Push-notification MFA, by spamming approvals until a user taps yes, Passkeys, Hardware tokens]
+        answer: 1
+        explanation: Repeated push prompts can wear a user down into approving a fraudulent login.
+      - prompt: FIDO2/passkeys resist phishing because the credential is
+        options:
+          - A longer password
+          - A key pair bound to the real site, so it will not authenticate on a look-alike domain
+          - Sent by SMS
+          - Stored in email
+        answer: 1
+        explanation: With no shared secret and binding to the legitimate domain, a phishing site cannot use the passkey.
