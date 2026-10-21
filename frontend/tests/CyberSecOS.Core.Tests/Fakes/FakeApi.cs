@@ -30,6 +30,9 @@ public sealed class FakeApi : ICyberSecApi
     public Func<int, LessonProgress> TheoryRead { get; set; } = _ => Samples.Progress(LessonStatuses.InProgress, theory: true);
     public Func<int, LabRequest, LessonProgress> Lab { get; set; } = (_, _) => Samples.Progress(LessonStatuses.InProgress, lab: true);
     public Func<int, LessonProgress> Reopen { get; set; } = _ => Samples.Progress(LessonStatuses.InProgress);
+    public Func<int, LabDetail> LabDetail { get; set; } = Samples.Lab;
+    public Func<int, LabSubmission, LabResult> LabSubmit { get; set; } = (_, s) => Samples.GradeLab(s);
+    public Func<IReadOnlyList<LabSummary>> Labs { get; set; } = () => [];
     public Func<ProgressSummary> Progress { get; set; } = Samples.Summary;
     public Func<int, IReadOnlyList<DailyMinutes>> Daily { get; set; } = Samples.Daily;
 
@@ -66,6 +69,10 @@ public sealed class FakeApi : ICyberSecApi
     public Task<LessonProgress> MarkTheoryReadAsync(int lessonId, CancellationToken ct = default) => Run(() => TheoryRead(lessonId), $"theory:{lessonId}");
     public Task<LessonProgress> CompleteLabAsync(int lessonId, LabRequest request, CancellationToken ct = default) => Run(() => Lab(lessonId, request), request);
     public Task<LessonProgress> ReopenLabAsync(int lessonId, CancellationToken ct = default) => Run(() => Reopen(lessonId), $"reopen:{lessonId}");
+    public Task<LabDetail> GetLabAsync(int lessonId, CancellationToken ct = default) => Run(() => LabDetail(lessonId), $"lab:{lessonId}");
+    public Task<LabResult> SubmitLabAsync(int lessonId, LabSubmission submission, CancellationToken ct = default) =>
+        Run(() => LabSubmit(lessonId, submission), submission);
+    public Task<IReadOnlyList<LabSummary>> GetLabsAsync(CancellationToken ct = default) => Run(Labs);
     public Task<ProgressSummary> GetProgressAsync(CancellationToken ct = default) => Run(Progress);
     public Task<IReadOnlyList<DailyMinutes>> GetDailyActivityAsync(int days, CancellationToken ct = default) => Run(() => Daily(days));
 

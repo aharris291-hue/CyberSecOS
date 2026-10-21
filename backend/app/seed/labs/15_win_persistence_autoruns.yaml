@@ -1,0 +1,91 @@
+slug: lab-win-persistence-autoruns
+lesson: win-persistence-autoruns
+title: Find attacker persistence in an Autoruns export
+pass_mark: 80
+scenario: |
+  EDR caught and killed a malicious process on laptop **LT-0388**, but the user says odd windows
+  keep flashing at logon. You ran Sysinternals Autoruns and exported the relevant entries
+  (pipe-separated, because Windows paths contain commas).
+
+  Find every persistence mechanism the attacker left, and tell them apart from legitimate
+  software. Useful tells: unsigned binaries, binaries in user-writable folders (`C:\Users\Public`,
+  `C:\ProgramData`, `C:\Windows\Temp`), names that imitate real products, and signed system
+  tools (like PowerShell) launched with hidden-window flags. One unsigned entry is a known
+  in-house backup agent.
+artifacts:
+- name: autoruns.txt
+  kind: csv
+  description: 'Autoruns export: location, entry name, image path or command, signer.'
+  content: |
+    Entry Location|Entry|Image Path|Signer
+    HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Run|SecurityHealth|C:\Windows\System32\SecurityHealthSystray.exe|(Verified) Microsoft Windows
+    HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Run|ContosoVPN|C:\Program Files\Contoso VPN\vpnui.exe|(Verified) Contoso Networks Ltd
+    HKCU\Software\Microsoft\Windows\CurrentVersion\Run|OneDrive|C:\Users\k.osei\AppData\Local\Microsoft\OneDrive\OneDrive.exe|(Verified) Microsoft Corporation
+    HKCU\Software\Microsoft\Windows\CurrentVersion\Run|OneDriveUpdate|C:\Users\Public\odupd.exe|(Not verified)
+    Task Scheduler|\Microsoft\Windows\Defrag\ScheduledDefrag|C:\Windows\System32\defrag.exe|(Verified) Microsoft Windows
+    Task Scheduler|\Microsoft\Windows\Maintenance\SysHealth|powershell.exe -w hidden -ep bypass -File C:\ProgramData\svc.ps1|(Verified) Microsoft Windows
+    Task Scheduler|\Contoso\BackupNightly|C:\Program Files\Contoso Backup\agent.exe|(Not verified)
+    Services|Spooler|C:\Windows\System32\spoolsv.exe|(Verified) Microsoft Windows
+    Services|WinTelemetrySvc|C:\Windows\Temp\wts.exe|(Not verified)
+    Services|ContosoVPNService|C:\Program Files\Contoso VPN\vpnsvc.exe|(Verified) Contoso Networks Ltd
+    Winlogon|Userinit|C:\Windows\system32\userinit.exe,|(Verified) Microsoft Windows
+tasks:
+- prompt: How many entries are unsigned ('Not verified')?
+  type: number
+  accepted:
+  - '3'
+  hint: Count the Signer column values that are not verified.
+  explanation: 'Three: OneDriveUpdate, BackupNightly and WinTelemetrySvc. Unsigned is a lead, not a verdict; the
+    backup agent is unsigned but legitimate.'
+  verify:
+    artifact: autoruns.txt
+    op: count
+    pattern: \|\(Not verified\)$
+- prompt: List the names of all three attacker persistence entries, separated by commas.
+  type: set
+  accepted:
+  - OneDriveUpdate, \Microsoft\Windows\Maintenance\SysHealth, WinTelemetrySvc
+  - OneDriveUpdate, SysHealth, WinTelemetrySvc
+  hint: Look for user-writable paths and for a signed tool started with hidden, policy-bypassing arguments.
+  explanation: OneDriveUpdate (a Run key imitating OneDrive, from C:\Users\Public), the SysHealth task (hidden PowerShell
+    running a script from ProgramData) and the WinTelemetrySvc service (from C:\Windows\Temp). The attacker used
+    three mechanisms so removing one is not enough.
+  verify:
+    artifact: autoruns.txt
+    op: set
+    pattern: ^[^|]+\|(?:\\Microsoft\\Windows\\Maintenance\\)?([^|]+)\|[^|]*(?:\\Users\\Public|\\ProgramData|\\Windows\\Temp)
+- prompt: Which script file does the malicious scheduled task run? Give the full path.
+  type: text
+  accepted:
+  - C:\ProgramData\svc.ps1
+  hint: Read the command line after -File.
+  explanation: C:\ProgramData\svc.ps1. Collect it (hash and copy) before deleting anything; its contents tell you
+    what the attacker wanted and where it calls out to.
+  verify:
+    artifact: autoruns.txt
+    op: set
+    pattern: -File (C:\\ProgramData\\[^|]+)\|
+- prompt: In which registry key is the malicious Run entry stored?
+  type: text
+  accepted:
+  - HKCU\Software\Microsoft\Windows\CurrentVersion\Run
+  hint: The Entry Location column of the fake OneDrive updater.
+  explanation: HKCU\…\Run runs at this user's logon and needs no admin rights to write, which is why it is a favourite
+    first persistence point.
+  verify:
+    artifact: autoruns.txt
+    op: set
+    pattern: ^([^|]+)\|OneDriveUpdate\|
+- prompt: What is the right order of work?
+  type: choice
+  options:
+  - Delete all three entries, then reboot to check the windows have stopped
+  - Collect the three files and entry details as evidence, remove all three entries together, then hunt for the
+    same names and hashes on other hosts
+  - Reimage immediately without collecting anything
+  - Disable the OneDrive entry and monitor the others
+  answer: 1
+  hint: Think about evidence, the attacker's other footholds, and the rest of the estate.
+  explanation: 'Preserve first, then remove every foothold at once so the attacker cannot reinstall from the one
+    you missed, then scope: the same file names, hashes and task names on other machines show how far this spread.
+    Reimaging may still follow, but not before you learn from the evidence.'

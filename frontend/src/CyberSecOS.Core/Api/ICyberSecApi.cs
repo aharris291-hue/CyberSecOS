@@ -25,6 +25,9 @@ public interface ICyberSecApi
     Task<LessonProgress> MarkTheoryReadAsync(int lessonId, CancellationToken ct = default);
     Task<LessonProgress> CompleteLabAsync(int lessonId, LabRequest request, CancellationToken ct = default);
     Task<LessonProgress> ReopenLabAsync(int lessonId, CancellationToken ct = default);
+    Task<LabDetail> GetLabAsync(int lessonId, CancellationToken ct = default);
+    Task<LabResult> SubmitLabAsync(int lessonId, LabSubmission submission, CancellationToken ct = default);
+    Task<IReadOnlyList<LabSummary>> GetLabsAsync(CancellationToken ct = default);
     Task<ProgressSummary> GetProgressAsync(CancellationToken ct = default);
     Task<IReadOnlyList<DailyMinutes>> GetDailyActivityAsync(int days, CancellationToken ct = default);
 

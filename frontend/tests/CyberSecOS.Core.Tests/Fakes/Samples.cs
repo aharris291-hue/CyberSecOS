@@ -31,6 +31,28 @@ public static class Samples
             [new CertObjective("secplus:4.9", "secplus", "4.9", "Use data sources"), new CertObjective("cysa:1.1", "cysa", "1.1", "Architecture")],
             progress ?? Progress(), previous, next);
 
+    public static LabDetail Lab(int lessonId) =>
+        new(5, "lab-ssh", "Prove the brute force", lessonId, "Read **auth.log** and answer.", 80,
+            [new LabArtifact("auth.log", "log", "sshd entries", "Failed password for root from 185.220.101.33"),
+             new LabArtifact("notes.txt", "text", "context", "web02")],
+            [new LabTask(0, "Which IP?", LabTaskTypes.Text, []),
+             new LabTask(1, "How many?", LabTaskTypes.Number, []),
+             new LabTask(2, "Which ports?", LabTaskTypes.Set, []),
+             new LabTask(3, "Best response?", LabTaskTypes.Choice, ["Ignore", "Isolate", "Reboot"])],
+            new LabStatus(0, null, false));
+
+    /// <summary>Marks a lab whose answers are "1.2.3.4", "42", "22,80" and option 1.</summary>
+    public static LabResult GradeLab(LabSubmission submission)
+    {
+        string?[] key = ["1.2.3.4", "42", "22,80", "1"];
+        var results = submission.Answers
+            .Select((a, i) => new LabTaskResult(i, a == key[i], a == key[i] ? $"Why {i}" : $"Hint {i}"))
+            .ToList();
+        var correct = results.Count(r => r.IsCorrect);
+        var score = (int)Math.Round(100.0 * correct / results.Count);
+        return new LabResult(score, correct, results.Count, score >= 80, 80, results, score >= 80, LessonStatuses.InProgress);
+    }
+
     /// <summary>Grades as if every question's correct answer is <paramref name="correctIndex"/>.</summary>
     public static QuizResult Grade(QuizSubmission submission, int correctIndex)
     {

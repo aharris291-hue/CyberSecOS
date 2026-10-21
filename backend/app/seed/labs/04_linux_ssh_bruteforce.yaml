@@ -1,0 +1,154 @@
+slug: lab-linux-ssh-bruteforce
+lesson: linux-auth-logs
+title: Prove whether an SSH brute force succeeded
+pass_mark: 80
+scenario: |
+  Overnight the internet-facing server **web02** showed a spike of SSH traffic. You have its
+  `/var/log/auth.log` for the window. Two outside addresses were guessing passwords; your job is
+  to find the serious one, prove whether it got in, and say what it did.
+
+  Download `auth.log` and use the pipelines from the lesson, for example
+  `grep "Failed password" auth.log | awk '{print $(NF-3)}' | sort | uniq -c | sort -nr`.
+artifacts:
+- name: auth.log
+  kind: log
+  description: /var/log/auth.log from web02 (sshd, sudo and PAM entries).
+  content: |
+    May 18 01:58:06 web02 sshd[21003]: Accepted publickey for deploy from 10.0.0.15 port 51544 ssh2: ED25519 SHA256:q1x8Hn2Yc0rT5bJ
+    May 18 01:58:08 web02 sshd[21007]: pam_unix(sshd:session): session opened for user deploy(uid=1001) by (uid=0)
+    May 18 01:58:17 web02 sshd[21009]: Failed password for ubuntu from 185.220.101.33 port 55423 ssh2
+    May 18 01:58:21 web02 sshd[21013]: Failed password for ubuntu from 185.220.101.33 port 41651 ssh2
+    May 18 01:58:23 web02 sshd[21018]: Failed password for ubuntu from 185.220.101.33 port 48349 ssh2
+    May 18 01:58:24 web02 sshd[21021]: Invalid user admin from 185.220.101.33 port 49676
+    May 18 01:58:29 web02 sshd[21026]: Failed password for invalid user admin from 185.220.101.33 port 49676 ssh2
+    May 18 01:58:36 web02 sshd[21030]: Failed password for root from 185.220.101.33 port 42787 ssh2
+    May 18 01:58:43 web02 sshd[21034]: Invalid user guest from 45.155.205.9 port 48887
+    May 18 01:58:46 web02 sshd[21036]: Failed password for invalid user guest from 45.155.205.9 port 48887 ssh2
+    May 18 01:58:51 web02 sshd[21037]: Invalid user oracle from 185.220.101.33 port 49995
+    May 18 01:58:53 web02 sshd[21038]: Failed password for invalid user oracle from 185.220.101.33 port 49995 ssh2
+    May 18 01:58:58 web02 sshd[21043]: Invalid user test from 185.220.101.33 port 60321
+    May 18 01:59:07 web02 sshd[21047]: Failed password for invalid user test from 185.220.101.33 port 60321 ssh2
+    May 18 01:59:10 web02 sshd[21049]: Failed password for backup from 185.220.101.33 port 52468 ssh2
+    May 18 01:59:17 web02 sshd[21051]: Failed password for backup from 185.220.101.33 port 34354 ssh2
+    May 18 01:59:22 web02 sshd[21053]: Invalid user admin from 185.220.101.33 port 58911
+    May 18 01:59:28 web02 sshd[21057]: Failed password for invalid user admin from 185.220.101.33 port 58911 ssh2
+    May 18 01:59:37 web02 sshd[21059]: Invalid user oracle from 185.220.101.33 port 51015
+    May 18 01:59:43 web02 sshd[21060]: Failed password for invalid user oracle from 185.220.101.33 port 51015 ssh2
+    May 18 01:59:47 web02 sshd[21063]: Failed password for root from 185.220.101.33 port 34037 ssh2
+    May 18 01:59:49 web02 sshd[21066]: Invalid user admin from 185.220.101.33 port 45559
+    May 18 01:59:52 web02 sshd[21069]: Failed password for invalid user admin from 185.220.101.33 port 45559 ssh2
+    May 18 01:59:53 web02 sshd[21070]: Failed password for backup from 185.220.101.33 port 60082 ssh2
+    May 18 01:59:58 web02 sshd[21073]: Invalid user user from 45.155.205.9 port 35413
+    May 18 01:59:59 web02 sshd[21076]: Failed password for invalid user user from 45.155.205.9 port 35413 ssh2
+    May 18 02:00:05 web02 sshd[21078]: Invalid user oracle from 185.220.101.33 port 48939
+    May 18 02:00:12 web02 sshd[21083]: Failed password for invalid user oracle from 185.220.101.33 port 48939 ssh2
+    May 18 02:00:17 web02 sshd[21088]: Invalid user test from 185.220.101.33 port 35095
+    May 18 02:00:21 web02 sshd[21092]: Failed password for invalid user test from 185.220.101.33 port 35095 ssh2
+    May 18 02:00:24 web02 sshd[21095]: Failed password for root from 185.220.101.33 port 49136 ssh2
+    May 18 02:00:27 web02 sshd[21098]: Failed password for backup from 185.220.101.33 port 55010 ssh2
+    May 18 02:00:33 web02 sshd[21099]: Failed password for root from 185.220.101.33 port 30615 ssh2
+    May 18 02:00:36 web02 sshd[21102]: Invalid user admin from 185.220.101.33 port 59804
+    May 18 02:00:42 web02 sshd[21105]: Failed password for invalid user admin from 185.220.101.33 port 59804 ssh2
+    May 18 02:00:50 web02 sshd[21107]: Failed password for backup from 185.220.101.33 port 36363 ssh2
+    May 18 02:00:54 web02 sshd[21108]: Invalid user test from 185.220.101.33 port 57784
+    May 18 02:00:55 web02 sshd[21109]: Failed password for invalid user test from 185.220.101.33 port 57784 ssh2
+    May 18 02:00:58 web02 sshd[21114]: Failed password for root from 185.220.101.33 port 33622 ssh2
+    May 18 02:00:59 web02 sshd[21119]: Invalid user guest from 45.155.205.9 port 39806
+    May 18 02:01:07 web02 sshd[21124]: Failed password for invalid user guest from 45.155.205.9 port 39806 ssh2
+    May 18 02:01:13 web02 sshd[21125]: Failed password for root from 185.220.101.33 port 46322 ssh2
+    May 18 02:01:22 web02 sshd[21128]: Failed password for ubuntu from 185.220.101.33 port 38013 ssh2
+    May 18 02:01:26 web02 sshd[21132]: Failed password for ubuntu from 185.220.101.33 port 56825 ssh2
+    May 18 02:01:30 web02 sshd[21136]: Failed password for backup from 185.220.101.33 port 43223 ssh2
+    May 18 02:01:38 web02 sshd[21137]: Invalid user test from 185.220.101.33 port 56910
+    May 18 02:01:42 web02 sshd[21141]: Failed password for invalid user test from 185.220.101.33 port 56910 ssh2
+    May 18 02:01:46 web02 sshd[21145]: Invalid user admin from 185.220.101.33 port 59065
+    May 18 02:01:50 web02 sshd[21149]: Failed password for invalid user admin from 185.220.101.33 port 59065 ssh2
+    May 18 02:01:51 web02 sshd[21150]: Failed password for root from 185.220.101.33 port 42301 ssh2
+    May 18 02:01:56 web02 sshd[21152]: Failed password for root from 185.220.101.33 port 46671 ssh2
+    May 18 02:02:00 web02 sshd[21154]: Failed password for root from 185.220.101.33 port 64450 ssh2
+    May 18 02:02:03 web02 sshd[21157]: Invalid user user from 45.155.205.9 port 47149
+    May 18 02:02:04 web02 sshd[21160]: Failed password for invalid user user from 45.155.205.9 port 47149 ssh2
+    May 18 02:02:11 web02 sshd[21161]: Invalid user admin from 185.220.101.33 port 37658
+    May 18 02:02:19 web02 sshd[21165]: Failed password for invalid user admin from 185.220.101.33 port 37658 ssh2
+    May 18 02:02:26 web02 sshd[21167]: Failed password for backup from 185.220.101.33 port 36088 ssh2
+    May 18 02:02:29 web02 sshd[21170]: Accepted password for backup from 185.220.101.33 port 44120 ssh2
+    May 18 02:02:34 web02 sshd[21174]: pam_unix(sshd:session): session opened for user backup(uid=1004) by (uid=0)
+    May 18 02:02:40 web02 sudo:   backup : TTY=pts/1 ; PWD=/home/backup ; USER=root ; COMMAND=/usr/bin/id
+    May 18 02:02:49 web02 sudo:   backup : TTY=pts/1 ; PWD=/home/backup ; USER=root ; COMMAND=/usr/bin/cat /etc/shadow
+    May 18 02:02:54 web02 sudo[21183]: pam_unix(sudo:session): session opened for user root(uid=0) by backup(uid=1004)
+    May 18 02:03:02 web02 sshd[21184]: Failed password for root from 45.155.205.9 port 55702 ssh2
+    May 18 02:03:06 web02 sshd[21185]: Failed password for root from 45.155.205.9 port 48355 ssh2
+    May 18 02:03:09 web02 sshd[21188]: Failed password for root from 45.155.205.9 port 55873 ssh2
+    May 18 02:03:10 web02 sshd[21190]: Received disconnect from 10.0.0.15 port 51544:11: disconnected by user
+    May 18 02:03:18 web02 sshd[21195]: pam_unix(sshd:session): session closed for user deploy
+tasks:
+- prompt: Which source IP made the most failed password attempts?
+  type: text
+  accepted:
+  - 185.220.101.33
+  hint: Count 'Failed password' lines per 'from <ip>' value.
+  explanation: 185.220.101.33 made 34 failed attempts, far more than the other source.
+  verify:
+    artifact: auth.log
+    op: top
+    pattern: Failed password for (?:invalid user )?\S+ from (\S+)
+- prompt: How many failed password attempts did that IP make?
+  type: number
+  accepted:
+  - '34'
+  hint: grep for 'Failed password' and the IP, then count lines with wc -l. Count each Failed line once; 'Invalid
+    user' lines are separate notices.
+  explanation: There are 34 'Failed password' lines from the attacker. The 'Invalid user' lines are extra notices
+    for accounts that do not exist, not extra attempts.
+  verify:
+    artifact: auth.log
+    op: count
+    pattern: 'Failed password for .* from 185\.220\.101\.33 '
+- prompt: How many different usernames did that IP try?
+  type: number
+  accepted:
+  - '6'
+  hint: Pull out the username from each failed line (watch for the extra words 'invalid user') and count the unique
+    values.
+  explanation: It tried root, admin, test, oracle, ubuntu and backup. Mixing real and non-existent accounts is typical
+    of a wordlist attack.
+  verify:
+    artifact: auth.log
+    op: distinct_count
+    pattern: Failed password for (?:invalid user )?(\S+) from 185\.220\.101\.33
+- prompt: Which account did the attacker successfully log in to?
+  type: text
+  accepted:
+  - backup
+  hint: Look for an 'Accepted' line from the attacker's IP.
+  explanation: '''Accepted password for backup'' from the attacker''s IP means the brute force succeeded. The deploy
+    logon used a key from an internal address and is legitimate.'
+  verify:
+    artifact: auth.log
+    op: set
+    pattern: Accepted password for (\S+) from 185\.220\.101\.33
+- prompt: What full command did the attacker run through sudo to read sensitive data?
+  type: text
+  accepted:
+  - /usr/bin/cat /etc/shadow
+  - cat /etc/shadow
+  hint: sudo logs every command it runs with COMMAND=.
+  explanation: They read /etc/shadow, the password hash file, which means every local password should be treated
+    as exposed. It also shows the backup account could use sudo, which it should not.
+  verify:
+    artifact: auth.log
+    op: last
+    pattern: 'sudo: +backup : .*COMMAND=(.+)$'
+- prompt: What is the best immediate response?
+  type: choice
+  options:
+  - Block 185.220.101.33 at the firewall and close the ticket
+  - 'Treat web02 as compromised: isolate it, lock the backup account, rotate local passwords and disable SSH password
+    logins'
+  - Install fail2ban so it does not happen again
+  - Reboot web02 to end the attacker's session
+  answer: 1
+  hint: The attacker logged in and gained root. What does that mean for the host?
+  explanation: A successful logon followed by root access means the host is compromised. Isolate it (without rebooting,
+    so evidence survives), lock the account, rotate credentials and move to key-only SSH. Blocking one IP or adding
+    fail2ban alone leaves the intruder's access in place.

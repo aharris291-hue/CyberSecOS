@@ -1,0 +1,146 @@
+slug: lab-hunt-data-exfiltration
+lesson: hunt-data-exfiltration
+title: Hunt for data exfiltration in proxy logs
+pass_mark: 80
+scenario: |
+  HR has told security that an engineer who resigned yesterday was seen copying files. Your
+  hypothesis: if data left, it left over the web. You have a day of web proxy logs for the
+  engineering floor and the backup server.
+
+  Look at what goes **out** (`bytes_out`), not what comes in, and at where it goes: sanctioned
+  services, or somewhere uncategorised. Large nightly uploads from the backup server to its
+  contracted vendor are expected. Sizes are in bytes; 1 MB = 1,000,000 bytes here.
+artifacts:
+- name: proxy.csv
+  kind: csv
+  description: Web proxy log for 18 August (UTC).
+  content: |
+    time,user,host,destination,method,bytes_out,bytes_in,category
+    2026-08-18T08:02:11Z,b.osei,WS-41,outlook.office365.com,GET,2623,345437,email
+    2026-08-18T08:26:49Z,a.lin,WS-22,contoso.sharepoint.com,POST,112406,618287,file-sharing
+    2026-08-18T08:28:16Z,a.lin,WS-53,news.example,GET,4101,1480976,news
+    2026-08-18T08:44:31Z,d.shah,WS-33,contoso.sharepoint.com,GET,2996,962309,file-sharing
+    2026-08-18T08:47:14Z,b.osei,WS-35,cdn.jsdelivr.net,GET,4590,730065,cdn
+    2026-08-18T08:49:30Z,d.shah,WS-16,www.contoso.example,GET,2949,972920,business
+    2026-08-18T08:50:56Z,b.osei,WS-44,outlook.office365.com,GET,3057,1534287,email
+    2026-08-18T09:12:36Z,a.lin,WS-21,news.example,GET,4096,917985,news
+    2026-08-18T09:14:14Z,b.osei,WS-10,news.example,POST,334329,1843577,news
+    2026-08-18T09:17:05Z,a.lin,WS-14,cdn.jsdelivr.net,GET,613,104188,cdn
+    2026-08-18T09:36:11Z,a.lin,WS-15,cdn.jsdelivr.net,GET,916,1720650,cdn
+    2026-08-18T09:43:52Z,c.ruiz,WS-49,outlook.office365.com,GET,554,1646941,email
+    2026-08-18T09:47:34Z,e.tan,WS-56,news.example,GET,1213,889472,news
+    2026-08-18T09:52:50Z,c.ruiz,WS-39,outlook.office365.com,GET,1526,1942548,email
+    2026-08-18T09:54:17Z,a.lin,WS-39,cdn.jsdelivr.net,POST,242160,1901829,cdn
+    2026-08-18T09:56:44Z,a.lin,WS-47,cdn.jsdelivr.net,GET,1145,916273,cdn
+    2026-08-18T10:06:26Z,c.ruiz,WS-55,cdn.jsdelivr.net,GET,1227,981060,cdn
+    2026-08-18T10:12:46Z,a.lin,WS-54,cdn.jsdelivr.net,GET,1451,944994,cdn
+    2026-08-18T10:42:09Z,a.lin,WS-33,www.contoso.example,GET,855,1948482,business
+    2026-08-18T10:53:08Z,e.tan,WS-56,news.example,GET,4866,227900,news
+    2026-08-18T11:06:49Z,c.ruiz,WS-53,news.example,GET,2867,1607374,news
+    2026-08-18T11:06:58Z,c.ruiz,WS-11,contoso.sharepoint.com,GET,3564,442853,file-sharing
+    2026-08-18T11:13:08Z,d.shah,WS-20,outlook.office365.com,GET,5605,1503600,email
+    2026-08-18T11:16:29Z,d.shah,WS-32,www.contoso.example,POST,178147,530611,business
+    2026-08-18T11:41:14Z,d.shah,WS-56,www.contoso.example,GET,4132,156563,business
+    2026-08-18T11:46:27Z,b.osei,WS-50,news.example,GET,1534,1036530,news
+    2026-08-18T12:01:26Z,a.lin,WS-47,cdn.jsdelivr.net,GET,2890,1783130,cdn
+    2026-08-18T12:11:17Z,e.tan,WS-40,outlook.office365.com,GET,1924,182336,email
+    2026-08-18T12:26:13Z,b.osei,WS-54,www.contoso.example,GET,3816,1122171,business
+    2026-08-18T12:44:28Z,a.lin,WS-59,news.example,GET,2594,684622,news
+    2026-08-18T12:45:17Z,c.ruiz,WS-51,cdn.jsdelivr.net,POST,382127,1566653,cdn
+    2026-08-18T12:47:11Z,d.shah,WS-35,outlook.office365.com,GET,2724,616707,email
+    2026-08-18T13:00:09Z,b.osei,WS-37,www.contoso.example,GET,1435,601451,business
+    2026-08-18T13:04:54Z,a.lin,WS-46,news.example,GET,5241,1415610,news
+    2026-08-18T13:39:16Z,b.osei,WS-32,cdn.jsdelivr.net,GET,5140,1551534,cdn
+    2026-08-18T13:39:45Z,b.osei,WS-14,www.contoso.example,GET,5459,1932219,business
+    2026-08-18T14:02:16Z,e.tan,WS-38,www.contoso.example,POST,352062,868461,business
+    2026-08-18T14:29:29Z,e.tan,WS-30,contoso.sharepoint.com,GET,2564,131066,file-sharing
+    2026-08-18T14:40:58Z,c.ruiz,WS-15,www.contoso.example,GET,2546,476920,business
+    2026-08-18T14:43:07Z,a.lin,WS-25,news.example,GET,1903,193954,news
+    2026-08-18T14:54:14Z,b.osei,WS-38,contoso.sharepoint.com,GET,3426,1805544,file-sharing
+    2026-08-18T14:56:09Z,c.ruiz,WS-27,news.example,GET,3451,1983984,news
+    2026-08-18T15:00:11Z,a.lin,WS-46,cdn.jsdelivr.net,POST,153923,1146347,cdn
+    2026-08-18T15:02:14Z,c.ruiz,WS-38,cdn.jsdelivr.net,GET,4404,106220,cdn
+    2026-08-18T15:08:00Z,d.shah,WS-52,www.contoso.example,GET,1756,1501420,business
+    2026-08-18T15:12:36Z,e.tan,WS-42,news.example,POST,158788,1750619,news
+    2026-08-18T15:58:36Z,a.lin,WS-41,www.contoso.example,GET,5435,266126,business
+    2026-08-18T16:29:51Z,e.tan,WS-23,www.contoso.example,GET,5628,73988,business
+    2026-08-18T16:30:07Z,d.shah,WS-53,www.contoso.example,GET,5481,1702412,business
+    2026-08-18T16:42:36Z,a.lin,WS-39,www.contoso.example,GET,1665,1791149,business
+    2026-08-18T16:44:01Z,d.shah,WS-42,cdn.jsdelivr.net,GET,4661,1037997,cdn
+    2026-08-18T16:54:57Z,c.ruiz,WS-21,cdn.jsdelivr.net,GET,2440,1625271,cdn
+    2026-08-18T17:28:32Z,d.shah,WS-11,news.example,GET,4207,294615,news
+    2026-08-18T17:32:02Z,c.ruiz,WS-42,news.example,GET,1513,1687021,news
+    2026-08-18T17:33:55Z,b.osei,WS-52,news.example,GET,5120,650842,news
+    2026-08-18T17:37:32Z,e.tan,WS-37,contoso.sharepoint.com,POST,266613,1734278,file-sharing
+    2026-08-18T17:38:01Z,e.tan,WS-26,contoso.sharepoint.com,GET,1614,227795,file-sharing
+    2026-08-18T17:43:58Z,a.lin,WS-20,www.contoso.example,GET,2458,1358525,business
+    2026-08-18T17:47:38Z,d.shah,WS-24,news.example,GET,605,1404387,news
+    2026-08-18T17:55:49Z,b.osei,WS-25,www.contoso.example,GET,1966,608356,business
+    2026-08-18T22:00:00Z,svc_backup,BKP-01,backup.vendor.example,PUT,900000000,4000,sanctioned-backup
+    2026-08-18T22:10:00Z,svc_backup,BKP-01,backup.vendor.example,PUT,901000000,4000,sanctioned-backup
+    2026-08-18T22:20:00Z,svc_backup,BKP-01,backup.vendor.example,PUT,902000000,4000,sanctioned-backup
+    2026-08-18T22:30:00Z,svc_backup,BKP-01,backup.vendor.example,PUT,903000000,4000,sanctioned-backup
+    2026-08-18T22:40:00Z,svc_backup,BKP-01,backup.vendor.example,PUT,904000000,4000,sanctioned-backup
+    2026-08-18T22:50:00Z,svc_backup,BKP-01,backup.vendor.example,PUT,905000000,4000,sanctioned-backup
+    2026-08-18T23:04:11Z,c.ruiz,WS-31,drop.files-share.example,POST,48000000,900,uncategorized
+    2026-08-18T23:05:24Z,c.ruiz,WS-31,drop.files-share.example,POST,52000000,900,uncategorized
+    2026-08-18T23:06:36Z,c.ruiz,WS-31,drop.files-share.example,POST,47000000,900,uncategorized
+    2026-08-18T23:07:42Z,c.ruiz,WS-31,drop.files-share.example,POST,50000000,900,uncategorized
+    2026-08-18T23:08:35Z,c.ruiz,WS-31,drop.files-share.example,POST,49000000,900,uncategorized
+    2026-08-18T23:09:49Z,c.ruiz,WS-31,drop.files-share.example,POST,51000000,900,uncategorized
+    2026-08-18T23:10:33Z,c.ruiz,WS-31,drop.files-share.example,POST,53000000,900,uncategorized
+    2026-08-18T23:11:51Z,c.ruiz,WS-31,drop.files-share.example,POST,46000000,900,uncategorized
+tasks:
+- prompt: Which user uploaded the most data to an uncategorised destination?
+  type: text
+  accepted:
+  - c.ruiz
+  hint: Filter category to uncategorized and sum bytes_out by user.
+  explanation: c.ruiz is the only user posting to an uncategorised site, and in large chunks. That matches the HR
+    report, but it is still a lead to confirm, not a conclusion.
+  verify:
+    artifact: proxy.csv
+    op: set
+    pattern: ^[^,]+,([^,]+),[^,]+,[^,]+,[^,]+,[^,]+,[^,]+,uncategorized$
+- prompt: To which destination did the data go?
+  type: text
+  accepted:
+  - drop.files-share.example
+  hint: The destination column of those uploads.
+  explanation: drop.files-share.example, a personal file-drop service outside the company's sanctioned SharePoint.
+    Data-loss controls usually block uncategorised upload sites for this reason.
+  verify:
+    artifact: proxy.csv
+    op: set
+    pattern: ',c\.ruiz,[^,]+,([^,]+),POST,\d+,\d+,uncategorized$'
+- prompt: About how many megabytes were uploaded there in total?
+  type: number
+  accepted:
+  - '396'
+  tolerance: 2
+  hint: Add up bytes_out for those requests and divide by 1,000,000.
+  explanation: About 396 MB in eight uploads of roughly 50 MB each, all within fifteen minutes. Splitting data into
+    similar-sized chunks is common to get under upload size limits.
+- prompt: How many upload requests went to that destination?
+  type: number
+  accepted:
+  - '8'
+  hint: Count rows for that destination.
+  explanation: 8 POST requests, one after another, from WS-31.
+  verify:
+    artifact: proxy.csv
+    op: count
+    pattern: ',drop\.files-share\.example,'
+- prompt: BKP-01 uploaded far more data. Why is it not the finding?
+  type: choice
+  options:
+  - Because PUT requests cannot carry data
+  - Because it is a service account to the contracted, sanctioned backup vendor on its normal schedule, which matches
+    its baseline
+  - Because servers cannot exfiltrate data
+  - Because the bytes_in value is small
+  answer: 1
+  hint: Exfiltration hunting compares against what is normal for that source and destination.
+  explanation: Volume alone is not the signal; deviation from baseline is. The backup server sends a similar volume
+    to the same sanctioned vendor every night. Still, confirm the vendor and account periodically, because attackers
+    do use backup channels.

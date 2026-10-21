@@ -1,0 +1,149 @@
+slug: lab-net-dns-abuse
+lesson: net-dns-abuse
+title: Spot DNS tunnelling and a DGA in resolver logs
+pass_mark: 80
+scenario: |
+  The internal resolver's query log for half an hour on the user subnet has been exported
+  (Zeek dns.log fields, tab-separated). Two different problems are hiding in it: one host is
+  moving data out through DNS queries, and another is cycling through machine-generated domain
+  names looking for its command-and-control server.
+
+  Use the lesson's signals: query length and shape, record type, one parent domain receiving
+  many unique subdomains, and the NXDOMAIN rate per host. One host also has a few NXDOMAINs for
+  a decommissioned intranet name; that is housekeeping, not malware.
+artifacts:
+- name: dns.log
+  kind: log
+  description: 'Resolver queries: time, client, query, type and response code.'
+  content: "#fields\tts\tid.orig_h\tquery\tqtype_name\trcode_name\n1788444106\t10.2.3.15\toutlook.office365.com\t\
+    AAAA\tNOERROR\n1788444140\t10.2.3.15\twww.contoso.example\tAAAA\tNOERROR\n1788444204\t10.2.3.22\tintranet-old.contoso.example\t\
+    A\tNXDOMAIN\n1788444231\t10.2.3.44\tztjtqfxdbkagrfv3kschgtzy6yrjj4tabqrvopx2k62qj55my6mb.000.t.exfil-cdn.example\t\
+    TXT\tNOERROR\n1788444269\t10.2.3.44\tc6ligaitf7dn3bbjtjd3qo7bgpua4vod3pagxj5wiwosfqiilgdj.001.t.exfil-cdn.example\t\
+    TXT\tNOERROR\n1788444290\t10.2.3.58\tteams.microsoft.com\tAAAA\tNOERROR\n1788444308\t10.2.3.44\tb5wy72e4rvyhnuye62tb4y26dfqnajutn3sanfhieynukbklddo3.002.t.exfil-cdn.example\t\
+    TXT\tNOERROR\n1788444342\t10.2.3.15\tnews.example\tAAAA\tNOERROR\n1788444346\t10.2.3.44\tl2f7jhdwdlf3t2tpqs2srngfkdhqjotgg74gc2i6o6vxha7fgr4a.003.t.exfil-cdn.example\t\
+    TXT\tNOERROR\n1788444379\t10.2.3.44\tiaipwj33bwxvwmgjkk3d3h72njybzzv3zsfpzkd54g4jcmbp3c7r.004.t.exfil-cdn.example\t\
+    TXT\tNOERROR\n1788444395\t10.2.3.22\tlogin.microsoftonline.com\tA\tNOERROR\n1788444412\t10.2.3.44\tcwm5zk4n3zdzzom3nccb4zzi5f774fad7lphb2n56c2cmr7jjjbl.005.t.exfil-cdn.example\t\
+    TXT\tNOERROR\n1788444414\t10.2.3.22\tcdn.jsdelivr.net\tA\tNOERROR\n1788444424\t10.2.3.44\twww.contoso.example\t\
+    A\tNOERROR\n1788444450\t10.2.3.44\tesk6m7ape5heeylmdbyn4vj4lipe3kz2pts4ag45plqb5nrai3vp.006.t.exfil-cdn.example\t\
+    TXT\tNOERROR\n1788444450\t10.2.3.22\tintranet-old.contoso.example\tA\tNXDOMAIN\n1788444472\t10.2.3.22\tupdates.vendor.example\t\
+    AAAA\tNOERROR\n1788444484\t10.2.3.44\tbzrgicv4beehxfl75a5bvwf22fnvjhjeys7s2m7mgytcet4m6ad3.007.t.exfil-cdn.example\t\
+    TXT\tNOERROR\n1788444487\t10.2.3.22\tteams.microsoft.com\tA\tNOERROR\n1788444508\t10.2.3.22\tlogin.microsoftonline.com\t\
+    A\tNOERROR\n1788444519\t10.2.3.22\tnews.example\tAAAA\tNOERROR\n1788444520\t10.2.3.44\te6tnhuat6bkvcs3a3i3dxjkxypt6nbgukdposwzsaamqepig2z4s.008.t.exfil-cdn.example\t\
+    TXT\tNOERROR\n1788444530\t10.2.3.44\toutlook.office365.com\tAAAA\tNOERROR\n1788444550\t10.2.3.15\tteams.microsoft.com\t\
+    AAAA\tNOERROR\n1788444550\t10.2.3.44\tqe3so3h6pgenhvnkfwzpmuhfu252yzex2lqsy6ejewavw22ykgnz.009.t.exfil-cdn.example\t\
+    TXT\tNOERROR\n1788444573\t10.2.3.58\toutlook.office365.com\tAAAA\tNOERROR\n1788444590\t10.2.3.44\tgnhz27nzer44axms7rlxsvqlcufjoqsxb6fly53w2gbqlpeabg2p.010.t.exfil-cdn.example\t\
+    TXT\tNOERROR\n1788444592\t10.2.3.58\toutlook.office365.com\tA\tNOERROR\n1788444615\t10.2.3.44\tn5lvg3fh3zd4setqnh6e5cs4kx7mq52uryjucf7n3sw3nyd62avr.011.t.exfil-cdn.example\t\
+    TXT\tNOERROR\n1788444621\t10.2.3.58\tintranet.contoso.example\tA\tNOERROR\n1788444636\t10.2.3.15\tnews.example\t\
+    A\tNOERROR\n1788444639\t10.2.3.22\tintranet-old.contoso.example\tA\tNXDOMAIN\n1788444644\t10.2.3.44\te3fdtpne4bi57naaglcistc44gsyoca7r6ljlgbvbcrkruywonso.012.t.exfil-cdn.example\t\
+    TXT\tNOERROR\n1788444649\t10.2.3.58\tteams.microsoft.com\tA\tNOERROR\n1788444660\t10.2.3.22\toutlook.office365.com\t\
+    A\tNOERROR\n1788444674\t10.2.3.44\tueylcim56qcfder6g6wq6biuslsyqw25zknek5p3jjcujvg4vxan.013.t.exfil-cdn.example\t\
+    TXT\tNOERROR\n1788444685\t10.2.3.22\tteams.microsoft.com\tAAAA\tNOERROR\n1788444694\t10.2.3.44\t2tyjqcd2oukhdh6li2k3qnac2o5p4rsn7d2rhwu44puivoqmuylv.014.t.exfil-cdn.example\t\
+    TXT\tNOERROR\n1788444711\t10.2.3.22\tlogin.microsoftonline.com\tA\tNOERROR\n1788444718\t10.2.3.44\toutlook.office365.com\t\
+    A\tNOERROR\n1788444729\t10.2.3.71\tdvhwgabmffjgib.net\tA\tNXDOMAIN\n1788444731\t10.2.3.44\tv5c5zxzh7chg7gocf5f53rhbnv7ctvhrliznillq7muq4hwgxdpv.015.t.exfil-cdn.example\t\
+    TXT\tNOERROR\n1788444738\t10.2.3.71\twbcxztvzcaporeq.biz\tA\tNXDOMAIN\n1788444750\t10.2.3.15\twww.contoso.example\t\
+    A\tNOERROR\n1788444756\t10.2.3.71\tjutegfaizlnu.net\tA\tNXDOMAIN\n1788444758\t10.2.3.44\tbhvnbasdhplc4jvefyvnv2kdtwo7adi4gfeqnx66tjviwg4g5hxd.016.t.exfil-cdn.example\t\
+    TXT\tNOERROR\n1788444760\t10.2.3.58\tintranet.contoso.example\tAAAA\tNOERROR\n1788444761\t10.2.3.15\tcdn.jsdelivr.net\t\
+    A\tNOERROR\n1788444764\t10.2.3.71\ttrrpinjihiuhgsdzwr.info\tA\tNXDOMAIN\n1788444772\t10.2.3.71\tmmqoelctpbeaqtep.biz\t\
+    A\tNXDOMAIN\n1788444772\t10.2.3.71\tevdpkmmmmfxqwxkj.biz\tA\tNXDOMAIN\n1788444792\t10.2.3.44\t7rbpqd665torcs5juwobxminhhrnf7rtj2yytihveqak6h6nnyjx.017.t.exfil-cdn.example\t\
+    TXT\tNOERROR\n1788444808\t10.2.3.71\teoemgzmcrepscqrm.net\tA\tNXDOMAIN\n1788444819\t10.2.3.44\tkh6ayx7rppdqlcojyv65o4qjjtsfeljrsqt6yjdxf5w2isuyuyg5.018.t.exfil-cdn.example\t\
+    TXT\tNOERROR\n1788444848\t10.2.3.44\t44paalerkjikfdndz4vxybmzzkywhkfx43zion3vfhtcocenqbly.019.t.exfil-cdn.example\t\
+    TXT\tNOERROR\n1788444853\t10.2.3.71\tgeqmwswwpwehccsakm.info\tA\tNXDOMAIN\n1788444871\t10.2.3.22\tintranet.contoso.example\t\
+    A\tNOERROR\n1788444881\t10.2.3.58\tnews.example\tA\tNOERROR\n1788444883\t10.2.3.22\twww.contoso.example\tA\t\
+    NOERROR\n1788444885\t10.2.3.44\tky6xv4c4ghectygdvz3gs5v42xdspuvl72bvnojw6b5jruzinrg4.020.t.exfil-cdn.example\t\
+    TXT\tNOERROR\n1788444891\t10.2.3.71\tmoogqovcgahuibrxq.net\tA\tNXDOMAIN\n1788444904\t10.2.3.71\ttwlbwkauluzgtij.net\t\
+    A\tNXDOMAIN\n1788444906\t10.2.3.71\tsihfonbnmnqt.biz\tA\tNXDOMAIN\n1788444921\t10.2.3.44\tdyir766rfsdezo4x4gnog5qpxjaxshw33znmlhofwanrxbk5ki6t.021.t.exfil-cdn.example\t\
+    TXT\tNOERROR\n1788444930\t10.2.3.71\tmehngirddmidnn.biz\tA\tNXDOMAIN\n1788444945\t10.2.3.71\thqzznvgjrjffvnxelk.info\t\
+    A\tNXDOMAIN\n1788444963\t10.2.3.71\tmufvhjobgorkcejkcg.net\tA\tNXDOMAIN\n1788444984\t10.2.3.58\tcdn.jsdelivr.net\t\
+    A\tNOERROR\n1788444996\t10.2.3.58\tcdn.jsdelivr.net\tA\tNOERROR\n1788445000\t10.2.3.71\tiubdsxjsegxetxuh.net\t\
+    A\tNXDOMAIN\n1788445005\t10.2.3.22\tupdates.vendor.example\tA\tNOERROR\n1788445005\t10.2.3.58\tnews.example\t\
+    A\tNOERROR\n1788445022\t10.2.3.71\tefwlvnpoxgnim.net\tA\tNXDOMAIN\n1788445025\t10.2.3.71\tsdlxwrqgvptjfjxt.biz\t\
+    A\tNXDOMAIN\n1788445026\t10.2.3.22\toutlook.office365.com\tA\tNOERROR\n1788445030\t10.2.3.71\twrsldjaifhtpv.biz\t\
+    A\tNXDOMAIN\n1788445064\t10.2.3.71\tmorhsgwacueipvsw.info\tA\tNXDOMAIN\n1788445088\t10.2.3.22\tintranet.contoso.example\t\
+    A\tNOERROR\n1788445091\t10.2.3.58\tupdates.vendor.example\tAAAA\tNOERROR\n1788445093\t10.2.3.71\tqwzimbuujromflubi.info\t\
+    A\tNXDOMAIN\n1788445097\t10.2.3.71\tjpedxgheesppg.net\tA\tNXDOMAIN\n1788445097\t10.2.3.71\tgdpfpbjepdrfjsspln.info\t\
+    A\tNXDOMAIN\n1788445137\t10.2.3.71\tvwwjaqhvfnas.net\tA\tNXDOMAIN\n1788445174\t10.2.3.58\twww.contoso.example\t\
+    AAAA\tNOERROR\n1788445194\t10.2.3.44\toutlook.office365.com\tA\tNOERROR\n1788445204\t10.2.3.22\tcdn.jsdelivr.net\t\
+    A\tNOERROR\n1788445212\t10.2.3.44\tnews.example\tA\tNOERROR\n1788445218\t10.2.3.15\tteams.microsoft.com\tA\t\
+    NOERROR\n1788445235\t10.2.3.22\tteams.microsoft.com\tA\tNOERROR\n1788445251\t10.2.3.22\tteams.microsoft.com\t\
+    AAAA\tNOERROR\n1788445307\t10.2.3.44\tlogin.microsoftonline.com\tA\tNOERROR\n1788445312\t10.2.3.44\tnews.example\t\
+    A\tNOERROR\n1788445321\t10.2.3.15\twww.contoso.example\tA\tNOERROR\n1788445343\t10.2.3.71\tlnlliaikacbwv.biz\t\
+    A\tNXDOMAIN\n1788445346\t10.2.3.71\thwxzrsetsemawaxx.biz\tA\tNXDOMAIN\n1788445358\t10.2.3.71\tddhpfrvupfikmdzkpu.net\t\
+    A\tNXDOMAIN\n1788445359\t10.2.3.71\tepnckeqjuuzetxrbn.info\tA\tNXDOMAIN\n1788445396\t10.2.3.71\tgidhugnhowupnkqrg.net\t\
+    A\tNXDOMAIN\n1788445400\t10.2.3.71\tqmvtrsxlpakwe.net\tA\tNOERROR\n1788445405\t10.2.3.71\tiilrhbcwprnnmqegrd.net\t\
+    A\tNXDOMAIN\n1788445433\t10.2.3.71\tzhgzwgklqkbxprplb.info\tA\tNXDOMAIN\n1788445436\t10.2.3.44\toutlook.office365.com\t\
+    A\tNOERROR\n1788445440\t10.2.3.71\ttewjkbcsxcburtsfv.net\tA\tNXDOMAIN\n1788445444\t10.2.3.44\toutlook.office365.com\t\
+    AAAA\tNOERROR\n1788445472\t10.2.3.58\twww.contoso.example\tA\tNOERROR\n1788445492\t10.2.3.58\toutlook.office365.com\t\
+    A\tNOERROR\n1788445503\t10.2.3.22\toutlook.office365.com\tA\tNOERROR\n1788445584\t10.2.3.44\tupdates.vendor.example\t\
+    A\tNOERROR\n1788445625\t10.2.3.44\tcdn.jsdelivr.net\tA\tNOERROR\n1788445642\t10.2.3.22\twww.contoso.example\t\
+    AAAA\tNOERROR\n1788445678\t10.2.3.44\tteams.microsoft.com\tAAAA\tNOERROR\n1788445686\t10.2.3.22\tupdates.vendor.example\t\
+    A\tNOERROR\n1788445692\t10.2.3.58\tnews.example\tA\tNOERROR\n1788445708\t10.2.3.22\tlogin.microsoftonline.com\t\
+    A\tNOERROR\n1788445764\t10.2.3.15\twww.contoso.example\tA\tNOERROR\n1788445768\t10.2.3.15\tlogin.microsoftonline.com\t\
+    A\tNOERROR\n1788445778\t10.2.3.44\tcdn.jsdelivr.net\tA\tNOERROR\n"
+tasks:
+- prompt: Which host is tunnelling data out over DNS?
+  type: text
+  accepted:
+  - 10.2.3.44
+  hint: Look for one client sending many long, random-looking subdomains under the same parent domain.
+  explanation: 10.2.3.44 sent a steady stream of 52-character encoded labels, numbered in sequence, under one zone.
+    That is data being chunked into queries.
+  verify:
+    artifact: dns.log
+    op: set
+    pattern: ^\d+\t(\S+)\t\S+\.t\.exfil-cdn\.example\t
+- prompt: Which parent domain receives the tunnelled data?
+  type: text
+  accepted:
+  - exfil-cdn.example
+  - t.exfil-cdn.example
+  hint: Strip the random label and sequence number from the front of those queries.
+  explanation: Every tunnel query ends in t.exfil-cdn.example. The attacker runs the authoritative server for that
+    zone, so each query delivers a chunk to them. Block and sinkhole the domain.
+  verify:
+    artifact: dns.log
+    op: set
+    pattern: \.\d{3}\.(t\.exfil-cdn\.example)\t
+- prompt: Which DNS record type does the tunnel use?
+  type: text
+  accepted:
+  - TXT
+  hint: Check the qtype_name column for the tunnel queries.
+  explanation: TXT records can carry arbitrary text back in the answer, which makes them the favourite for two-way
+    DNS tunnels. A workstation making dozens of TXT lookups is unusual on its own.
+  verify:
+    artifact: dns.log
+    op: set
+    pattern: \.t\.exfil-cdn\.example\t(\S+)\t
+- prompt: Which host shows domain generation algorithm (DGA) behaviour?
+  type: text
+  accepted:
+  - 10.2.3.71
+  hint: Count NXDOMAIN responses per client.
+  explanation: 10.2.3.71 tried dozens of random consonant-heavy names that do not exist and then got an answer for
+    one. That is a DGA finding its live C2 domain.
+  verify:
+    artifact: dns.log
+    op: top
+    pattern: ^\d+\t(\S+)\t\S+\t\S+\tNXDOMAIN$
+- prompt: How many NXDOMAIN responses did that host receive?
+  type: number
+  accepted:
+  - '31'
+  hint: Filter to that client and rcode NXDOMAIN, then count.
+  explanation: 31 failed lookups in about fifteen minutes. A normal workstation sees a handful a day; dozens of
+    random names in a burst is the DGA signature.
+  verify:
+    artifact: dns.log
+    op: count
+    pattern: ^\d+\t10\.2\.3\.71\t\S+\t\S+\tNXDOMAIN$
+- prompt: Which generated domain finally resolved, and so is the likely C2 server?
+  type: text
+  accepted:
+  - qmvtrsxlpakwe.net
+  hint: Look for the one random-looking name from that host that returned NOERROR.
+  explanation: qmvtrsxlpakwe.net resolved. Block it, then search proxy and firewall logs for anything connecting
+    to the address it returned.
+  verify:
+    artifact: dns.log
+    op: set
+    pattern: ^\d+\t10\.2\.3\.71\t(\S+)\t\S+\tNOERROR$

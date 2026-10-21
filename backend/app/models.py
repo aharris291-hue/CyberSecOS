@@ -1,6 +1,6 @@
 """Database models.
 
-Content (certifications, courses, lessons, quizzes) is seeded from YAML and
+Content (certifications, courses, lessons, quizzes, graded labs) is seeded from YAML and
 treated as read-only. Learner state (users, progress, attempts, activity) is
 written by the API.
 """
@@ -120,6 +120,7 @@ class Lesson(Base):
         back_populates="lesson", cascade="all, delete-orphan", order_by="QuizQuestion.order"
     )
     objectives: Mapped[list[CertObjective]] = relationship(secondary=lesson_objectives, back_populates="lessons")
+    lab: Mapped[Lab | None] = relationship(back_populates="lesson", cascade="all, delete-orphan", uselist=False)
 
 
 class QuizQuestion(Base):
@@ -134,6 +135,27 @@ class QuizQuestion(Base):
     explanation: Mapped[str] = mapped_column(Text)
 
     lesson: Mapped[Lesson] = relationship(back_populates="questions")
+
+
+class Lab(Base):
+    """A graded lab attached to one lesson: a scenario, the data to analyse and tasks with an answer key.
+
+    Artifacts and tasks are stored as JSON because they are read-only content that is
+    always loaded with the lab. The answer key (``accepted``) never leaves the server.
+    """
+
+    __tablename__ = "labs"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    slug: Mapped[str] = mapped_column(String(64), unique=True)
+    lesson_id: Mapped[int] = mapped_column(ForeignKey("lessons.id", ondelete="CASCADE"), unique=True)
+    title: Mapped[str] = mapped_column(String(150))
+    scenario: Mapped[str] = mapped_column(Text)
+    pass_mark: Mapped[int] = mapped_column(Integer, default=80)
+    artifacts: Mapped[list[dict]] = mapped_column(JSON)  # [{name, kind, description, content}]
+    tasks: Mapped[list[dict]] = mapped_column(JSON)  # [{prompt, type, options?, accepted, hint, explanation}]
+
+    lesson: Mapped[Lesson] = relationship(back_populates="lab")
 
 
 class LessonProgress(Base):
@@ -166,6 +188,22 @@ class QuizAttempt(Base):
     correct: Mapped[int] = mapped_column(Integer)
     total: Mapped[int] = mapped_column(Integer)
     answers: Mapped[list[int]] = mapped_column(JSON)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+
+class LabAttempt(Base):
+    """One submission of a graded lab. ``answers`` keeps what the learner typed, per task."""
+
+    __tablename__ = "lab_attempts"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    lab_id: Mapped[int] = mapped_column(ForeignKey("labs.id", ondelete="CASCADE"), index=True)
+    score: Mapped[int] = mapped_column(Integer)  # percentage 0-100
+    correct: Mapped[int] = mapped_column(Integer)
+    total: Mapped[int] = mapped_column(Integer)
+    passed: Mapped[bool] = mapped_column(Integer)  # SQLite stores as 0/1
+    answers: Mapped[list[str | None]] = mapped_column(JSON)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
 

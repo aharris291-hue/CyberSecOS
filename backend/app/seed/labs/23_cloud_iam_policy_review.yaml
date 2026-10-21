@@ -1,0 +1,81 @@
+slug: lab-cloud-iam-policy-review
+lesson: cloud-iam-privilege
+title: Review IAM policies for excess privilege
+pass_mark: 80
+scenario: |
+  The quarterly access review has reached the AWS account. You have the customer-managed IAM
+  policies attached to roles and users (one JSON policy per line). Find full-admin grants that
+  are not justified, privilege-escalation paths, and over-broad wildcards.
+
+  Remember: `iam:PassRole` on `*` combined with the ability to create compute (Lambda, EC2)
+  lets a principal run code as **any** role in the account, including an admin role. That is a
+  privilege-escalation path even though the policy never says `iam:*`.
+artifacts:
+- name: iam_policies.jsonl
+  kind: json
+  description: Customer-managed IAM policies, one per line.
+  content: |
+    {"PolicyName": "break-glass-admin", "Statement": [{"Effect": "Allow", "Action": "*", "Resource": "*", "Condition": {"Bool": {"aws:MultiFactorAuthPresent": "true"}}}]}
+    {"PolicyName": "ci-deploy", "Statement": [{"Effect": "Allow", "Action": ["s3:PutObject", "s3:GetObject"], "Resource": "arn:aws:s3:::web-assets-prod/*"}, {"Effect": "Allow", "Action": ["iam:PassRole", "lambda:CreateFunction", "lambda:InvokeFunction"], "Resource": "*"}]}
+    {"PolicyName": "reporting-read", "Statement": [{"Effect": "Allow", "Action": ["s3:GetObject", "s3:ListBucket"], "Resource": ["arn:aws:s3:::fin-reports-prod", "arn:aws:s3:::fin-reports-prod/*"]}]}
+    {"PolicyName": "dev-sandbox", "Statement": [{"Effect": "Allow", "Action": "ec2:*", "Resource": "*", "Condition": {"StringEquals": {"aws:RequestedRegion": "eu-west-2"}}}]}
+    {"PolicyName": "support-tools", "Statement": [{"Effect": "Allow", "Action": "*", "Resource": "*"}]}
+    {"PolicyName": "log-shipper", "Statement": [{"Effect": "Allow", "Action": ["logs:CreateLogStream", "logs:PutLogEvents"], "Resource": "arn:aws:logs:eu-west-2:111122223333:log-group:/app/*"}]}
+tasks:
+- prompt: Which policies grant full administrator access (Action * on Resource *)? List them separated by commas.
+  type: set
+  accepted:
+  - break-glass-admin, support-tools
+  hint: Search for an Action of * with a Resource of *.
+  explanation: break-glass-admin and support-tools both allow everything. One is an intended emergency account;
+    the other is not.
+  verify:
+    artifact: iam_policies.jsonl
+    op: set
+    pattern: '"PolicyName": "([^"]+)", "Statement": \[\{"Effect": "Allow", "Action": "\*", "Resource": "\*"'
+- prompt: Which of those full-admin policies has no MFA condition and should be removed or reduced?
+  type: text
+  accepted:
+  - support-tools
+  hint: Compare the Condition blocks.
+  explanation: support-tools grants full admin unconditionally. break-glass-admin at least requires MFA and should
+    also be monitored on every use; support-tools should be cut down to the few actions support actually needs.
+  verify:
+    artifact: iam_policies.jsonl
+    op: set
+    pattern: '"PolicyName": "([^"]+)", "Statement": \[\{"Effect": "Allow", "Action": "\*", "Resource": "\*"\}\]'
+- prompt: Which policy contains a privilege-escalation path through iam:PassRole?
+  type: text
+  accepted:
+  - ci-deploy
+  hint: Look for iam:PassRole on * alongside a permission that creates compute.
+  explanation: ci-deploy can pass any role to a new Lambda function and invoke it, so whoever holds its keys can
+    run code as an admin role. Scope PassRole to the one execution role the pipeline needs.
+  verify:
+    artifact: iam_policies.jsonl
+    op: set
+    pattern: '"PolicyName": "([^"]+)".*"iam:PassRole"[^]]*\], "Resource": "\*"'
+- prompt: How many policies use a wildcard in Action at all (either * or service:*)?
+  type: number
+  accepted:
+  - '3'
+  hint: Count policies with an Action value that is * or ends in :*.
+  explanation: 'Three: the two full-admin policies and dev-sandbox (ec2:*). dev-sandbox is limited to one region,
+    which reduces but does not remove the risk.'
+  verify:
+    artifact: iam_policies.jsonl
+    op: count
+    pattern: '"Action": "(?:[a-z0-9]+:)?\*"'
+- prompt: What is the least-privilege fix for ci-deploy's PassRole statement?
+  type: choice
+  options:
+  - Delete the ci-deploy policy
+  - Restrict iam:PassRole to the ARN of the one Lambda execution role the pipeline uses, and add an iam:PassedToService
+    condition of lambda.amazonaws.com
+  - Add a Deny for iam:*
+  - Rotate the access key
+  answer: 1
+  hint: Keep what the pipeline needs, remove what an attacker would use.
+  explanation: Naming the exact role (and the service it may be passed to) keeps the pipeline working while removing
+    the path to every other role. A Deny on iam:* would not block PassRole abuse through Lambda in the intended
+    way and could break deployments.

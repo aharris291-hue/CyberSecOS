@@ -1,0 +1,102 @@
+slug: lab-vm-remediation-verification
+lesson: vm-validation-remediation-verification
+title: Verify remediation with a rescan
+pass_mark: 80
+scenario: |
+  Last week's scan raised ten findings. System owners have since updated their tickets and
+  most say "Resolved". A ticket's status is a claim; the rescan is the evidence. You have the
+  finding list from before, the rescan from this morning (only findings still present are
+  listed, with their status), and the ticket updates.
+
+  Reconcile the three: what is really fixed, what an owner closed that is still there, what
+  is formally accepted, and whether the rescan found anything new.
+artifacts:
+- name: scan_before.csv
+  kind: csv
+  description: Findings from last week's scan.
+  content: |
+    host,cve,status
+    web-01,CVE-2024-3400,open
+    web-01,CVE-2024-6387,open
+    web-02,CVE-2024-6387,open
+    vpn-gw,CVE-2024-21762,open
+    app-01,CVE-2023-38545,open
+    app-02,CVE-2022-22965,open
+    db-01,CVE-2024-6387,open
+    print-01,CVE-2021-34527,open
+    hr-ws-14,CVE-2023-4863,open
+    dev-07,CVE-2023-38545,open
+- name: scan_after.csv
+  kind: csv
+  description: Findings still present in this morning's rescan.
+  content: |
+    host,cve,status
+    web-01,CVE-2024-6387,open
+    vpn-gw,CVE-2024-21762,open
+    app-01,CVE-2023-38545,accepted_risk
+    db-01,CVE-2024-6387,open
+    dev-07,CVE-2023-38545,accepted_risk
+    web-02,CVE-2024-38475,open
+- name: tickets.txt
+  kind: text
+  description: Ticket updates from the system owners.
+  content: |
+    Ticket   Host      CVE              Owner's update
+    CHG-311  web-01    CVE-2024-3400    Patched PAN-OS, rebooted                   -> Resolved
+    CHG-312  web-01    CVE-2024-6387    Upgraded OpenSSH                            -> Resolved
+    CHG-313  web-02    CVE-2024-6387    Upgraded OpenSSH                            -> Resolved
+    CHG-314  vpn-gw    CVE-2024-21762   Vendor hotfix applied                       -> Resolved
+    CHG-315  app-02    CVE-2022-22965   Spring upgraded to 5.3.18                   -> Resolved
+    CHG-316  db-01     CVE-2024-6387    Waiting for maintenance window              -> In progress
+    CHG-317  print-01  CVE-2021-34527   Print Spooler disabled                      -> Resolved
+    CHG-318  hr-ws-14  CVE-2023-4863    Chrome auto-updated                         -> Resolved
+    RISK-21  app-01    CVE-2023-38545   Risk accepted until 2026-12-31 (no libcurl SOCKS5 use)
+    RISK-22  dev-07    CVE-2023-38545   Risk accepted until 2026-12-31 (isolated dev VM)
+tasks:
+- prompt: How many of last week's findings are verified fixed (gone from the rescan)?
+  type: number
+  accepted:
+  - '5'
+  hint: Compare host and CVE pairs between the two scans; a pair missing from the rescan is fixed.
+  explanation: 'Five are gone: web-01 CVE-2024-3400, web-02 CVE-2024-6387, app-02 CVE-2022-22965, print-01 CVE-2021-34527
+    and hr-ws-14 CVE-2023-4863.'
+- prompt: Which findings did an owner mark Resolved that the rescan still detects? List the ticket numbers separated
+    by commas.
+  type: set
+  accepted:
+  - CHG-312, CHG-314
+  hint: Find tickets marked Resolved whose host and CVE are still open in the rescan.
+  explanation: 'CHG-312 (web-01 OpenSSH) and CHG-314 (vpn-gw) are still detected. Reopen them: perhaps the service
+    was not restarted, the wrong package was updated, or the hotfix did not apply. CHG-316 is honestly still in
+    progress.'
+- prompt: How many findings in the rescan are formally accepted risks?
+  type: number
+  accepted:
+  - '2'
+  hint: Count the accepted_risk status in the rescan.
+  explanation: Two, each backed by a RISK ticket with a reason and an expiry date. Accepted risks stay on the report
+    and get re-reviewed when they expire; they are not the same as fixed.
+  verify:
+    artifact: scan_after.csv
+    op: count
+    pattern: ',accepted_risk$'
+- prompt: Which CVE is new in the rescan (not in last week's list)?
+  type: text
+  accepted:
+  - CVE-2024-38475
+  hint: Look for a host and CVE pair in the rescan that has no match before.
+  explanation: CVE-2024-38475 on web-02 is new, probably introduced or exposed by the same maintenance work. Remediation
+    can create findings as well as close them, which is another reason to always rescan.
+- prompt: What should happen to CHG-312 and CHG-314?
+  type: choice
+  options:
+  - Close them, because the owners said they patched
+  - Reopen them with the rescan evidence, ask the owners to confirm the running version, and keep the original due
+    dates
+  - Mark them as accepted risks
+  - Delete them from the next scan's scope
+  answer: 1
+  hint: 'Which do you trust more: the ticket or the scanner, and what does the owner need to fix it?'
+  explanation: Verification beats attestation. Reopen with the evidence so the owner can see what is still exposed
+    (often a service that needs a restart, or a second package). Quietly accepting or descoping it would hide a
+    known-exploited flaw on an internet-facing host.
