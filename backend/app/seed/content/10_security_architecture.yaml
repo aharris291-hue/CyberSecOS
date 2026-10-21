@@ -1036,3 +1036,101 @@ lessons:
           - Disabling least privilege
         answer: 1
         explanation: The architecture must balance the three goals and adapt controls to different endpoint types.
+  - slug: arch-dlp
+    title: Data Loss Prevention Architecture
+    order: 12
+    difficulty: intermediate
+    summary: Design data loss prevention that detects and stops sensitive data leaving the organisation, across endpoints, network and cloud, by knowing what data matters, where it flows, and how to enforce without crippling work.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:3.3", "secplus:4.5", "cysa:1.1"]
+    learning_objectives:
+      - Explain what data loss prevention protects and the channels it covers
+      - Describe how DLP identifies sensitive data and enforces policy
+      - Balance DLP enforcement against false positives and business friction
+    theory: |
+      Much of what an organisation must protect is **data**, customer records, intellectual property, regulated
+      information, and **data loss prevention** (DLP) is the architecture aimed squarely at stopping that data
+      from leaving inappropriately, whether through malice, compromise, or simple mistake. DLP matters because a
+      great deal of data loss is not dramatic exfiltration but everyday leakage: an employee emailing a
+      spreadsheet of customer data to a personal account, uploading a document to a personal cloud drive, or
+      copying files to a USB stick. DLP addresses the data itself, wherever it tries to go.
+
+      A DLP architecture spans the channels data uses. **Endpoint DLP** controls data on and leaving devices,
+      copying to USB, printing, uploading. **Network DLP** inspects data in motion, email, web uploads, other
+      egress, often at the same gateways that do web filtering. **Cloud DLP** covers data in and moving through
+      cloud services and storage. Across these, DLP must first **identify** sensitive data, by pattern matching
+      (credit-card and ID number formats), keywords and classifiers, by **data classification** labels applied
+      to documents, or by fingerprinting known sensitive files. The quality of this identification is the heart
+      of DLP: too loose and it misses real leaks or floods on false matches, too narrow and sensitive data
+      slips by unlabelled.
+
+      Enforcement is where DLP meets reality. Policies can **monitor** (log and alert), **warn** the user, or
+      **block** an action outright, and the architectural judgement is matching enforcement to confidence and
+      impact: block a clear mass export of customer records, but perhaps only warn on an ambiguous case, because
+      aggressive blocking that interrupts legitimate work breeds resentment and workarounds. DLP is also prone
+      to **false positives**, so it is tuned and usually rolled out in monitor mode first to learn normal data
+      flows before enforcing. For the analyst, DLP is both a control and a detection source: its alerts, "a user
+      just tried to email 10,000 customer records externally", are high-value leads for both insider risk and
+      compromised-account exfiltration, confirmed against the user's legitimate role before acting. Designed
+      well, DLP protects data across its channels without grinding legitimate work to a halt.
+    examples:
+      - title: Everyday leakage DLP addresses
+        body: |
+          customer spreadsheet emailed to a personal account
+          document uploaded to a personal cloud drive; files copied to USB
+          not just dramatic exfil -> DLP guards the data wherever it goes.
+      - title: Matching enforcement to confidence
+        body: |
+          clear mass export of customer records -> BLOCK
+          ambiguous single-file case            -> WARN / log
+          monitor mode first to learn normal flows; aggressive blocking breeds workarounds.
+    exercise:
+      title: Design a DLP architecture for an organisation
+      environment: A described organisation with sensitive data types and data flows, plus a diagram or document
+      tools: [A description of data types and flows, a diagram or document, a notes file]
+      steps:
+        - Identify the sensitive data types the organisation must protect and the everyday ways they could leak.
+        - Design DLP coverage across endpoint, network and cloud channels and what each addresses.
+        - Describe how DLP would identify the sensitive data (patterns, classification labels, fingerprinting) and the trade-off of loose versus narrow identification.
+        - Define enforcement levels (monitor, warn, block) and match them to the confidence and impact of different scenarios.
+        - Explain why you would roll DLP out in monitor mode first and how you would tune false positives.
+        - Describe how a DLP alert would serve as a detection lead and how you would confirm it against the user's role before acting.
+      deliverable: A DLP architecture covering the data to protect, endpoint/network/cloud coverage, the identification method and its trade-off, enforcement levels matched to scenarios, a monitor-first rollout, and DLP alerts as detection leads.
+    expected_outcome: >
+      You can design data loss prevention across endpoint, network and cloud channels, explain how it
+      identifies sensitive data and enforces policy, and balance enforcement against false positives and
+      business friction while using DLP alerts as detection leads.
+    quiz:
+      - prompt: Data loss prevention primarily protects against
+        options:
+          - Slow networks
+          - Sensitive data leaving the organisation inappropriately, through malice, compromise or mistake
+          - Weak passwords only
+          - Disk failure
+        answer: 1
+        explanation: DLP focuses on stopping sensitive data from leaving, including everyday accidental leakage.
+      - prompt: A DLP architecture covers channels including
+        options:
+          - Only email
+          - Endpoint, network and cloud (USB/print, email/web egress, cloud services)
+          - Only USB drives
+          - Only printers
+        answer: 1
+        explanation: DLP spans endpoint, network and cloud to cover the channels data uses to leave.
+      - prompt: The heart of DLP effectiveness is
+        options:
+          - The colour of alerts
+          - How well it identifies sensitive data (patterns, classification labels, fingerprinting)
+          - The number of servers
+          - The time of day
+        answer: 1
+        explanation: Accurate identification determines whether DLP catches real leaks without flooding on false matches.
+      - prompt: Why is DLP usually rolled out in monitor mode first?
+        options:
+          - To block everything immediately
+          - To learn normal data flows and tune false positives before enforcing, avoiding disruption
+          - To disable logging
+          - Because it never blocks
+        answer: 1
+        explanation: Monitoring first reveals legitimate flows so enforcement does not interrupt normal work or breed workarounds.

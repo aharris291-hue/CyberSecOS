@@ -1012,3 +1012,95 @@ lessons:
           - DNS caches
         answer: 1
         explanation: Because the IdP is the key to everything, its logs are the primary place attacks appear.
+  - slug: cloud-resource-abuse-cryptojacking
+    title: Detecting Cloud Resource Abuse and Cryptojacking
+    order: 12
+    difficulty: intermediate
+    summary: Recognise when a compromised cloud account is being abused for the attacker's gain, spinning up expensive compute to mine cryptocurrency or send spam, where the bill and the resource patterns are the detection.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:2.4", "cysa:1.4", "sc900:2"]
+    learning_objectives:
+      - Explain why cloud compromise is often monetised through resource abuse
+      - Detect cryptojacking and resource abuse from billing and activity signals
+      - Respond to and limit the impact of a resource-abuse incident
+    theory: |
+      When an attacker compromises cloud credentials, a very common goal is not data theft but **direct
+      monetisation of your resources**: using your cloud account's ability to create compute on demand to mine
+      cryptocurrency (**cryptojacking**), send spam, or host malicious infrastructure, all billed to you. This
+      is worth understanding because it is one of the most frequent outcomes of a leaked cloud key, it can run
+      up enormous costs very fast, and, helpfully for defenders, it produces distinctive signals that make it
+      detectable, the attacker's own greed drives conspicuous activity.
+
+      The signals cluster around **resources and cost**. Cryptojacking means spinning up compute, often lots of
+      it, often the most powerful (GPU or high-CPU) instance types, often in regions the organisation never
+      uses, and running it at sustained high utilisation. So the tells are: a sudden spike in the **bill** or in
+      running instances, creation of unusually powerful instance types, activity in unused regions, instances
+      launched by an unexpected identity or via the API rather than the normal deployment pipeline, and outbound
+      connections to known mining pools. **Billing and cost-anomaly alerts** are a genuinely useful security
+      signal here, not just a finance concern, an unexpected cost spike is often the first visible sign of a
+      compromised account being abused.
+
+      Detection combines these: control-plane logs showing unusual instance creation, cost anomalies, and
+      network connections to mining pools, correlated and confirmed against what the account normally does (a
+      data-science team may legitimately use GPUs). Response is urgent because the cost clock is running:
+      identify and disable the compromised credential, terminate the attacker's resources, and investigate how
+      the credential leaked, while preventing recurrence with least-privilege, short-lived credentials, budget
+      limits and quotas that cap how much damage a single compromise can do. For the analyst, resource abuse is
+      a reminder that cloud security includes watching cost and resource patterns as telemetry, because the
+      attacker who is spending your money leaves an obvious trail if you are looking at the bill.
+    examples:
+      - title: The signals of cryptojacking
+        body: |
+          sudden spike in running instances + the bill
+          unusually powerful (GPU/high-CPU) types, in regions you never use
+          launched by an unexpected identity; outbound to known mining pools.
+      - title: Cost anomaly as a security signal
+        body: |
+          unexpected cloud bill spike -> often the FIRST sign of a compromised account
+          budget/cost-anomaly alerts are security telemetry, not just finance.
+    exercise:
+      title: Detect and respond to cloud resource abuse
+      environment: A cloud free tier or provided control-plane logs, billing/cost data and resource inventory showing abuse
+      tools: [A cloud account or sample logs and cost data, a notes file]
+      steps:
+        - Explain why compromising cloud credentials is often monetised through resource abuse rather than data theft.
+        - From the data, identify the signals of cryptojacking (instance spikes, powerful types, unused regions, unexpected identity, mining-pool connections).
+        - Explain why billing and cost-anomaly alerts are a useful security signal, not only a finance concern.
+        - Confirm the finding against the account's normal behaviour (for example a legitimate GPU workload) before acting.
+        - Outline the urgent response, disable the credential, terminate the resources, investigate the leak.
+        - Recommend preventive controls (least-privilege and short-lived credentials, budget limits, quotas) that cap the damage of a compromise.
+      deliverable: An investigation identifying the resource-abuse signals, the cost-anomaly angle, the confirmation against normal use, an urgent response plan, and preventive controls that limit blast radius.
+    expected_outcome: >
+      You can recognise cloud resource abuse and cryptojacking from resource and billing signals, confirm it
+      against normal usage, respond urgently to stop the cost and the attacker, and apply controls that cap how
+      much a single compromise can spend.
+    quiz:
+      - prompt: A common goal when an attacker compromises cloud credentials is
+        options:
+          - Only reading email
+          - Monetising your resources directly, such as spinning up compute to mine cryptocurrency, billed to you
+          - Fixing your configuration
+          - Nothing
+        answer: 1
+        explanation: Cryptojacking and similar abuse turn your cloud account's compute into the attacker's profit at your expense.
+      - prompt: A distinctive signal of cryptojacking is
+        options:
+          - Lower bills
+          - A spike in powerful instance types, often in unused regions, run at sustained high utilisation
+          - Fewer instances
+          - A new password policy
+        answer: 1
+        explanation: Mining needs lots of powerful compute, producing conspicuous instance and utilisation patterns.
+      - prompt: Why are cloud cost-anomaly alerts a security signal?
+        options:
+          - They are only for finance
+          - An unexpected cost spike is often the first visible sign of a compromised account being abused
+          - They slow the cloud
+          - They prevent logins
+        answer: 1
+        explanation: Resource abuse shows up as cost, so a bill spike is frequently the earliest indicator of compromise.
+      - prompt: A control that caps the damage of a compromised cloud account is
+        options: [Unlimited quotas, Budget limits and quotas plus least-privilege, short-lived credentials, Disabling logging, Sharing one key]
+        answer: 1
+        explanation: Limits, quotas and least-privilege short-lived credentials bound how much a single compromise can spend or do.

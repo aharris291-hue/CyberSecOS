@@ -1,5 +1,11 @@
 # Changelog
 
+## Phase 2 - Twelfth lesson per course (toward 300 hours)
+
+### Catalog to 144 lessons (~158 hours)
+- Added a twelfth lesson to every course (132 → 144 lessons, ~158 hours), each a distinct topic checked against the existing catalog. New lessons: web proxies, gateways and TLS inspection (Networking); security control types and functions (Security Foundations); PowerShell security and logging (Windows); file integrity monitoring (Linux); SIEM architecture and the data pipeline (SIEM); managing zero-days and emerging threats (Vulnerability Management); hunting supply-chain and trusted-relationship threats (Threat Hunting); network forensics and packet analysis (Incident Response); detecting defense evasion and log tampering (Detection Engineering); data loss prevention architecture (Security Architecture); detecting cloud resource abuse and cryptojacking (Cloud); and security program management and maturity (Governance, Risk and Compliance).
+- All keep the six education-standard sections and the ~18/82 theory/lab split; content-standard, seeding, lab and full backend suites pass.
+
 ## Phase 2 - Eleventh lesson per course (toward 300 hours)
 
 ### Catalog to 132 lessons (~145 hours)

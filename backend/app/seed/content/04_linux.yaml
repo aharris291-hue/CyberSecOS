@@ -968,3 +968,99 @@ lessons:
         options: [Ignored, Confirmed against the user's normal access as a possible compromise, Deleted, Assumed safe]
         answer: 1
         explanation: An anomalous successful login is a lead to confirm against the user's travel and normal behaviour.
+  - slug: linux-file-integrity-monitoring
+    title: File Integrity Monitoring on Linux
+    order: 12
+    difficulty: intermediate
+    summary: Detect unauthorised changes to critical files by establishing a known-good baseline and alerting on deviations, catching the tampering, backdoors and persistence that attackers leave on disk.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.1", "cysa:3.1", "cysa:1.3"]
+    learning_objectives:
+      - Explain what file integrity monitoring detects and why it matters
+      - Build a baseline and alert on deviations for critical files
+      - Tune FIM so legitimate change does not drown real tampering
+    theory: |
+      Attackers who gain access to a Linux system frequently **change files**: replacing a system binary with a
+      trojaned version, adding a backdoor, editing a configuration to weaken security, or planting a persistence
+      script. **File integrity monitoring** (FIM) detects exactly this, by establishing a **baseline** of what
+      critical files should look like and alerting when they change unexpectedly. It is a detective control that
+      catches the on-disk footprint of compromise that other tools may miss, and it is required by several
+      compliance standards for precisely that reason.
+
+      FIM works by recording, for each monitored file, a **cryptographic hash** and metadata (permissions,
+      owner, size, timestamps) in a trusted baseline, then periodically re-checking the files against it and
+      reporting any deviation: a changed hash means the content was modified, a changed owner or permission may
+      mean tampering. Tools like AIDE and others build and verify these baselines. What to monitor is the key
+      design decision: system binaries, critical configuration (what is in /etc), authentication files, and
+      startup/persistence locations are high value, because unexpected change there is strongly suspicious,
+      whereas monitoring constantly-changing data (logs, temp, caches) just produces noise.
+
+      The central challenge is the same as any detection: **legitimate change**. Systems change all the time,
+      package updates replace binaries, administrators edit configs, so a naive FIM that alerts on every change
+      is quickly ignored. Good FIM is tuned: it expects and accounts for authorised change (correlating with
+      the patch and change-management process, so a binary that changed during a known update is not an alert,
+      but the same binary changing at 3am outside any change window is), and it focuses on the files where
+      unexpected change is meaningful. The baseline itself must be **protected and trusted**, stored where an
+      attacker cannot quietly alter it to match their changes, or the whole control is defeated. For the
+      analyst, a FIM alert, "a system binary changed outside any maintenance window", is a high-value lead:
+      it points directly at tampering, confirmed against the change process before escalation.
+    examples:
+      - title: How FIM detects tampering
+        body: |
+          baseline: /usr/bin/sshd hash=abc..., owner=root, perms=755
+          recheck:  hash=def... -> content changed!
+          outside any update/change window -> likely a trojaned binary.
+      - title: Tuning out legitimate change
+        body: |
+          binary changed DURING a known package update -> expected, not an alert
+          same binary changed at 3am, no change window  -> high-value lead
+          correlate with the change-management process.
+    exercise:
+      title: Set up and tune file integrity monitoring
+      environment: A Linux VM with a FIM tool (such as AIDE) or provided baseline and change data
+      tools: [A Linux VM with a FIM tool or sample baseline/change data, a notes file]
+      steps:
+        - Explain what file integrity monitoring detects and the kinds of attacker activity it catches.
+        - Choose which files and directories to monitor (system binaries, /etc, auth files, startup locations) and justify the selection.
+        - Build (or review) a baseline recording hashes and metadata, and explain why the baseline must be protected and trusted.
+        - Simulate or review a change and show how the deviation (changed hash or ownership) is detected.
+        - Distinguish a legitimate change (during a known update) from suspicious tampering and explain how you would correlate with the change process.
+        - State how you would confirm a FIM alert before escalating and why monitoring noisy data directories is counterproductive.
+      deliverable: A FIM setup with a justified monitoring scope, a protected baseline, a detected deviation, and a tuning approach that separates authorised change from tampering by correlating with the change process.
+    expected_outcome: >
+      You can explain and configure file integrity monitoring to catch on-disk tampering, build and protect a
+      baseline, and tune it against legitimate change so that a real deviation stands out as a high-value lead.
+    quiz:
+      - prompt: File integrity monitoring detects
+        options:
+          - Network bandwidth
+          - Unauthorised changes to critical files (trojaned binaries, backdoors, tampered configs)
+          - CPU temperature
+          - User passwords
+        answer: 1
+        explanation: FIM catches the on-disk footprint of compromise by detecting unexpected file changes.
+      - prompt: FIM works by comparing files against
+        options:
+          - A random value
+          - A trusted baseline of cryptographic hashes and metadata
+          - The network configuration
+          - The user list
+        answer: 1
+        explanation: FIM records hashes and metadata in a baseline and alerts when files deviate from it.
+      - prompt: The main challenge for FIM is
+        options:
+          - Files never change
+          - Legitimate change (updates, admin edits), so it must be tuned to avoid drowning real tampering in noise
+          - It cannot hash files
+          - It only works on Windows
+        answer: 1
+        explanation: Systems change constantly, so FIM must account for authorised change to keep real deviations visible.
+      - prompt: Why must the FIM baseline be protected and trusted?
+        options:
+          - To save space
+          - So an attacker cannot quietly alter it to match their changes and defeat the control
+          - To speed up checks
+          - It need not be protected
+        answer: 1
+        explanation: If an attacker can edit the baseline, they can hide their changes, defeating the monitoring.

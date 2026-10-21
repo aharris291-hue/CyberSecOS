@@ -1016,3 +1016,100 @@ lessons:
         options: [Always fine, A security signal, since legitimate change goes through the process and this did not, A backup, A performance tweak]
         answer: 1
         explanation: Against an intended-state baseline, unmanaged change resembles attacker activity and warrants investigation.
+  - slug: grc-program-management
+    title: Security Program Management and Maturity
+    order: 12
+    difficulty: beginner
+    summary: Understand how the individual pieces of security, controls, policies, risk, monitoring, come together as a managed program with ownership, a roadmap and a way to measure and improve its maturity over time.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:5.1", "cysa:4.1", "sc900:1"]
+    learning_objectives:
+      - Explain what a security program is and why it needs deliberate management
+      - Describe maturity models and how they guide improvement
+      - Use a roadmap and governance to prioritise and sustain security work
+    theory: |
+      All the individual capabilities in security, controls, policies, risk assessment, monitoring, incident
+      response, do not add up to security on their own; they have to be run as a coherent, managed **program**.
+      A security program is the organised, ongoing effort, with leadership, ownership, funding and direction,
+      that turns scattered activities into a deliberate whole aligned to the organisation's risk and goals.
+      Understanding this matters because it is the difference between an organisation that reacts to each
+      incident and compliance demand and one that knows where it is, where it is going, and why.
+
+      A key tool is the **maturity model**, which describes levels of capability (commonly from ad-hoc and
+      reactive, through defined and managed, to optimised and continuously improving) for security practices.
+      Assessing the program against a maturity model, or a framework like the NIST Cybersecurity Framework used
+      this way, gives an honest picture of the current state: strong in some areas, immature in others, and a
+      shared language to describe it to leadership. Maturity is not about reaching the top level everywhere,
+      which is rarely cost-justified, but about reaching the **right** level for each area given the
+      organisation's risk, and knowing where you stand.
+
+      From that assessment comes a **roadmap**: a prioritised plan of what to improve, in what order, toward a
+      defined target state, so investment goes where it reduces the most risk rather than toward whatever is
+      loudest. Running the program then means **governance**, clear ownership and accountability, a steering
+      function that reviews progress and risk, metrics that show whether the program is improving, and the
+      continuous loop of assess, plan, implement, measure, reassess. This is also how security earns and keeps
+      leadership support: by speaking in terms of risk reduction, maturity and roadmap rather than technical
+      detail. For the analyst, the value of seeing the whole program is perspective, understanding that a given
+      detection, control or incident fits into a larger managed effort, and that the goal is not perfection but
+      a deliberate, improving posture matched to the organisation's real risk.
+    examples:
+      - title: Capabilities become a program
+        body: |
+          controls + policies + risk + monitoring + IR (scattered)
+          -> run as a managed program: ownership, funding, direction, aligned to risk
+          the difference between reacting and knowing where you're going.
+      - title: Maturity guides the roadmap
+        body: |
+          assess vs a maturity model: strong here, ad-hoc there
+          target the RIGHT level per area (not top everywhere) by risk
+          -> roadmap prioritises investment where it cuts the most risk.
+    exercise:
+      title: Assess program maturity and build a roadmap
+      environment: A described organisation's security capabilities (or your own context) and a document or spreadsheet
+      tools: [A maturity model or framework reference, a document or spreadsheet, a notes file]
+      steps:
+        - Explain what a security program is and why the individual capabilities must be managed as a whole.
+        - Assess several security areas against a maturity model and summarise the current state honestly.
+        - Explain why reaching the top maturity level everywhere is usually not the right goal.
+        - Choose target maturity levels for each area based on the organisation's risk and justify the choices.
+        - Build a short roadmap prioritising improvements toward the targets, ordered by risk reduction.
+        - Describe the governance and metrics that would keep the program on track and sustain leadership support.
+      deliverable: A maturity assessment across several areas, risk-based target levels, a prioritised improvement roadmap, and the governance and metrics to sustain the program.
+    expected_outcome: >
+      You can explain what a managed security program is, assess its maturity honestly against a model, set
+      risk-based target levels, and build a roadmap and governance that prioritise and sustain security
+      improvement rather than chasing perfection everywhere.
+    quiz:
+      - prompt: Why must security capabilities be run as a managed program?
+        options:
+          - They are already enough on their own
+          - On their own they are scattered; a program with ownership and direction aligns them to the organisation's risk and goals
+          - To avoid all controls
+          - To reduce logging
+        answer: 1
+        explanation: A managed program turns individual activities into a coherent, risk-aligned, deliberate effort.
+      - prompt: A security maturity model describes
+        options:
+          - Network speeds
+          - Levels of capability (from ad-hoc to optimised) for security practices, giving an honest current-state picture
+          - Password lengths
+          - The number of employees
+        answer: 1
+        explanation: Maturity models rate how developed each practice is, providing a shared language for current state and goals.
+      - prompt: The goal of maturity assessment is to reach
+        options:
+          - The top level everywhere regardless of cost
+          - The right level for each area given the organisation's risk
+          - The bottom level
+          - No level at all
+        answer: 1
+        explanation: Maturity should match risk; top-level everywhere is rarely cost-justified.
+      - prompt: A security roadmap exists to
+        options:
+          - List employees
+          - Prioritise improvements toward a target state so investment reduces the most risk first
+          - Replace all controls
+          - Avoid governance
+        answer: 1
+        explanation: The roadmap sequences improvements by risk reduction toward defined maturity targets.

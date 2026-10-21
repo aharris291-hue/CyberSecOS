@@ -962,3 +962,100 @@ lessons:
         options: [A faster network, An attacker covering their tracks, worth investigating, A backup, A patch install]
         answer: 1
         explanation: Missing expected logs or log-clearing can be an evasion signal, so the absence of logs is itself telling.
+  - slug: win-powershell-security
+    title: PowerShell Security and Logging
+    order: 12
+    difficulty: intermediate
+    summary: Secure and monitor PowerShell, the administrator's most powerful tool and the attacker's favourite, with script-block logging, AMSI, Constrained Language Mode and execution policy, so its abuse is visible and limited.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.1", "sc200:2", "cysa:1.3"]
+    learning_objectives:
+      - Explain why PowerShell is both essential and heavily abused
+      - Configure PowerShell logging so its use is fully visible
+      - Describe AMSI, Constrained Language Mode and execution policy as controls
+    theory: |
+      PowerShell is the administrator's most capable tool and, for exactly that reason, the attacker's favourite:
+      it is built in, trusted, powerful, and can run code entirely in memory. Attackers use it for nearly every
+      stage, downloading payloads, executing fileless malware, moving laterally, so the goal is not to remove
+      PowerShell (administration needs it) but to make its use **fully visible** and to **limit** what untrusted
+      code can do with it. This is a clear case of defending a legitimate, essential tool against its own abuse.
+
+      Visibility comes from PowerShell's rich **logging**, which is off or limited by default and must be
+      enabled. **Script-block logging** records the actual code that runs, even when it is obfuscated or built
+      at runtime, because PowerShell logs it after de-obfuscation, which is enormously valuable since attackers
+      rely on obfuscation to hide. **Module logging** records pipeline execution details, and **transcription**
+      captures full session input and output to a file. Enabling these (via Group Policy) and forwarding them
+      centrally turns PowerShell from a blind spot into one of the richest endpoint detection sources, exposing
+      the encoded commands and download cradles that are hallmark attacker behaviour.
+
+      Limiting abuse uses several complementary controls. The **Antimalware Scan Interface** (AMSI) lets
+      antivirus inspect script content at runtime, including de-obfuscated PowerShell, so known-malicious scripts
+      are caught even when loaded from memory. **Constrained Language Mode** restricts PowerShell to a safe
+      subset of functionality, blocking the API and type access that many attack scripts need while leaving
+      normal administration working. **Execution policy** governs which scripts may run but is a safety feature,
+      not a security boundary (it is trivially bypassed), so it should never be relied on alone. Together,
+      logging for visibility and AMSI plus Constrained Language Mode for limitation, make PowerShell abuse both
+      harder and far more detectable. For the analyst, enabled PowerShell logging is often where an intrusion's
+      clearest evidence lives, so knowing these controls, and that execution policy is not one of the strong
+      ones, is core Windows defence.
+    examples:
+      - title: Script-block logging defeats obfuscation
+        body: |
+          attacker runs: powershell -enc <base64 obfuscated>
+          script-block logging records the DE-OBFUSCATED code that actually ran
+          -> the hidden command is now visible to the SOC.
+      - title: Controls that limit abuse
+        body: |
+          AMSI                  -> AV inspects script content at runtime (even in-memory)
+          Constrained Language  -> blocks the API/type access many attack scripts need
+          Execution policy      -> a safety feature, trivially bypassed, NOT a security boundary
+    exercise:
+      title: Secure and monitor PowerShell on a Windows system
+      environment: A Windows VM (or provided PowerShell policy settings and sample script-block logs)
+      tools: [A Windows VM or sample config and logs, a reference on PowerShell logging, a notes file]
+      steps:
+        - Explain why PowerShell is both essential for administration and heavily abused by attackers.
+        - Enable (or review) script-block logging, module logging and transcription, and explain what each captures.
+        - Explain how script-block logging reveals obfuscated commands and why that matters for detection.
+        - Describe how AMSI and Constrained Language Mode each limit what malicious scripts can do.
+        - Explain why execution policy is not a security boundary and should not be relied on alone.
+        - Review sample script-block logs and identify one command that indicates malicious use.
+      deliverable: A PowerShell hardening-and-monitoring note covering the logging to enable and what each captures, how AMSI and Constrained Language Mode limit abuse, the execution-policy caveat, and one malicious command found in the logs.
+    expected_outcome: >
+      You can explain why PowerShell is both essential and abused, enable the logging that makes its use fully
+      visible (including de-obfuscated commands), and apply AMSI and Constrained Language Mode to limit abuse
+      while recognising that execution policy is not a security boundary.
+    quiz:
+      - prompt: Why not simply remove or block PowerShell?
+        options:
+          - It cannot be removed
+          - Administration genuinely needs it, so the goal is to make its use visible and limit abuse instead
+          - It is never abused
+          - It has no logging
+        answer: 1
+        explanation: PowerShell is essential for admin work, so defence focuses on visibility and limitation, not removal.
+      - prompt: Script-block logging is especially valuable because it
+        options:
+          - Speeds up scripts
+          - Records the de-obfuscated code that actually ran, exposing obfuscated attacker commands
+          - Disables PowerShell
+          - Encrypts the disk
+        answer: 1
+        explanation: It logs the real code after de-obfuscation, defeating the obfuscation attackers rely on.
+      - prompt: AMSI helps by
+        options:
+          - Blocking the network
+          - Letting antivirus inspect script content at runtime, including in-memory PowerShell
+          - Deleting logs
+          - Replacing the firewall
+        answer: 1
+        explanation: AMSI exposes script content to AV at runtime so malicious scripts are caught even when loaded from memory.
+      - prompt: PowerShell execution policy is
+        options:
+          - A strong security boundary
+          - A safety feature that is trivially bypassed and should not be relied on alone
+          - A logging mechanism
+          - A type of malware
+        answer: 1
+        explanation: Execution policy prevents accidental script runs but is easily bypassed, so it is not a security control.

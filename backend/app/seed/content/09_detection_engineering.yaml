@@ -1023,3 +1023,98 @@ lessons:
         options: [Routine, Suspicious regardless of the rest, worth detecting, A backup, A normal update]
         answer: 1
         explanation: Unusual location and parent process make such persistence suspicious on its own.
+  - slug: de-evasion-detection
+    title: Detecting Defense Evasion and Log Tampering
+    order: 12
+    difficulty: intermediate
+    summary: Engineer detections for the actions attackers take to hide, clearing logs, disabling security tools, tampering with agents, where the evasion itself, and the silence it creates, are the signals.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["cysa:1.4", "cysa:3.1", "sc200:2"]
+    learning_objectives:
+      - Describe the defense-evasion actions worth detecting
+      - Engineer detections for tampering and for suspicious absence of data
+      - Build "something stopped reporting" detections that catch silent evasion
+    theory: |
+      Attackers work to avoid detection, and those evasion actions are themselves highly detectable if you build
+      for them. Where threat hunting looks for evasion reactively, detection engineering builds the standing
+      detections that catch it automatically: clearing event logs, stopping or tampering with security agents
+      (EDR, antivirus), adding exclusions to security tools, disabling audit policy, and killing logging
+      services. These are high-value detections because few legitimate activities clear logs or disable the EDR,
+      so a well-built detection here has a strong signal-to-noise ratio and often catches an intrusion right at
+      the moment the attacker tries to go dark.
+
+      The direct detections target the tampering **events** themselves. Operating systems and security tools
+      emit telltale signals: the Windows event that records the log being cleared, EDR self-protection alerts
+      when its service or files are tampered with, events for audit-policy changes, and service-stop events for
+      security services. Engineering these is largely about knowing which events to watch and enriching them,
+      a log-clear or an EDR-disable is suspicious almost regardless of context, so these can be high-severity
+      with little tuning, though you still allow-list the rare legitimate cause (an authorised reimage,
+      maintenance by a known admin process).
+
+      The subtler and more powerful class detects the **absence** evasion creates. The hardest evasion to catch
+      with event-based rules is when the attacker succeeds in stopping the telemetry, there is no event because
+      the sensor is gone. The answer is detections built on expectation: a host that always reported and
+      suddenly stops, an EDR agent that misses its regular check-in, a log source whose volume drops to zero,
+      an endpoint that disappears from the fleet. These "something that should be here is not" detections turn
+      silence into signal, and they are essential because a capable attacker's whole aim is to produce that
+      silence. As with all detections, these are tuned against legitimate causes (a machine powered off, a
+      maintenance window) and validated by emulating the evasion. Detecting defense evasion, both the tampering
+      events and the suspicious silence, is a cornerstone of catching sophisticated attackers who assume that
+      going dark makes them safe.
+    examples:
+      - title: Direct tampering detections
+        body: |
+          event-log cleared / EDR service stopped / AV exclusion added / audit policy disabled
+          few legitimate causes -> high severity, little tuning
+          allow-list the rare authorised case (reimage, known admin process).
+      - title: Absence as the detection
+        body: |
+          host that always reported -> stops; EDR misses its check-in; log volume -> 0
+          no event, because the sensor is gone -> detect the SILENCE
+          "something that should be here is not" turns going-dark into a signal.
+    exercise:
+      title: Engineer tampering and absence detections
+      environment: A SIEM/EDR or sample logs with security-tool and logging telemetry, including tampering and a source going silent, ideally with an emulation tool
+      tools: [A SIEM/EDR or sample logs, an emulation test or samples, a MITRE ATT&CK reference, a notes file]
+      steps:
+        - List the defense-evasion actions worth detecting and the telltale event each produces.
+        - Engineer a direct detection for one tampering action (log clear, EDR disable, audit-policy change) and set an appropriate severity.
+        - Allow-list the rare legitimate cause for that action and explain why it needs little other tuning.
+        - Engineer an absence-based detection (a host or log source that stops reporting, an EDR missing its check-in) and explain why it catches what event rules cannot.
+        - Tune the absence detection against legitimate causes (powered-off machines, maintenance windows).
+        - Emulate the evasion to validate both detections fire, and map them to ATT&CK defense-evasion techniques.
+      deliverable: Two detections, one for a tampering event and one for suspicious absence, with severities, allow-lists and tuning, validated by emulation and mapped to ATT&CK.
+    expected_outcome: >
+      You can engineer detections for defense-evasion tampering events and, crucially, for the suspicious
+      absence of data that a successful evasion creates, turning an attacker's attempt to go dark into a
+      high-value signal.
+    quiz:
+      - prompt: Why are defense-evasion actions good detection targets?
+        options:
+          - They are very common and benign
+          - Few legitimate activities clear logs or disable the EDR, so detections here have a strong signal
+          - They cannot be detected
+          - They only occur offline
+        answer: 1
+        explanation: Because evasion actions are rarely legitimate, detections for them are high-signal and need little tuning.
+      - prompt: The hardest evasion to catch with event-based rules is when the attacker
+        options:
+          - Makes lots of noise
+          - Succeeds in stopping the telemetry, so there is no event to match
+          - Uses a known signature
+          - Sends an email
+        answer: 1
+        explanation: If the sensor is disabled there is no event, so you must detect the resulting absence.
+      - prompt: An "absence" detection works by
+        options:
+          - Matching a malicious signature
+          - Alerting when something that should be reporting (a host, an EDR agent, a log source) goes silent
+          - Deleting logs
+          - Ignoring quiet sources
+        answer: 1
+        explanation: Expectation-based detections turn the silence a successful evasion creates into a signal.
+      - prompt: A direct tampering detection such as "event log cleared" can be
+        options: [Low priority always, High severity with little tuning, since few legitimate activities clear logs, Disabled safely, Ignored]
+        answer: 1
+        explanation: Log-clearing is rarely legitimate, so it warrants a high-severity, low-tuning detection with a small allow-list.

@@ -986,3 +986,96 @@ lessons:
           - Granting more roles
         answer: 1
         explanation: Requiring more than one party for a sensitive action stops a single account from completing it.
+  - slug: sec-control-types
+    title: Security Control Types and Functions
+    order: 12
+    difficulty: beginner
+    summary: Classify security controls by how they are implemented (technical, administrative, physical) and what they do (preventive, detective, corrective and more), a vocabulary that underpins how defences are designed and assessed.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:1.1", "secplus:5.1", "sc900:1"]
+    learning_objectives:
+      - Classify controls by category (technical, administrative, physical)
+      - Classify controls by function (preventive, detective, corrective, and others)
+      - Use the taxonomy to find gaps and design balanced defences
+    theory: |
+      Security professionals need a shared vocabulary for the defences they deploy, and that vocabulary is the
+      classification of **security controls** along two axes: how a control is implemented and what it does.
+      Getting fluent in it matters because it is how defences are designed, discussed and assessed, and it is
+      how you spot that a system is strong in one dimension and dangerously weak in another.
+
+      The first axis is **category**, how the control is implemented. **Technical** (or logical) controls are
+      enforced by technology: firewalls, encryption, access control lists, antivirus. **Administrative** (or
+      managerial) controls are policies, procedures and processes: security policies, training, background
+      checks, change management. **Physical** controls protect the tangible world: locks, fences, guards,
+      cameras. A sound program uses all three, because a brilliant technical control is undone by an
+      administrative gap (no process to review access) or a physical one (anyone can walk in and take the
+      server).
+
+      The second axis is **function**, what the control does relative to an incident. **Preventive** controls
+      stop an incident before it happens (a firewall blocking traffic, a lock). **Detective** controls identify
+      that something happened (IDS alerts, log monitoring, cameras). **Corrective** controls fix or limit damage
+      after the fact (restoring from backup, patching the exploited flaw). The model also names **deterrent**
+      controls (discouraging an attacker, like warning signs), **compensating** controls (an alternative when
+      the primary control is not feasible), and **directive** controls (instructing behaviour, like a policy).
+      The practical power of the taxonomy is in finding **gaps**: a system with strong preventive controls but
+      no detective ones will be breached silently, and one with detection but no corrective capability will see
+      the attack but not recover. Mapping your controls across both axes reveals where you are over- and
+      under-invested, which is exactly how a defender turns a pile of tools into a balanced, layered defence.
+    examples:
+      - title: Two axes of classification
+        body: |
+          category:  technical (firewall) | administrative (policy) | physical (lock)
+          function:  preventive (block) | detective (alert) | corrective (restore)
+                     + deterrent, compensating, directive
+          every control has one of each.
+      - title: Finding a gap with the taxonomy
+        body: |
+          strong preventive, NO detective -> breached silently (never notice)
+          detective, NO corrective        -> see the attack, can't recover
+          mapping both axes reveals where you're under-invested.
+    exercise:
+      title: Classify controls and find the gaps
+      environment: A described environment with a set of existing controls (or your own context) and a document or spreadsheet
+      tools: [A list of controls, a spreadsheet or document, a notes file]
+      steps:
+        - For several existing controls, classify each by category (technical, administrative, physical).
+        - Classify each by function (preventive, detective, corrective, or another type) and explain the choice.
+        - Give an example of a control that is strong technically but undermined by a missing administrative or physical control.
+        - Map the controls across both axes and identify where the environment is over-invested and where it has a gap.
+        - For one gap (such as no detective controls for a critical asset), recommend a control to fill it.
+        - Explain how a compensating control would be used when a primary control is not feasible.
+      deliverable: A control inventory classified on both axes, an identified gap with a recommended control to fill it, and an example of a compensating control.
+    expected_outcome: >
+      You can classify security controls by category and function, use the taxonomy to find where defences are
+      over- or under-invested, and design a balanced mix of preventive, detective and corrective controls
+      across technical, administrative and physical categories.
+    quiz:
+      - prompt: A firewall is which category of control?
+        options: [Administrative, Technical (logical), Physical, Directive]
+        answer: 1
+        explanation: A firewall is enforced by technology, making it a technical/logical control.
+      - prompt: Detective controls
+        options:
+          - Stop an incident before it happens
+          - Identify that something happened (such as IDS alerts or log monitoring)
+          - Restore from backup
+          - Discourage attackers
+        answer: 1
+        explanation: Detective controls reveal that an event occurred, as opposed to preventing or correcting it.
+      - prompt: A system with strong preventive but no detective controls will
+        options:
+          - Be perfectly secure
+          - Tend to be breached silently, because nothing reveals a successful attack
+          - Recover automatically
+          - Need no further controls
+        answer: 1
+        explanation: Without detection, a successful breach goes unnoticed, which is why both functions are needed.
+      - prompt: A compensating control is
+        options:
+          - A control that never works
+          - An alternative control used when the primary control is not feasible
+          - A physical lock only
+          - A type of malware
+        answer: 1
+        explanation: Compensating controls provide equivalent protection when the preferred control cannot be implemented.

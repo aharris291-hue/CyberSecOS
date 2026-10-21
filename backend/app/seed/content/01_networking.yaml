@@ -925,3 +925,98 @@ lessons:
         options: [Always fine, A high-value signal to confirm against what is normally allowed, A backup, A routine broadcast]
         answer: 1
         explanation: Unexpected crossings toward sensitive zones are classic lateral-movement signals worth investigating.
+  - slug: net-proxy-tls-inspection
+    title: Web Proxies, Gateways and TLS Inspection
+    order: 12
+    difficulty: intermediate
+    summary: Understand how forward proxies and secure web gateways control and inspect outbound web traffic, why TLS inspection is needed to see inside encryption, and the trade-offs it brings.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:3.2", "secplus:4.4", "cysa:1.1"]
+    learning_objectives:
+      - Explain how forward proxies and secure web gateways control outbound traffic
+      - Describe why and how TLS inspection reveals encrypted content
+      - Weigh the security value of inspection against its privacy and risk trade-offs
+    theory: |
+      Most of what users and malware do reaches the internet over the web, so controlling and seeing outbound
+      web traffic is a high-value capability. A **forward proxy** sits between users and the internet: every web
+      request passes through it, so it can enforce policy (block categories of sites, known-bad domains and
+      file types), cache content, and, importantly, **log** every request for the SOC. A **secure web gateway**
+      (SWG) is the modern, feature-rich version, adding malware scanning, URL filtering, data-loss checks and
+      threat intelligence. Routing web traffic through such a choke point turns a sprawling, invisible flow into
+      something policy-controlled and observable.
+
+      The complication is **encryption**. The majority of web traffic is now HTTPS, which hides the content, and
+      the URL path, from a proxy that only sees the destination. **TLS inspection** (also called SSL inspection
+      or break-and-inspect) lets the gateway decrypt, examine, and re-encrypt traffic so it can apply malware
+      scanning and policy to the actual content. It works by having the gateway act as a trusted man-in-the-
+      middle: clients trust a certificate the organisation controls, so the gateway can terminate and re-
+      establish the TLS session. Without it, an SWG is largely blind to the inside of encrypted traffic, which
+      is where modern malware and data exfiltration hide.
+
+      Inspection is powerful but carries real **trade-offs** to weigh honestly. It raises privacy concerns
+      (the organisation can see inside employees' encrypted sessions, so sensitive categories like banking and
+      health are usually exempted), it can break applications that use certificate pinning or mutual TLS, and
+      the inspection point itself becomes a high-value target and a potential single point of failure holding
+      decrypted traffic. The engineering decision is therefore selective: inspect what policy and risk justify,
+      exempt what privacy or compatibility require, and protect the inspection infrastructure well. For the
+      analyst, the proxy and gateway logs are a primary detection source, revealing connections to malicious
+      sites, large uploads, and odd user-agents, so understanding what the gateway can and cannot see (encrypted
+      versus inspected) is essential to interpreting them.
+    examples:
+      - title: What a proxy/SWG adds
+        body: |
+          user -> [proxy/SWG: policy + malware scan + logging] -> internet
+          blocks bad categories/domains/file types; logs every request for the SOC
+          turns invisible outbound web into a controlled, observable choke point.
+      - title: TLS inspection trade-off
+        body: |
+          without: HTTPS content hidden -> malware/exfil inside encryption unseen
+          with:    gateway decrypts/inspects/re-encrypts (trusted MITM)
+          but: privacy concerns, breaks cert-pinned apps, high-value decryption point
+          -> inspect selectively, exempt sensitive categories.
+    exercise:
+      title: Design web-gateway policy and inspection scope
+      environment: A described organisation and its web-access needs, plus sample proxy logs (or a scenario)
+      tools: [A scenario or sample proxy logs, a document, a notes file]
+      steps:
+        - Explain what a forward proxy or secure web gateway controls and logs for outbound web traffic.
+        - Explain why TLS inspection is needed to see inside HTTPS and how the gateway acts as a trusted intermediary.
+        - Decide which traffic to inspect and which to exempt (for example banking, health) and justify the privacy trade-off.
+        - Identify one application that TLS inspection could break and how you would handle it.
+        - Review sample proxy logs and identify one request worth investigating (malicious domain, large upload, odd user-agent).
+        - State what the gateway can and cannot see for an encrypted-but-not-inspected session, and how that affects your analysis.
+      deliverable: A web-gateway design with an inspection-versus-exemption policy and its trade-offs, a broken-app handling note, and a proxy-log review identifying one suspicious request with the visibility caveat.
+    expected_outcome: >
+      You can explain how proxies and secure web gateways control and log outbound web traffic, why TLS
+      inspection is needed to see inside encryption, and weigh inspection's security value against its privacy,
+      compatibility and risk trade-offs when reading gateway logs.
+    quiz:
+      - prompt: A secure web gateway improves security mainly by
+        options:
+          - Speeding up the internet
+          - Routing outbound web traffic through a choke point that enforces policy, scans for malware and logs every request
+          - Encrypting the disk
+          - Replacing the firewall entirely
+        answer: 1
+        explanation: An SWG makes sprawling outbound web traffic policy-controlled and observable.
+      - prompt: TLS inspection is needed because
+        options:
+          - HTTPS is slow
+          - Without it the gateway cannot see inside encrypted traffic, where malware and exfiltration hide
+          - It disables logging
+          - Encryption is illegal
+        answer: 1
+        explanation: Most web traffic is HTTPS, so inspection is required to apply scanning and policy to the content.
+      - prompt: A genuine trade-off of TLS inspection is
+        options:
+          - It makes traffic faster
+          - Privacy concerns and breaking apps that use certificate pinning, plus a high-value decryption point
+          - It removes all risk
+          - It needs no certificates
+        answer: 1
+        explanation: Inspection raises privacy issues, can break pinned apps, and concentrates decrypted traffic at a sensitive point.
+      - prompt: For an encrypted session the gateway does NOT inspect, the proxy log shows
+        options: [The full content, The destination and metadata but not the encrypted content, Nothing at all, The user's password]
+        answer: 1
+        explanation: Without inspection the proxy sees the destination and metadata but not the encrypted payload.

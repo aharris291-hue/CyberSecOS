@@ -1032,3 +1032,97 @@ lessons:
           - A list of users
         answer: 1
         explanation: Ordering corroborated artefacts into a timeline answers what happened, when and how.
+  - slug: ir-network-forensics
+    title: Network Forensics and Packet Analysis
+    order: 12
+    difficulty: advanced
+    summary: Use captured network traffic and flow records to reconstruct what crossed the wire during an incident, what was communicated, exfiltrated or controlled, when endpoint evidence is missing or untrusted.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["cysa:3.2", "cysa:1.4", "secplus:4.8"]
+    learning_objectives:
+      - Explain what network evidence adds to an incident investigation
+      - Analyse packet captures and flow data to reconstruct activity
+      - Work with encrypted traffic using metadata when content is hidden
+    theory: |
+      When a host is compromised, its own logs may be deleted or untrustworthy, but what crossed the **network**
+      is a largely independent record, and network forensics uses it to reconstruct an incident. Two kinds of
+      evidence matter. **Full packet capture** (PCAP) records the actual traffic, letting an analyst see
+      connections, extract transferred files, read unencrypted protocols, and reconstruct sessions, the richest
+      but most storage-hungry source. **Flow data** (NetFlow and similar) records metadata about every
+      connection, who talked to whom, when, how much, without the content, which is far cheaper to keep and
+      often available for longer, making it invaluable for seeing the shape of an incident across time.
+
+      Network evidence answers questions endpoint evidence often cannot. From captures and flows you can
+      establish **what communicated with what** (did the compromised host reach a command-and-control server?),
+      **how much data left** (the volume and destination of exfiltration), **when** events happened (building a
+      timeline independent of the host's clock and logs), and often recover the actual **content or files**
+      transferred over unencrypted channels. Because this record sits outside the compromised host, it is
+      especially valuable when an attacker has tampered with endpoint logs, the network saw what the host tried
+      to hide.
+
+      The modern complication is **encryption**: much traffic is HTTPS, so the content is hidden even in a full
+      capture. Network forensics adapts by working with **metadata** that remains visible, the destinations,
+      timing, volumes, TLS handshake details (certificates, server names, JA3-style fingerprints), and
+      connection patterns like beaconing, which reveal a great deal without the plaintext. A regular, small,
+      encrypted connection to an unfamiliar host is a C2 beacon regardless of encryption; a large encrypted
+      upload to an unknown destination is likely exfiltration. The analyst's discipline is to combine PCAP where
+      available, flow data for breadth and history, and metadata analysis for encrypted traffic, corroborating
+      the network story with endpoint evidence where it can be trusted. Network forensics is often where the
+      independent, tamper-resistant account of what an intrusion actually did is built.
+    examples:
+      - title: Packet capture versus flow data
+        body: |
+          PCAP:  full content -> extract files, read unencrypted protocols (rich, heavy)
+          flow:  metadata only (who/when/how much) -> cheap, kept longer, shows the shape
+          use flow for breadth/history, PCAP for depth.
+      - title: Metadata reveals encrypted C2/exfil
+        body: |
+          content encrypted, but: regular small connection to an unfamiliar host -> beacon
+          large encrypted upload to an unknown destination -> likely exfiltration
+          destinations, timing, volumes and TLS details still tell the story.
+    exercise:
+      title: Reconstruct an incident from network evidence
+      environment: A sample packet capture and/or flow data from an incident (provided or lab-generated), analysed with network-analysis tools
+      tools: [A PCAP and/or flow dataset, packet/flow analysis tools, a notes file]
+      steps:
+        - Explain what network evidence adds to an investigation, especially when endpoint logs are untrusted.
+        - Distinguish full packet capture from flow data and when each is most useful.
+        - From the data, establish what the compromised host communicated with and build a timeline of the activity.
+        - Identify and quantify any data exfiltration (volume and destination) and any command-and-control pattern.
+        - For encrypted traffic, use metadata (destinations, timing, volumes, TLS details, beaconing) to draw conclusions without the content.
+        - Corroborate the network story with endpoint evidence where it can be trusted, and note what remains uncertain.
+      deliverable: A network-forensics write-up reconstructing the incident's communications and timeline, the exfiltration and C2 identified, the metadata-based analysis of encrypted traffic, and corroboration with endpoint evidence.
+    expected_outcome: >
+      You can use packet captures and flow data to reconstruct an incident's communications, exfiltration and
+      timeline independently of the compromised host, and analyse encrypted traffic through metadata when the
+      content is hidden.
+    quiz:
+      - prompt: Why is network evidence especially valuable when a host is compromised?
+        options:
+          - It is always encrypted
+          - It is a largely independent record outside the host, so it survives even if endpoint logs are tampered with
+          - It is cheaper than disks
+          - It shows nothing useful
+        answer: 1
+        explanation: The network record sits outside the compromised host, capturing what the attacker tried to hide locally.
+      - prompt: Flow data (such as NetFlow) records
+        options:
+          - Full packet content
+          - Connection metadata (who, when, how much) without the content
+          - Only passwords
+          - Disk activity
+        answer: 1
+        explanation: Flow data captures metadata about connections, cheap to keep and good for seeing the shape of activity over time.
+      - prompt: For encrypted traffic, network forensics relies on
+        options:
+          - Decrypting everything always
+          - Metadata such as destinations, timing, volumes and TLS details, plus patterns like beaconing
+          - Nothing, it is useless
+          - The host's logs only
+        answer: 1
+        explanation: Even without content, metadata and connection patterns reveal C2 and exfiltration.
+      - prompt: A regular, small encrypted connection to an unfamiliar host suggests
+        options: [Normal browsing, A command-and-control beacon despite the encryption, A backup, A software update]
+        answer: 1
+        explanation: Regular small connections to an unknown host indicate beaconing regardless of whether the content is encrypted.

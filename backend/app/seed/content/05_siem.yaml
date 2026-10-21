@@ -1038,3 +1038,101 @@ lessons:
         options: [Instantly searchable, Cheaper but slower, often needing restoration before querying, Deleted, Unusable]
         answer: 1
         explanation: Cold storage is cost-effective for long retention but slower to query, sometimes requiring restore.
+  - slug: siem-architecture-pipeline
+    title: SIEM Architecture and the Data Pipeline
+    order: 12
+    difficulty: intermediate
+    summary: Understand how a SIEM is built, from collection and forwarding through parsing, indexing and storage, so you can reason about coverage, reliability and why data sometimes does not arrive.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["sc200:1", "secplus:4.4", "cysa:1.3"]
+    learning_objectives:
+      - Describe the stages of a SIEM data pipeline from source to search
+      - Explain collection methods and where data loss or delay occurs
+      - Reason about SIEM reliability, scaling and coverage gaps
+    theory: |
+      A SIEM is often treated as a magic box where logs go in and alerts come out, but understanding its
+      **architecture** is what lets an analyst reason about why a detection fired late, why some data is
+      missing, or whether a source is even being collected. The pipeline has recognisable stages:
+      **collection** from sources, **transport/forwarding** to the platform, **parsing and normalisation** into
+      a common schema, **indexing** for fast search, and **storage** across tiers. A failure or bottleneck at
+      any stage affects everything downstream, so detection quality depends on the whole pipeline working, not
+      just on the rules.
+
+      **Collection** happens in a few ways, and each has implications. **Agents** on endpoints collect and
+      forward richly but must be deployed and maintained. **Agentless** collection pulls from APIs or receives
+      syslog, simpler but sometimes less detailed or reliable. **Forwarders** and intermediate collectors
+      aggregate and buffer data on its way to the platform, which matters because buffering is what prevents log
+      loss during a spike or an outage. Understanding the collection method for each source tells you how timely
+      and complete that data is, and where it could silently stop. A source that was never onboarded, or an
+      agent that died, is a blind spot the rules can never compensate for.
+
+      Two architectural realities shape the analyst's expectations. **Scale**: SIEMs ingest enormous volumes,
+      so ingestion lag, index capacity and storage tiering all affect what is searchable and how fast, which is
+      why a query over months of data is slow and why very high-volume sources are sometimes sampled or
+      filtered. **Reliability**: because the pipeline can drop or delay data, monitoring the pipeline itself,
+      ingestion rates per source, sources that go quiet, forwarder health, is part of running a SIEM; a source
+      that stops sending is both an operational problem and a possible security signal (an attacker disabling
+      logging). For the analyst, knowing the architecture means knowing the limits of the data: what is
+      collected, how current it is, what might be missing, and therefore how much to trust an absence of alerts.
+      A detection is only as good as the pipeline feeding it.
+    examples:
+      - title: The pipeline stages
+        body: |
+          source -> collection (agent/agentless) -> forwarder (buffer)
+          -> parse/normalise -> index -> storage (hot/warm/cold)
+          a failure at any stage affects everything downstream.
+      - title: An absence that matters
+        body: |
+          a source stops sending events
+          -> operational problem (agent died?) AND possible security signal (logging disabled?)
+          monitoring ingestion per source catches both.
+    exercise:
+      title: Map a SIEM pipeline and find its weak points
+      environment: A described SIEM deployment with several log sources (or a lab), plus a diagram or document
+      tools: [A SIEM description or lab, a diagram or document, a notes file]
+      steps:
+        - Draw the pipeline stages from source to searchable data and explain what each stage does.
+        - For two sources, identify the collection method (agent or agentless) and what that implies for timeliness and completeness.
+        - Explain where buffering occurs and why it matters during an ingestion spike or outage.
+        - Identify how scale (ingestion lag, index capacity, storage tiers) affects what is searchable and how fast.
+        - Describe how you would monitor the pipeline itself and what a source going quiet could mean.
+        - Explain how understanding the architecture changes how much you trust an absence of alerts.
+      deliverable: A SIEM pipeline map with the collection methods, buffering and scale considerations, a pipeline-monitoring approach, and an explanation of how architecture bounds trust in the data.
+    expected_outcome: >
+      You can describe a SIEM's data pipeline from collection to search, explain where data is lost or delayed,
+      and reason about reliability, scale and coverage so you know the limits of the data and how much to trust
+      an absence of alerts.
+    quiz:
+      - prompt: The stages of a SIEM data pipeline include
+        options:
+          - Only alerting
+          - Collection, forwarding, parsing/normalisation, indexing and storage
+          - Only storage
+          - Only dashboards
+        answer: 1
+        explanation: Data flows through collection, transport, parsing, indexing and storage before it is searchable.
+      - prompt: Why do forwarders and collectors buffer data?
+        options:
+          - To delete it
+          - To prevent log loss during an ingestion spike or outage
+          - To encrypt the disk
+          - To slow it down
+        answer: 1
+        explanation: Buffering holds data when the platform is busy or briefly unavailable, preventing loss.
+      - prompt: A source that stops sending events to the SIEM is
+        options:
+          - Always fine
+          - Both an operational problem and a possible security signal (such as disabled logging)
+          - Proof of a fast network
+          - A storage upgrade
+        answer: 1
+        explanation: A quiet source may be a failed agent or an attacker disabling logging, so it warrants attention.
+      - prompt: Understanding SIEM architecture helps an analyst because it reveals
+        options:
+          - Nothing useful
+          - The limits of the data, what is collected, how current it is, and what might be missing
+          - Only the vendor's price
+          - The colour of dashboards
+        answer: 1
+        explanation: Knowing the pipeline tells you how complete and timely the data is, and how much to trust an absence of alerts.

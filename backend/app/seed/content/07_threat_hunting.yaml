@@ -1015,3 +1015,98 @@ lessons:
           - Disable the sensor
         answer: 1
         explanation: Legitimate activity can mimic evasion, so confirmation against normal causes precedes escalation.
+  - slug: hunt-supply-chain
+    title: Hunting Supply-Chain and Trusted-Relationship Threats
+    order: 12
+    difficulty: advanced
+    summary: Hunt for compromise that arrives through trusted channels, a poisoned software update, a compromised vendor, a malicious dependency, where the malicious activity wears the clothes of something legitimate.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["cysa:1.4", "cysa:3.1", "sc200:4"]
+    learning_objectives:
+      - Explain how supply-chain and trusted-relationship compromises work
+      - Hunt for malicious activity originating from trusted software or vendors
+      - Focus on behaviour, since the source itself appears legitimate
+    theory: |
+      The hardest intrusions to catch are those that arrive through a **trusted channel**. In a supply-chain
+      attack, the adversary compromises something the target already trusts, a software vendor's build pipeline
+      (so a signed update carries a backdoor), a popular open-source dependency, a managed service provider with
+      access into many customers, so the malicious code or access enters wearing legitimate clothes. Trusted-
+      relationship attacks are similar: an attacker uses a third party's legitimate access (a vendor's VPN, an
+      MSP's management tooling) to reach the target. These defeat defences built on "is this source trusted?",
+      because the source genuinely is.
+
+      Because the source looks legitimate, hunting must focus on **behaviour**, not origin. A signed, trusted
+      application is normally benign, but a hunter asks what it does: does this software, after an update
+      suddenly reach out to a new external domain, spawn a command interpreter, read credentials, or behave in a
+      way it never did before? A trusted vendor connection is expected, but does it suddenly touch systems it
+      never accessed, at odd hours, or move toward sensitive data? The key shift is to baseline the normal
+      behaviour of trusted software and relationships and hunt for deviations, the update that changed what the
+      application does, the vendor account that expanded its reach, because the compromise reveals itself in
+      behaviour even when the identity and signature check out.
+
+      This is genuinely difficult and is where hunting earns its keep, because automated prevention tends to
+      wave trusted things through. The hunter leans on anomaly detection over trusted entities, threat
+      intelligence about known supply-chain incidents (so you can check whether you run an affected version or
+      vendor), and scrutiny of the trust relationships themselves, what access do our vendors and software
+      actually have, and is it monitored and least-privilege. The mindset is to extend zero-trust thinking into
+      hunting: trust is not a free pass from scrutiny, and even signed, vendor-supplied, long-standing things
+      are hunted by what they do. As always, a deviation is a lead confirmed against baseline and corroborating
+      activity before escalation, but supply-chain hunting is often the only way these high-impact, low-
+      frequency compromises are found.
+    examples:
+      - title: Compromise through a trusted channel
+        body: |
+          vendor build pipeline compromised -> signed update carries a backdoor
+          signature checks out, source is trusted -> prevention waves it through
+          only behaviour gives it away.
+      - title: Behaviour betrays a trusted source
+        body: |
+          trusted app, AFTER an update: reaches a new external domain + spawns a shell
+          vendor account: suddenly touches systems it never accessed, at 3am
+          baseline the trusted thing; hunt the deviation.
+    exercise:
+      title: Hunt for a supply-chain or trusted-relationship compromise
+      environment: Sample endpoint, network and access logs (provided or lab-generated) involving trusted software or a vendor connection with some anomalous behaviour
+      tools: [A SIEM or notebook, sample logs, threat-intel references on supply-chain incidents, a notes file]
+      steps:
+        - Explain how supply-chain and trusted-relationship compromises bypass defences built on trusting the source.
+        - Baseline the normal behaviour of a trusted application or a vendor connection in the data.
+        - Hunt for a deviation (a trusted app reaching new destinations or spawning a shell after an update; a vendor account expanding its reach) and describe what you find.
+        - Explain why focusing on behaviour rather than origin is necessary here.
+        - Use threat intelligence to check whether an affected version or vendor is present.
+        - Scrutinise one trust relationship (what access a vendor or software actually has) and recommend tightening it, then state how you would confirm the finding before escalating.
+      deliverable: A hunt write-up explaining the trusted-channel problem, the baseline and the behavioural deviation found, the threat-intel check, a trust-relationship tightening recommendation, and the confirmation step.
+    expected_outcome: >
+      You can hunt for supply-chain and trusted-relationship compromises by focusing on the behaviour of
+      trusted software and vendors rather than their origin, baselining what is normal and hunting deviations,
+      and scrutinising the trust relationships themselves.
+    quiz:
+      - prompt: Why are supply-chain compromises so hard to catch?
+        options:
+          - They are very loud
+          - The malicious code or access arrives through a trusted, often signed, channel, defeating source-based trust
+          - They never use real software
+          - They only affect one machine
+        answer: 1
+        explanation: The source genuinely is trusted, so defences based on trusting it wave the attack through.
+      - prompt: Hunting supply-chain threats must focus on
+        options:
+          - Whether the source is signed
+          - Behaviour, since the source itself appears legitimate
+          - The file size only
+          - The vendor's logo
+        answer: 1
+        explanation: Because identity and signature check out, only anomalous behaviour reveals the compromise.
+      - prompt: A trusted application that, after an update, suddenly reaches a new external domain and spawns a shell is
+        options: [Always fine, A behavioural deviation worth hunting despite the trusted source, A normal backup, Proof of a patch]
+        answer: 1
+        explanation: New, out-of-character behaviour from trusted software is exactly the supply-chain signal to investigate.
+      - prompt: Applying zero-trust thinking to hunting means
+        options:
+          - Trusting signed software completely
+          - Treating trust as no free pass from scrutiny, hunting even vendor-supplied, signed things by what they do
+          - Ignoring behaviour
+          - Only hunting untrusted sources
+        answer: 1
+        explanation: Zero-trust hunting scrutinises trusted entities by behaviour rather than exempting them.
