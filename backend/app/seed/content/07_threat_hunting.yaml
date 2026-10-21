@@ -1110,3 +1110,199 @@ lessons:
           - Only hunting untrusted sources
         answer: 1
         explanation: Zero-trust hunting scrutinises trusted entities by behaviour rather than exempting them.
+  - slug: hunt-attack-methodology
+    title: ATT&CK-Driven Hunting Methodology
+    order: 13
+    difficulty: advanced
+    summary: Learn a repeatable, framework-driven hunting method that picks a technique from MITRE ATT&CK, forms a hypothesis, gathers the data, analyses, and feeds results back into detections.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.4", "sc200:2", "cysa:1.4"]
+    learning_objectives:
+      - Use MITRE ATT&CK to select and scope a hunt
+      - Follow a repeatable hunt loop from hypothesis to outcome
+      - Convert hunt findings into durable detections
+    theory: |
+      Hunting can drift into aimless log-staring without a method, and the most durable method is **driven by
+      MITRE ATT&CK**. Rather than hunting for a vague sense of badness, the hunter picks a specific **technique**
+      that matters to the organisation (informed by threat intelligence about the actors targeting its sector)
+      and asks a focused question: if an adversary used this technique here, what would it look like, and do we
+      see it? Starting from a named technique scopes the hunt, points directly at the data sources needed, and
+      makes the result measurable, because afterwards you can say the environment was examined for that specific
+      behaviour.
+
+      The hunt then follows a repeatable **loop**. Form a **hypothesis** grounded in the technique, for example
+      that an attacker is using a scheduled task for persistence. Identify the **data** that would reveal it
+      (process-creation logs, task-creation events, autoruns) and confirm you actually collect it, because a hunt
+      is only as good as its telemetry. **Analyse**: pull the relevant data and apply techniques like stack
+      counting (grouping and counting to make the rare stand out), timelining, and outlier analysis to separate
+      normal from suspicious. **Investigate** promising leads to a conclusion, and document what was examined and
+      found. Crucially, the loop does not end with a yes or no: every hunt either finds something, which becomes
+      an incident, or finds nothing, which still teaches you about your visibility and your environment's normal.
+
+      The output that makes hunting pay off over time is **feedback into detection**. When a hunt finds a
+      malicious pattern, that pattern becomes a new SIEM rule so the SOC catches it automatically next time; the
+      hunt should not have to be repeated by hand. When a hunt reveals a visibility gap (you could not test a
+      technique because you do not collect the data), that becomes a logging requirement. This is what separates
+      mature hunting from one-off curiosity: it steadily converts human investigation into automated coverage and
+      better telemetry, measurably expanding what the organisation can detect. The ATT&CK technique list doubles
+      as a backlog, letting a team work systematically through the techniques most relevant to its threat model.
+    examples:
+      - title: The hunt loop
+        body: |
+          pick technique (ATT&CK, threat-intel driven)
+          -> hypothesis -> identify + confirm data -> analyse (stack count, timeline, outliers)
+          -> investigate leads -> document
+          -> FEEDBACK: finding -> new detection; gap -> logging requirement.
+      - title: Stack counting
+        body: |
+          group scheduled-task creators by parent process, count occurrences
+          thousands: normal admin tooling   |   one odd parent, once: investigate
+          making the rare stand out against the common.
+    exercise:
+      title: Run an ATT&CK-driven hunt end to end
+      environment: A described environment with available data sources and a chosen technique (or a scenario)
+      tools: [A scenario or sample telemetry, the ATT&CK reference, a document, a notes file]
+      steps:
+        - Pick an ATT&CK technique relevant to a described threat model and justify the choice.
+        - Write a concrete, testable hypothesis for that technique in this environment.
+        - Identify the data sources needed and state whether they are collected.
+        - Describe the analysis you would apply (stack counting, timelining, outliers) to separate normal from suspicious.
+        - Decide an outcome for a sample lead (benign, inconclusive, or incident) with reasoning.
+        - Convert the result into either a new detection rule or a logging requirement.
+      deliverable: A documented hunt for one ATT&CK technique, covering hypothesis, data sources, analysis approach, a lead decision, and a concrete detection or logging follow-up.
+    expected_outcome: >
+      You can run a repeatable, ATT&CK-driven hunt from technique selection through hypothesis, data, analysis and
+      outcome, and convert every hunt into a durable detection or a logging improvement.
+    quiz:
+      - prompt: Starting a hunt from a specific ATT&CK technique helps because it
+        options:
+          - Guarantees you find an attacker
+          - Scopes the hunt, points at the data needed, and makes the result measurable
+          - Replaces the need for data
+          - Avoids forming any hypothesis
+        answer: 1
+        explanation: A named technique gives the hunt focus, a data target, and a measurable outcome.
+      - prompt: A hunt that finds nothing is still valuable because it
+        options:
+          - Wasted no time
+          - Teaches you about your visibility and your environment's normal, and can reveal logging gaps
+          - Proves there are no attackers ever
+          - Means logging can stop
+        answer: 1
+        explanation: Even an empty hunt informs visibility and baselines and can expose telemetry gaps.
+      - prompt: Stack counting is an analysis technique that
+        options:
+          - Encrypts the logs
+          - Groups and counts values so rare occurrences stand out against common ones
+          - Deletes duplicate events
+          - Blocks traffic
+        answer: 1
+        explanation: Stack counting surfaces outliers by making the infrequent visible against the frequent.
+      - prompt: The feedback step that makes hunting pay off over time is
+        options:
+          - Forgetting the result
+          - Turning a found pattern into a new detection, or a visibility gap into a logging requirement
+          - Repeating the same manual hunt forever
+          - Deleting the hypothesis
+        answer: 1
+        explanation: Converting findings into detections and logging requirements grows automated coverage.
+  - slug: hunt-analytics-techniques
+    title: Analytics-Driven Hunting Techniques
+    order: 14
+    difficulty: advanced
+    summary: Learn the data-analysis techniques that make hunting scalable, covering frequency and stack analysis, outlier detection, long-tail analysis and clustering, applied to large volumes of telemetry.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.4", "sc200:2", "cysa:1.4"]
+    learning_objectives:
+      - Apply frequency and stack analysis to surface rare activity
+      - Use long-tail and outlier analysis to find anomalies at scale
+      - Choose the right analytic technique for a hunting question
+    theory: |
+      When telemetry is measured in millions of events, a hunter cannot read it all, so hunting becomes a
+      **data-analysis** discipline that makes the suspicious stand out mathematically. The foundational technique
+      is **frequency analysis**, often called **stack counting**: group events by a meaningful field and count how
+      often each value appears. Grouping process executions by their hash, or scheduled-task creators by parent
+      process, turns a flood into a ranked list where the overwhelmingly common entries are almost always
+      legitimate and the handful of rare ones deserve a look. The insight is that malicious activity is usually
+      **rare** against a backdrop of repetitive normal behaviour, so counting is a cheap, powerful way to make it
+      visible.
+
+      Several related techniques extend this. **Long-tail analysis** focuses deliberately on the least frequent
+      values, the one-off DNS domain contacted once, the binary that ran on a single host, the user-agent seen
+      exactly once, because attacker tooling and infrastructure are often unique and therefore live in the tail.
+      **Outlier detection** looks for values that deviate from a numeric baseline, such as a host transferring far
+      more data than its peers or a user logging in at an unusual hour. **Clustering and comparison** group similar
+      entities so that one that behaves differently from its cluster (a server acting unlike other servers of its
+      role) stands out. Each technique answers the same underlying question from a different angle: what here does
+      not look like everything else?
+
+      Using these well requires **judgement about normal and about data volume**. Rare is not the same as
+      malicious: new software, a one-off admin action, or a rarely used but legitimate tool will all appear in the
+      tail, so the output of these techniques is a shortlist to investigate, not a verdict. The analyst must also
+      scope sensibly, counting over the right window and the right population, because a value that is rare across
+      the whole fleet may be normal for one team. The payoff is scalability: these techniques let one hunter
+      meaningfully examine enormous datasets and repeatedly find footholds that signature-based detection missed,
+      and a pattern found this way should be converted into a detection so the work is not repeated. For the
+      analyst, mastering frequency, long-tail and outlier analysis is what turns hunting from reading logs into
+      interrogating data.
+    examples:
+      - title: Stack counting
+        body: |
+          group process executions by hash, count per hash
+          millions collapse to a ranked list: common = almost always legit; rare = investigate
+          malicious activity is usually RARE against repetitive normal.
+      - title: Long-tail and outliers
+        body: |
+          long tail: the domain contacted ONCE, the binary on ONE host -> attacker infra lives here
+          outlier: host sending far more data than its peers; logon at an odd hour
+          clustering: the one server behaving unlike others of its role.
+    exercise:
+      title: Apply analytic techniques to a dataset
+      environment: A described large dataset (process, DNS or proxy telemetry) or a sample extract
+      tools: [A scenario or sample telemetry, a document, a notes file]
+      steps:
+        - Explain stack counting and the field you would group by for a given hunt question.
+        - Apply frequency thinking to a sample and identify the rare values worth investigating.
+        - Explain long-tail analysis and give an example value that would appear in the tail.
+        - Describe an outlier-detection approach for a numeric signal (data volume, logon hour).
+        - Explain why rare does not automatically mean malicious and how you would triage the shortlist.
+        - Convert one confirmed finding into a detection so the analysis need not be repeated.
+      deliverable: An analytics-driven hunt applying stack counting and long-tail or outlier analysis to a dataset, a triaged shortlist of rare values, and one detection derived from a finding.
+    expected_outcome: >
+      You can apply frequency, long-tail and outlier analysis to large telemetry to surface rare and anomalous
+      activity, triage the results with judgement about normal, and convert findings into durable detections.
+    quiz:
+      - prompt: Stack counting surfaces suspicious activity by
+        options:
+          - Encrypting the data
+          - Grouping and counting values so the rare ones stand out against common, repetitive normal
+          - Deleting frequent events
+          - Blocking traffic
+        answer: 1
+        explanation: Counting makes rare values visible against the large volume of legitimate, repetitive activity.
+      - prompt: Long-tail analysis deliberately focuses on
+        options:
+          - The most common values
+          - The least frequent values, where unique attacker tooling and infrastructure often live
+          - Encrypted traffic only
+          - The fastest events
+        answer: 1
+        explanation: Attacker artefacts are often unique, so they appear in the infrequent tail of the data.
+      - prompt: A key caution when using these techniques is that
+        options:
+          - Rare always means malicious
+          - Rare does not automatically mean malicious, so the output is a shortlist to investigate, not a verdict
+          - Counting never helps
+          - Outliers are always benign
+        answer: 1
+        explanation: Legitimate new or rarely used activity also appears rare, so results need triage.
+      - prompt: The main advantage of analytics-driven hunting is that it
+        options:
+          - Needs no data
+          - Scales, letting one hunter meaningfully examine enormous datasets and find what signatures missed
+          - Replaces all detections
+          - Only works on small logs
+        answer: 1
+        explanation: Mathematical techniques make huge datasets tractable and reveal footholds signatures miss.

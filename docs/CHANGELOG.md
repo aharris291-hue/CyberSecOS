@@ -6,6 +6,18 @@
 - Every course now has three graded labs (36 in total). The new labs: an internal SMB sweep and lateral movement in NetFlow; a quarterly user access review (active leavers, missing MFA, a shared account, admin creep); credential dumping in Sysmon LSASS access events; cron, systemd and SSH-key persistence on a compromised Linux server; matching a threat-intel feed with expiry dates and a feed error against network logs; confirming a SQL injection from web server logs; living-off-the-land binaries judged by process lineage; auditing a chain of custody with a hash mismatch; measuring detection coverage from an emulation run; evaluating sign-ins against a zero-trust conditional access policy; cloud storage bucket exposure; and a personal data inventory review for special category data and retention.
 - Each one is checked: fact-finding answers are derived from the lab data by `verify` blocks, and the reasoning answers (leavers, feed hygiene, custody gaps, coverage gaps, zero-trust decisions, persistence count) have dedicated checks in `test_lab_content.py`. The suite now fails if any course has fewer than three labs.
 - Tests: 685 backend.
+## Phase 2 - Fourteenth lesson per course (toward 300 hours)
+
+### Catalog to 168 lessons (~184 hours)
+- Added a fourteenth lesson to every course (156 → 168 lessons, ~184 hours), each a distinct topic checked against the existing catalog. New lessons: DHCP, ARP and Layer 2 attacks (Networking); mobile device and BYOD security (Security Foundations); NTLM and relay attacks (Windows); Linux kernel hardening and capabilities (Linux); onboarding and validating log sources (SIEM); application security testing with SAST, DAST and SCA (Vulnerability Management); analytics-driven hunting techniques (Threat Hunting); tabletop exercises and response readiness (Incident Response); detecting privilege escalation (Detection Engineering); hardware root of trust with TPM, HSM and secure boot (Security Architecture); securing infrastructure as code (Cloud); and PCI DSS and payment card security (Governance, Risk and Compliance).
+- Continues the build-out on a deliberate per-course hour split (weighted by certification-objective coverage and distinct material) toward the 300-hour total. All keep the six education-standard sections and the ~18/82 theory/lab split; content-standard, seeding, lab and full backend suites pass.
+
+## Phase 2 - Thirteenth lesson per course (toward 300 hours)
+
+### Catalog to 156 lessons (~171 hours)
+- Added a thirteenth lesson to every course (144 → 156 lessons, ~171 hours), each a distinct topic checked against the existing catalog. New lessons: intrusion detection and prevention systems (Networking); choosing the right cryptographic solution (Security Foundations); Kerberos attacks and their detection (Windows); systemd and cron persistence (Linux); mapping SIEM detections to MITRE ATT&CK (SIEM); reading and scoring vulnerabilities with CVSS (Vulnerability Management); ATT&CK-driven hunting methodology (Threat Hunting); the incident response lifecycle and playbooks (Incident Response); detecting initial access and phishing (Detection Engineering); secure cloud architecture (Security Architecture); shared responsibility and cloud fundamentals (Cloud); and security frameworks, NIST CSF and ISO 27001 (Governance, Risk and Compliance).
+- All keep the six education-standard sections and the ~18/82 theory/lab split; content-standard, seeding, lab and full backend suites pass.
+
 ## Phase 2 - Twelfth lesson per course (toward 300 hours)
 
 ### Catalog to 144 lessons (~158 hours)

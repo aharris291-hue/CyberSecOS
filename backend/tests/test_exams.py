@@ -36,10 +36,15 @@ def test_paper_size_is_bounded(client, auth_headers):
     assert client.get("/api/certifications/secplus/exam/paper?size=999", headers=auth_headers).status_code == 422
 
 
-def test_paper_caps_at_available_questions(client, auth_headers):
-    info = client.get("/api/certifications/sc900/exam", headers=auth_headers).json()
-    body = client.get("/api/certifications/sc900/exam/paper?size=100", headers=auth_headers).json()
-    assert len(body["questions"]) == info["available_questions"]
+def test_paper_caps_at_available_questions(db):
+    # Asking for more questions than a certification has returns all of them,
+    # not duplicates or an error. The API bounds size to MAX_SIZE, and every
+    # certification now holds more than that, so the cap is exercised at the
+    # service layer where it actually happens.
+    available = len(certification_questions(db, "sc900"))
+    questions = build_exam(db, "sc900", available + 50, rng=random.Random(1))
+    assert len(questions) == available
+    assert len({q.id for q in questions}) == available  # no duplicates
 
 
 def test_build_exam_spreads_across_objectives(db):

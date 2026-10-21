@@ -1104,3 +1104,201 @@ lessons:
         options: [Unlimited quotas, Budget limits and quotas plus least-privilege, short-lived credentials, Disabling logging, Sharing one key]
         answer: 1
         explanation: Limits, quotas and least-privilege short-lived credentials bound how much a single compromise can spend or do.
+  - slug: cloud-shared-responsibility
+    title: Shared Responsibility and Cloud Security Fundamentals
+    order: 13
+    difficulty: beginner
+    summary: Establish the foundations of cloud security operations, including the shared-responsibility model, how it shifts across IaaS, PaaS and SaaS, and what the customer must always secure.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:3.1", "sc900:1", "sc900:4"]
+    learning_objectives:
+      - Explain the shared-responsibility model and why it exists
+      - Describe how responsibility shifts across IaaS, PaaS and SaaS
+      - Identify the responsibilities that always remain with the customer
+    theory: |
+      The single most important concept in cloud security is the **shared-responsibility model**, because most
+      cloud breaches stem from misunderstanding it. The provider is responsible for the **security of the cloud**:
+      the physical facilities, the hardware, the network backbone, the hypervisor, and the internals of the
+      managed services they offer. The customer is responsible for **security in the cloud**: how they configure
+      those services, who they grant access to, and the data they store. The breach headlines, an open storage
+      bucket, an over-permissioned access key, a database exposed to the internet, are almost always failures on
+      the customer's side of this line, not the provider's. Knowing exactly where the line sits for each service
+      is therefore the foundation of cloud security operations.
+
+      The line **moves with the service model**. With **Infrastructure as a Service (IaaS)**, you rent virtual
+      machines and networks, so you are responsible for a lot: the operating system, patching, runtime, data and
+      access, while the provider handles the virtualisation and below. With **Platform as a Service (PaaS)**, the
+      provider also manages the operating system and runtime, so you focus on your application, its configuration,
+      and data. With **Software as a Service (SaaS)**, you consume a finished application, so the provider handles
+      almost everything, but you still own your data, your users and their access, and how you configure the
+      application's security settings. Reading a service's documentation to know which model it is and where the
+      boundary falls is a routine operational skill.
+
+      A few responsibilities **always stay with the customer regardless of model**: identity and access management
+      (who can log in and what they can do), the classification and protection of their own data, and the correct
+      configuration of the security controls the provider exposes. This is why cloud security operations
+      concentrate on identity, logging and configuration rather than on patching hypervisors. It is also why the
+      same disciplines appear across every provider: enable and centralise the audit logs, enforce
+      least-privilege access and strong authentication, encrypt sensitive data and manage the keys, and
+      continuously check configuration against a secure baseline. For the analyst, every investigation starts by
+      knowing which side of the responsibility line an issue falls on, because that determines whether the fix is
+      the customer's to make or the provider's to have already made.
+    examples:
+      - title: Security OF vs IN the cloud
+        body: |
+          provider: security OF the cloud (facilities, hardware, hypervisor, managed-service internals)
+          customer: security IN the cloud (configuration, identity, access, data)
+          most breaches (open bucket, leaked key) = customer side.
+      - title: The line moves with the model
+        body: |
+          IaaS: you own OS + patch + runtime + data + access   (most responsibility)
+          PaaS: provider owns OS/runtime; you own app + config + data
+          SaaS: provider owns almost all; you still own DATA + USERS + ACCESS + settings
+    exercise:
+      title: Map shared responsibility across service models
+      environment: A set of described cloud services across IaaS, PaaS and SaaS (or a scenario)
+      tools: [A scenario, a responsibility-matrix template, a document, a notes file]
+      steps:
+        - Explain the difference between security of the cloud and security in the cloud.
+        - For an IaaS example, list what the customer is responsible for and what the provider handles.
+        - For a PaaS and a SaaS example, show how the boundary shifts.
+        - Identify the responsibilities that remain with the customer in all three models.
+        - Classify a described incident (for example a public storage bucket) as a customer or provider responsibility and justify it.
+        - Name three operational disciplines that follow from the customer's always-on responsibilities.
+      deliverable: A shared-responsibility matrix across IaaS, PaaS and SaaS, the always-customer responsibilities, and a classified incident with the operational disciplines it implies.
+    expected_outcome: >
+      You can explain the shared-responsibility model, describe how it shifts across IaaS, PaaS and SaaS, identify
+      what always remains the customer's responsibility, and place a cloud incident on the correct side of the line.
+    quiz:
+      - prompt: Under the shared-responsibility model, the cloud provider is responsible for
+        options:
+          - Your data classification
+          - Security of the cloud, meaning facilities, hardware, hypervisor and managed-service internals
+          - Your user accounts
+          - Your application configuration
+        answer: 1
+        explanation: The provider secures the underlying cloud; the customer secures what they put in it.
+      - prompt: Moving from IaaS to SaaS, the customer's share of responsibility
+        options:
+          - Increases
+          - Decreases, but never to zero because data, users and access remain the customer's
+          - Stays identical
+          - Disappears entirely
+        answer: 1
+        explanation: Higher-level services shift more to the provider, yet data, identity and access stay with the customer.
+      - prompt: A publicly exposed storage bucket holding company data is
+        options:
+          - Always the provider's fault
+          - A customer-side misconfiguration, on the customer's side of the responsibility line
+          - Impossible in the cloud
+          - A hardware failure
+        answer: 1
+        explanation: Bucket access configuration is the customer's responsibility in every model.
+      - prompt: Responsibilities that stay with the customer in every service model include
+        options:
+          - Patching the hypervisor
+          - Identity and access, data classification and protection, and correct security configuration
+          - Securing the data-centre building
+          - Maintaining the physical network backbone
+        answer: 1
+        explanation: Identity, data protection and configuration are always the customer's, whatever the model.
+  - slug: cloud-iac-security
+    title: Securing Infrastructure as Code
+    order: 14
+    difficulty: intermediate
+    summary: Understand how cloud infrastructure defined as code (Terraform, CloudFormation) changes the security model, and how scanning, policy as code and pipeline controls catch misconfigurations before deployment.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:3.1", "sc900:4", "cysa:1.1"]
+    learning_objectives:
+      - Explain how infrastructure as code changes where cloud security is enforced
+      - Describe scanning IaC templates for misconfigurations
+      - Apply policy as code and pipeline controls to prevent insecure deployments
+    theory: |
+      Modern cloud environments are rarely clicked together by hand; they are defined as **infrastructure as code
+      (IaC)** using tools like Terraform, CloudFormation or Bicep, where templates describe the desired resources
+      and a pipeline provisions them. This changes the security model profoundly and mostly for the better: the
+      exact configuration of every resource is written down, version-controlled, reviewed and repeatable, so there
+      is a single source of truth for how the environment should look. It also shifts the point where security
+      must be enforced: a misconfiguration like a public storage bucket or an over-permissive security group now
+      originates in a template, which means it can be **caught before it is ever deployed**, rather than
+      discovered live after an attacker finds it.
+
+      The first control is **IaC scanning**: tools statically analyse templates for insecure settings against a
+      library of rules, flagging public exposure, missing encryption, over-broad IAM permissions, disabled logging
+      and similar issues at the pull-request stage. Because the template is just text, this is fast and happens
+      before any resource exists, making it the cheapest possible place to fix a cloud misconfiguration. The second
+      control is **policy as code**: expressing organisational rules (for example "no resource may be public,"
+      "all storage must be encrypted," "only these regions") as machine-enforced policies that evaluate planned
+      changes and block non-compliant ones. This turns security requirements from documents people might read into
+      gates the pipeline enforces automatically on every change.
+
+      These fit into a secured **pipeline**. IaC should flow through version control with mandatory review, scanning
+      and policy checks as required pipeline stages, and least-privilege credentials for the deployment process
+      itself (the pipeline's own access is a prime target). Drift detection catches resources changed outside the
+      code, re-asserting the template as the source of truth. The payoff is that security moves left into the same
+      workflow developers already use and is enforced consistently at scale, instead of relying on post-deployment
+      posture scanning to find mistakes after the fact, though posture management still backs it up for what slips
+      through or is created outside IaC. For the analyst and engineer, the lesson is that in an IaC world the
+      highest-leverage place to secure the cloud is the template and the pipeline: fixing a rule there prevents a
+      class of misconfiguration across every future deployment, which no amount of after-the-fact scanning can
+      match.
+    examples:
+      - title: Security shifts to the template
+        body: |
+          IaC (Terraform/CloudFormation): resources defined as versioned, reviewed, repeatable code
+          a public bucket now originates in a TEMPLATE -> catch it before deploy, not after an attacker finds it.
+      - title: Scan + policy as code in the pipeline
+        body: |
+          IaC scanning: static analysis of templates for public exposure, missing encryption, broad IAM (at PR time)
+          policy as code: "no public resource", "must encrypt", "only these regions" -> pipeline BLOCKS non-compliant
+          plus: least-privilege deploy credentials, drift detection; posture mgmt backs up what slips through.
+    exercise:
+      title: Secure an infrastructure-as-code workflow
+      environment: A described cloud team using IaC and a sample template (or a scenario)
+      tools: [A scenario or sample IaC template, a document, a notes file]
+      steps:
+        - Explain how defining infrastructure as code changes where a cloud misconfiguration can be caught.
+        - Review a sample template and identify at least one insecure setting (public exposure, missing encryption, broad IAM).
+        - Explain how IaC scanning at pull-request time catches such issues cheaply.
+        - Write one policy-as-code rule the pipeline should enforce and the risk it removes.
+        - Describe the pipeline controls that protect the deployment process itself.
+        - Explain the role of drift detection and why posture management still matters alongside IaC security.
+      deliverable: A secured IaC workflow identifying an insecure template setting, a scanning stage, one policy-as-code rule, pipeline-credential controls, and the role of drift detection and posture management.
+    expected_outcome: >
+      You can explain how infrastructure as code shifts cloud security to the template and pipeline, scan templates
+      for misconfigurations, and apply policy as code and pipeline controls to prevent insecure deployments.
+    quiz:
+      - prompt: Infrastructure as code improves cloud security mainly because
+        options:
+          - It removes the need for any review
+          - A misconfiguration now originates in a versioned template, so it can be caught before deployment
+          - It encrypts all traffic
+          - It deletes logs
+        answer: 1
+        explanation: Defining resources as code lets misconfigurations be found and fixed before anything is deployed.
+      - prompt: Policy as code enforces security by
+        options:
+          - Writing rules in a document people might read
+          - Expressing rules as machine-enforced policies that evaluate planned changes and block non-compliant ones
+          - Scanning hosts after deployment only
+          - Disabling the pipeline
+        answer: 1
+        explanation: Policy as code turns requirements into automatic pipeline gates on every change.
+      - prompt: IaC scanning is the cheapest place to fix a cloud misconfiguration because it
+        options:
+          - Runs only in production
+          - Statically analyses the template before any resource exists
+          - Requires an attacker to find the issue first
+          - Needs the resource deployed
+        answer: 1
+        explanation: Scanning text templates pre-deployment fixes issues before resources are ever created.
+      - prompt: Drift detection in an IaC workflow
+        options:
+          - Encrypts the state file
+          - Catches resources changed outside the code, re-asserting the template as the source of truth
+          - Replaces policy as code
+          - Disables scanning
+        answer: 1
+        explanation: Drift detection flags out-of-band changes so the code remains the authoritative definition.
