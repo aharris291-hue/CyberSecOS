@@ -664,3 +664,187 @@ lessons:
           - That it disables accounts quickly
         answer: 1
         explanation: Automation is worth it only if it speeds real response without causing wrong actions.
+  - slug: siem-ueba-anomaly
+    title: Behaviour Analytics and Anomaly Detection in the SIEM
+    order: 8
+    difficulty: intermediate
+    summary: Use user and entity behaviour analytics to catch threats that signature rules miss, by baselining normal and alerting on meaningful deviation.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.4", "sc200:2", "cysa:1.3"]
+    learning_objectives:
+      - Explain how UEBA complements signature and correlation rules
+      - Describe baselining and what makes a deviation meaningful
+      - Triage an anomaly-based alert, which carries more uncertainty than a rule
+    theory: |
+      Signature and correlation rules catch known patterns, but an attacker using valid credentials and
+      normal tools may never trip one. **User and entity behaviour analytics** (UEBA) fills that gap by
+      learning what is normal for each user, host and service account and alerting when behaviour deviates
+      meaningfully. Instead of "this matches a known-bad pattern", the question becomes "this account has
+      never done this before", which is how insider misuse, compromised accounts and slow, low-and-slow
+      attacks surface.
+
+      UEBA works by **baselining**. Over a learning period it builds a profile per entity, typical logon
+      times and locations, the systems a user touches, normal data volumes, the processes a server runs, and
+      then scores new activity against that profile. A finance user suddenly accessing source-code
+      repositories, a service account logging in interactively, or a workstation uploading gigabytes at 3am
+      all score as anomalies because they diverge from the entity's own history. Good systems combine weak
+      signals: no single oddity is damning, but several together, a new location *and* a new device *and* a
+      sensitive-data access, raise a **risk score** worth an analyst's time.
+
+      The catch is that an anomaly is **not** a detection; it is a statistical oddity that carries more
+      uncertainty than a signature hit. People change roles, travel, and work late, so UEBA generates more
+      ambiguous alerts, and triage leans even harder on context and the baseline itself: is this genuinely
+      new for this entity, or just new to a too-short learning window. The analyst's job is to confirm
+      against the entity's real history and corroborating signals before escalating, and to feed false
+      positives back so the model improves. Used well, UEBA is the layer that catches the quiet,
+      credentialed attacker the rules cannot see.
+    examples:
+      - title: Weak signals combining into risk
+        body: |
+          New country (minor) + new device (minor) + bulk HR-data access (notable)
+          Individually: noise.  Together: high risk score -> analyst review
+          UEBA scores the combination, not each event alone.
+      - title: Anomaly versus signature
+        body: |
+          Signature:  "process X with known-bad hash"      (certain, known)
+          Anomaly:    "this service account logged on interactively for the first time"
+          The anomaly is a lead with uncertainty, confirmed against the baseline.
+    exercise:
+      title: Baseline an entity and triage an anomaly
+      environment: A SIEM with UEBA features or sample activity logs with enough history to baseline
+      tools: [A SIEM or sample logs, a notes file, a spreadsheet for the baseline]
+      steps:
+        - Pick one entity (a user or service account) and build a simple baseline from its history, typical hours, locations, systems and data volumes.
+        - Identify an activity in the data that deviates from that baseline and describe which dimension it departs from.
+        - Explain why combining several weak signals gives a more reliable alert than any single oddity.
+        - Triage the anomaly, decide whether it is likely benign (role change, travel) or suspicious, using corroborating signals.
+        - State how a too-short learning window could make normal activity look anomalous, and how you would account for it.
+        - Decide the outcome (escalate, or dismiss and feed back) and note how that feedback improves the model.
+      deliverable: A baseline for one entity, one anomaly with the dimension it deviates on, your triage verdict with the signals used, and the feedback that would tune the model.
+    expected_outcome: >
+      You can explain how UEBA complements rule-based detection, baseline an entity's normal behaviour,
+      and triage an anomaly-based alert, allowing for its greater uncertainty and confirming against history
+      before escalating.
+    quiz:
+      - prompt: UEBA catches threats that signature rules miss because it
+        options:
+          - Uses more storage
+          - Learns each entity's normal behaviour and alerts on meaningful deviation, catching valid-credential abuse
+          - Blocks all traffic
+          - Only reads known-bad hashes
+        answer: 1
+        explanation: Behaviour analytics flags activity that is abnormal for an entity even when it matches no known-bad pattern.
+      - prompt: Combining several weak signals into a risk score is useful because
+        options:
+          - It ignores context
+          - No single oddity is damning, but several together are far more likely to be real
+          - It removes the baseline
+          - It disables alerts
+        answer: 1
+        explanation: Correlated weak signals raise confidence that an anomaly reflects a real threat.
+      - prompt: Compared with a signature hit, an anomaly-based alert
+        options:
+          - Is always a true positive
+          - Carries more uncertainty and needs confirmation against the entity's history
+          - Needs no triage
+          - Cannot be a false positive
+        answer: 1
+        explanation: Anomalies are statistical oddities, so they are confirmed against baseline and context before escalation.
+      - prompt: A too-short UEBA learning window can cause
+        options: [Perfect accuracy, Normal activity to look anomalous because the baseline is incomplete, No alerts ever, Faster networks]
+        answer: 1
+        explanation: An incomplete baseline misjudges normal behaviour, so the window length must be accounted for in triage.
+  - slug: siem-parsing-normalisation-enrichment
+    title: Log Parsing, Normalisation and Enrichment
+    order: 9
+    difficulty: intermediate
+    summary: Turn raw, messy logs into searchable, correlatable events through parsing, normalisation to a common schema, and enrichment, the unglamorous work that makes a SIEM useful.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["sc200:1", "secplus:4.4", "cysa:1.2"]
+    learning_objectives:
+      - Explain why raw logs must be parsed and normalised before use
+      - Describe normalisation to a common schema and field mapping
+      - Enrich events so analysts have context without pivoting away
+    theory: |
+      A SIEM is only as good as the data going into it, and raw logs arrive as a mess: every device speaks a
+      different format, a firewall, a Windows host, a cloud service and a web server describe the same idea,
+      "a source address", in four different field names and layouts. Before any detection or search can work
+      across them, the logs must be **parsed** (broken from a raw line into structured fields) and
+      **normalised** (those fields mapped onto a common schema so `src_ip`, `source.ip` and `ClientAddress`
+      all become one agreed field). This unglamorous pipeline work is what lets an analyst search "this IP"
+      once and hit every log source, instead of writing a different query per device.
+
+      **Normalisation** means choosing a common schema (many teams adopt a published one) and writing the
+      field mappings that each log source needs. Done well, a correlation rule can say "a failed logon
+      followed by a success from the same source" and have it work whether the events came from Windows, a
+      VPN or a cloud identity provider, because they all populate the same normalised fields. Done badly, or
+      not at all, each source is an island and cross-source detection is impossible. Parsing also assigns an
+      **event category** and timestamp consistently, which matters because correlating events across sources
+      depends on their times agreeing.
+
+      **Enrichment** adds context at ingest so the analyst does not have to go hunting for it. A raw event
+      has an IP; an enriched event also carries the geolocation, the asset's owner and criticality, the
+      user's department, and whether the IP appears on a threat-intel list. That context is what turns "a
+      login from 203.0.113.5" into "a login from a known-malicious IP to your finance database server",
+      which an analyst can triage in seconds instead of minutes. The SOC lesson is that detection quality
+      rests on data quality: most failed or noisy detections trace back to logs that were never properly
+      parsed, normalised or enriched, so this plumbing is where a lot of real SIEM value is won or lost.
+    examples:
+      - title: Normalising to a common field
+        body: |
+          Firewall:  src=10.0.0.5
+          Windows:   IpAddress: 10.0.0.5
+          Cloud:     "ClientIP":"10.0.0.5"
+          -> all map to normalised  source.ip = 10.0.0.5  -> one query hits all
+      - title: Enrichment turning data into context
+        body: |
+          Raw:      login from 203.0.113.5 to host SRV-FIN-01
+          Enriched: +geo=unexpected +asset=finance DB (critical) +intel=known-bad IP
+          The analyst triages in seconds, not minutes.
+    exercise:
+      title: Build a parse-normalise-enrich pipeline for a log source
+      environment: A SIEM or a notebook with raw sample logs from two or more different device types
+      tools: [A SIEM or notebook, raw sample logs from multiple sources, a common-schema reference, a notes file]
+      steps:
+        - Take raw logs from two different sources and identify how each represents the same concept (for example the source address) differently.
+        - Parse one raw log line into structured fields and show the result.
+        - Map the fields from both sources onto a single common schema so the same concept lands in the same field.
+        - Write a simple cross-source query or rule that now works across both sources because of the normalisation.
+        - Add two enrichments (for example geolocation and asset criticality) to an event and show how they speed triage.
+        - Explain how poor parsing or normalisation would have made the cross-source detection impossible.
+      deliverable: A worked pipeline showing raw logs parsed and normalised to a common schema, one cross-source query that works because of it, two enrichments added, and the consequence of skipping the work.
+    expected_outcome: >
+      You can explain why raw logs must be parsed and normalised, map multiple sources onto a common schema
+      so cross-source detection works, and enrich events with context so analysts triage faster, recognising
+      that detection quality rests on this data plumbing.
+    quiz:
+      - prompt: Why must raw logs be parsed and normalised before use in a SIEM?
+        options:
+          - To save disk space only
+          - Because each source formats the same concept differently, so a common schema is needed to search and correlate across them
+          - To delete old logs
+          - They never need processing
+        answer: 1
+        explanation: Normalising disparate formats to one schema lets a single query and rule work across all sources.
+      - prompt: Normalisation to a common schema enables
+        options:
+          - Slower searches
+          - Correlation rules that work regardless of which device produced the events
+          - Fewer log sources
+          - Encryption of logs
+        answer: 1
+        explanation: When sources populate the same fields, a rule correlates across all of them.
+      - prompt: Enrichment at ingest means an event carries
+        options:
+          - Only the raw IP
+          - Added context such as geolocation, asset criticality and threat-intel matches
+          - Less information
+          - Only a timestamp
+        answer: 1
+        explanation: Enrichment attaches context so analysts triage without pivoting to other tools.
+      - prompt: Most failed or noisy SIEM detections can be traced back to
+        options: [Too many analysts, Logs that were never properly parsed, normalised or enriched, Fast networks, Strong passwords]
+        answer: 1
+        explanation: Detection quality depends on data quality, so poor plumbing undermines the detections built on it.

@@ -603,3 +603,187 @@ lessons:
         options: [Encrypting it, Comparing current hashes against a known-good baseline, Deleting it, Rebooting]
         answer: 1
         explanation: A hash that no longer matches the baseline reveals a tampered system binary immediately.
+  - slug: linux-mac-selinux-apparmor
+    title: Mandatory Access Control with SELinux and AppArmor
+    order: 8
+    difficulty: intermediate
+    summary: Use SELinux and AppArmor to confine processes so a compromised service cannot do whatever its user account could, and read the denials these systems log.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.1", "secplus:2.5", "cysa:1.3"]
+    learning_objectives:
+      - Explain the difference between discretionary and mandatory access control
+      - Describe how SELinux and AppArmor confine a process to a policy
+      - Read MAC denials and tell a real block from a policy that needs tuning
+    theory: |
+      Standard Linux permissions are **discretionary**: the owner of a file decides who can access it, and
+      a process runs with all the authority of the user that launched it. That means a compromised web
+      server running as its service account can touch everything that account can, which is usually far
+      more than the web server needs. **Mandatory access control** (MAC) closes that gap by enforcing a
+      system-wide policy that even the owner cannot override, confining each process to exactly the files,
+      ports and capabilities its role requires.
+
+      Linux has two common MAC systems. **SELinux** labels every process and object with a security context
+      and allows an action only if policy permits that label to act on that label; it is powerful and
+      fine-grained but has a steep learning curve. **AppArmor** confines programs by **path-based profiles**
+      that list what each binary may do, which is simpler to read and write. Either way the win is the same:
+      if an attacker exploits a confined service, the MAC policy still blocks it from reading /etc/shadow,
+      writing outside its directories, or opening unexpected network connections, so a code-execution bug
+      does not become full host control.
+
+      The operational skill is reading **denials**. When MAC blocks something it logs it (SELinux AVC
+      denials, AppArmor DENIED messages), and the analyst's job is to tell a genuine attack block from a
+      profile that is simply too tight for legitimate work. The wrong reflex, seen constantly, is to disable
+      SELinux at the first inconvenience, which throws away the protection; the right move is to read the
+      denial, decide whether the action is legitimate, and adjust the policy narrowly if so. Run in
+      permissive mode to learn what would be denied, then enforce, exactly the staged approach good hardening
+      always uses.
+    examples:
+      - title: MAC containing a compromised service
+        body: |
+          Web app (exploited) tries to read /etc/shadow
+          DAC alone:  allowed if the service user can read it
+          SELinux/AppArmor: denied by policy regardless of user -> exploit contained
+      - title: A denial to read, not to silence
+        body: |
+          AVC denial: httpd_t tried to read user_home_t file
+          Legit?  no  -> this is the attack being blocked (good)
+          Legit?  yes -> adjust the profile narrowly; do not disable SELinux
+    exercise:
+      title: Confine a service and interpret MAC denials
+      environment: A Linux VM with SELinux (RHEL/Fedora family) or AppArmor (Debian/Ubuntu family), or provided denial logs and profiles
+      tools: [A Linux VM with SELinux or AppArmor, the audit log or dmesg, policy tools (semanage/ausearch or aa-status), a notes file]
+      steps:
+        - Determine which MAC system is active and whether it is in enforcing or permissive mode.
+        - Pick a service (such as a web server) and describe or inspect the policy or profile that confines it.
+        - Trigger or review a denial where the service attempts something outside its policy and locate the logged denial.
+        - For one denial, decide whether it represents a real block of unwanted behaviour or a legitimate action the profile is too tight for.
+        - For a legitimate case, adjust the policy or profile narrowly to allow just that action, and explain why disabling MAC would be the wrong fix.
+        - Describe how you would use permissive mode to roll out a new confinement safely before enforcing it.
+      deliverable: A note identifying the MAC system and mode, the confined service's policy, one denial with your legitimate-or-attack verdict, the narrow fix (or why to keep the block), and the safe rollout approach.
+    expected_outcome: >
+      You can explain mandatory versus discretionary access control, confine a service with SELinux or
+      AppArmor so a compromise is contained, and read denials to tune policy without throwing away the
+      protection.
+    quiz:
+      - prompt: How does mandatory access control differ from standard Linux permissions?
+        options:
+          - It is the same thing
+          - It enforces a system-wide policy that even the file owner cannot override, confining each process
+          - It removes all permissions
+          - It only applies to root
+        answer: 1
+        explanation: MAC constrains processes to a policy regardless of owner, limiting what a compromised service can do.
+      - prompt: A benefit of confining a service with SELinux or AppArmor is that
+        options:
+          - Services run faster
+          - An exploited service is still blocked from files, ports and actions outside its policy
+          - Passwords are not needed
+          - Logs are deleted
+        answer: 1
+        explanation: Confinement contains a compromise so code execution in the service does not become full host control.
+      - prompt: The right response to a legitimate action blocked by SELinux is to
+        options:
+          - Disable SELinux
+          - Read the denial and adjust the policy narrowly to allow just that action
+          - Ignore it
+          - Reboot repeatedly
+        answer: 1
+        explanation: Tuning the policy preserves protection; disabling SELinux throws it away for everything.
+      - prompt: Running MAC in permissive mode first lets you
+        options: [Block everything immediately, Learn what would be denied before enforcing, Delete the policy, Skip logging]
+        answer: 1
+        explanation: Permissive mode logs what would be denied so a profile can be tuned before enforcement, avoiding outages.
+  - slug: linux-network-firewall
+    title: Linux Network Security and Host Firewalling
+    order: 9
+    difficulty: intermediate
+    summary: Control what a Linux host accepts and initiates with nftables/iptables and firewalld, and use that control both to harden the host and to detect unexpected network behaviour.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.4", "secplus:4.1", "cysa:1.3"]
+    learning_objectives:
+      - Explain host-based firewalling and default-deny on Linux
+      - Build and read nftables/iptables or firewalld rules
+      - Use egress control and connection logs to detect compromise
+    theory: |
+      A Linux host should not accept or initiate whatever it likes; a **host-based firewall** decides, and
+      it is a control the network firewall cannot replace because it protects the host even from threats
+      already inside the network. Linux implements this in the kernel through **netfilter**, configured by
+      **iptables** (the long-standing tool) or its successor **nftables**, often wrapped by a friendlier
+      front end like **firewalld** or **ufw**. The guiding principle is **default-deny**: start by dropping
+      everything, then explicitly allow only the ports and directions the host genuinely needs, so an
+      unexpected service cannot be reached even if it is accidentally running.
+
+      Rules are evaluated in order against each packet, matching on direction, address, port and connection
+      **state**. The state concept is important: a **stateful** firewall allows return traffic for
+      connections the host already established without needing a separate rule, which is what lets a server
+      answer clients while still blocking unsolicited inbound. A typical hardened server allows inbound only
+      on its service port and SSH (ideally from limited sources), allows established/related return traffic,
+      and drops the rest. Reading an existing rule set, what is allowed inbound, what is allowed outbound,
+      and what is logged, is the core operational skill.
+
+      The most under-used side is **egress control**, restricting what the host may connect *out* to. Most
+      hosts only need to reach a few destinations (updates, a database, a log server), so a tight outbound
+      policy is a powerful detector and limiter of compromise: malware that tries to beacon to its C2 server
+      is blocked, and the **dropped-connection logs** become an alert that something on the host is trying
+      to talk somewhere it should not. The analyst's habit is to treat firewall logs as telemetry, a sudden
+      spray of blocked outbound attempts from one host is a strong sign of malware or scanning, confirmed
+      against what the host is supposed to do.
+    examples:
+      - title: Default-deny with stateful return traffic
+        body: |
+          policy: DROP everything (in and out) by default
+          allow in:  tcp 443 (service), tcp 22 from admin subnet
+          allow:     established/related return traffic (stateful)
+          result:    anything unexpected is dropped and can be logged
+      - title: Egress control as a detector
+        body: |
+          Host should reach: updates, db:5432, logserver:514 -> allowed
+          Log shows: DROP out to 185.x.x.x:4444 (unknown) -> malware beaconing?
+          Blocked AND logged: the firewall both stops and reveals the C2 attempt.
+    exercise:
+      title: Build and audit a host firewall, then read its logs
+      environment: A Linux VM with nftables/iptables or firewalld, or a provided rule set and sample firewall logs
+      tools: [A Linux VM or sample rules, the firewall tooling or its config, sample drop logs, a notes file]
+      steps:
+        - Inspect (or build) the host's firewall rules and state what is allowed inbound and outbound.
+        - Confirm the policy is default-deny and explain what happens to a packet that matches no allow rule.
+        - Explain how stateful matching lets the host answer clients without an explicit return-traffic rule.
+        - Add or review an egress rule that restricts outbound connections to only the destinations the host needs.
+        - Review sample dropped-connection logs and identify one outbound attempt that suggests compromise.
+        - Describe how you would confirm that finding against the host's intended behaviour before acting.
+      deliverable: A firewall audit covering the inbound/outbound allow lists, the default-deny confirmation, an egress rule, one suspicious dropped-outbound finding from the logs, and the confirmation step.
+    expected_outcome: >
+      You can build and read a default-deny Linux host firewall with stateful rules, use egress control to
+      harden the host, and treat dropped-connection logs as telemetry that reveals a host trying to talk
+      where it should not.
+    quiz:
+      - prompt: A default-deny host firewall policy means
+        options:
+          - Everything is allowed unless blocked
+          - Everything is dropped unless explicitly allowed
+          - Logging is disabled
+          - Only inbound is filtered
+        answer: 1
+        explanation: Default-deny drops all traffic by default and permits only what is explicitly needed.
+      - prompt: Stateful firewalling lets a server
+        options:
+          - Block its own responses
+          - Answer clients by allowing return traffic for connections it already established
+          - Ignore all packets
+          - Skip logging
+        answer: 1
+        explanation: Tracking connection state allows legitimate return traffic without a separate inbound rule.
+      - prompt: Why is egress (outbound) control a powerful control?
+        options:
+          - It speeds up the host
+          - It blocks and reveals malware trying to beacon to destinations the host should never reach
+          - It is only cosmetic
+          - It replaces patching
+        answer: 1
+        explanation: Tight outbound policy both stops C2 connections and turns the attempts into alerts.
+      - prompt: A spray of blocked outbound attempts from one host to unknown destinations is
+        options: [Routine, A strong sign of malware or scanning to confirm against intended behaviour, A backup, A DNS update]
+        answer: 1
+        explanation: Many blocked egress attempts suggest a compromised host beaconing or scanning, worth investigating.

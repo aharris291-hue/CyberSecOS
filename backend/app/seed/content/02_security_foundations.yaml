@@ -612,3 +612,184 @@ lessons:
         options: [It speeds up queries, It is pure risk since data that no longer needs to exist can still leak, It improves classification, It is required by all laws]
         answer: 1
         explanation: Retained-but-unneeded data is exposure with no benefit, which is why lifecycle disposal matters.
+  - slug: sec-physical-environmental
+    title: Physical and Environmental Security
+    order: 8
+    difficulty: beginner
+    summary: Cover the physical and environmental controls that protect systems and data, because an attacker with physical access or a failed facility can bypass every digital defence.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:1.2", "secplus:2.1", "sc900:1"]
+    learning_objectives:
+      - Explain why physical access can defeat digital controls
+      - Describe layered physical controls and environmental protections
+      - Identify physical and social routes an attacker uses to reach systems
+    theory: |
+      Security that stops at the network ignores the oldest attack of all: walking in. **Physical
+      access** often defeats digital controls outright, an attacker at the keyboard can boot from USB,
+      steal a drive, plug in a rogue device, or read a password on a sticky note. So physical security
+      is a foundation the digital controls sit on, not an afterthought, and it follows the same
+      **defence-in-depth** idea: layers that each slow an intruder and raise the chance of detection.
+
+      Those layers run from the perimeter inward. **Deterrents** (fencing, lighting, signage) discourage
+      casual intrusion; **access controls** (badges, locks, mantraps, biometric readers) decide who gets
+      in; **surveillance** (cameras, guards, alarms) detects and records; and **zoning** keeps the most
+      sensitive areas, a data centre or wiring closet, behind the strongest controls. A recurring weakness
+      is **tailgating**, following an authorised person through a door, which badge systems alone do not
+      stop, which is why mantraps and awareness matter.
+
+      **Environmental** controls keep the facility itself from failing the systems. Data centres manage
+      **power** (UPS and generators against outages), **cooling** (heat is the enemy of hardware),
+      **fire suppression** suited to electronics, and **humidity**. The same thinking covers the
+      disposal end: **media sanitisation** and secure destruction so a discarded disk does not leak data.
+      Physical and social routes overlap, an attacker may impersonate a delivery driver or contractor to
+      get inside, so physical security and security awareness reinforce each other. The lesson is that a
+      strong firewall means little if someone can carry the server out of the building.
+    examples:
+      - title: Layered physical controls
+        body: |
+          Perimeter   fence + lighting            (deter)
+          Entry       badge + mantrap             (prevent tailgating)
+          Interior    camera + alarmed data hall  (detect + record)
+          Each layer slows the intruder and adds a chance to catch them.
+      - title: Physical access beating digital controls
+        body: |
+          Attacker at the device -> boot from USB / pull the drive / plant a keylogger
+          Full-disk encryption + locked BIOS + port control raise that bar
+          No network control stops someone already at the keyboard.
+    exercise:
+      title: Assess the physical and environmental security of a space
+      environment: An office, home office or described facility, plus a notes template
+      tools: [A space to assess (or a floor plan/description), a notes file, a reference control list]
+      steps:
+        - Walk (or map) the space from the perimeter inward and list the physical controls at each layer (deter, prevent, detect).
+        - Identify the most sensitive area (where systems or data live) and judge whether its controls match its sensitivity.
+        - Find one tailgating or social route an attacker could use to get past the entry controls.
+        - Note the environmental protections present (power backup, cooling, fire, humidity) and one that is missing or weak.
+        - Check how media and old equipment are disposed of and whether data could leak that way.
+        - Recommend two improvements, one access-control and one environmental, with the risk each addresses.
+      deliverable: A layered physical-security assessment of the space with one tailgating route, the environmental gaps, and two prioritised improvements with their risks.
+    expected_outcome: >
+      You can explain why physical access undermines digital security, assess layered physical and
+      environmental controls, and spot the physical and social routes an attacker would use to reach
+      systems and data.
+    quiz:
+      - prompt: Why is physical security foundational to digital security?
+        options:
+          - It is cheaper
+          - An attacker with physical access can often bypass digital controls entirely
+          - It replaces encryption
+          - It only matters for data centres
+        answer: 1
+        explanation: Someone at the hardware can boot from USB, steal drives or plant devices, defeating network controls.
+      - prompt: Tailgating is
+        options:
+          - A network attack
+          - Following an authorised person through a controlled door
+          - A type of firewall
+          - A backup method
+        answer: 1
+        explanation: Tailgating slips past badge controls by following someone in, which mantraps and awareness address.
+      - prompt: Which is an environmental control for a data centre?
+        options: [A firewall rule, Uninterruptible power and cooling, A password policy, An antivirus scan]
+        answer: 1
+        explanation: Power backup, cooling, fire suppression and humidity control keep the facility from failing the hardware.
+      - prompt: Secure media sanitisation matters because
+        options:
+          - It speeds up disks
+          - A discarded or reused drive can leak data if not properly destroyed or wiped
+          - It encrypts the network
+          - It is only for paper
+        answer: 1
+        explanation: Data persists on media, so secure disposal prevents leakage from retired equipment.
+  - slug: sec-authentication-passwordless
+    title: Authentication Factors and Passwordless
+    order: 9
+    difficulty: beginner
+    summary: Understand authentication factors, why passwords fail, and how MFA and passwordless methods such as FIDO2 raise the bar against the most common attacks.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.6", "sc900:3", "secplus:2.4"]
+    learning_objectives:
+      - Distinguish the authentication factors and what each proves
+      - Explain why passwords fail and how MFA mitigates it
+      - Describe passwordless and phishing-resistant authentication such as FIDO2
+    theory: |
+      Authentication answers "are you who you claim to be", and it does so with **factors**: something you
+      **know** (a password or PIN), something you **have** (a phone, token or security key), and something
+      you **are** (a fingerprint or face). Strong authentication combines factors from different categories,
+      because each covers the others' weakness, a stolen password is useless without the physical key, and
+      a stolen phone is useless without the PIN. Using two of the *same* category (a password and a security
+      question, both "know") is not true multi-factor.
+
+      Passwords alone fail constantly, and understanding why motivates everything else. They are reused
+      across sites, so one breach unlocks many accounts (**credential stuffing**); they are phished; and
+      weak ones are guessed or cracked. **Multi-factor authentication** (MFA) is the single highest-impact
+      control against account takeover because it breaks the attacker's usual path: knowing the password is
+      no longer enough. But not all MFA is equal, SMS codes can be intercepted or SIM-swapped, and
+      push-notification MFA is vulnerable to **MFA fatigue**, where an attacker spams approvals until a tired
+      user taps yes.
+
+      The direction of travel is **passwordless** and **phishing-resistant** authentication. **FIDO2** and
+      passkeys use a cryptographic key pair bound to the device and the specific site, so there is no shared
+      secret to phish and the credential simply will not work on a look-alike domain, defeating the
+      phishing that beats even code-based MFA. For a learner this is the practical takeaway: authentication
+      strength is a ladder, from a lone password at the bottom, through code and push MFA, up to
+      phishing-resistant passkeys, and moving up the ladder is one of the most effective security
+      investments an organisation can make.
+    examples:
+      - title: True multi-factor versus not
+        body: |
+          Password + security question  -> both "know"  -> NOT real MFA
+          Password + phone push         -> know + have   -> MFA
+          Passkey (device + biometric)  -> have + are    -> phishing-resistant
+      - title: Why FIDO2 resists phishing
+        body: |
+          Code MFA on fake-bank.com: user types the code -> attacker relays it -> in
+          Passkey on fake-bank.com:  key is bound to the REAL domain -> simply won't sign
+          No shared secret to phish; the credential refuses the wrong site.
+    exercise:
+      title: Assess and strengthen authentication for a set of accounts
+      environment: Your own accounts or a described scenario, plus a notes template
+      tools: [A list of accounts/services, a notes file, a reference on MFA types]
+      steps:
+        - List several accounts and identify which authentication factors each currently uses.
+        - For one password-only account, explain the specific attacks it is exposed to.
+        - Identify an account using two factors of the same category and explain why that is not true MFA.
+        - Rank the MFA methods in use (SMS, code app, push, passkey) from weakest to strongest and justify the order.
+        - Pick one account and describe the move up the ladder you would make and the attack it defeats.
+        - Explain how a passkey would behave if the user were lured to a look-alike login page.
+      deliverable: An authentication assessment ranking the methods in use, one true-MFA correction, and one concrete upgrade with the attack it defeats.
+    expected_outcome: >
+      You can distinguish authentication factors, explain why passwords fail and how MFA mitigates it, and
+      describe how passwordless, phishing-resistant methods like FIDO2 defeat the attacks that beat
+      code-based MFA.
+    quiz:
+      - prompt: Which pair is true multi-factor authentication?
+        options:
+          - A password and a security question
+          - A password and a phone-based security key
+          - Two different passwords
+          - A PIN and a memorable word
+        answer: 1
+        explanation: True MFA combines different categories; a password (know) plus a key (have) qualifies.
+      - prompt: MFA is the highest-impact control against account takeover because it
+        options:
+          - Makes passwords longer
+          - Means knowing the password alone is no longer enough to log in
+          - Encrypts the network
+          - Removes all logins
+        answer: 1
+        explanation: MFA breaks the attacker's usual path by requiring a second factor beyond the password.
+      - prompt: MFA fatigue attacks target
+        options: [SMS codes only, Push-notification MFA, by spamming approvals until a user taps yes, Passkeys, Hardware tokens]
+        answer: 1
+        explanation: Repeated push prompts can wear a user down into approving a fraudulent login.
+      - prompt: FIDO2/passkeys resist phishing because the credential is
+        options:
+          - A longer password
+          - A key pair bound to the real site, so it will not authenticate on a look-alike domain
+          - Sent by SMS
+          - Stored in email
+        answer: 1
+        explanation: With no shared secret and binding to the legitimate domain, a phishing site cannot use the passkey.

@@ -630,3 +630,189 @@ lessons:
           - Bill customers
         answer: 1
         explanation: Flow logs give the visibility to spot lateral movement and unexpected connections across the network.
+  - slug: cloud-data-protection-kms
+    title: Cloud Data Protection and Key Management
+    order: 8
+    difficulty: intermediate
+    summary: Protect data in the cloud with encryption and managed keys, and understand who holds the keys, how access is controlled, and how key misuse shows up in logs.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:3.1", "secplus:4.1", "sc900:2"]
+    learning_objectives:
+      - Explain cloud encryption at rest and in transit and the role of a KMS
+      - Describe provider-managed versus customer-managed keys and when each fits
+      - Monitor key usage and access so encryption is not quietly undermined
+    theory: |
+      In the cloud, encryption is the default expectation, so the interesting questions are about **keys**:
+      who holds them, who can use them, and how that is controlled. Data is encrypted **at rest** in storage
+      and databases and **in transit** over TLS, but encryption only protects data to the extent the keys
+      are protected. A **key management service** (KMS) centralises creating, storing, rotating and
+      controlling access to keys, and crucially logs every use, which turns "is this data encrypted" into
+      "who decrypted this, when, and were they allowed to".
+
+      The main design choice is **who manages the key**. **Provider-managed keys** are the simplest: the
+      cloud handles everything, which is fine for most data. **Customer-managed keys** (CMKs) give you
+      control over rotation and, most importantly, the ability to **revoke** access, destroying or disabling
+      the key makes the data unreadable even to the provider's services, which matters for regulated data or
+      a clean offboarding. The strongest tier, **customer-supplied** or HSM-backed keys, keeps key material
+      under your sole control at the cost of complexity. The right choice follows the data's sensitivity, not
+      a reflex to always pick the most control.
+
+      Because the key is now the crown jewel, **access to the key is the real access control**. KMS key
+      policies decide which identities may encrypt, decrypt or manage a key, and least privilege here is
+      essential, an over-broad key policy undoes the encryption, since anyone who can call decrypt can read
+      the data. The SOC watches KMS logs for the tells of abuse: a key used by an unexpected identity, a
+      spike in decrypt calls, or an attempt to disable or schedule deletion of a key (a ransomware or
+      destruction move). As always a hit is a lead confirmed against normal usage, but key activity is where
+      cloud data compromise becomes visible.
+    examples:
+      - title: Customer-managed key enabling revocation
+        body: |
+          Provider-managed: simple; provider controls the key
+          Customer-managed: you rotate AND can disable the key -> data unreadable on offboarding
+          Choose by sensitivity and the need to revoke.
+      - title: Key misuse in the logs
+        body: |
+          KMS log: Decrypt by role "build-ci" on the HR data key -> unexpected identity
+          KMS log: ScheduleKeyDeletion on a production key       -> possible destruction attack
+          Both are leads to confirm against normal usage.
+    exercise:
+      title: Design key management and monitor key usage
+      environment: A cloud free tier with a KMS, or sample key policies and KMS logs
+      tools: [A cloud KMS or sample policies, sample KMS logs, a notes file]
+      steps:
+        - For a sample data set of mixed sensitivity, decide which data uses provider-managed versus customer-managed keys and justify each.
+        - Write or review a key policy and apply least privilege so only the identities that need encrypt/decrypt have it.
+        - Explain how disabling a customer-managed key would affect the data and when you would use that (offboarding, incident).
+        - Review sample KMS logs and identify one key use by an unexpected identity and one key-management action worth alerting on.
+        - State how you would confirm a suspicious key use before acting, and one alert you would build on KMS activity.
+        - Note one misconfiguration (an over-broad key policy) that would undermine the encryption and how to fix it.
+      deliverable: A key-management design (managed-versus-customer choices with least-privilege policies), a KMS-log review flagging one suspicious use and one alert-worthy action, and one misconfiguration with its fix.
+    expected_outcome: >
+      You can design cloud data protection around key management, choose provider- versus customer-managed
+      keys by sensitivity, enforce least privilege on key access, and monitor KMS logs to catch key misuse
+      before it becomes a data compromise.
+    quiz:
+      - prompt: In the cloud, encryption only protects data to the extent that
+        options:
+          - The network is fast
+          - The keys are protected and their use is controlled and logged
+          - The data is public
+          - Backups exist
+        answer: 1
+        explanation: Encryption hinges on key protection and access control, so key management is the real control.
+      - prompt: A key advantage of customer-managed keys over provider-managed keys is
+        options:
+          - They are always cheaper
+          - You can rotate and revoke the key, making data unreadable even to the provider's services
+          - They need no policy
+          - They disable logging
+        answer: 1
+        explanation: Customer-managed keys give control over rotation and revocation, which matters for regulated data and offboarding.
+      - prompt: An over-broad KMS key policy is dangerous because
+        options:
+          - It slows encryption
+          - Anyone who can call decrypt can read the data, undoing the encryption
+          - It deletes logs
+          - It encrypts twice
+        answer: 1
+        explanation: Access to the key is access to the data, so least privilege on key policies is essential.
+      - prompt: A KMS log entry scheduling deletion of a production key should be treated as
+        options: [Routine, A lead to confirm, possibly a destruction or ransomware action, A billing event, A success message]
+        answer: 1
+        explanation: Disabling or deleting keys can destroy data access, so such actions are investigated against normal usage.
+  - slug: cloud-posture-misconfiguration
+    title: Cloud Security Posture and Misconfiguration
+    order: 9
+    difficulty: intermediate
+    summary: Find and fix the misconfigurations that cause most cloud breaches, using posture management to continuously check cloud resources against secure baselines.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:3.1", "cysa:2.1", "sc900:2"]
+    learning_objectives:
+      - Explain why misconfiguration is the leading cause of cloud breaches
+      - Describe cloud security posture management (CSPM) and what it checks
+      - Prioritise and remediate the misconfigurations that matter most
+    theory: |
+      Most cloud breaches are not clever exploits; they are **misconfigurations**, a storage bucket left
+      public, a database exposed to the internet, over-permissive access, logging switched off. The cloud's
+      speed and self-service are the cause: anyone can spin up resources in minutes, and a single wrong
+      setting exposes data at internet scale. So a central cloud-security discipline is continuously checking
+      that resources match a **secure baseline**, which is exactly what **cloud security posture management**
+      (CSPM) does.
+
+      CSPM tools connect to the cloud account through its API and continuously evaluate every resource
+      against a library of checks drawn from provider best practice and benchmarks like the CIS foundations:
+      are any storage buckets public, are databases reachable from the internet, is encryption enabled, is
+      logging and monitoring turned on, are there identities with excessive permissions, are there unused
+      credentials. Because the cloud exposes its whole configuration through the API, this assessment is
+      comprehensive in a way on-premises rarely is, the tool can see every resource and its settings, not a
+      sample. The output is a prioritised list of findings mapped to the resources and accounts they affect.
+
+      The skill, as always, is **prioritisation and remediation**, not drowning in findings. A public bucket
+      holding customer data is an emergency; the same setting on an empty test bucket is noise, so findings
+      are triaged by the sensitivity and exposure of what they affect, not the raw rule. The strongest
+      programmes shift this left, checking infrastructure-as-code templates before deployment so the
+      misconfiguration never reaches production, and wiring CSPM alerts into the SOC so a newly public bucket
+      raises an alarm in minutes. The lesson is that in the cloud, configuration *is* security: watching and
+      fixing posture continuously prevents the single most common way organisations get breached.
+    examples:
+      - title: The classic cloud breach
+        body: |
+          storage bucket: "public read" + customer data inside
+          one wrong setting -> data exposed at internet scale
+          No exploit required; the misconfiguration is the breach.
+      - title: Prioritising posture findings
+        body: |
+          Public bucket, empty test data   -> low (noise)
+          Public bucket, customer PII       -> EMERGENCY
+          Triage by sensitivity + exposure, not the raw rule count.
+    exercise:
+      title: Assess cloud posture and remediate misconfigurations
+      environment: A cloud free tier or a provided set of cloud configuration/CSPM findings
+      tools: [A cloud account or sample config/findings, a CSPM tool or a CIS benchmark checklist, a notes file]
+      steps:
+        - Explain why misconfiguration, rather than exploitation, causes most cloud breaches.
+        - Review a set of resources (or CSPM findings) against a baseline and list the misconfigurations found.
+        - Identify the highest-risk finding by the sensitivity and exposure of the resource it affects, not the raw rule.
+        - Write the remediation for that finding and describe how you would verify it is fixed.
+        - Describe how checking infrastructure-as-code before deployment would have prevented one finding.
+        - Propose one CSPM alert to wire into the SOC (for example a newly public bucket) and why it matters.
+      deliverable: A posture assessment listing the misconfigurations, the highest-risk one with its remediation and verification, a prevent-at-deploy example, and one SOC alert to add.
+    expected_outcome: >
+      You can explain why misconfiguration drives most cloud breaches, use posture management to check
+      resources against a baseline, and prioritise and remediate the misconfigurations that actually expose
+      sensitive data.
+    quiz:
+      - prompt: The leading cause of cloud breaches is
+        options:
+          - Zero-day exploits
+          - Misconfiguration, such as public storage or over-permissive access
+          - Slow networks
+          - Weak encryption algorithms
+        answer: 1
+        explanation: Most cloud breaches stem from wrong settings exposing data, not sophisticated exploits.
+      - prompt: Cloud security posture management (CSPM) works by
+        options:
+          - Scanning network ports from outside
+          - Continuously evaluating cloud resources via the API against a secure baseline
+          - Reading application source code
+          - Testing user passwords
+        answer: 1
+        explanation: CSPM uses the cloud API to check every resource's configuration against best-practice baselines.
+      - prompt: Posture findings should be prioritised by
+        options:
+          - The raw number of rules broken
+          - The sensitivity and exposure of the resources they affect
+          - Alphabetical order
+          - The time of day
+        answer: 1
+        explanation: A public bucket of customer data is an emergency; the same on empty test data is noise.
+      - prompt: Checking infrastructure-as-code before deployment helps because
+        options:
+          - It is slower
+          - The misconfiguration is caught before it ever reaches production
+          - It disables logging
+          - It replaces CSPM entirely
+        answer: 1
+        explanation: Shifting posture checks left stops bad configurations from being deployed in the first place.

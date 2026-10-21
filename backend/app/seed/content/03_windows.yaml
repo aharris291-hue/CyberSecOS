@@ -597,3 +597,182 @@ lessons:
           - Reboot once
         answer: 1
         explanation: A configured-but-unverified setting may not be in effect, and unchecked enforcement can cause outages.
+  - slug: win-data-protection-credential-guard
+    title: Windows Data Protection and Credential Guard
+    order: 8
+    difficulty: intermediate
+    summary: Protect data and secrets on Windows with BitLocker, Credential Guard and the data protection APIs, and understand what each does and does not stop.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:2.4", "secplus:4.6", "cysa:1.3"]
+    learning_objectives:
+      - Explain how BitLocker protects data at rest and its threat model
+      - Describe how Credential Guard isolates secrets from theft
+      - Identify what these controls stop and the gaps that remain
+    theory: |
+      Windows ships strong data-protection features, but using them well means knowing exactly what each
+      defends against. **BitLocker** encrypts the volume so a lost or stolen laptop does not leak data,
+      using the **TPM** to release the key only to a known-good boot state, optionally with a PIN or key
+      for stronger assurance. Its threat model is **offline** attack: it protects data at rest, but once
+      the system is booted and unlocked, BitLocker is doing its job and no longer stands between a logged-in
+      attacker and the files. That is why it pairs with access control, not replaces it.
+
+      Credential theft is the engine of lateral movement, so Windows isolates secrets. **Credential Guard**
+      uses virtualisation-based security to hold derived credentials (such as NTLM hashes and Kerberos
+      tickets) in an isolated process the normal OS, and thus malware with admin rights, cannot read. This
+      blunts pass-the-hash and pass-the-ticket by removing the material those attacks steal from LSASS. It
+      is not total: it does not stop a keylogger capturing a password as it is typed, nor protect
+      credentials on systems where it is not enabled, so it is one strong layer among several.
+
+      Around these sit the **data protection APIs** (DPAPI) that applications use to encrypt secrets tied to
+      a user or machine, and policies like requiring encryption on removable media. The analyst's job is to
+      know the boundaries: BitLocker beats a stolen disk but not a live session; Credential Guard beats
+      hash theft from memory but not a typed-password capture. Hardening is choosing the right control for
+      the actual threat and verifying it is enabled, because a feature configured but not in effect protects
+      nothing.
+    examples:
+      - title: What BitLocker does and does not stop
+        body: |
+          Stops:  stolen laptop / pulled drive -> data unreadable without the key
+          Not:    a logged-in attacker on the running, unlocked system
+          Pair with access control and screen lock for the live-session gap.
+      - title: Credential Guard against hash theft
+        body: |
+          Without: malware with admin reads NTLM hashes from LSASS -> pass-the-hash
+          With:    secrets live in VBS-isolated memory the OS cannot read
+          Gap:     a keylogger still captures a password typed at the keyboard.
+    exercise:
+      title: Verify Windows data and credential protections on a VM
+      environment: A Windows VM or a provided configuration/report, with BitLocker and Credential Guard settings (or their documentation)
+      tools: [A Windows VM or config report, BitLocker and Credential Guard status tools or docs, a notes file]
+      steps:
+        - Check whether BitLocker is enabled on the system volume and how the key is protected (TPM only, TPM plus PIN, or recovery key).
+        - State one attack BitLocker stops and one it does not, based on its at-rest threat model.
+        - Check whether Credential Guard (virtualisation-based security) is enabled and confirm it is actually running, not just configured.
+        - Describe one credential-theft technique Credential Guard blunts and one it does not.
+        - Identify one piece of data on the system that is not covered by these controls and how you would protect it.
+        - Recommend one improvement (for example adding a PIN, enabling Credential Guard, or encrypting removable media) with the threat it addresses.
+      deliverable: A verification note covering BitLocker's state and threat model, Credential Guard's state and what it blunts, one uncovered data gap, and one prioritised improvement.
+    expected_outcome: >
+      You can explain and verify BitLocker and Credential Guard on Windows, state precisely what each
+      control stops and what remains exposed, and choose the right protection for the actual threat.
+    quiz:
+      - prompt: BitLocker's threat model primarily protects data
+        options:
+          - On a running, unlocked system
+          - At rest against a lost or stolen disk
+          - From network attacks
+          - From phishing
+        answer: 1
+        explanation: BitLocker defends offline data; once booted and unlocked it no longer stands between a logged-in attacker and files.
+      - prompt: Credential Guard reduces the impact of
+        options:
+          - Phishing emails
+          - Credential theft from memory such as pass-the-hash
+          - Slow disks
+          - Weak Wi-Fi
+        answer: 1
+        explanation: It isolates derived credentials in VBS memory so malware cannot steal the hashes and tickets those attacks reuse.
+      - prompt: A gap Credential Guard does NOT close is
+        options:
+          - Pass-the-hash
+          - A keylogger capturing a password as it is typed
+          - Pass-the-ticket
+          - Reading LSASS memory
+        answer: 1
+        explanation: Credential Guard protects stored secrets, not a password captured at the moment of entry.
+      - prompt: A security feature that is configured but not actually running
+        options: [Still fully protects, Protects nothing until verified as in effect, Is safer that way, Needs no checking]
+        answer: 1
+        explanation: Verification matters because a feature not actually enabled provides no protection.
+  - slug: win-active-directory-security
+    title: Active Directory Security and Monitoring
+    order: 9
+    difficulty: intermediate
+    summary: Understand why Active Directory is the prime target in Windows environments, the attacks against it, and the events that reveal those attacks in progress.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.1", "cysa:1.3", "sc200:2"]
+    learning_objectives:
+      - Explain why Active Directory is central to Windows attacks
+      - Describe common AD attacks and the privilege they target
+      - Monitor the AD events that reveal reconnaissance and abuse
+    theory: |
+      In most Windows environments, **Active Directory** (AD) is the heart of identity: it decides who every
+      user and computer is and what they can access. That makes it the prize, an attacker who controls AD
+      controls the environment, so AD security and monitoring are central skills. The structure matters:
+      users, groups and computers live in a directory, domain controllers hold the authoritative copy
+      (including password material), and privileged groups like **Domain Admins** are the keys to the
+      kingdom. Kerberos is the main authentication protocol, and most AD attacks abuse how it issues
+      tickets.
+
+      The attack catalogue is well known and each targets privilege. **Kerberoasting** requests service
+      tickets to crack service-account passwords offline. **Pass-the-hash** and **pass-the-ticket** reuse
+      stolen credential material to authenticate without the password. **DCSync** impersonates a domain
+      controller to pull password hashes straight from AD. **Golden** and **silver tickets** forge Kerberos
+      tickets for persistent, hard-to-detect access once an attacker has the right key. Underpinning all of
+      them is **enumeration**: attackers map users, groups, trusts and privileged accounts first, because AD
+      is designed to be queryable by any authenticated user.
+
+      Monitoring AD means watching for both the enumeration and the abuse. Key signals include a spike in
+      directory queries from one host (recon), unusual service-ticket request patterns (Kerberoasting),
+      replication requests from a host that is not a domain controller (DCSync), changes to privileged group
+      membership, and logons that do not fit a user's baseline. The defensive principles are tiering
+      administrative accounts so a workstation compromise cannot reach Domain Admin, minimising privileged
+      group membership, and alerting on changes to those groups, because in AD, privilege is the whole game.
+    examples:
+      - title: DCSync from the wrong host
+        body: |
+          Replication request (DsGetNCChanges) between domain controllers -> normal
+          Same request from a workstation -> DCSync: pulling hashes from AD
+          Asset context (is the source a DC?) turns this into a high-confidence alert.
+      - title: Privileged group change to watch
+        body: |
+          Event 4728/4732: member added to "Domain Admins"
+          Expected?  rarely and with change control
+          Unexpected -> likely privilege escalation / persistence; investigate at once.
+    exercise:
+      title: Map AD attack surface and build monitoring
+      environment: An AD lab (or a provided directory structure and sample security-event logs)
+      tools: [An AD lab or sample event logs, a notes file, a MITRE ATT&CK reference]
+      steps:
+        - Identify the most privileged groups in the directory and who belongs to them, and judge whether membership is minimal.
+        - Describe how an attacker would enumerate the directory and what telemetry that recon produces.
+        - For two AD attacks (for example Kerberoasting and DCSync), state the event or pattern that reveals each.
+        - Review sample security events for a change to privileged group membership and decide whether it is expected.
+        - Explain how administrative tiering limits the damage of a compromised workstation.
+        - Propose three AD detections (recon spike, DCSync from a non-DC, privileged group change) and why each matters.
+      deliverable: An AD security assessment covering privileged-group exposure, the recon and abuse telemetry, one reviewed privileged-group change, and three proposed detections with rationale.
+    expected_outcome: >
+      You can explain why Active Directory is the prime Windows target, describe the main AD attacks and the
+      privilege they chase, and monitor the events that reveal enumeration and abuse before an attacker
+      reaches domain control.
+    quiz:
+      - prompt: Why is Active Directory the prime target in Windows environments?
+        options:
+          - It stores files
+          - Controlling AD means controlling identity and access across the whole environment
+          - It is rarely used
+          - It only manages printers
+        answer: 1
+        explanation: AD governs who everyone is and what they can access, so its compromise is environment-wide.
+      - prompt: A replication request from a host that is not a domain controller indicates
+        options: [A normal backup, Possible DCSync pulling password hashes from AD, A DNS change, A printer install]
+        answer: 1
+        explanation: Only DCs should replicate; such a request from elsewhere signals DCSync abuse.
+      - prompt: Kerberoasting works by
+        options:
+          - Deleting tickets
+          - Requesting service tickets to crack service-account passwords offline
+          - Disabling Kerberos
+          - Resetting all passwords
+        answer: 1
+        explanation: Service tickets are encrypted with the service account's key, which can be cracked offline.
+      - prompt: Administrative tiering helps because it
+        options:
+          - Speeds up logons
+          - Stops a compromised workstation from reaching Domain Admin credentials
+          - Removes all admins
+          - Encrypts the directory
+        answer: 1
+        explanation: Separating admin tiers prevents credential exposure from cascading up to domain control.

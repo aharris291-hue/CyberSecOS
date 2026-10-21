@@ -14,20 +14,27 @@ progress is kept because lessons are matched by `slug`.
 
 | # | Course | Domain | Lessons |
 |---|---|---|---|
-| 1 | Networking Foundations for SOC Analysts | Networking | 7 |
-| 2 | Security Foundations | Security Foundations | 7 |
-| 3 | Windows Security Monitoring | Windows Security | 7 |
-| 4 | Linux Security Operations | Linux Security | 7 |
-| 5 | SIEM Fundamentals | SIEM | 7 |
-| 6 | Vulnerability Management | Vulnerability Management | 7 |
-| 7 | Threat Hunting | Threat Hunting | 7 |
-| 8 | Incident Response | Incident Response | 7 |
-| 9 | Detection Engineering | Detection Engineering | 7 |
-| 10 | Security Architecture | Security Architecture | 7 |
-| 11 | Cloud Security Operations | Cloud Security | 7 |
-| 12 | Governance, Risk and Compliance | Governance, Risk and Compliance | 7 |
+| 1 | Networking Foundations for SOC Analysts | Networking | 9 |
+| 2 | Security Foundations | Security Foundations | 9 |
+| 3 | Windows Security Monitoring | Windows Security | 9 |
+| 4 | Linux Security Operations | Linux Security | 9 |
+| 5 | SIEM Fundamentals | SIEM | 9 |
+| 6 | Vulnerability Management | Vulnerability Management | 9 |
+| 7 | Threat Hunting | Threat Hunting | 9 |
+| 8 | Incident Response | Incident Response | 9 |
+| 9 | Detection Engineering | Detection Engineering | 9 |
+| 10 | Security Architecture | Security Architecture | 9 |
+| 11 | Cloud Security Operations | Cloud Security | 9 |
+| 12 | Governance, Risk and Compliance | Governance, Risk and Compliance | 9 |
 
-12 courses, 84 lessons, about 18% theory and 82% lab time overall. Every course now has seven lessons.
+12 courses, 108 lessons, about 18% theory and 82% lab time overall. Every course now has nine lessons.
+
+The catalog is being built out toward a target of roughly 300 hours of lesson
+time in total (about 66 minutes per lesson), steered by the official exam
+objectives of the four priority certifications. Course lesson counts will keep
+growing past the earlier 5-10 guideline to reach that total; the quality bar
+(six sections, the 20/80 theory/lab split, real objective ids) stays fixed and
+`test_content_standards.py` continues to enforce it on every lesson.
 
 **Certification coverage:** every objective of all four priority certifications
 (Security+ SY0-701, SC-900, SC-200, CySA+ CS0-003) maps to at least one lesson.

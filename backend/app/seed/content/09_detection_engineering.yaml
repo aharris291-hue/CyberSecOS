@@ -649,3 +649,185 @@ lessons:
           - Counting rules written
         answer: 1
         explanation: Honest coverage names detected techniques and remaining gaps rather than claiming blanket coverage.
+  - slug: de-credential-access-detection
+    title: Detecting Credential Access and Privilege Escalation
+    order: 8
+    difficulty: intermediate
+    summary: Engineer detections for the credential-theft and privilege-escalation techniques that turn a foothold into domain control, where precision matters because admins do similar things.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["cysa:1.4", "cysa:3.1", "sc200:2"]
+    learning_objectives:
+      - Describe the main credential-access and privilege-escalation techniques to detect
+      - Engineer detections that separate attacker behaviour from legitimate admin work
+      - Tune these high-value detections for precision without missing the real thing
+    theory: |
+      Credential access is the hinge of most intrusions: it is how an attacker turns a single compromised
+      host into the keys to the domain. The techniques are well known, so they are prime detection targets.
+      **LSASS access** (dumping memory to steal hashes and tickets), **Kerberoasting** (requesting service
+      tickets to crack offline), **DCSync** (abusing replication to pull password hashes from a domain
+      controller), and local **privilege escalation** (token manipulation, abusing a vulnerable service or
+      a UAC bypass) each leave characteristic telemetry, process access to LSASS, a burst of service-ticket
+      requests, replication requests from a non-DC, or a child process spawned with elevated integrity.
+
+      Engineering detections for these is high value but demands **precision**, because the legitimate twin
+      is always close: backup and EDR tools read LSASS, domain controllers replicate constantly, and admins
+      elevate privileges all day. A naive "alert on any LSASS access" drowns the analyst; a good detection
+      narrows by *who* and *how*, an unexpected process (not the known AV) accessing LSASS, a DCSync-style
+      replication request from a host that is not a domain controller, or Kerberoast-pattern ticket requests
+      far above an account's baseline. The art is encoding the difference between the attack and its
+      authorised look-alike into the rule.
+
+      This is where the detection-engineering discipline pays off. These detections are tuned with
+      **allow-lists** of known-good tools and service accounts, enriched with **asset context** (the same
+      behaviour is far more alarming on a domain controller), and validated by **emulating the technique**
+      to confirm the rule fires on the attack but stays quiet on routine admin work. Because the payoff of
+      a true positive here is enormous, catching an intrusion before it reaches domain dominance, these
+      detections are worth the effort to get precise, and they are re-tuned, never simply switched off, when
+      they prove noisy.
+    examples:
+      - title: Narrowing an LSASS-access detection
+        body: |
+          Naive:  alert on ANY process opening lsass.exe -> floods on AV/EDR/backup
+          Tuned:  alert when a process NOT on the known-good list opens lsass with read rights
+          Encode the attacker/admin difference into the rule.
+      - title: DCSync from the wrong place
+        body: |
+          Replication (DsGetNCChanges) request -> normal between domain controllers
+          Same request from a workstation        -> DCSync abuse, high confidence
+          Asset context (is the source a DC?) makes the detection precise.
+    exercise:
+      title: Engineer and tune a credential-access detection
+      environment: A lab with endpoint/AD telemetry or sample logs, ideally with an emulation tool (such as an Atomic Red Team test) or provided attack and benign samples
+      tools: [A SIEM/EDR or sample logs, an emulation test or attack/benign samples, a MITRE ATT&CK reference, a notes file]
+      steps:
+        - Choose one credential-access or privilege-escalation technique and describe the telemetry it produces and its legitimate twin.
+        - Write a first-pass detection for it and identify why a naive version would be noisy.
+        - Narrow the detection by who and how, using an allow-list of known-good tools or service accounts and asset context.
+        - Emulate the technique (or use the attack sample) and confirm the detection fires on the attack.
+        - Run the detection against benign/admin activity and confirm it stays quiet, tuning if it does not.
+        - Map it to ATT&CK, note the asset context that raises its severity, and state how you would re-tune rather than disable it if it later proves noisy.
+      deliverable: A tuned detection for one technique with its first-pass and narrowed versions, the emulation result showing it fires on the attack and not on benign activity, and the ATT&CK mapping with asset-context severity.
+    expected_outcome: >
+      You can engineer detections for LSASS access, Kerberoasting, DCSync and privilege escalation, encode
+      the difference between the attack and its authorised look-alike, and tune them for precision so these
+      high-value detections catch the real thing without drowning the analyst.
+    quiz:
+      - prompt: Why is credential access a high-value detection target?
+        options:
+          - It is harmless
+          - It is how an attacker turns one compromised host into domain-wide control
+          - It only affects printers
+          - It cannot be detected
+        answer: 1
+        explanation: Stealing credentials enables privilege escalation and lateral movement to domain dominance.
+      - prompt: Why must an LSASS-access detection be narrowed rather than alert on any access?
+        options:
+          - LSASS is never accessed
+          - Legitimate tools (AV, EDR, backup) read LSASS, so a naive rule floods the analyst
+          - Narrowing is impossible
+          - It should be disabled
+        answer: 1
+        explanation: Precision separates the attacker from authorised tools that also touch LSASS.
+      - prompt: A DCSync-style replication request is high-confidence malicious when it comes from
+        options: [Another domain controller, A host that is not a domain controller, The backup server, The DNS server]
+        answer: 1
+        explanation: Replication is normal between DCs; from a workstation it indicates DCSync abuse.
+      - prompt: When a high-value credential-access detection proves noisy, the right move is to
+        options: [Disable it, Re-tune it with allow-lists and context rather than switch it off, Delete the logs, Lower all severities]
+        answer: 1
+        explanation: These detections are too valuable to drop, so they are tuned for precision instead of disabled.
+  - slug: de-detection-tuning
+    title: Reducing False Positives and Tuning Detections
+    order: 9
+    difficulty: intermediate
+    summary: Make detections precise, tuning out false positives without silencing real threats, because an alert pipeline that cries wolf is as dangerous as having no detection at all.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["cysa:1.3", "cysa:3.1", "sc200:2"]
+    learning_objectives:
+      - Explain how alert fatigue from false positives harms security
+      - Apply tuning techniques that cut noise without losing true positives
+      - Measure a detection's quality and decide when to tune, not disable
+    theory: |
+      A detection that fires constantly on benign activity is not a minor annoyance; it is a security risk.
+      **Alert fatigue** is real: when analysts face hundreds of false positives a day, they start to
+      rubber-stamp or ignore alerts, and the one true positive in the pile gets closed with the rest. So the
+      quality of a detection is not just whether it catches the attack, but whether it does so without
+      drowning the team, and tuning, the deliberate reduction of false positives, is a core detection-engineering
+      skill that directly improves the SOC's ability to catch real threats.
+
+      The techniques are specific and preferred in roughly this order. First, **narrow the logic**: make the
+      rule more precise so it matches the attack and not its benign twin, requiring a suspicious parent
+      process, a specific argument, or a sequence rather than a single common event. Second, use
+      **allow-lists** for the known-good causes, the backup tool that legitimately touches the files, the
+      vulnerability scanner that trips the rule nightly, so those specific, verified cases are excluded by
+      identity rather than by weakening the detection for everyone. Third, add **context and thresholds**,
+      fire only when the behaviour exceeds a baseline, or raise severity with asset criticality, so routine
+      low-level occurrences do not page anyone. The order matters: tightening logic and allow-listing
+      specific causes keep the detection sharp, whereas crude broadening dulls it.
+
+      Underpinning tuning is **measurement**. You cannot tune what you do not measure, so good teams track
+      each detection's volume and its true-positive rate, and treat a detection that is all noise as a bug to
+      fix, not a fact to live with. The crucial discipline, carried over from every detection lesson, is that
+      the answer to a noisy high-value detection is to **tune it, never to disable it**: disabling blinds you
+      to the attack it was built for. Equally, tuning must not quietly cut true positives, so each change is
+      validated against known attack samples to confirm the detection still fires on the real thing. Precise,
+      measured, continually tuned detections are what make an alert queue something analysts can actually
+      trust and work.
+    examples:
+      - title: Tune by narrowing, not broadening
+        body: |
+          Noisy:  alert on any use of PsExec
+          Tuned:  alert on PsExec from a non-admin host to many targets in a short window
+          Sharper logic keeps the attack, drops the routine admin use.
+      - title: Allow-list a specific known-good cause
+        body: |
+          Rule trips nightly on the vuln scanner's traffic
+          Fix: exclude THAT scanner's identity/host -> noise gone
+          Wrong fix: disable the rule -> blind to the real attack it catches
+    exercise:
+      title: Tune a noisy detection without losing coverage
+      environment: A SIEM/EDR or sample alerts from a detection that is firing with many false positives, plus known attack samples or test events
+      tools: [A SIEM/EDR or sample alerts, known attack/benign samples, a notes file]
+      steps:
+        - Take a noisy detection and review a sample of its alerts to identify the benign causes of the false positives.
+        - Explain how alert fatigue from this detection could cause a real threat to be missed.
+        - Tune it first by narrowing the logic so it better separates the attack from the benign twin.
+        - Add an allow-list for a specific verified known-good cause and explain why that is better than broadening the rule.
+        - Validate the tuned detection against a known attack sample to confirm it still fires on the real thing.
+        - Define the metrics (alert volume, true-positive rate) you would track, and state why you tune rather than disable.
+      deliverable: A tuning write-up identifying the false-positive causes, the narrowed logic and allow-list applied, a validation showing the attack is still caught, and the metrics plus the tune-not-disable rationale.
+    expected_outcome: >
+      You can reduce a detection's false positives by narrowing logic, allow-listing verified causes and
+      adding context, validate that it still catches the real attack, measure its quality, and always tune
+      rather than disable a noisy high-value detection.
+    quiz:
+      - prompt: Why is a detection that fires constantly on benign activity a security risk?
+        options:
+          - It uses disk space
+          - Alert fatigue leads analysts to ignore or rubber-stamp alerts, so a real one gets missed
+          - It is always wrong
+          - It slows the network
+        answer: 1
+        explanation: Flooding analysts with false positives causes the true positive to be closed with the noise.
+      - prompt: The preferred first tuning technique is to
+        options:
+          - Disable the rule
+          - Narrow the logic so it matches the attack and not its benign twin
+          - Lower every severity
+          - Delete the logs
+        answer: 1
+        explanation: Tightening the logic keeps the detection sharp while removing benign matches.
+      - prompt: Allow-listing a known-good cause is better than broadening the rule because
+        options:
+          - It is faster to type
+          - It excludes a specific verified case by identity without weakening the detection for everyone
+          - It disables the rule
+          - It raises false positives
+        answer: 1
+        explanation: Excluding a specific verified cause preserves detection strength, unlike crude broadening.
+      - prompt: When a high-value detection is noisy, the correct response is to
+        options: [Disable it, Tune it and validate it still fires on real attacks, Ignore all its alerts, Delete the detection]
+        answer: 1
+        explanation: Disabling blinds you to the attack; tuning with validation keeps coverage while cutting noise.

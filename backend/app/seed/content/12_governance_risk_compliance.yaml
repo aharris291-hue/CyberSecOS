@@ -641,3 +641,185 @@ lessons:
         options: [Ignore it, Document a risk-accepted exception with a compensating control, Delete the finding, Fail the whole audit]
         answer: 1
         explanation: A documented exception plus a compensating control bridges a gap transparently until it can be closed.
+  - slug: grc-policies-standards-procedures
+    title: Security Policies, Standards and Procedures
+    order: 8
+    difficulty: beginner
+    summary: Understand the document hierarchy that turns security intent into daily practice, policies, standards, procedures and guidelines, and how exceptions and enforcement keep it real.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:5.1", "secplus:5.2", "cysa:4.1"]
+    learning_objectives:
+      - Distinguish policies, standards, procedures and guidelines and how they relate
+      - Explain how governance documents turn intent into enforceable practice
+      - Handle exceptions, enforcement and review so documents stay effective
+    theory: |
+      A security programme runs on a hierarchy of documents, and confusing their levels is a common
+      failure. A **policy** is a high-level statement of intent and requirement approved by leadership, for
+      example "all data must be encrypted in transit and at rest"; it is mandatory, stable and says *what*
+      and *why*, not *how*. **Standards** make a policy measurable: "TLS 1.2 or higher; AES-256 at rest"
+      turns the principle into a testable requirement. **Procedures** are the step-by-step *how* that a
+      person follows to meet a standard, and **guidelines** are recommended, non-mandatory best practice.
+      The chain matters: a policy without standards is unenforceable, and a procedure with no policy behind
+      it is an orphan nobody has authority to require.
+
+      These documents exist to turn intent into **enforceable practice**. A policy that leadership approves
+      gives the programme authority, an auditor something to test against, and staff a clear expectation.
+      This is also where related governance pieces attach, an **acceptable use policy** for staff
+      behaviour, a **data classification** standard, an **incident response** procedure, each tracing up to
+      a governing policy. Well-structured documents are how "we take security seriously" becomes something a
+      new hire can read and an auditor can verify.
+
+      Documents only stay effective if they are **lived, not shelved**. Every policy needs an **owner**, a
+      **review cycle** so it does not drift from reality, and an **exception process** so that when a
+      genuine business need conflicts with a standard, the gap is risk-accepted and recorded rather than
+      quietly ignored. **Enforcement** closes the loop, a policy nobody enforces trains people to ignore all
+      of them. The practical test of a good document set is simple: can someone find the rule, understand
+      what they must do, and see the consequence of not doing it.
+    examples:
+      - title: The document hierarchy in one chain
+        body: |
+          Policy     "data encrypted in transit and at rest" (what/why, mandatory)
+          Standard   "TLS 1.2+, AES-256"                     (measurable)
+          Procedure  "how to enable TLS on the web server"   (step-by-step how)
+          Guideline  "prefer TLS 1.3 where supported"        (recommended)
+      - title: An exception kept honest
+        body: |
+          Standard: MFA on all admin access
+          Reality:  one legacy tool cannot do MFA
+          Exception: owner-approved, time-bound, compensating control (jump host + logging)
+          Recorded, reviewed, not a silent permanent gap.
+    exercise:
+      title: Build a slice of a policy framework
+      environment: A described organisation or your own context, plus a document or template
+      tools: [A document or template, a reference framework for structure, a notes file]
+      steps:
+        - Pick one security objective (for example access control or encryption) and write a short policy statement of intent for it.
+        - Derive one measurable standard from that policy and one step-by-step procedure that implements the standard.
+        - Add a guideline that is recommended but not mandatory, and explain the difference in force from the standard.
+        - Assign an owner and a review cycle to the policy and explain why both are needed.
+        - Draft an exception for a realistic case where the standard cannot be met, with a compensating control and an approver.
+        - Describe how the policy would be enforced and what the document set lets an auditor verify.
+      deliverable: A documentation slice with a policy, a derived standard and procedure, a guideline, an owner and review cycle, one exception with a compensating control, and the enforcement and audit angle.
+    expected_outcome: >
+      You can distinguish policies, standards, procedures and guidelines, build a chain that turns intent
+      into enforceable, auditable practice, and keep it effective with owners, reviews, exceptions and
+      enforcement.
+    quiz:
+      - prompt: Which document states high-level mandatory intent approved by leadership?
+        options: [A procedure, A policy, A guideline, A log]
+        answer: 1
+        explanation: A policy sets mandatory intent and authority; standards, procedures and guidelines flow from it.
+      - prompt: A standard differs from a policy in that it
+        options:
+          - Is optional
+          - Makes the policy measurable and testable (for example specific protocols or settings)
+          - Needs no approval
+          - Is written by auditors
+        answer: 1
+        explanation: Standards translate a policy's intent into specific, verifiable requirements.
+      - prompt: A guideline is
+        options: [Mandatory like a policy, Recommended, non-mandatory best practice, A step-by-step procedure, An audit finding]
+        answer: 1
+        explanation: Guidelines advise rather than require, unlike policies and standards.
+      - prompt: Why does every policy need an owner and a review cycle?
+        options:
+          - To add paperwork
+          - So it stays current with reality and someone is accountable for it, rather than drifting or being ignored
+          - To avoid enforcement
+          - To make it optional
+        answer: 1
+        explanation: Ownership and review keep documents accurate and authoritative instead of shelved and stale.
+  - slug: grc-risk-assessment-register
+    title: Risk Assessment and the Risk Register
+    order: 9
+    difficulty: beginner
+    summary: Learn to assess risk systematically, likelihood against impact, and record and track it in a risk register so decisions about what to fix are deliberate, not reactive.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:5.2", "secplus:5.4", "cysa:4.1"]
+    learning_objectives:
+      - Define risk in terms of likelihood and impact and how to assess it
+      - Describe the four risk-treatment options and when each applies
+      - Maintain a risk register that turns assessment into tracked decisions
+    theory: |
+      Security resources are always finite, so the central question of governance is *which* risks to spend
+      them on, and risk assessment answers it systematically. **Risk** is the combination of how **likely**
+      a threat is to exploit a vulnerability and how large the **impact** would be if it did. Assessing risk
+      means, for each scenario, estimating both and combining them, often on a simple **likelihood-by-impact
+      matrix** (a high-likelihood, high-impact risk is red and urgent; a low-likelihood, low-impact one is
+      green and can wait). The estimates can be **qualitative** (high/medium/low, fast and common) or
+      **quantitative** (expressed in expected monetary loss, more rigorous and harder), but either way the
+      point is to compare risks on a common scale rather than react to whatever is loudest.
+
+      Once a risk is assessed, there are four ways to **treat** it. **Mitigate**: apply a control to reduce
+      the likelihood or impact (the usual choice). **Transfer**: shift the financial impact to someone else,
+      typically insurance or a contract. **Avoid**: stop doing the risky activity altogether. **Accept**:
+      consciously decide the risk is tolerable and do nothing further, which is legitimate for low risks as
+      long as it is a deliberate, documented decision by someone with the authority to accept it, not a
+      quiet oversight. Choosing among these is a business decision informed by security, not a purely
+      technical one.
+
+      The tool that makes this real and durable is the **risk register**: a living record of each identified
+      risk, its likelihood and impact, the chosen treatment, an owner, and a status. Without it, risk
+      management is a one-off report that ages instantly; with it, risks are tracked, re-reviewed as
+      conditions change, and visible to leadership. The register is also what an auditor looks for as
+      evidence that the organisation knows its risks and is managing them on purpose. The discipline it
+      enforces is simple but powerful: every significant risk is named, assessed, assigned to someone, and
+      has a decision attached, so nothing important is being ignored by accident.
+    examples:
+      - title: Likelihood-by-impact at a glance
+        body: |
+          High likelihood + High impact -> RED (urgent, treat now)
+          Low likelihood  + High impact -> plan (transfer/mitigate)
+          Low  + Low                    -> GREEN (often accept)
+          Compare risks on one scale instead of reacting to the loudest.
+      - title: A risk register row
+        body: |
+          Risk: unpatched internet-facing server | Likelihood: High | Impact: High
+          Treatment: Mitigate (patch + WAF) | Owner: Infra lead | Status: In progress
+          Named, assessed, owned, decided, tracked.
+    exercise:
+      title: Assess risks and build a small risk register
+      environment: A described organisation or your own context, plus a spreadsheet or document
+      tools: [A spreadsheet or document, a likelihood-impact matrix, a notes file]
+      steps:
+        - Identify four realistic risks for the organisation and, for each, estimate likelihood and impact.
+        - Place the four risks on a likelihood-by-impact matrix and explain which are urgent and which can wait.
+        - For each risk, choose a treatment (mitigate, transfer, avoid, accept) and justify the choice.
+        - Write a risk register with a row per risk: likelihood, impact, treatment, owner and status.
+        - For one accepted risk, document why acceptance is appropriate and who has the authority to accept it.
+        - Explain how and when the register would be re-reviewed as conditions change.
+      deliverable: A small risk register of four risks scored on a likelihood-impact matrix, each with a justified treatment, owner and status, plus a documented acceptance and a review cadence.
+    expected_outcome: >
+      You can assess risk as likelihood against impact, choose among mitigate, transfer, avoid and accept,
+      and maintain a risk register that turns assessment into tracked, owned, deliberate decisions.
+    quiz:
+      - prompt: Risk is best understood as the combination of
+        options:
+          - Cost and time
+          - The likelihood a threat exploits a vulnerability and the impact if it does
+          - Users and servers
+          - Policies and standards
+        answer: 1
+        explanation: Risk combines how likely an adverse event is with how damaging it would be.
+      - prompt: Buying insurance to cover a risk's financial impact is which treatment?
+        options: [Mitigate, Transfer, Avoid, Accept]
+        answer: 1
+        explanation: Transfer shifts the financial impact to another party, such as an insurer.
+      - prompt: Accepting a risk is legitimate when
+        options:
+          - It is ignored quietly
+          - It is a deliberate, documented decision by someone with authority to accept it
+          - The risk is high
+          - No one is told
+        answer: 1
+        explanation: Acceptance is valid for tolerable risks only as a conscious, authorised, recorded decision.
+      - prompt: The purpose of a risk register is to
+        options:
+          - Replace all controls
+          - Track each risk with its assessment, treatment, owner and status as a living record
+          - Store passwords
+          - List employees
+        answer: 1
+        explanation: The register keeps risks named, owned, decided and re-reviewed rather than forgotten.
