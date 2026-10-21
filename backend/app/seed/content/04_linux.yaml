@@ -512,3 +512,94 @@ lessons:
         options: [It is the same, Hardening prevents the weakness; this finds the evidence after it has been used, It only covers firewalls, It ignores logs]
         answer: 1
         explanation: Hardening closes the gaps in advance; detection reconstructs what happened once a gap was exploited.
+  - slug: linux-malware-rootkit-detection
+    title: Linux Malware and Rootkit Detection
+    order: 7
+    difficulty: intermediate
+    summary: Find malware and rootkits on a Linux host by checking processes, network connections, loaded modules and file integrity, and tell a compromise from normal admin activity.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["cysa:1.2", "cysa:3.2", "secplus:4.9"]
+    learning_objectives:
+      - Hunt a Linux host for malware using processes, connections and persistence
+      - Explain how user-space and kernel rootkits hide and how to spot them
+      - Distinguish a real compromise from legitimate administration
+    theory: |
+      Linux malware is often quieter than its Windows cousin, a mining binary, a backdoor, or a
+      web shell on a server, so detection leans on examining the live system and its integrity.
+      The first pass is behavioural: **unusual processes** (an unknown binary, a process running
+      from /tmp or /dev/shm, a deleted executable still running), **unexpected network connections**
+      (a listening port or an outbound connection to a strange host), and **persistence** in cron,
+      systemd units, shell profiles or SSH authorized_keys. These are the same places an admin works,
+      so each finding is weighed against what is normal for the host.
+
+      A **rootkit** is built to defeat exactly that inspection. A **user-space rootkit** replaces
+      tools like ps, ls or netstat with trojaned versions that hide the attacker's files and
+      processes, so the box lies to you. A **kernel rootkit** loads a malicious module and hooks the
+      kernel itself, hiding processes and connections below the level any user tool can see. The tells
+      are discrepancies: a port shown by a direct kernel query but not by netstat, a process in
+      /proc that ps does not list, or a loaded module with no legitimate origin. This is why serious
+      checks use trusted static binaries and cross-check two independent views.
+
+      **File integrity** ties it together. A baseline of known-good hashes (from a tool like AIDE, or
+      package-manager verification) reveals a replaced system binary at once, which is why integrity
+      monitoring is a core control. The safest inspection of a suspected rootkit is from **outside** the
+      running system, mounting the disk from a trusted live image, because a compromised kernel cannot
+      hide from an OS it is not running under. As always, a finding is confirmed, not assumed; a
+      sysadmin's own tool or a package update can look anomalous until checked.
+    examples:
+      - title: A process that does not add up
+        body: |
+          /proc shows PID 2931 with deleted exe  (ls -l /proc/2931/exe -> "(deleted)")
+          ss shows a listener on :4444 that netstat does not  -> tool may be trojaned
+          Cross-check two views; trust the kernel query over the user tool.
+      - title: File integrity catching a replaced binary
+        body: |
+          Baseline  /bin/ls  sha256 a1b2...   package-verified
+          Now       /bin/ls  sha256 ffee...   -> replaced; likely a user-space rootkit
+          Inspect from a trusted live image, not the running system.
+    exercise:
+      title: Triage a Linux host for malware and rootkit signs
+      environment: A disposable Linux VM (optionally with a benign simulated indicator such as a binary in /tmp and a cron entry) or a provided triage data set
+      tools: [A Linux VM or data set, standard tools (ps, ss, ls, systemctl, crontab), a file-integrity or package-verify tool, a notes file]
+      steps:
+        - List running processes and flag any running from temporary directories, with deleted executables, or otherwise unexpected for this host.
+        - List listening ports and active connections and identify any that do not match a known service.
+        - Check the common persistence locations (cron, systemd units, shell profiles, SSH authorized_keys) and note anything unexplained.
+        - Cross-check one finding using two independent views (for example ss versus netstat, or /proc versus ps) and explain what a discrepancy would mean.
+        - Verify the integrity of key system binaries against a baseline or the package manager and record any mismatch.
+        - For each finding, decide whether it is malware, a rootkit indicator, or legitimate administration, and justify how you would confirm it safely.
+      deliverable: A triage note listing the processes, connections and persistence checked, any integrity mismatch, the cross-check you ran, and your confirmed verdict with the safe next step.
+    expected_outcome: >
+      You can hunt a Linux host for malware and rootkits across processes, connections, persistence and
+      file integrity, recognise how rootkits hide, and separate a real compromise from normal admin
+      work before acting.
+    quiz:
+      - prompt: A process running from /tmp or /dev/shm with a deleted executable is
+        options:
+          - Always normal
+          - A suspicious indicator worth investigating
+          - Proof of a kernel rootkit
+          - A network setting
+        answer: 1
+        explanation: Running from temporary storage with a deleted on-disk image is a common malware trait worth a closer look.
+      - prompt: A user-space rootkit hides activity by
+        options:
+          - Encrypting the disk
+          - Replacing tools like ps, ls and netstat with trojaned versions that omit the attacker's artefacts
+          - Loading more RAM
+          - Rotating logs
+        answer: 1
+        explanation: Trojaned user tools make the system lie about its own processes, files and connections.
+      - prompt: Why inspect a suspected kernel rootkit from outside the running system?
+        options:
+          - It is faster
+          - A compromised kernel can hide from tools running under it, but not from an OS it is not running
+          - It uses less disk
+          - To avoid writing notes
+        answer: 1
+        explanation: Examining the disk from a trusted live image bypasses a kernel that hides artefacts while it runs.
+      - prompt: File integrity monitoring detects a rootkit's replaced binary by
+        options: [Encrypting it, Comparing current hashes against a known-good baseline, Deleting it, Rebooting]
+        answer: 1
+        explanation: A hash that no longer matches the baseline reveals a tampered system binary immediately.

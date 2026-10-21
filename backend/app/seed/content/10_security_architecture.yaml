@@ -550,3 +550,99 @@ lessons:
         options: [It is the same, It is about the architecture around keys (where they live, rotate and who reaches them) rather than how the algorithms work, It only covers passwords, It ignores rotation]
         answer: 1
         explanation: The crypto lesson covered the algorithms; this one covers the key-management architecture around them.
+  - slug: arch-identity-access-design
+    title: Identity and Access Architecture
+    order: 7
+    difficulty: intermediate
+    summary: Design the identity fabric a modern organisation runs on, covering single sign-on, federation, conditional access and privileged access, so identity becomes a controllable security boundary.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:3.1", "secplus:4.6", "cysa:1.1"]
+    learning_objectives:
+      - Explain SSO and federation and the security trade-offs of centralised identity
+      - Design conditional access that adapts to risk without blocking legitimate users
+      - Architect privileged access so powerful accounts are controlled and auditable
+    theory: |
+      In a cloud-first organisation, identity is the control plane: once perimeters dissolve, *who* is
+      asking and *under what conditions* decides access. **Single sign-on** lets a user authenticate
+      once to an identity provider and reach many applications, which improves both usability and
+      security because authentication, MFA and policy are enforced in one place instead of each app
+      inventing its own. **Federation** (via SAML or OpenID Connect) extends this trust across
+      organisations, letting a partner's users access a service with their own identity. The trade-off
+      is concentration: the identity provider becomes a single high-value target, so it must be the most
+      hardened system you run.
+
+      Because access now hinges on identity, the policy has to be **adaptive**. **Conditional access**
+      evaluates signals, user, device health, location, and a risk score, at sign-in and steps up or
+      blocks accordingly: a sign-in from a managed device in the office passes quietly, while the same
+      account from an unmanaged device in a new country is challenged for MFA or denied. Designed well,
+      this raises security and reduces friction at the same time; designed badly, it locks people out or
+      waves risk through.
+
+      The most dangerous identities are **privileged** ones. Architecting for them means least privilege
+      by default, **just-in-time** elevation instead of standing admin rights, separate admin accounts,
+      and a **privileged access management** system that brokers, approves and records elevated sessions.
+      The whole design is underpinned by the **identity lifecycle**, joiners, movers and leavers,
+      because an account that keeps access after a role change or departure is exactly the gap attackers
+      exploit. Good identity architecture turns "who can do what" from an unknowable sprawl into a policy
+      you can state, enforce and audit.
+    examples:
+      - title: Conditional access adapting to risk
+        body: |
+          Managed device + office IP + low risk   -> allow, no extra prompt
+          Unmanaged device + new country + risky   -> require MFA or block
+          One policy, different outcomes by signal.
+      - title: Standing admin versus just-in-time
+        body: |
+          Standing:  20 permanent global admins -> huge, always-on attack surface
+          JIT:       elevate to admin for 2h with approval, auto-expire, fully logged
+          Fewer standing privileges means fewer accounts worth stealing.
+    exercise:
+      title: Design an identity and access architecture for a sample org
+      environment: A described sample organisation (apps, user groups, partners, admins) and a diagramming or document tool
+      tools: [A diagram or document tool, a sample org description, identity-provider documentation for reference]
+      steps:
+        - Map the sample org's applications and user groups and show how SSO through one identity provider would connect them.
+        - Identify one partner or external access need and describe how federation would meet it and what trust it establishes.
+        - Design three conditional-access rules using signals (device, location, risk) and state the outcome (allow, step-up MFA, block) for each.
+        - Define how privileged access would work, separate admin accounts, just-in-time elevation and approval, and session recording.
+        - Describe the joiner-mover-leaver process for one role change and how it prevents lingering access.
+        - Identify the biggest risk your centralised design introduces (the identity provider as a single target) and one way you would harden it.
+      deliverable: An identity-architecture outline with the SSO and federation design, three conditional-access rules, the privileged-access approach, a lifecycle process, and the top risk with its mitigation.
+    expected_outcome: >
+      You can design an identity fabric with SSO, federation, conditional access and privileged-access
+      controls, make identity an adaptive and auditable security boundary, and account for the
+      concentration risk that centralised identity creates.
+    quiz:
+      - prompt: A security benefit of single sign-on is that
+        options:
+          - Users never need passwords
+          - Authentication, MFA and policy are enforced in one place instead of each app doing its own
+          - It removes the identity provider
+          - It disables logging
+        answer: 1
+        explanation: Centralising authentication lets strong, consistent controls be enforced once rather than reinvented per app.
+      - prompt: Conditional access improves security by
+        options:
+          - Blocking everyone
+          - Evaluating signals like device, location and risk at sign-in and stepping up or blocking accordingly
+          - Removing MFA
+          - Storing more logs
+        answer: 1
+        explanation: Adaptive policy applies the right challenge for the risk, raising security while keeping low-risk sign-ins smooth.
+      - prompt: Just-in-time privileged access reduces risk because
+        options:
+          - It gives everyone admin
+          - Elevated rights are granted temporarily and expire, shrinking standing admin attack surface
+          - It never logs
+          - It removes approvals
+        answer: 1
+        explanation: Time-bound, approved elevation means far fewer always-on privileged accounts for an attacker to steal.
+      - prompt: Centralising identity in one provider introduces which risk?
+        options:
+          - Nothing changes
+          - The identity provider becomes a single high-value target that must be heavily hardened
+          - Slower networks
+          - More passwords
+        answer: 1
+        explanation: Concentrated identity is powerful but makes the IdP a prime target, so it must be the most hardened system.

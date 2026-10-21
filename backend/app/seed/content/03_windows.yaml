@@ -502,3 +502,98 @@ lessons:
         options: [It is identical, It follows one identity hopping from host to host across the domain, It ignores logons, It only reads RDP]
         answer: 1
         explanation: Single-host monitoring watches one machine; lateral-movement detection tracks an identity moving across many.
+  - slug: win-hardening-asr
+    title: Windows Endpoint Hardening and Attack Surface Reduction
+    order: 7
+    difficulty: intermediate
+    summary: Shrink what an attacker can do on a Windows endpoint with attack surface reduction rules, application control and hardened defaults, and verify the hardening actually holds.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.6", "sc200:2", "cysa:1.4"]
+    learning_objectives:
+      - Explain attack surface reduction and why prevention complements detection
+      - Apply application control and ASR-style rules to block common attack techniques
+      - Verify hardening with a baseline and confirm it does not break legitimate work
+    theory: |
+      Detection catches what gets through; **hardening** removes the opportunity in the first place.
+      On Windows the goal of **attack surface reduction** is to shut the doors attackers routinely
+      walk through, Office spawning scripts, macros reaching the internet, credential theft from LSASS,
+      executables running from user temp folders, without waiting for a detection to fire. Microsoft
+      Defender ships **ASR rules** that block exactly these behaviours, and each one maps to a technique
+      seen in real intrusions.
+
+      **Application control** is the stronger lever. Instead of blocking known-bad, **AppLocker** and
+      **Windows Defender Application Control** allow only approved code to run, so an attacker's dropped
+      binary or script simply does not execute. The trade-off is operational: an allow-list must be
+      built from what the business actually runs, which is why these are usually deployed in **audit
+      mode** first to learn the environment, then enforced. Hardened defaults round it out, disabling
+      legacy protocols like SMBv1, constraining PowerShell with Constrained Language Mode, and enforcing
+      a security **baseline** such as the Microsoft or CIS benchmarks.
+
+      Hardening is only real if it is **verified and maintained**. You confirm a setting is applied (not
+      just configured) by checking the endpoint against the baseline, and you check that enforcement did
+      not break legitimate work, an over-tight AppLocker policy that blocks a line-of-business app causes
+      an outage and gets rolled back in a panic, which is worse than no policy. So hardening is staged:
+      measure, apply in audit, review what would have been blocked, then enforce, and keep the baseline
+      current as the environment changes. Prevention and detection work together; a blocked technique that
+      also logs tells the SOC an attempt happened.
+    examples:
+      - title: An ASR rule blocking a real technique
+        body: |
+          Technique: Office app spawns a child process (macro -> powershell)
+          ASR rule:  "Block Office apps from creating child processes"
+          Result:    the macro payload cannot launch; the block is also logged for the SOC
+      - title: Application control staged safely
+        body: |
+          Audit mode:  log what WOULD be blocked for 2 weeks -> build the allow list
+          Enforce:     only approved, signed code runs; dropped malware.exe fails to start
+          Guardrail:   review audit logs first so a business app is not blocked on day one
+    exercise:
+      title: Harden a Windows test VM and verify it
+      environment: A disposable Windows VM (or a provided hardening checklist and sample baseline report) you can change and revert
+      tools: [A Windows VM or lab, Defender/ASR and AppLocker settings or their documentation, a security baseline (CIS or Microsoft), a notes file]
+      steps:
+        - Capture the VM's current state against a baseline (CIS or Microsoft) and list three settings that are weaker than the baseline recommends.
+        - Enable two ASR-style rules (for example blocking Office child processes and credential theft from LSASS) and note the technique each one stops.
+        - Configure application control in audit mode and record what it would block, then explain how you would turn audit into enforcement safely.
+        - Disable one legacy feature (such as SMBv1) and confirm it is actually off, not just configured.
+        - Re-check the VM against the baseline and confirm the three weak settings are now compliant.
+        - Test one piece of legitimate activity and confirm your hardening did not break it, noting what you would do if it had.
+      deliverable: A before/after baseline comparison, the ASR and application-control changes with the techniques they block, and a note confirming legitimate work still functions.
+    expected_outcome: >
+      You can harden a Windows endpoint with ASR rules, application control and baseline settings,
+      verify the hardening is actually applied, and confirm it reduces attack surface without breaking
+      legitimate work.
+    quiz:
+      - prompt: Attack surface reduction aims to
+        options:
+          - Replace all detection
+          - Remove the opportunities attackers use, so techniques are blocked before a detection is needed
+          - Delete event logs
+          - Speed up the endpoint
+        answer: 1
+        explanation: Hardening prevents common techniques outright, complementing detection rather than replacing it.
+      - prompt: Why is application control usually deployed in audit mode first?
+        options:
+          - To make it run faster
+          - To learn what the business actually runs before enforcing an allow list, avoiding outages
+          - Because audit mode blocks more
+          - It is required by law
+        answer: 1
+        explanation: Audit mode reveals what would be blocked so the allow list is built safely before enforcement.
+      - prompt: Allow-listing (application control) is stronger than blocking known-bad because
+        options:
+          - It uses less memory
+          - Only approved code runs, so an attacker's dropped binary or script simply will not execute
+          - It never needs maintenance
+          - It disables logging
+        answer: 1
+        explanation: Allow-listing denies everything not explicitly approved, so novel malware fails to run.
+      - prompt: Hardening is only real once you
+        options:
+          - Configure a setting
+          - Verify it is actually applied and confirm it did not break legitimate work
+          - Write a policy document
+          - Reboot once
+        answer: 1
+        explanation: A configured-but-unverified setting may not be in effect, and unchecked enforcement can cause outages.

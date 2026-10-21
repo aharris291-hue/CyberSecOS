@@ -1,5 +1,12 @@
 # Changelog
 
+## Phase 2 - A seventh lesson for every remaining course
+
+### Seventh lessons across the rest of the catalog
+- Finished the pass to seven lessons per course: the remaining eight courses each gain a seventh lesson, so all 12 courses now have seven (84 lessons total).
+- New lessons: wireless and network access security (Networking); data classification and protection (Security Foundations); endpoint hardening and attack surface reduction (Windows); malware and rootkit detection (Linux); threat intelligence and exploit prioritisation (Vulnerability Management); identity and access architecture (Security Architecture); cloud network security and segmentation (Cloud); and audits, assessments and evidence (Governance, Risk and Compliance).
+- All keep the six education-standard sections and the ~18/82 theory/lab split (catalog theory ratio 0.18); content-standard, seeding and coverage tests still pass (464 backend tests).
+
 ## Phase 2 - A seventh lesson for the core SOC courses
 
 ### Seventh lessons for the SOC daily-driver courses
