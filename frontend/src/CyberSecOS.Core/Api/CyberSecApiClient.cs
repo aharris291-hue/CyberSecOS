@@ -70,6 +70,15 @@ public sealed class CyberSecApiClient : ICyberSecApi
     public Task<LessonProgress> ReopenLabAsync(int lessonId, CancellationToken ct = default) =>
         SendAsync<LessonProgress>(HttpMethod.Delete, $"api/lessons/{lessonId}/lab", null, ct);
 
+    public Task<LabDetail> GetLabAsync(int lessonId, CancellationToken ct = default) =>
+        SendAsync<LabDetail>(HttpMethod.Get, $"api/lessons/{lessonId}/lab", null, ct);
+
+    public Task<LabResult> SubmitLabAsync(int lessonId, LabSubmission submission, CancellationToken ct = default) =>
+        SendAsync<LabResult>(HttpMethod.Post, $"api/lessons/{lessonId}/lab/attempts", submission, ct);
+
+    public async Task<IReadOnlyList<LabSummary>> GetLabsAsync(CancellationToken ct = default) =>
+        await SendAsync<List<LabSummary>>(HttpMethod.Get, "api/labs", null, ct).ConfigureAwait(false);
+
     public Task<ProgressSummary> GetProgressAsync(CancellationToken ct = default) =>
         SendAsync<ProgressSummary>(HttpMethod.Get, $"api/progress?tz_offset_minutes={LocalOffsetMinutes()}", null, ct);
 

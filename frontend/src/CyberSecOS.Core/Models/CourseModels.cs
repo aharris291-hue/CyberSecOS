@@ -81,7 +81,8 @@ public sealed record LessonDetail(
     IReadOnlyList<CertObjective> CertificationObjectives,
     LessonProgress Progress,
     int? PreviousLessonId,
-    int? NextLessonId);
+    int? NextLessonId,
+    bool HasGradedLab = false);
 
 public sealed record QuizSubmission(IReadOnlyList<int?> Answers);
 

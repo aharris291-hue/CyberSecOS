@@ -1,5 +1,16 @@
 # Changelog
 
+## Phase 2 - Graded labs with checked answers
+
+### Real labs the app can mark
+- Every course now has a **graded lab**: a realistic, safe dataset to analyse and five or six questions whose answers the server marks. The twelve labs: a port scan in a packet capture, a reported phishing email's headers, lateral movement in Windows Security logs, an SSH brute force in auth.log, an Office-spawns-PowerShell SIEM alert (with an encoded command to decode), prioritising a scan export with CVSS/EPSS/KEV, C2 beaconing in connection logs, a ransomware timeline, predicting what a Sigma rule matches, a segmentation firewall review, a leaked access key in CloudTrail, and scoring a risk register plus a vendor questionnaire.
+- Answers are typed (text, number, a list, or a choice) and normalised before marking, so case, spacing and order don't cost marks. A wrong answer gets a hint, a right one gets the explanation, and passing (80%) explains every task. The answer key never leaves the server.
+- Passing a graded lab completes the lesson's lab and logs its lab time once. For these lessons the lab can no longer be self-marked done (`POST /api/lessons/{id}/lab` returns 409 until it is passed), so a completed lesson shows the learner could actually do the work.
+- New endpoints: `GET /api/labs`, `GET /api/lessons/{id}/lab`, `GET /api/lessons/{id}/lab/artifacts/{name}` (download a lab file to use grep/awk/jq) and `POST /api/lessons/{id}/lab/attempts`. Lessons report `has_graded_lab`. New `labs` and `lab_attempts` tables.
+- Lab content lives in `backend/app/seed/labs/`, one file per lab, separate from the lesson files. All data uses reserved `.example` domains and documentation IP ranges; nothing is live.
+- The desktop lesson page gains a **Graded lab** section: the scenario, a file picker with a copyable monospaced viewer, an answer box (or options) per task, per-task feedback and the attempt history.
+- Tests: `test_lab_content.py` derives each fact-finding answer from the lab data with a regex and fails if the key disagrees, plus dedicated checks for the Sigma, risk-score, firewall and encoded-command answers; `test_labs.py` covers marking, feedback, progress and the API (528 backend tests). 10 new Core tests cover the lesson page's lab flow and the API client (131 Core tests); the full solution builds clean.
+
 ## Phase 2 - A seventh lesson for every remaining course
 
 ### Seventh lessons across the rest of the catalog
