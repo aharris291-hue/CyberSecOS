@@ -664,3 +664,94 @@ lessons:
           - That it disables accounts quickly
         answer: 1
         explanation: Automation is worth it only if it speeds real response without causing wrong actions.
+  - slug: siem-ueba-anomaly
+    title: Behaviour Analytics and Anomaly Detection in the SIEM
+    order: 8
+    difficulty: intermediate
+    summary: Use user and entity behaviour analytics to catch threats that signature rules miss, by baselining normal and alerting on meaningful deviation.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.4", "sc200:2", "cysa:1.3"]
+    learning_objectives:
+      - Explain how UEBA complements signature and correlation rules
+      - Describe baselining and what makes a deviation meaningful
+      - Triage an anomaly-based alert, which carries more uncertainty than a rule
+    theory: |
+      Signature and correlation rules catch known patterns, but an attacker using valid credentials and
+      normal tools may never trip one. **User and entity behaviour analytics** (UEBA) fills that gap by
+      learning what is normal for each user, host and service account and alerting when behaviour deviates
+      meaningfully. Instead of "this matches a known-bad pattern", the question becomes "this account has
+      never done this before", which is how insider misuse, compromised accounts and slow, low-and-slow
+      attacks surface.
+
+      UEBA works by **baselining**. Over a learning period it builds a profile per entity, typical logon
+      times and locations, the systems a user touches, normal data volumes, the processes a server runs, and
+      then scores new activity against that profile. A finance user suddenly accessing source-code
+      repositories, a service account logging in interactively, or a workstation uploading gigabytes at 3am
+      all score as anomalies because they diverge from the entity's own history. Good systems combine weak
+      signals: no single oddity is damning, but several together, a new location *and* a new device *and* a
+      sensitive-data access, raise a **risk score** worth an analyst's time.
+
+      The catch is that an anomaly is **not** a detection; it is a statistical oddity that carries more
+      uncertainty than a signature hit. People change roles, travel, and work late, so UEBA generates more
+      ambiguous alerts, and triage leans even harder on context and the baseline itself: is this genuinely
+      new for this entity, or just new to a too-short learning window. The analyst's job is to confirm
+      against the entity's real history and corroborating signals before escalating, and to feed false
+      positives back so the model improves. Used well, UEBA is the layer that catches the quiet,
+      credentialed attacker the rules cannot see.
+    examples:
+      - title: Weak signals combining into risk
+        body: |
+          New country (minor) + new device (minor) + bulk HR-data access (notable)
+          Individually: noise.  Together: high risk score -> analyst review
+          UEBA scores the combination, not each event alone.
+      - title: Anomaly versus signature
+        body: |
+          Signature:  "process X with known-bad hash"      (certain, known)
+          Anomaly:    "this service account logged on interactively for the first time"
+          The anomaly is a lead with uncertainty, confirmed against the baseline.
+    exercise:
+      title: Baseline an entity and triage an anomaly
+      environment: A SIEM with UEBA features or sample activity logs with enough history to baseline
+      tools: [A SIEM or sample logs, a notes file, a spreadsheet for the baseline]
+      steps:
+        - Pick one entity (a user or service account) and build a simple baseline from its history, typical hours, locations, systems and data volumes.
+        - Identify an activity in the data that deviates from that baseline and describe which dimension it departs from.
+        - Explain why combining several weak signals gives a more reliable alert than any single oddity.
+        - Triage the anomaly, decide whether it is likely benign (role change, travel) or suspicious, using corroborating signals.
+        - State how a too-short learning window could make normal activity look anomalous, and how you would account for it.
+        - Decide the outcome (escalate, or dismiss and feed back) and note how that feedback improves the model.
+      deliverable: A baseline for one entity, one anomaly with the dimension it deviates on, your triage verdict with the signals used, and the feedback that would tune the model.
+    expected_outcome: >
+      You can explain how UEBA complements rule-based detection, baseline an entity's normal behaviour,
+      and triage an anomaly-based alert, allowing for its greater uncertainty and confirming against history
+      before escalating.
+    quiz:
+      - prompt: UEBA catches threats that signature rules miss because it
+        options:
+          - Uses more storage
+          - Learns each entity's normal behaviour and alerts on meaningful deviation, catching valid-credential abuse
+          - Blocks all traffic
+          - Only reads known-bad hashes
+        answer: 1
+        explanation: Behaviour analytics flags activity that is abnormal for an entity even when it matches no known-bad pattern.
+      - prompt: Combining several weak signals into a risk score is useful because
+        options:
+          - It ignores context
+          - No single oddity is damning, but several together are far more likely to be real
+          - It removes the baseline
+          - It disables alerts
+        answer: 1
+        explanation: Correlated weak signals raise confidence that an anomaly reflects a real threat.
+      - prompt: Compared with a signature hit, an anomaly-based alert
+        options:
+          - Is always a true positive
+          - Carries more uncertainty and needs confirmation against the entity's history
+          - Needs no triage
+          - Cannot be a false positive
+        answer: 1
+        explanation: Anomalies are statistical oddities, so they are confirmed against baseline and context before escalation.
+      - prompt: A too-short UEBA learning window can cause
+        options: [Perfect accuracy, Normal activity to look anomalous because the baseline is incomplete, No alerts ever, Faster networks]
+        answer: 1
+        explanation: An incomplete baseline misjudges normal behaviour, so the window length must be accounted for in triage.

@@ -1,5 +1,12 @@
 # Changelog
 
+## Phase 2 - An eighth lesson for every course (toward 300 hours)
+
+### Eighth lessons across the whole catalog
+- Started the build-out toward a target of roughly 300 hours of lesson time in total: every one of the 12 courses gains an eighth lesson, so the catalog is now 96 lessons (~106 hours). The earlier 5-10-per-course guideline is superseded by the hours target; the per-lesson quality bar is unchanged.
+- New lessons: VPN and remote access security (Networking); physical and environmental security (Security Foundations); Windows data protection and Credential Guard (Windows); mandatory access control with SELinux and AppArmor (Linux); behaviour analytics and anomaly detection (SIEM); patch and remediation management (Vulnerability Management); hunting ransomware precursors (Threat Hunting); responding to a web application compromise (Incident Response); detecting credential access and privilege escalation (Detection Engineering); email security architecture (Security Architecture); cloud data protection and key management (Cloud); and security policies, standards and procedures (Governance, Risk and Compliance).
+- All keep the six education-standard sections and the ~18/82 theory/lab split (catalog theory ratio 0.18); content-standard, seeding and coverage tests still pass.
+
 ## Phase 2 - A seventh lesson for every remaining course
 
 ### Seventh lessons across the rest of the catalog

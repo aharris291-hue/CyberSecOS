@@ -612,3 +612,93 @@ lessons:
         options: [It speeds up queries, It is pure risk since data that no longer needs to exist can still leak, It improves classification, It is required by all laws]
         answer: 1
         explanation: Retained-but-unneeded data is exposure with no benefit, which is why lifecycle disposal matters.
+  - slug: sec-physical-environmental
+    title: Physical and Environmental Security
+    order: 8
+    difficulty: beginner
+    summary: Cover the physical and environmental controls that protect systems and data, because an attacker with physical access or a failed facility can bypass every digital defence.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:1.2", "secplus:2.1", "sc900:1"]
+    learning_objectives:
+      - Explain why physical access can defeat digital controls
+      - Describe layered physical controls and environmental protections
+      - Identify physical and social routes an attacker uses to reach systems
+    theory: |
+      Security that stops at the network ignores the oldest attack of all: walking in. **Physical
+      access** often defeats digital controls outright, an attacker at the keyboard can boot from USB,
+      steal a drive, plug in a rogue device, or read a password on a sticky note. So physical security
+      is a foundation the digital controls sit on, not an afterthought, and it follows the same
+      **defence-in-depth** idea: layers that each slow an intruder and raise the chance of detection.
+
+      Those layers run from the perimeter inward. **Deterrents** (fencing, lighting, signage) discourage
+      casual intrusion; **access controls** (badges, locks, mantraps, biometric readers) decide who gets
+      in; **surveillance** (cameras, guards, alarms) detects and records; and **zoning** keeps the most
+      sensitive areas, a data centre or wiring closet, behind the strongest controls. A recurring weakness
+      is **tailgating**, following an authorised person through a door, which badge systems alone do not
+      stop, which is why mantraps and awareness matter.
+
+      **Environmental** controls keep the facility itself from failing the systems. Data centres manage
+      **power** (UPS and generators against outages), **cooling** (heat is the enemy of hardware),
+      **fire suppression** suited to electronics, and **humidity**. The same thinking covers the
+      disposal end: **media sanitisation** and secure destruction so a discarded disk does not leak data.
+      Physical and social routes overlap, an attacker may impersonate a delivery driver or contractor to
+      get inside, so physical security and security awareness reinforce each other. The lesson is that a
+      strong firewall means little if someone can carry the server out of the building.
+    examples:
+      - title: Layered physical controls
+        body: |
+          Perimeter   fence + lighting            (deter)
+          Entry       badge + mantrap             (prevent tailgating)
+          Interior    camera + alarmed data hall  (detect + record)
+          Each layer slows the intruder and adds a chance to catch them.
+      - title: Physical access beating digital controls
+        body: |
+          Attacker at the device -> boot from USB / pull the drive / plant a keylogger
+          Full-disk encryption + locked BIOS + port control raise that bar
+          No network control stops someone already at the keyboard.
+    exercise:
+      title: Assess the physical and environmental security of a space
+      environment: An office, home office or described facility, plus a notes template
+      tools: [A space to assess (or a floor plan/description), a notes file, a reference control list]
+      steps:
+        - Walk (or map) the space from the perimeter inward and list the physical controls at each layer (deter, prevent, detect).
+        - Identify the most sensitive area (where systems or data live) and judge whether its controls match its sensitivity.
+        - Find one tailgating or social route an attacker could use to get past the entry controls.
+        - Note the environmental protections present (power backup, cooling, fire, humidity) and one that is missing or weak.
+        - Check how media and old equipment are disposed of and whether data could leak that way.
+        - Recommend two improvements, one access-control and one environmental, with the risk each addresses.
+      deliverable: A layered physical-security assessment of the space with one tailgating route, the environmental gaps, and two prioritised improvements with their risks.
+    expected_outcome: >
+      You can explain why physical access undermines digital security, assess layered physical and
+      environmental controls, and spot the physical and social routes an attacker would use to reach
+      systems and data.
+    quiz:
+      - prompt: Why is physical security foundational to digital security?
+        options:
+          - It is cheaper
+          - An attacker with physical access can often bypass digital controls entirely
+          - It replaces encryption
+          - It only matters for data centres
+        answer: 1
+        explanation: Someone at the hardware can boot from USB, steal drives or plant devices, defeating network controls.
+      - prompt: Tailgating is
+        options:
+          - A network attack
+          - Following an authorised person through a controlled door
+          - A type of firewall
+          - A backup method
+        answer: 1
+        explanation: Tailgating slips past badge controls by following someone in, which mantraps and awareness address.
+      - prompt: Which is an environmental control for a data centre?
+        options: [A firewall rule, Uninterruptible power and cooling, A password policy, An antivirus scan]
+        answer: 1
+        explanation: Power backup, cooling, fire suppression and humidity control keep the facility from failing the hardware.
+      - prompt: Secure media sanitisation matters because
+        options:
+          - It speeds up disks
+          - A discarded or reused drive can leak data if not properly destroyed or wiped
+          - It encrypts the network
+          - It is only for paper
+        answer: 1
+        explanation: Data persists on media, so secure disposal prevents leakage from retired equipment.

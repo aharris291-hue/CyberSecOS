@@ -641,3 +641,92 @@ lessons:
         options: [Ignore it, Document a risk-accepted exception with a compensating control, Delete the finding, Fail the whole audit]
         answer: 1
         explanation: A documented exception plus a compensating control bridges a gap transparently until it can be closed.
+  - slug: grc-policies-standards-procedures
+    title: Security Policies, Standards and Procedures
+    order: 8
+    difficulty: beginner
+    summary: Understand the document hierarchy that turns security intent into daily practice, policies, standards, procedures and guidelines, and how exceptions and enforcement keep it real.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:5.1", "secplus:5.2", "cysa:4.1"]
+    learning_objectives:
+      - Distinguish policies, standards, procedures and guidelines and how they relate
+      - Explain how governance documents turn intent into enforceable practice
+      - Handle exceptions, enforcement and review so documents stay effective
+    theory: |
+      A security programme runs on a hierarchy of documents, and confusing their levels is a common
+      failure. A **policy** is a high-level statement of intent and requirement approved by leadership, for
+      example "all data must be encrypted in transit and at rest"; it is mandatory, stable and says *what*
+      and *why*, not *how*. **Standards** make a policy measurable: "TLS 1.2 or higher; AES-256 at rest"
+      turns the principle into a testable requirement. **Procedures** are the step-by-step *how* that a
+      person follows to meet a standard, and **guidelines** are recommended, non-mandatory best practice.
+      The chain matters: a policy without standards is unenforceable, and a procedure with no policy behind
+      it is an orphan nobody has authority to require.
+
+      These documents exist to turn intent into **enforceable practice**. A policy that leadership approves
+      gives the programme authority, an auditor something to test against, and staff a clear expectation.
+      This is also where related governance pieces attach, an **acceptable use policy** for staff
+      behaviour, a **data classification** standard, an **incident response** procedure, each tracing up to
+      a governing policy. Well-structured documents are how "we take security seriously" becomes something a
+      new hire can read and an auditor can verify.
+
+      Documents only stay effective if they are **lived, not shelved**. Every policy needs an **owner**, a
+      **review cycle** so it does not drift from reality, and an **exception process** so that when a
+      genuine business need conflicts with a standard, the gap is risk-accepted and recorded rather than
+      quietly ignored. **Enforcement** closes the loop, a policy nobody enforces trains people to ignore all
+      of them. The practical test of a good document set is simple: can someone find the rule, understand
+      what they must do, and see the consequence of not doing it.
+    examples:
+      - title: The document hierarchy in one chain
+        body: |
+          Policy     "data encrypted in transit and at rest" (what/why, mandatory)
+          Standard   "TLS 1.2+, AES-256"                     (measurable)
+          Procedure  "how to enable TLS on the web server"   (step-by-step how)
+          Guideline  "prefer TLS 1.3 where supported"        (recommended)
+      - title: An exception kept honest
+        body: |
+          Standard: MFA on all admin access
+          Reality:  one legacy tool cannot do MFA
+          Exception: owner-approved, time-bound, compensating control (jump host + logging)
+          Recorded, reviewed, not a silent permanent gap.
+    exercise:
+      title: Build a slice of a policy framework
+      environment: A described organisation or your own context, plus a document or template
+      tools: [A document or template, a reference framework for structure, a notes file]
+      steps:
+        - Pick one security objective (for example access control or encryption) and write a short policy statement of intent for it.
+        - Derive one measurable standard from that policy and one step-by-step procedure that implements the standard.
+        - Add a guideline that is recommended but not mandatory, and explain the difference in force from the standard.
+        - Assign an owner and a review cycle to the policy and explain why both are needed.
+        - Draft an exception for a realistic case where the standard cannot be met, with a compensating control and an approver.
+        - Describe how the policy would be enforced and what the document set lets an auditor verify.
+      deliverable: A documentation slice with a policy, a derived standard and procedure, a guideline, an owner and review cycle, one exception with a compensating control, and the enforcement and audit angle.
+    expected_outcome: >
+      You can distinguish policies, standards, procedures and guidelines, build a chain that turns intent
+      into enforceable, auditable practice, and keep it effective with owners, reviews, exceptions and
+      enforcement.
+    quiz:
+      - prompt: Which document states high-level mandatory intent approved by leadership?
+        options: [A procedure, A policy, A guideline, A log]
+        answer: 1
+        explanation: A policy sets mandatory intent and authority; standards, procedures and guidelines flow from it.
+      - prompt: A standard differs from a policy in that it
+        options:
+          - Is optional
+          - Makes the policy measurable and testable (for example specific protocols or settings)
+          - Needs no approval
+          - Is written by auditors
+        answer: 1
+        explanation: Standards translate a policy's intent into specific, verifiable requirements.
+      - prompt: A guideline is
+        options: [Mandatory like a policy, Recommended, non-mandatory best practice, A step-by-step procedure, An audit finding]
+        answer: 1
+        explanation: Guidelines advise rather than require, unlike policies and standards.
+      - prompt: Why does every policy need an owner and a review cycle?
+        options:
+          - To add paperwork
+          - So it stays current with reality and someone is accountable for it, rather than drifting or being ignored
+          - To avoid enforcement
+          - To make it optional
+        answer: 1
+        explanation: Ownership and review keep documents accurate and authoritative instead of shelved and stale.

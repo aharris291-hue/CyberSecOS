@@ -654,3 +654,96 @@ lessons:
           - To avoid involving HR
         answer: 1
         explanation: A documented chain of custody keeps evidence defensible for any proceedings that follow.
+  - slug: ir-web-app-compromise
+    title: Responding to a Web Application Compromise
+    order: 8
+    difficulty: intermediate
+    summary: Work a compromised web application or server, from detecting a web shell or injection to scoping the breach, preserving evidence and recovering without reinfection.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["cysa:3.1", "cysa:3.2", "secplus:4.8"]
+    learning_objectives:
+      - Recognise the signs of a compromised web application or server
+      - Scope the breach, what was accessed, changed, or used as a foothold
+      - Recover safely and close the entry point to prevent reinfection
+    theory: |
+      A public web application is exposed by design, so it is a constant target, and its compromise has a
+      recognisable shape. The common entry points are **injection** (SQL injection reaching the database),
+      **file upload** or deserialisation flaws dropping a **web shell**, and exploitation of an unpatched
+      framework. The tell-tale signs are a new or modified file in the web root, a script executing from an
+      upload directory, outbound connections from the web server to odd destinations, and anomalous entries
+      in the access logs, long encoded query strings, requests to files that should not exist, or a single
+      IP hitting an endpoint thousands of times.
+
+      Response starts with **scoping**, which is harder than it looks because a web server is often a pivot,
+      not the goal. The questions are: what was the entry point, what did the attacker access (did the SQL
+      injection reach customer data?), what did they change or plant (a web shell, a new admin account, a
+      cron job), and did they move deeper into the network using the server as a foothold. Web server logs,
+      file timestamps and database query logs build the timeline. As with any incident, evidence is
+      **preserved** before cleanup, a captured copy of the web shell, the logs, and the affected files,
+      because you will need them for the root cause and possibly for disclosure.
+
+      Recovery has a specific trap: **cleaning without closing the hole**. Deleting a web shell while leaving
+      the vulnerable upload endpoint in place just invites reinfection, often within hours, because the
+      server's address is now on target lists. So recovery means removing all attacker artefacts (shells,
+      accounts, persistence), **patching or fixing the entry point**, rotating any credentials or keys the
+      server held, and ideally rebuilding from a known-good image rather than trusting a cleaned host. The
+      incident closes with a root cause that names the entry point and the fix that ensures the same request
+      cannot succeed again.
+    examples:
+      - title: Signs of a web compromise in the logs
+        body: |
+          access.log: POST /upload.php (200) then GET /uploads/shell.php?cmd=... (200)
+          web root:   new file shell.php, modified minutes ago
+          net:        web server -> external IP outbound (unusual)
+          The upload then execute pattern is a web shell being planted and used.
+      - title: Recovery that actually holds
+        body: |
+          Wrong: delete shell.php -> reinfected within hours (hole still open)
+          Right: remove all artefacts + fix the upload flaw + rotate secrets + rebuild from image
+          Close the entry point, or the cleanup is temporary.
+    exercise:
+      title: Work a web-application compromise to recovery
+      environment: A sample set of web server access logs, file listings and (optionally) database logs showing a compromise, plus a document for the write-up
+      tools: [Sample web/access logs, file-timestamp data, a document for the timeline, a notes file]
+      steps:
+        - Identify the signs of compromise in the logs and files (new/modified web-root files, suspicious access-log entries, odd outbound connections).
+        - Determine the likely entry point (injection, file upload, unpatched component) from the evidence.
+        - Scope the breach, what the attacker accessed, what they changed or planted, and whether they used the server to move deeper.
+        - Build a timeline from the logs and file timestamps and preserve the key evidence before any cleanup.
+        - Write the recovery plan, remove all artefacts, fix the entry point, rotate secrets, and rebuild, explaining why deleting the shell alone is not enough.
+        - State the root cause and the specific fix that ensures the same request cannot succeed again.
+      deliverable: An incident write-up with the signs of compromise, the entry point, the scoped impact, a timeline with preserved evidence, a recovery plan that closes the hole, and the root cause with its fix.
+    expected_outcome: >
+      You can recognise a compromised web application, scope what the attacker accessed and planted,
+      preserve evidence, and recover by closing the entry point and rebuilding so the same compromise does
+      not simply recur.
+    quiz:
+      - prompt: An "upload then execute" pattern in web logs (POST to an upload, then GET of a script in the upload directory) usually indicates
+        options:
+          - A normal backup
+          - A web shell being planted and then used
+          - A DNS change
+          - A patch install
+        answer: 1
+        explanation: Uploading a script and then requesting it to run is the signature of a web shell.
+      - prompt: Why is scoping a web-server compromise especially important?
+        options:
+          - Web servers are never important
+          - The server is often a pivot, so you must learn what was accessed and whether the attacker moved deeper
+          - Scoping wastes time
+          - Logs are irrelevant
+        answer: 1
+        explanation: A web server is frequently a foothold, so scoping must cover data accessed and lateral movement, not just the host.
+      - prompt: Deleting a web shell without fixing the vulnerable endpoint typically leads to
+        options: [Permanent resolution, Reinfection, often within hours, Faster performance, A closed incident]
+        answer: 1
+        explanation: If the entry point remains, the exposed server is quickly recompromised.
+      - prompt: The most reliable recovery for a compromised web server is to
+        options:
+          - Clean the files in place and move on
+          - Remove artefacts, fix the entry point, rotate secrets and rebuild from a known-good image
+          - Reboot it
+          - Change its IP address
+        answer: 1
+        explanation: Closing the hole and rebuilding from a trusted image avoids trusting a potentially still-compromised host.

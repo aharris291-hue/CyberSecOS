@@ -597,3 +597,91 @@ lessons:
           - Reboot once
         answer: 1
         explanation: A configured-but-unverified setting may not be in effect, and unchecked enforcement can cause outages.
+  - slug: win-data-protection-credential-guard
+    title: Windows Data Protection and Credential Guard
+    order: 8
+    difficulty: intermediate
+    summary: Protect data and secrets on Windows with BitLocker, Credential Guard and the data protection APIs, and understand what each does and does not stop.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:2.4", "secplus:4.6", "cysa:1.3"]
+    learning_objectives:
+      - Explain how BitLocker protects data at rest and its threat model
+      - Describe how Credential Guard isolates secrets from theft
+      - Identify what these controls stop and the gaps that remain
+    theory: |
+      Windows ships strong data-protection features, but using them well means knowing exactly what each
+      defends against. **BitLocker** encrypts the volume so a lost or stolen laptop does not leak data,
+      using the **TPM** to release the key only to a known-good boot state, optionally with a PIN or key
+      for stronger assurance. Its threat model is **offline** attack: it protects data at rest, but once
+      the system is booted and unlocked, BitLocker is doing its job and no longer stands between a logged-in
+      attacker and the files. That is why it pairs with access control, not replaces it.
+
+      Credential theft is the engine of lateral movement, so Windows isolates secrets. **Credential Guard**
+      uses virtualisation-based security to hold derived credentials (such as NTLM hashes and Kerberos
+      tickets) in an isolated process the normal OS, and thus malware with admin rights, cannot read. This
+      blunts pass-the-hash and pass-the-ticket by removing the material those attacks steal from LSASS. It
+      is not total: it does not stop a keylogger capturing a password as it is typed, nor protect
+      credentials on systems where it is not enabled, so it is one strong layer among several.
+
+      Around these sit the **data protection APIs** (DPAPI) that applications use to encrypt secrets tied to
+      a user or machine, and policies like requiring encryption on removable media. The analyst's job is to
+      know the boundaries: BitLocker beats a stolen disk but not a live session; Credential Guard beats
+      hash theft from memory but not a typed-password capture. Hardening is choosing the right control for
+      the actual threat and verifying it is enabled, because a feature configured but not in effect protects
+      nothing.
+    examples:
+      - title: What BitLocker does and does not stop
+        body: |
+          Stops:  stolen laptop / pulled drive -> data unreadable without the key
+          Not:    a logged-in attacker on the running, unlocked system
+          Pair with access control and screen lock for the live-session gap.
+      - title: Credential Guard against hash theft
+        body: |
+          Without: malware with admin reads NTLM hashes from LSASS -> pass-the-hash
+          With:    secrets live in VBS-isolated memory the OS cannot read
+          Gap:     a keylogger still captures a password typed at the keyboard.
+    exercise:
+      title: Verify Windows data and credential protections on a VM
+      environment: A Windows VM or a provided configuration/report, with BitLocker and Credential Guard settings (or their documentation)
+      tools: [A Windows VM or config report, BitLocker and Credential Guard status tools or docs, a notes file]
+      steps:
+        - Check whether BitLocker is enabled on the system volume and how the key is protected (TPM only, TPM plus PIN, or recovery key).
+        - State one attack BitLocker stops and one it does not, based on its at-rest threat model.
+        - Check whether Credential Guard (virtualisation-based security) is enabled and confirm it is actually running, not just configured.
+        - Describe one credential-theft technique Credential Guard blunts and one it does not.
+        - Identify one piece of data on the system that is not covered by these controls and how you would protect it.
+        - Recommend one improvement (for example adding a PIN, enabling Credential Guard, or encrypting removable media) with the threat it addresses.
+      deliverable: A verification note covering BitLocker's state and threat model, Credential Guard's state and what it blunts, one uncovered data gap, and one prioritised improvement.
+    expected_outcome: >
+      You can explain and verify BitLocker and Credential Guard on Windows, state precisely what each
+      control stops and what remains exposed, and choose the right protection for the actual threat.
+    quiz:
+      - prompt: BitLocker's threat model primarily protects data
+        options:
+          - On a running, unlocked system
+          - At rest against a lost or stolen disk
+          - From network attacks
+          - From phishing
+        answer: 1
+        explanation: BitLocker defends offline data; once booted and unlocked it no longer stands between a logged-in attacker and files.
+      - prompt: Credential Guard reduces the impact of
+        options:
+          - Phishing emails
+          - Credential theft from memory such as pass-the-hash
+          - Slow disks
+          - Weak Wi-Fi
+        answer: 1
+        explanation: It isolates derived credentials in VBS memory so malware cannot steal the hashes and tickets those attacks reuse.
+      - prompt: A gap Credential Guard does NOT close is
+        options:
+          - Pass-the-hash
+          - A keylogger capturing a password as it is typed
+          - Pass-the-ticket
+          - Reading LSASS memory
+        answer: 1
+        explanation: Credential Guard protects stored secrets, not a password captured at the moment of entry.
+      - prompt: A security feature that is configured but not actually running
+        options: [Still fully protects, Protects nothing until verified as in effect, Is safer that way, Needs no checking]
+        answer: 1
+        explanation: Verification matters because a feature not actually enabled provides no protection.

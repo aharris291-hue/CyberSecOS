@@ -569,3 +569,86 @@ lessons:
         options: [Ignored, Treated as a lead and confirmed against asset inventory before action, Immediately trusted, Deleted from logs]
         answer: 1
         explanation: It may be a rogue device or a legitimate replacement, so it is confirmed against inventory before any action.
+  - slug: net-vpn-remote-access
+    title: VPN and Remote Access Security
+    order: 8
+    difficulty: intermediate
+    summary: Understand how VPNs protect remote connections, where split tunnelling and weak configuration create risk, and how to spot abused remote access.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:2.2", "secplus:4.3", "cysa:1.1"]
+    learning_objectives:
+      - Explain how IPsec and TLS VPNs protect traffic and authenticate endpoints
+      - Describe the risk of split tunnelling, weak ciphers and over-broad access
+      - Detect abused or anomalous remote-access sessions in logs
+    theory: |
+      Remote access extends the trusted network to wherever a user is, which is useful and dangerous
+      in equal measure. A **VPN** builds an encrypted tunnel between a client and the network so traffic
+      cannot be read or altered on the path. **IPsec** VPNs operate at the network layer and are common
+      for site-to-site links; **TLS** VPNs (and SSL portals) operate higher up and suit remote users on
+      untrusted networks. Both must authenticate the endpoint, ideally with certificates or MFA rather
+      than a shared secret, because a VPN that anyone can log into is a doorway, not a defence.
+
+      Configuration decides whether a VPN helps or hurts. **Split tunnelling** sends only corporate
+      traffic down the tunnel and lets the rest go direct, which is efficient but means a compromised
+      home device bridges the internet and the corporate network at once; **full tunnelling** is safer
+      for high-risk users. Weak or legacy ciphers, no MFA, and over-broad access, a VPN that drops users
+      straight onto a flat internal network rather than a segmented one, turn a single stolen credential
+      into deep access. The modern direction is **zero-trust network access**, which grants access per
+      application after checking identity and device, instead of trusting anyone on the tunnel.
+
+      For a SOC, remote access is a rich signal. A VPN login from a new country, at an odd hour, or
+      concurrent logins from two places for one account are the same account-takeover tells as any other
+      remote authentication. A hit is a lead, confirmed against the user's travel and device before
+      action, but unusual remote access is often the first visible step of an intrusion.
+    examples:
+      - title: Split versus full tunnelling
+        body: |
+          Split:  corp traffic -> tunnel; everything else -> direct (home device bridges both)
+          Full:   all traffic  -> tunnel and corporate controls (safer for risky users)
+          Choose by how much you trust the endpoint.
+      - title: A suspicious VPN session
+        body: |
+          08:00 VPN login user from UK (usual)
+          08:05 VPN login same user from another continent -> concurrent, impossible
+          Confirm against travel/device, then treat as possible credential theft.
+    exercise:
+      title: Review a remote-access setup and its logs
+      environment: A VPN client/server lab, a cloud VPN, or provided VPN configuration and sample logs
+      tools: [A VPN setup or its configuration, sample VPN/auth logs, a notes file]
+      steps:
+        - Identify whether the VPN uses IPsec or TLS and how it authenticates users, and note whether MFA is enforced.
+        - Determine whether it uses split or full tunnelling and explain the risk of the current choice for a high-risk user.
+        - Check the cipher suite or protocol version and flag anything weak or legacy.
+        - Describe how far a user lands on the internal network after connecting and whether that access is segmented or flat.
+        - Review sample VPN login logs and identify one session that looks anomalous (new location, odd hour, concurrent logins).
+        - State how you would confirm that session before acting and one improvement (MFA, full tunnelling, per-app access) you would make.
+      deliverable: A short assessment of the VPN's authentication, tunnelling and access scope, one anomalous session from the logs with a confirmation plan, and one concrete hardening recommendation.
+    expected_outcome: >
+      You can explain how VPNs protect remote connections, judge the risk in a split-tunnel or
+      over-broad configuration, and detect an abused remote-access session before confirming and acting.
+    quiz:
+      - prompt: The main security purpose of a VPN is to
+        options:
+          - Speed up the connection
+          - Encrypt and authenticate traffic between a client and the network over an untrusted path
+          - Replace the firewall
+          - Store logs
+        answer: 1
+        explanation: A VPN builds an authenticated, encrypted tunnel so traffic cannot be read or altered in transit.
+      - prompt: Why can split tunnelling increase risk?
+        options:
+          - It encrypts too much
+          - A compromised endpoint bridges the internet and the corporate network at the same time
+          - It disables the VPN
+          - It blocks all traffic
+        answer: 1
+        explanation: With split tunnelling the device is on both networks at once, so a compromise can pivot inward.
+      - prompt: A VPN should ideally authenticate users with
+        options: [A single shared password, Certificates or MFA rather than a shared secret, No authentication, Only a username]
+        answer: 1
+        explanation: Strong per-user authentication stops a single leaked secret from opening the tunnel to anyone.
+      - prompt: Concurrent VPN logins for one account from two distant locations are
+        options: [Always fine, A lead to confirm against travel and device as possible account takeover, Proof of a firewall fault, A reason to disable logging]
+        answer: 1
+        explanation: Impossible concurrent sessions are a classic takeover tell, confirmed against context before action.

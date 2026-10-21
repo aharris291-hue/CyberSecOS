@@ -630,3 +630,94 @@ lessons:
           - Bill customers
         answer: 1
         explanation: Flow logs give the visibility to spot lateral movement and unexpected connections across the network.
+  - slug: cloud-data-protection-kms
+    title: Cloud Data Protection and Key Management
+    order: 8
+    difficulty: intermediate
+    summary: Protect data in the cloud with encryption and managed keys, and understand who holds the keys, how access is controlled, and how key misuse shows up in logs.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:3.1", "secplus:4.1", "sc900:2"]
+    learning_objectives:
+      - Explain cloud encryption at rest and in transit and the role of a KMS
+      - Describe provider-managed versus customer-managed keys and when each fits
+      - Monitor key usage and access so encryption is not quietly undermined
+    theory: |
+      In the cloud, encryption is the default expectation, so the interesting questions are about **keys**:
+      who holds them, who can use them, and how that is controlled. Data is encrypted **at rest** in storage
+      and databases and **in transit** over TLS, but encryption only protects data to the extent the keys
+      are protected. A **key management service** (KMS) centralises creating, storing, rotating and
+      controlling access to keys, and crucially logs every use, which turns "is this data encrypted" into
+      "who decrypted this, when, and were they allowed to".
+
+      The main design choice is **who manages the key**. **Provider-managed keys** are the simplest: the
+      cloud handles everything, which is fine for most data. **Customer-managed keys** (CMKs) give you
+      control over rotation and, most importantly, the ability to **revoke** access, destroying or disabling
+      the key makes the data unreadable even to the provider's services, which matters for regulated data or
+      a clean offboarding. The strongest tier, **customer-supplied** or HSM-backed keys, keeps key material
+      under your sole control at the cost of complexity. The right choice follows the data's sensitivity, not
+      a reflex to always pick the most control.
+
+      Because the key is now the crown jewel, **access to the key is the real access control**. KMS key
+      policies decide which identities may encrypt, decrypt or manage a key, and least privilege here is
+      essential, an over-broad key policy undoes the encryption, since anyone who can call decrypt can read
+      the data. The SOC watches KMS logs for the tells of abuse: a key used by an unexpected identity, a
+      spike in decrypt calls, or an attempt to disable or schedule deletion of a key (a ransomware or
+      destruction move). As always a hit is a lead confirmed against normal usage, but key activity is where
+      cloud data compromise becomes visible.
+    examples:
+      - title: Customer-managed key enabling revocation
+        body: |
+          Provider-managed: simple; provider controls the key
+          Customer-managed: you rotate AND can disable the key -> data unreadable on offboarding
+          Choose by sensitivity and the need to revoke.
+      - title: Key misuse in the logs
+        body: |
+          KMS log: Decrypt by role "build-ci" on the HR data key -> unexpected identity
+          KMS log: ScheduleKeyDeletion on a production key       -> possible destruction attack
+          Both are leads to confirm against normal usage.
+    exercise:
+      title: Design key management and monitor key usage
+      environment: A cloud free tier with a KMS, or sample key policies and KMS logs
+      tools: [A cloud KMS or sample policies, sample KMS logs, a notes file]
+      steps:
+        - For a sample data set of mixed sensitivity, decide which data uses provider-managed versus customer-managed keys and justify each.
+        - Write or review a key policy and apply least privilege so only the identities that need encrypt/decrypt have it.
+        - Explain how disabling a customer-managed key would affect the data and when you would use that (offboarding, incident).
+        - Review sample KMS logs and identify one key use by an unexpected identity and one key-management action worth alerting on.
+        - State how you would confirm a suspicious key use before acting, and one alert you would build on KMS activity.
+        - Note one misconfiguration (an over-broad key policy) that would undermine the encryption and how to fix it.
+      deliverable: A key-management design (managed-versus-customer choices with least-privilege policies), a KMS-log review flagging one suspicious use and one alert-worthy action, and one misconfiguration with its fix.
+    expected_outcome: >
+      You can design cloud data protection around key management, choose provider- versus customer-managed
+      keys by sensitivity, enforce least privilege on key access, and monitor KMS logs to catch key misuse
+      before it becomes a data compromise.
+    quiz:
+      - prompt: In the cloud, encryption only protects data to the extent that
+        options:
+          - The network is fast
+          - The keys are protected and their use is controlled and logged
+          - The data is public
+          - Backups exist
+        answer: 1
+        explanation: Encryption hinges on key protection and access control, so key management is the real control.
+      - prompt: A key advantage of customer-managed keys over provider-managed keys is
+        options:
+          - They are always cheaper
+          - You can rotate and revoke the key, making data unreadable even to the provider's services
+          - They need no policy
+          - They disable logging
+        answer: 1
+        explanation: Customer-managed keys give control over rotation and revocation, which matters for regulated data and offboarding.
+      - prompt: An over-broad KMS key policy is dangerous because
+        options:
+          - It slows encryption
+          - Anyone who can call decrypt can read the data, undoing the encryption
+          - It deletes logs
+          - It encrypts twice
+        answer: 1
+        explanation: Access to the key is access to the data, so least privilege on key policies is essential.
+      - prompt: A KMS log entry scheduling deletion of a production key should be treated as
+        options: [Routine, A lead to confirm, possibly a destruction or ransomware action, A billing event, A success message]
+        answer: 1
+        explanation: Disabling or deleting keys can destroy data access, so such actions are investigated against normal usage.

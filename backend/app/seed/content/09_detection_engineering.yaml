@@ -649,3 +649,91 @@ lessons:
           - Counting rules written
         answer: 1
         explanation: Honest coverage names detected techniques and remaining gaps rather than claiming blanket coverage.
+  - slug: de-credential-access-detection
+    title: Detecting Credential Access and Privilege Escalation
+    order: 8
+    difficulty: intermediate
+    summary: Engineer detections for the credential-theft and privilege-escalation techniques that turn a foothold into domain control, where precision matters because admins do similar things.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["cysa:1.4", "cysa:3.1", "sc200:2"]
+    learning_objectives:
+      - Describe the main credential-access and privilege-escalation techniques to detect
+      - Engineer detections that separate attacker behaviour from legitimate admin work
+      - Tune these high-value detections for precision without missing the real thing
+    theory: |
+      Credential access is the hinge of most intrusions: it is how an attacker turns a single compromised
+      host into the keys to the domain. The techniques are well known, so they are prime detection targets.
+      **LSASS access** (dumping memory to steal hashes and tickets), **Kerberoasting** (requesting service
+      tickets to crack offline), **DCSync** (abusing replication to pull password hashes from a domain
+      controller), and local **privilege escalation** (token manipulation, abusing a vulnerable service or
+      a UAC bypass) each leave characteristic telemetry, process access to LSASS, a burst of service-ticket
+      requests, replication requests from a non-DC, or a child process spawned with elevated integrity.
+
+      Engineering detections for these is high value but demands **precision**, because the legitimate twin
+      is always close: backup and EDR tools read LSASS, domain controllers replicate constantly, and admins
+      elevate privileges all day. A naive "alert on any LSASS access" drowns the analyst; a good detection
+      narrows by *who* and *how*, an unexpected process (not the known AV) accessing LSASS, a DCSync-style
+      replication request from a host that is not a domain controller, or Kerberoast-pattern ticket requests
+      far above an account's baseline. The art is encoding the difference between the attack and its
+      authorised look-alike into the rule.
+
+      This is where the detection-engineering discipline pays off. These detections are tuned with
+      **allow-lists** of known-good tools and service accounts, enriched with **asset context** (the same
+      behaviour is far more alarming on a domain controller), and validated by **emulating the technique**
+      to confirm the rule fires on the attack but stays quiet on routine admin work. Because the payoff of
+      a true positive here is enormous, catching an intrusion before it reaches domain dominance, these
+      detections are worth the effort to get precise, and they are re-tuned, never simply switched off, when
+      they prove noisy.
+    examples:
+      - title: Narrowing an LSASS-access detection
+        body: |
+          Naive:  alert on ANY process opening lsass.exe -> floods on AV/EDR/backup
+          Tuned:  alert when a process NOT on the known-good list opens lsass with read rights
+          Encode the attacker/admin difference into the rule.
+      - title: DCSync from the wrong place
+        body: |
+          Replication (DsGetNCChanges) request -> normal between domain controllers
+          Same request from a workstation        -> DCSync abuse, high confidence
+          Asset context (is the source a DC?) makes the detection precise.
+    exercise:
+      title: Engineer and tune a credential-access detection
+      environment: A lab with endpoint/AD telemetry or sample logs, ideally with an emulation tool (such as an Atomic Red Team test) or provided attack and benign samples
+      tools: [A SIEM/EDR or sample logs, an emulation test or attack/benign samples, a MITRE ATT&CK reference, a notes file]
+      steps:
+        - Choose one credential-access or privilege-escalation technique and describe the telemetry it produces and its legitimate twin.
+        - Write a first-pass detection for it and identify why a naive version would be noisy.
+        - Narrow the detection by who and how, using an allow-list of known-good tools or service accounts and asset context.
+        - Emulate the technique (or use the attack sample) and confirm the detection fires on the attack.
+        - Run the detection against benign/admin activity and confirm it stays quiet, tuning if it does not.
+        - Map it to ATT&CK, note the asset context that raises its severity, and state how you would re-tune rather than disable it if it later proves noisy.
+      deliverable: A tuned detection for one technique with its first-pass and narrowed versions, the emulation result showing it fires on the attack and not on benign activity, and the ATT&CK mapping with asset-context severity.
+    expected_outcome: >
+      You can engineer detections for LSASS access, Kerberoasting, DCSync and privilege escalation, encode
+      the difference between the attack and its authorised look-alike, and tune them for precision so these
+      high-value detections catch the real thing without drowning the analyst.
+    quiz:
+      - prompt: Why is credential access a high-value detection target?
+        options:
+          - It is harmless
+          - It is how an attacker turns one compromised host into domain-wide control
+          - It only affects printers
+          - It cannot be detected
+        answer: 1
+        explanation: Stealing credentials enables privilege escalation and lateral movement to domain dominance.
+      - prompt: Why must an LSASS-access detection be narrowed rather than alert on any access?
+        options:
+          - LSASS is never accessed
+          - Legitimate tools (AV, EDR, backup) read LSASS, so a naive rule floods the analyst
+          - Narrowing is impossible
+          - It should be disabled
+        answer: 1
+        explanation: Precision separates the attacker from authorised tools that also touch LSASS.
+      - prompt: A DCSync-style replication request is high-confidence malicious when it comes from
+        options: [Another domain controller, A host that is not a domain controller, The backup server, The DNS server]
+        answer: 1
+        explanation: Replication is normal between DCs; from a workstation it indicates DCSync abuse.
+      - prompt: When a high-value credential-access detection proves noisy, the right move is to
+        options: [Disable it, Re-tune it with allow-lists and context rather than switch it off, Delete the logs, Lower all severities]
+        answer: 1
+        explanation: These detections are too valuable to drop, so they are tuned for precision instead of disabled.
