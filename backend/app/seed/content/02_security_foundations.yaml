@@ -1882,3 +1882,318 @@ lessons:
           - Trust all packages without review
         answer: 1
         explanation: Least-privilege access and integrity verification contain a compromise in the chain.
+  - slug: sec-secure-configuration
+    title: Secure Configuration and Baselines
+    order: 21
+    difficulty: beginner
+    summary: Understand why insecure default configurations are a leading cause of compromise, how security baselines and benchmarks define a known-good hardened state, and how to establish and maintain secure configuration.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.1", "secplus:2.5", "cysa:1.3"]
+    learning_objectives:
+      - Explain why default configurations are often insecure
+      - Describe security baselines and benchmarks and their role
+      - Establish and maintain secure configuration at scale
+    theory: |
+      A great many breaches stem not from sophisticated exploits but from **insecure configuration**, systems left
+      with default or weak settings, unnecessary features enabled, default credentials unchanged, or important
+      protections switched off. Software and devices often ship configured for ease of setup rather than security
+      (open by default, extra services running, verbose and permissive), so a system taken out of the box and
+      connected without hardening is frequently exposed from the start. Because misconfiguration is so common and
+      so exploitable, establishing and maintaining **secure configuration** is one of the highest-value, most
+      fundamental security activities, and unlike chasing every new vulnerability, it addresses a huge class of
+      risk with disciplined, repeatable practice.
+
+      The tool for this is a **security baseline** (also realised through **benchmarks** such as the widely used CIS
+      Benchmarks and vendor security guides), a defined, known-good hardened configuration for a type of system, an
+      operating system, a database, a browser, a cloud service. A baseline specifies the settings that make a
+      system reasonably secure: disable unnecessary services and default accounts, enforce strong authentication,
+      set appropriate permissions, enable logging, turn on available protections, and so on. Rather than each
+      administrator deciding ad hoc what secure means, a baseline captures expert consensus so configurations are
+      consistent and defensible, and it connects to the Group Policy baselines met in the Windows module, which are
+      one concrete way of applying a baseline. Applying a baseline hardens a system against a broad range of
+      attacks at once, and because baselines are standardised, compliance with them can be measured.
+
+      The discipline is **establish, measure and maintain**. Establish by selecting or adapting an appropriate
+      baseline for each system type and applying it, ideally automatically through configuration management so
+      every system is built to the standard rather than hand-configured. Measure by scanning systems against the
+      baseline (configuration and compliance scanning, met in the vulnerability module) to find deviations.
+      Maintain by watching for **configuration drift**, the gradual, often unnoticed divergence of a system from
+      its secure baseline as changes accumulate, which steadily reopens risk; detecting and correcting drift keeps
+      systems in their hardened state over time. The considerations are balancing security against functionality
+      (a baseline must not break needed features, so baselines are tailored and tested), and handling exceptions
+      formally rather than silently weakening the standard. For the analyst and administrator, the lessons are that
+      insecure default configuration is a leading, eminently preventable cause of compromise, that security
+      baselines and benchmarks define a known-good hardened state that captures expert consensus and can be applied
+      consistently, and that secure configuration is an ongoing discipline of establishing, measuring against, and
+      maintaining baselines against drift, because keeping systems configured securely prevents a large share of
+      attacks before they ever begin.
+    examples:
+      - title: Why defaults are insecure
+        body: |
+          shipped for easy setup, not security: default/weak creds, extra services, protections off, permissive
+          out-of-the-box + connected without hardening = exposed from the start -> misconfiguration is a leading breach cause.
+      - title: Baselines and drift
+        body: |
+          baseline/benchmark (CIS, vendor guides): a defined known-good hardened config per system type (disable extras, strong auth, perms, logging, protections on)
+          establish (apply via config management) -> measure (scan for deviations) -> maintain (detect + fix DRIFT)
+          tailor + test so it doesn't break needed features; handle exceptions formally.
+    exercise:
+      title: Establish and maintain a secure baseline
+      environment: A described set of systems needing hardening (or a scenario)
+      tools: [A scenario or a sample benchmark, a document, a notes file]
+      steps:
+        - Explain why default configurations are often insecure and why this causes so many breaches.
+        - Describe what a security baseline or benchmark defines and the consensus it captures.
+        - Explain how applying a baseline hardens a system against many attacks at once.
+        - Describe how you would apply a baseline consistently and measure compliance.
+        - Explain configuration drift and why it reopens risk over time.
+        - Explain how exceptions should be handled without silently weakening the baseline.
+      deliverable: A secure-configuration plan covering why defaults are insecure, selecting and applying a baseline, measuring compliance, and maintaining against drift with formal exceptions.
+    expected_outcome: >
+      You can explain why default configurations are insecure, describe security baselines and benchmarks, and
+      establish, measure and maintain secure configuration against drift as a fundamental, high-value discipline.
+    quiz:
+      - prompt: Insecure default configuration is a leading cause of compromise because systems often ship
+        options:
+          - Fully hardened by default
+          - Configured for easy setup with defaults, extra services and protections off, exposed until hardened
+          - With no settings at all
+          - Disconnected permanently
+        answer: 1
+        explanation: Ease-of-setup defaults leave systems exposed until they are deliberately hardened.
+      - prompt: A security baseline or benchmark (such as CIS) is
+        options:
+          - A random set of settings
+          - A defined, known-good hardened configuration for a system type, capturing expert consensus
+          - A type of malware
+          - A network cable
+        answer: 1
+        explanation: Baselines specify a consistent, defensible hardened state for each kind of system.
+      - prompt: Configuration drift is dangerous because
+        options:
+          - It hardens systems automatically
+          - Systems gradually diverge from their secure baseline as changes accumulate, reopening risk unnoticed
+          - It cannot occur
+          - It only affects wallpaper
+        answer: 1
+        explanation: Unmanaged change erodes the hardened state over time, so drift must be detected and corrected.
+      - prompt: Applying a baseline through configuration management is preferable because
+        options:
+          - Hand-configuring each system is more reliable
+          - Every system is built to the standard consistently rather than configured ad hoc
+          - It avoids any hardening
+          - It removes logging
+        answer: 1
+        explanation: Automated, consistent application ensures all systems meet the secure standard.
+  - slug: sec-cryptographic-attacks
+    title: Cryptographic Attacks and Weaknesses
+    order: 22
+    difficulty: intermediate
+    summary: Understand how cryptography fails in practice, not usually by breaking the math but through weak algorithms, poor implementation and misuse, and how to recognise and avoid the common cryptographic weaknesses.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:2.4", "secplus:1.4", "cysa:1.3"]
+    learning_objectives:
+      - Explain how cryptography usually fails in practice
+      - Describe common cryptographic attacks and weaknesses
+      - Recognise and avoid cryptographic misuse
+    theory: |
+      Cryptography, met earlier as a building block, is only as strong as how it is chosen and used, and in practice
+      it almost never fails by someone breaking the underlying mathematics of a strong modern algorithm. Instead it
+      fails through **weak algorithms, poor implementation and misuse**, and recognising these failure modes is far
+      more useful to a defender than understanding the math, because the weaknesses attackers exploit are
+      overwhelmingly about how crypto is applied, not whether the cipher itself is sound. The practical lesson is to
+      treat cryptography as something that must be used correctly, with strong current algorithms and sound
+      implementation, rather than as a magic protection that works simply because it is present.
+
+      The common **weaknesses and attacks** cluster into a few categories. **Weak or outdated algorithms**: using
+      broken or deprecated algorithms (old hashes like MD5 or SHA-1 for security, weak or short keys, obsolete
+      protocols like old SSL/TLS versions) means the protection is weak regardless of correct use, so an attacker
+      can break it with known techniques. **Poor key management**: as met in the secrets lesson, keys that are
+      hardcoded, reused, shared, never rotated or poorly protected undermine even strong algorithms, because the
+      security of encryption rests entirely on the secrecy of the key. **Misuse and implementation flaws**: using
+      cryptography in the wrong mode or with predictable or reused initialization vectors or nonces, rolling your
+      own cryptography instead of using vetted libraries, weak random number generation (predictable values where
+      unpredictability is required), and improper validation (for example not verifying certificates). **Attacks on
+      secrets directly**: brute force and dictionary attacks against weak passwords and keys, and against stored
+      password hashes, which is why strong hashing with salting is used for passwords. **Downgrade attacks** that
+      trick systems into using a weaker algorithm or protocol version. The recurring theme is that each of these is
+      a failure of selection or use, not of the underlying primitive.
+
+      Avoiding these weaknesses is mostly about **discipline and good defaults**. Use **strong, current algorithms
+      and key lengths** and retire deprecated ones; follow authoritative guidance rather than choosing crypto
+      yourself. **Never roll your own cryptography**, use well-vetted, maintained libraries and standard protocols,
+      which handle the subtle implementation details correctly. **Manage keys properly** (the secrets-management
+      discipline). **Use cryptography correctly**, right modes, unique and unpredictable IVs/nonces, proper random
+      number generation, and full validation (including certificate validation, connecting to the PKI lesson).
+      **Protect against downgrade** by disabling weak protocol versions and ciphers. For the analyst and engineer,
+      the lessons are that cryptography in the real world fails through weak algorithms, poor key management and
+      misuse rather than broken math, that the common weaknesses, deprecated algorithms, mishandled keys,
+      home-grown or misused crypto, weak randomness, missing validation, downgrade, are failures of how crypto is
+      applied, and that avoiding them comes down to using strong current algorithms and vetted libraries correctly,
+      managing keys well, and validating properly, because the way to defeat an attacker is almost never to
+      out-math them but to deny them the weak algorithm, exposed key or implementation slip they were counting on.
+    examples:
+      - title: How crypto really fails
+        body: |
+          almost never by breaking strong modern math -> it fails by weak ALGORITHMS, poor KEY MANAGEMENT, and MISUSE
+          recognising these failure modes beats understanding the math -> use crypto correctly, don't treat it as magic.
+      - title: Common weaknesses
+        body: |
+          weak/outdated: MD5/SHA-1 for security, short keys, old SSL/TLS; poor keys: hardcoded/reused/un-rotated (secrecy of the key is everything)
+          misuse: wrong mode, reused/predictable IV/nonce, ROLL-YOUR-OWN crypto, weak randomness, no cert validation; brute force on weak secrets; DOWNGRADE attacks
+          avoid: strong current algorithms, vetted libraries, good key mgmt, correct use + validation, disable weak versions.
+    exercise:
+      title: Find and fix cryptographic weaknesses
+      environment: A described system using cryptography (or a scenario with sample crypto choices)
+      tools: [A scenario or sample configuration, a document, a notes file]
+      steps:
+        - Explain why cryptography usually fails through weak algorithms, poor keys and misuse rather than broken math.
+        - Identify a weak or outdated algorithm issue and its risk.
+        - Explain how poor key management undermines even strong algorithms.
+        - Describe two implementation or misuse flaws (for example reused nonces, rolling your own crypto, weak randomness, missing validation).
+        - Explain what a downgrade attack does.
+        - Recommend the disciplined practices that avoid these weaknesses.
+      deliverable: A cryptographic-weakness review identifying weak algorithms, key-management and misuse issues in the scenario, with recommendations for strong algorithms, vetted libraries, proper key management and validation.
+    expected_outcome: >
+      You can explain how cryptography fails in practice, describe common cryptographic attacks and weaknesses, and
+      recognise and avoid cryptographic misuse through strong algorithms, vetted libraries, good key management and validation.
+    quiz:
+      - prompt: In practice, cryptography usually fails because of
+        options:
+          - Someone breaking the math of a strong modern algorithm
+          - Weak or outdated algorithms, poor key management, and misuse or implementation flaws
+          - Too much randomness
+          - Using vetted libraries
+        answer: 1
+        explanation: Real-world crypto failures are overwhelmingly about selection and use, not broken primitives.
+      - prompt: Why is "rolling your own cryptography" discouraged?
+        options:
+          - It is always faster and safer
+          - Subtle implementation details are easy to get wrong, so vetted, maintained libraries should be used instead
+          - It uses no keys
+          - Libraries are insecure
+        answer: 1
+        explanation: Home-grown crypto commonly has implementation flaws that vetted libraries avoid.
+      - prompt: Poor key management undermines strong algorithms because
+        options:
+          - Keys are irrelevant to security
+          - The security of encryption rests on the secrecy of the key, so exposed, reused or unrotated keys defeat it
+          - Strong algorithms need no keys
+          - It improves randomness
+        answer: 1
+        explanation: Even a perfect cipher is broken if its key is exposed or mismanaged.
+      - prompt: A downgrade attack works by
+        options:
+          - Strengthening the encryption
+          - Tricking systems into using a weaker algorithm or protocol version that can then be broken
+          - Rotating the keys
+          - Validating certificates
+        answer: 1
+        explanation: Downgrade attacks force a fallback to weak crypto, which is why weak versions should be disabled.
+  - slug: sec-soc-fundamentals
+    title: Introduction to Security Operations and the SOC
+    order: 23
+    difficulty: beginner
+    summary: Understand what a Security Operations Center does, how analyst tiers and the alert-to-response workflow fit together, and where the day-to-day work of detection and response actually happens.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.4", "sc200:1", "cysa:3.1"]
+    learning_objectives:
+      - Explain the purpose and function of a Security Operations Center
+      - Describe analyst tiers and the alert-to-response workflow
+      - Situate detection and response work within the SOC
+    theory: |
+      A **Security Operations Center (SOC)** is the team and function responsible for continuously monitoring an
+      organisation for security threats and responding to them, and understanding the SOC gives essential context
+      for almost everything else in security operations, because the SOC is where detection, investigation and
+      response actually happen day to day. The SOC's purpose is to reduce the time between an attack beginning and
+      the organisation detecting and stopping it, by watching the telemetry (logs, alerts, the SIEM and detection
+      tools met throughout), triaging what comes in, investigating what looks real, and driving response. A SOC may
+      be internal, outsourced to a managed service, or a hybrid, and it operates continuously because attacks do
+      not keep business hours. For someone entering security operations, the SOC is the environment the work lives
+      in, so knowing how it is organised and how work flows through it frames the rest.
+
+      SOCs are commonly organised into **tiers** reflecting a workflow from triage to deep response. **Tier 1
+      analysts** monitor and triage the incoming stream of alerts, doing initial assessment to filter out false
+      positives and routine noise and escalating genuine or unclear incidents. **Tier 2 analysts** investigate
+      escalated incidents more deeply, correlating data, scoping the activity, and handling more complex cases.
+      **Tier 3** (senior analysts, threat hunters, incident responders) handle the most serious incidents, proactive
+      hunting (met earlier) and advanced analysis, and often improve detections and processes. Supporting roles
+      include detection engineers (who build the detections, met earlier), SOC managers, and threat intelligence
+      analysts. This tiering is a common model rather than a universal rule, some SOCs use flatter or different
+      structures, but the underlying idea is consistent: a workflow that filters a large volume of signals down to
+      the few that need deep attention, escalating as complexity and severity rise.
+
+      The **alert-to-response workflow** ties it together and connects to the lessons throughout this curriculum.
+      Telemetry flows into the SIEM and detection tools, which generate **alerts**; analysts **triage** each alert
+      (is it a false positive, routine, or a real concern), **investigate** those that warrant it (gathering
+      context to reach a verdict), and for confirmed incidents move into the **incident response** process
+      (containment, eradication, recovery, met in that module). Throughout, **case management** tracks the work,
+      **metrics** measure performance (MTTD and MTTR, met earlier), and feedback improves detections to cut noise.
+      Alert fatigue, too many low-value alerts, is a central challenge the SOC manages through tuning and good
+      detection engineering, because analyst attention is the scarce resource. For the newcomer, the lessons are
+      that the SOC is the continuously operating team where monitoring, detection, triage, investigation and
+      response come together, that a tiered workflow filters a flood of signals down to the incidents that need
+      deep response while escalating by complexity and severity, and that the alert-to-response flow, supported by
+      case management, metrics and detection tuning, is the daily rhythm of security operations into which the
+      specific skills covered elsewhere all fit.
+    examples:
+      - title: What a SOC is for
+        body: |
+          the team/function that continuously monitors for threats + responds -> shrink the time from attack to detection/stop
+          internal, outsourced (managed), or hybrid; runs 24/7 because attacks don't keep business hours
+          it's the environment detection + response actually live in.
+      - title: Tiers and the workflow
+        body: |
+          Tier 1 triage the alert stream (filter false positives, escalate); Tier 2 investigate deeper; Tier 3 (senior/hunters/responders) handle the worst + hunt + improve detections; + detection engineers, managers, threat intel
+          flow: telemetry -> SIEM/detections -> ALERTS -> triage -> investigate -> incident response; case mgmt + metrics (MTTD/MTTR) + tuning; alert fatigue is the central challenge.
+    exercise:
+      title: Map the SOC and its workflow
+      environment: A described organisation standing up or explaining a SOC (or a scenario)
+      tools: [A scenario, a document, a notes file]
+      steps:
+        - Explain the purpose of a SOC and why it operates continuously.
+        - Describe the analyst tiers and what each does.
+        - Explain how the tiered model filters many signals down to the incidents needing deep response.
+        - Trace the alert-to-response workflow from telemetry to incident response.
+        - Explain the role of case management and metrics in the workflow.
+        - Explain alert fatigue and why analyst attention is the scarce resource.
+      deliverable: A SOC overview covering its purpose, the analyst tiers, the alert-to-response workflow, and how case management, metrics and detection tuning support it.
+    expected_outcome: >
+      You can explain the purpose and function of a SOC, describe analyst tiers and the alert-to-response workflow,
+      and situate detection, investigation and response work within the operating rhythm of the SOC.
+    quiz:
+      - prompt: The core purpose of a SOC is to
+        options:
+          - Build applications
+          - Continuously monitor for threats and respond, reducing the time from an attack beginning to detecting and stopping it
+          - Manage payroll
+          - Replace the firewall
+        answer: 1
+        explanation: The SOC exists to detect and respond to threats continuously, shrinking the attacker's window.
+      - prompt: In the common tiered model, Tier 1 analysts primarily
+        options:
+          - Handle only the most advanced incidents
+          - Monitor and triage the incoming alert stream, filtering noise and escalating genuine or unclear incidents
+          - Write all the software
+          - Do nothing
+        answer: 1
+        explanation: Tier 1 triages alerts, escalating real or unclear ones to deeper investigation.
+      - prompt: The alert-to-response workflow runs roughly as
+        options:
+          - Response, then telemetry, then alerts
+          - Telemetry to SIEM/detections to alerts, then triage, investigation, and incident response for confirmed incidents
+          - Only manual inspection with no tools
+          - Alerts with no investigation
+        answer: 1
+        explanation: Signals generate alerts that are triaged, investigated, and escalated into incident response.
+      - prompt: Alert fatigue is a central SOC challenge because
+        options:
+          - There are never enough alerts
+          - Too many low-value alerts consume scarce analyst attention, so tuning and good detection engineering are essential
+          - Analysts have unlimited attention
+          - Alerts are always accurate
+        answer: 1
+        explanation: Analyst attention is limited, so excessive noise must be tuned down to find real incidents.

@@ -1865,3 +1865,322 @@ lessons:
           - It only affects wallpaper
         answer: 1
         explanation: Because ETW feeds detection, neutralising it hides the attacker, so tampering must itself be detected.
+  - slug: win-ad-attack-paths
+    title: Active Directory Attack Paths and Tiering
+    order: 21
+    difficulty: advanced
+    summary: Understand how attackers chain small misconfigurations in Active Directory into paths to domain dominance, how tools map these paths, and how tiered administration and hardening break them.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.8", "sc200:3", "cysa:1.2"]
+    learning_objectives:
+      - Explain how Active Directory attack paths lead to domain dominance
+      - Describe how attackers and defenders map these paths
+      - Apply tiering and hardening to break attack paths
+    theory: |
+      **Active Directory (AD)** is the identity backbone of most enterprises, and its interconnected nature creates
+      something distinctive: **attack paths**, chains of individually minor misconfigurations and permissions that,
+      linked together, let an attacker move from an ordinary foothold all the way to domain dominance. No single
+      step may look alarming, a user who is a local admin here, a group that can reset a password there, a service
+      account with a risky delegation, an access-control entry granting a seemingly innocuous right, but AD's web
+      of relationships means these connect into a route an attacker can walk. This is why defending AD requires
+      thinking not just about individual vulnerabilities but about the **graph of relationships** and the paths
+      through it, because attackers explicitly hunt for the shortest chain from where they are to Domain Admin.
+
+      Attackers (and defenders) **map these paths** systematically. Tools famously model AD as a graph, nodes are
+      users, computers, groups, and edges are the rights and relationships between them (member of, admin to, can
+      reset password, has session on, can be delegated), and then compute the shortest paths from a compromised
+      account to high-value targets like Domain Admins. This turns a sprawling, hard-to-reason-about environment
+      into concrete attack routes. The building blocks of these paths include the specific attacks met earlier
+      (Kerberos abuses, NTLM relay, credential theft) plus privilege-granting misconfigurations: excessive group
+      memberships, dangerous access-control entries (ACL abuse), unconstrained or misconfigured delegation,
+      credentials cached on many machines, and local-admin sprawl that lets an attacker harvest credentials and
+      pivot. Understanding that an attacker reasons in paths, not isolated flaws, reframes the defensive problem:
+      the goal is to cut the edges that let paths form.
+
+      Breaking attack paths relies above all on **tiered administration** plus targeted hardening. The **tier
+      model** separates administration into levels, tier 0 (the identity plane, domain controllers, AD, and the
+      accounts and systems that control it) is the crown jewels and must be administered only from clean, protected
+      systems and never exposed to lower tiers; tier 1 (servers) and tier 2 (workstations) are kept separate, so a
+      compromised workstation cannot harvest a domain-admin credential because such credentials never touch it.
+      Tiering directly severs the most dangerous paths, those that let workstation compromise reach the domain core.
+      Alongside it: reduce local-admin and privileged-group membership (least privilege), fix dangerous
+      delegations and risky ACLs, protect and limit where privileged credentials are used (connecting to PAM and
+      Credential Guard met earlier), and continuously map your own AD to find and remediate paths before attackers
+      do, using the same graphing tools defensively. Monitoring for the techniques along these paths (the detection
+      lessons on Kerberos, credential access and lateral movement) provides the alerting layer. For the analyst and
+      administrator, the lessons are that AD compromise is usually the result of chained attack paths rather than
+      one flaw, that modelling AD as a graph reveals the concrete routes to domain dominance, and that tiered
+      administration together with least privilege, fixing dangerous rights and delegations, and proactively
+      mapping your own environment is what cuts those paths, protecting the identity backbone that, once fully
+      compromised, gives an attacker the entire domain.
+    examples:
+      - title: Chained paths to domain dominance
+        body: |
+          AD's web of relationships: local admin here + password-reset right there + risky delegation + an innocuous ACL = a walkable route to Domain Admin
+          no single step looks alarming -> defend the GRAPH of relationships, not just isolated flaws.
+      - title: Mapping and breaking paths
+        body: |
+          graph AD (users/computers/groups as nodes; member-of, admin-to, can-reset, has-session, delegation as edges) -> shortest path to Domain Admins
+          break with TIERING: tier 0 (DCs/AD/identity) administered only from clean systems, never exposed to workstations -> DA creds never touch a workstation
+          plus least privilege, fix delegations/ACLs, protect privileged creds (PAM/Cred Guard), map your own AD proactively.
+    exercise:
+      title: Find and break Active Directory attack paths
+      environment: A described Active Directory environment (or a scenario with sample relationships)
+      tools: [A scenario or sample AD relationships, the ATT&CK reference, a document, a notes file]
+      steps:
+        - Explain how minor misconfigurations chain into an attack path to domain dominance.
+        - Describe how modelling AD as a graph reveals concrete routes to high-value targets.
+        - Give examples of the path building blocks (ACL abuse, delegation, local-admin sprawl, credential caching).
+        - Explain the tier model and how it severs the most dangerous paths.
+        - Describe additional hardening (least privilege, fixing delegations, protecting credentials).
+        - Explain how proactively mapping your own AD and monitoring the path techniques helps.
+      deliverable: An AD attack-path plan covering how paths form, graph-based mapping, the tier model, hardening to cut paths, and proactive mapping with detection.
+    expected_outcome: >
+      You can explain how Active Directory attack paths lead to domain dominance, describe how they are mapped as a
+      graph, and apply tiered administration and hardening to break the paths that protect the identity backbone.
+    quiz:
+      - prompt: An Active Directory attack path is
+        options:
+          - A single critical vulnerability
+          - A chain of individually minor misconfigurations and rights that together lead from a foothold to domain dominance
+          - A physical cable route
+          - A backup schedule
+        answer: 1
+        explanation: AD compromise usually comes from chaining small, linked misconfigurations into a route to Domain Admin.
+      - prompt: Modelling AD as a graph helps because it
+        options:
+          - Hides the relationships
+          - Reveals concrete shortest paths from a compromised account to high-value targets like Domain Admins
+          - Encrypts the domain
+          - Removes all accounts
+        answer: 1
+        explanation: Graphing nodes and the rights between them exposes the actual routes attackers can walk.
+      - prompt: The tier model breaks attack paths by
+        options:
+          - Giving every workstation domain-admin rights
+          - Keeping tier 0 (identity/DCs) administered only from clean systems so privileged credentials never touch lower tiers
+          - Removing authentication
+          - Sharing all credentials
+        answer: 1
+        explanation: Tiering ensures a compromised workstation cannot harvest a credential that reaches the domain core.
+      - prompt: Defenders should map their own AD with the same graphing tools in order to
+        options:
+          - Help attackers
+          - Find and remediate dangerous attack paths before attackers exploit them
+          - Delete the domain
+          - Avoid any hardening
+        answer: 1
+        explanation: Proactive mapping finds the paths so they can be cut before an attacker uses them.
+  - slug: win-amsi-script-defense
+    title: AMSI and Script-Based Attack Defense
+    order: 22
+    difficulty: advanced
+    summary: Understand how attackers use scripts and in-memory techniques to evade file-based detection, how the Antimalware Scan Interface (AMSI) gives defenders visibility into that activity, and how to defend against script-based attacks.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.4", "sc200:3", "cysa:1.2"]
+    learning_objectives:
+      - Explain why script-based and in-memory attacks evade file detection
+      - Describe how AMSI gives visibility into script content
+      - Defend against script-based attacks and AMSI evasion
+    theory: |
+      A great deal of modern Windows attack activity happens through **scripts** (PowerShell, JScript, VBScript,
+      Office macros) and **in-memory execution** rather than dropping traditional executable files, precisely
+      because file-based antivirus struggles to catch what never touches disk as a recognisable file. An attacker
+      can run a malicious PowerShell command that downloads and executes code entirely in memory, or heavily
+      obfuscate a script so its true content is hidden until runtime, defeating simple signature scanning. This
+      living-off-the-land and fileless style (met in hunting and detection) is a core evasion technique, so
+      defenders need a way to see what scripts actually do when they run, not just what the file on disk looks like.
+
+      The **Antimalware Scan Interface (AMSI)** is Microsoft's answer to this. AMSI is a Windows interface that lets
+      scripting engines and applications submit content to the installed antimalware product for scanning **at the
+      point of execution**, after it has been de-obfuscated into what will actually run. So when a PowerShell script
+      is about to execute, its real, de-obfuscated content is passed through AMSI to be scanned, which means that
+      even a script obfuscated to defeat on-disk scanning is inspected in its true form at runtime. AMSI gives
+      defenders and antimalware visibility into script content, macro behaviour and other dynamic execution that
+      would otherwise be hidden, and it is an important source feeding script-based detection (connecting to the
+      PowerShell logging and ETW telemetry met earlier). In effect, AMSI moves the inspection point from the file
+      to the moment of execution, where obfuscation has already been undone.
+
+      Because AMSI is so useful to defenders, attackers try to **evade or disable it**, and understanding this is
+      part of the defense. Sophisticated malware attempts **AMSI bypass**, tampering with AMSI in its own process
+      so that its script content is never scanned (patching the AMSI function, or other techniques), which is a
+      recognised defense-evasion move, and, like ETW tampering, an attempt to disable AMSI is itself a detectable
+      and suspicious event. So defending against script-based attacks combines several layers: keep AMSI and
+      antimalware enabled and monitor for AMSI tampering, enable rich **script logging** (PowerShell script-block
+      logging, met earlier) so script content and execution are recorded regardless, apply **execution controls**
+      (constrained language mode, application control, macro restrictions, disabling or restricting scripting where
+      not needed), and feed all of this into detection so obfuscated and in-memory script activity is caught. The
+      considerations are that AMSI is one layer, not a complete solution (bypasses exist), so it is combined with
+      logging and execution controls rather than relied on alone. For the analyst, the lessons are that scripts and
+      in-memory techniques evade file-based detection, that AMSI restores visibility by scanning content at the
+      moment of execution after de-obfuscation, that attackers in turn try to disable AMSI (itself a detectable
+      signal), and that defending against script-based attacks means combining AMSI, thorough script logging and
+      execution controls so that the fileless, obfuscated techniques attackers rely on are seen and stopped.
+    examples:
+      - title: Why scripts evade file detection
+        body: |
+          scripts (PowerShell/JScript/VBScript/macros) + in-memory execution -> nothing recognisable touches disk; obfuscation hides content until runtime
+          file-based AV struggles -> living-off-the-land/fileless is a core evasion -> defenders must see what scripts DO at runtime.
+      - title: AMSI and its evasion
+        body: |
+          AMSI: scripting engines submit content to antimalware AT EXECUTION, after DE-OBFUSCATION -> the real content is scanned even if the file was obfuscated
+          attackers attempt AMSI BYPASS (patch AMSI in their process) = defense evasion, itself detectable
+          defend in layers: keep AMSI on + watch for tampering, script-block logging, execution controls (constrained language, app control, macro limits).
+    exercise:
+      title: Defend against script-based attacks
+      environment: A described Windows environment facing script-based threats (or a scenario)
+      tools: [A scenario or sample script telemetry, a document, a notes file]
+      steps:
+        - Explain why script-based and in-memory techniques evade file-based detection.
+        - Explain how AMSI scans script content at the moment of execution after de-obfuscation.
+        - Explain why AMSI catches obfuscated scripts that on-disk scanning misses.
+        - Describe AMSI bypass as an evasion technique and why an attempt to disable AMSI is itself a signal.
+        - List the layered defences (AMSI, script logging, execution controls) and why no single one suffices.
+        - Describe how this telemetry feeds script-based detection.
+      deliverable: A script-defense plan covering why scripts evade file detection, how AMSI restores visibility, AMSI evasion as a detectable signal, and the layered defences (AMSI, logging, execution controls).
+    expected_outcome: >
+      You can explain why script and in-memory attacks evade file detection, describe how AMSI scans content at
+      execution, and defend against script-based attacks with AMSI, script logging and execution controls.
+    quiz:
+      - prompt: Script-based and in-memory attacks evade file-based detection because
+        options:
+          - They always drop a recognisable executable to disk
+          - Little or nothing recognisable touches disk, and obfuscation hides the content until runtime
+          - They cannot run on Windows
+          - They are always signed
+        answer: 1
+        explanation: Fileless, obfuscated execution defeats on-disk signature scanning.
+      - prompt: AMSI restores visibility by scanning script content
+        options:
+          - Only as it sits obfuscated on disk
+          - At the point of execution, after de-obfuscation, so the real content is inspected
+          - Never
+          - Only after the attack completes
+        answer: 1
+        explanation: AMSI inspects the de-obfuscated content at runtime, catching scripts that evade disk scanning.
+      - prompt: An attempt to bypass or disable AMSI should be treated as
+        options:
+          - Normal, harmless activity
+          - A defense-evasion technique and itself a detectable, suspicious signal
+          - A performance optimisation
+          - Proof the system is secure
+        answer: 1
+        explanation: Like ETW tampering, disabling AMSI hides the attacker and is a strong signal to detect.
+      - prompt: Defending against script-based attacks should
+        options:
+          - Rely on AMSI alone
+          - Combine AMSI with script-block logging and execution controls, since AMSI can be bypassed
+          - Disable all logging
+          - Trust obfuscated scripts
+        answer: 1
+        explanation: AMSI is one layer; logging and execution controls provide defense in depth against bypasses.
+  - slug: win-defender-edr
+    title: Microsoft Defender for Endpoint and EDR on Windows
+    order: 23
+    difficulty: intermediate
+    summary: Understand what endpoint detection and response (EDR) brings to Windows beyond traditional antivirus, how a platform like Microsoft Defender for Endpoint works, and how analysts use it to detect, investigate and respond.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.5", "sc200:3", "cysa:1.1"]
+    learning_objectives:
+      - Explain how EDR differs from traditional antivirus
+      - Describe the capabilities of a Windows EDR platform
+      - Use EDR to detect, investigate and respond on endpoints
+    theory: |
+      Traditional antivirus mostly asks a single question, does this file match known-bad signatures, and blocks
+      it if so, which misses the fileless, in-memory, living-off-the-land and novel techniques covered throughout
+      this module. **Endpoint Detection and Response (EDR)** is the modern answer: rather than only scanning files,
+      EDR continuously records endpoint **behaviour**, process execution, file and registry activity, network
+      connections, script and in-memory activity (drawing on the ETW and AMSI telemetry met earlier), and uses that
+      rich behavioural data to detect suspicious activity, give analysts deep visibility, and enable response. On
+      Windows, Microsoft Defender for Endpoint is a prominent example, and understanding EDR matters because it is
+      the primary detection-and-response tool on modern endpoints and a central source feeding the SOC.
+
+      An EDR platform's **capabilities** span detection, visibility and response. For **detection**, it combines
+      behavioural analytics, machine learning, threat intelligence and rules to flag suspicious behaviour, catching
+      the techniques signature antivirus misses, and it still includes traditional prevention (next-generation
+      antivirus) as a layer. For **visibility and investigation**, it records detailed endpoint telemetry and
+      retains it, so an analyst can see exactly what happened on a host, a process tree showing how a threat
+      executed, what it touched, what it connected to, and can search across all endpoints for indicators and
+      behaviours (threat hunting, met earlier), which is invaluable for scoping an incident across the fleet. For
+      **response**, EDR provides actions an analyst can take remotely and quickly, isolate a compromised host from
+      the network (while keeping the EDR connection for investigation), kill a malicious process, quarantine a
+      file, collect an investigation package, and sometimes automate these responses, which is exactly the fast,
+      remote containment that incident response needs.
+
+      Using EDR well fits it into the broader SOC. Its alerts feed the SIEM and the alert-to-response workflow (met
+      in the SOC lesson), its rich telemetry powers both detection and investigation, and its response actions are
+      a core containment capability for incident response. EDR is also a target and a dependency to protect:
+      attackers try to disable or evade it (tampering with the agent, the ETW/AMSI evasion met earlier), so
+      tamper protection and monitoring the EDR's own health matter, and an endpoint that stops reporting to EDR is,
+      like a silent log source, a potential blind spot and attack signal. The considerations are tuning (EDR can
+      generate many alerts, so it needs the detection-engineering discipline met earlier), coverage (every endpoint
+      needs the agent), and that EDR is one layer in defense in depth, not a complete solution. Increasingly EDR
+      extends into XDR, correlating endpoint data with identity, email and cloud signals for a broader picture. For
+      the analyst, the lessons are that EDR moves endpoint security from signature file-scanning to continuous
+      behavioural detection, deep forensic visibility and fast remote response, that a platform like Microsoft
+      Defender for Endpoint is the primary detection-and-response tool on modern Windows endpoints and a key SOC
+      source, and that using it means leveraging its telemetry for detection, investigation and hunting, its
+      actions for containment, and protecting the EDR itself as the critical sensor and control point it has become.
+    examples:
+      - title: EDR vs traditional antivirus
+        body: |
+          AV: does this FILE match known-bad signatures? -> misses fileless/in-memory/living-off-the-land/novel
+          EDR: continuously records BEHAVIOUR (process/file/registry/network/script/in-memory, via ETW/AMSI) -> behavioural detection + deep visibility + response
+          Microsoft Defender for Endpoint = a prominent Windows example; primary endpoint detection-and-response tool.
+      - title: Capabilities
+        body: |
+          detect: behavioural analytics + ML + threat intel + rules (+ NGAV prevention layer)
+          investigate: detailed retained telemetry -> process tree of what happened; search all endpoints for indicators (hunting), scope across the fleet
+          respond: isolate host (keep EDR link), kill process, quarantine file, collect package, often automated -> fast remote containment
+          protect the EDR itself (tamper protection); a host that stops reporting = potential blind spot/attack signal.
+    exercise:
+      title: Use EDR to detect, investigate and respond
+      environment: A described Windows fleet with an EDR platform (or a scenario with sample EDR data)
+      tools: [A scenario or sample EDR telemetry, a document, a notes file]
+      steps:
+        - Explain how EDR differs from traditional signature-based antivirus and what it catches that AV misses.
+        - Describe how EDR detects suspicious behaviour.
+        - Explain how EDR's retained telemetry supports investigation and fleet-wide hunting.
+        - Describe the response actions EDR provides and why host isolation keeps the EDR link.
+        - Explain how EDR fits the SOC alert-to-response workflow and incident response.
+        - Explain why the EDR itself must be protected and monitored for tampering.
+      deliverable: An EDR usage plan covering behavioural detection, forensic visibility and hunting, remote response actions, integration with the SOC workflow, and protecting the EDR as a critical sensor.
+    expected_outcome: >
+      You can explain how EDR differs from antivirus, describe a Windows EDR platform's detection, visibility and
+      response capabilities, and use EDR to detect, investigate, hunt and respond while protecting the EDR itself.
+    quiz:
+      - prompt: EDR differs from traditional antivirus mainly because it
+        options:
+          - Only scans files for known-bad signatures
+          - Continuously records endpoint behaviour and uses it to detect suspicious activity, catching fileless and novel techniques AV misses
+          - Does not run on endpoints
+          - Cannot respond to threats
+        answer: 1
+        explanation: EDR adds behavioural detection and response beyond signature file-scanning.
+      - prompt: A key EDR response capability is to
+        options:
+          - Only send an email
+          - Isolate a compromised host from the network (while keeping the EDR link), kill processes and quarantine files, often remotely
+          - Delete all endpoints
+          - Do nothing automatically
+        answer: 1
+        explanation: EDR enables fast remote containment such as host isolation and process termination.
+      - prompt: EDR's retained telemetry is valuable for investigation because it
+        options:
+          - Shows nothing about what happened
+          - Lets an analyst reconstruct exactly what a threat did (process tree, files, connections) and search all endpoints for it
+          - Only records CPU temperature
+          - Cannot be searched
+        answer: 1
+        explanation: Rich, retained behavioural data reconstructs incidents and enables fleet-wide hunting.
+      - prompt: An endpoint that stops reporting to EDR should be treated as
+        options:
+          - Always perfectly secure
+          - A potential blind spot and attack signal, since attackers try to disable or evade EDR
+          - A performance improvement
+          - Irrelevant
+        answer: 1
+        explanation: A silent EDR agent may mean tampering, so it is a potential blind spot and signal, like a silent log source.

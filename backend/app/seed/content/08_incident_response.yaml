@@ -1947,3 +1947,325 @@ lessons:
           - Without any evidence
         answer: 1
         explanation: Attribution is uncertain and secondary to containment, so it warrants caution.
+  - slug: ir-ot-ics-response
+    title: Incident Response in OT and ICS Environments
+    order: 21
+    difficulty: advanced
+    summary: Understand why incident response in operational technology and industrial control systems differs fundamentally from IT, where safety and availability come first, and how responders must adapt their approach accordingly.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.8", "sc200:4", "cysa:3.1"]
+    learning_objectives:
+      - Explain why OT/ICS incident response differs from IT
+      - Describe the constraints safety and availability impose on response
+      - Adapt response actions for an OT/ICS environment
+    theory: |
+      **Operational technology (OT)** and **industrial control systems (ICS)**, the computers and controllers that
+      run physical processes in manufacturing, energy, water, transport and similar sectors, demand an incident
+      response approach fundamentally different from IT, and a responder who applies IT instincts unchanged can
+      make an OT incident far worse. The defining difference is priorities: in IT, the classic emphasis is
+      confidentiality, integrity and availability, but in OT the overriding concern is **safety and the physical
+      process**, because these systems control equipment that can injure people, damage the environment, or cause
+      major physical harm if it malfunctions. Availability is paramount too, stopping a process is not a free,
+      reversible action as isolating an IT server often is; it can halt production, disrupt critical services, or
+      create dangerous conditions. So the first rule of OT incident response is that actions must not endanger
+      safety or the process, which reshapes everything.
+
+      These priorities impose hard **constraints** on familiar response actions. **Containment by isolation**, a
+      reflex in IT, can be dangerous or impossible in OT: pulling a controller offline or cutting network
+      connectivity might stop a physical process in an unsafe state or lose the operator's visibility and control
+      of equipment, so containment decisions must involve the engineers and operators who understand the physical
+      consequences, and often prioritise keeping the process safe over cleaning the network. **Rebooting or
+      re-imaging**, routine in IT, may be unacceptable for systems that run continuously and whose restart is
+      complex or hazardous. **Patching and changes** cannot be applied freely because OT systems are often fragile,
+      certified, or unable to tolerate downtime (the fragile-environment caution met in the scanning lesson).
+      Forensics is constrained because you often cannot take a running controller offline to image it. Even the
+      people differ: OT response must bring together IT/security responders with the plant engineers and operators
+      who own safety and the process, a collaboration that must be established before an incident.
+
+      Adapting response means applying the lifecycle **through an OT lens**. Preparation is especially decisive:
+      understand the environment and its safety constraints in advance, build OT-aware playbooks jointly with
+      engineering, know what can and cannot be done safely, and plan to maintain safe operation during an incident
+      (there are often manual or fail-safe modes). Detection leans on monitoring that is passive and OT-appropriate
+      (watching the specialised protocols and the IT/OT boundary without disrupting the process). Containment favors
+      actions that protect safety and the process, segment at the IT/OT boundary to stop spread without disrupting
+      control, bring in engineering for any action affecting the process, and consider moving to manual or safe
+      operating modes rather than abrupt isolation. Recovery must restore systems in a validated, safe way.
+      Throughout, the guiding question is not just how to stop the attacker but how to do so without creating a
+      physical or safety problem. For the analyst and responder, the lessons are that OT/ICS incident response puts
+      safety and the physical process above the usual IT priorities, that standard reflexes like isolate, reboot
+      and patch can be dangerous or impossible and must be rethought, and that effective OT response depends on
+      preparation and close collaboration with the engineers who own the process, because in these environments an
+      incident, and a careless response, can have consequences in the physical world.
+    examples:
+      - title: Different priorities
+        body: |
+          OT/ICS run PHYSICAL processes (energy, water, manufacturing, transport) -> overriding concern is SAFETY + the process
+          IT reflexes can make it worse: stopping a process isn't free/reversible like isolating a server; it can be unsafe or halt critical services.
+      - title: Reflexes that must be rethought
+        body: |
+          isolation can leave a process in an unsafe state or lose operator control; reboot/re-image may be unacceptable for continuous systems; patch freely? no (fragile/certified)
+          containment must involve the ENGINEERS/operators; segment at the IT/OT boundary; consider manual/fail-safe modes; prepare + collaborate before an incident.
+    exercise:
+      title: Plan incident response for an OT/ICS environment
+      environment: A described OT/ICS environment with an incident (or a scenario)
+      tools: [A scenario, a document, a notes file]
+      steps:
+        - Explain why OT/ICS incident response prioritises safety and the physical process over usual IT priorities.
+        - Explain why containment by isolation can be dangerous or impossible in OT.
+        - Explain why rebooting, re-imaging and free patching may be unacceptable.
+        - Describe OT-appropriate detection and containment actions.
+        - Explain why engineers and operators must be part of response decisions.
+        - Describe the preparation needed before an OT incident.
+      deliverable: An OT/ICS incident-response plan covering the safety-first priorities, the constraints on standard actions, OT-appropriate detection and containment, and the preparation and collaboration required.
+    expected_outcome: >
+      You can explain why OT/ICS incident response differs from IT, describe the constraints safety and availability
+      impose on response, and adapt detection, containment and recovery for an OT/ICS environment with engineering.
+    quiz:
+      - prompt: The overriding concern in OT/ICS incident response is
+        options:
+          - Confidentiality above all
+          - Safety and the physical process, since these systems control equipment that can cause physical harm
+          - Marketing impact
+          - Disk space
+        answer: 1
+        explanation: OT systems control physical processes, so safety and keeping the process safe come first.
+      - prompt: Containment by isolation is problematic in OT because
+        options:
+          - It is always easy and safe
+          - Pulling a controller offline can stop a process in an unsafe state or lose operator control of equipment
+          - OT has no network
+          - Isolation improves safety automatically
+        answer: 1
+        explanation: Cutting off OT systems can create unsafe physical conditions, so isolation must be rethought.
+      - prompt: Rebooting or re-imaging OT systems during an incident
+        options:
+          - Is always the first step
+          - May be unacceptable for continuously running systems whose restart is complex or hazardous
+          - Has no physical consequences
+          - Is required by every playbook
+        answer: 1
+        explanation: Restarting OT systems can be hazardous or disruptive, unlike routine IT re-imaging.
+      - prompt: Effective OT incident response depends above all on
+        options:
+          - Acting alone with IT reflexes
+          - Preparation and close collaboration with the engineers and operators who own safety and the process
+          - Ignoring the physical process
+          - Patching everything immediately
+        answer: 1
+        explanation: Safe OT response requires planning and the process engineers' knowledge of physical consequences.
+  - slug: ir-metrics-maturity
+    title: Incident Response Metrics and Program Maturity
+    order: 22
+    difficulty: intermediate
+    summary: Understand how to measure an incident response capability with meaningful metrics, assess its maturity, and use both to improve, so that response gets faster and more effective over time rather than staying reactive.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.8", "secplus:5.1", "cysa:3.2"]
+    learning_objectives:
+      - Explain why measuring incident response matters
+      - Describe meaningful incident response metrics
+      - Use maturity assessment to improve the response capability
+    theory: |
+      Incident response is not only something a team does during an incident; it is a **capability** that can be
+      measured, assessed and improved, and treating it that way is what turns a reactive team into one that gets
+      measurably faster and more effective over time. Without measurement, an organisation cannot tell whether its
+      response is improving, where it is slow, or whether investments are paying off, so it tends to stay reactive,
+      repeating the same mistakes. Measuring response, and honestly assessing the maturity of the capability, gives
+      the feedback needed to improve deliberately, and it also demonstrates the value of the function to leadership,
+      which sustains the support and resources it needs. The point is not metrics for their own sake but using
+      measurement to drive improvement in how quickly and well the organisation detects and handles incidents.
+
+      The most important **metrics** capture speed and effectiveness. **Mean time to detect (MTTD)** measures how
+      long it takes to discover an incident after it begins, a crucial measure because the longer an attacker goes
+      undetected, the more damage they do. **Mean time to respond or contain (MTTR)** measures how quickly, once
+      detected, the team contains and remediates the incident, directly tied to limiting impact. Together these
+      measure the window of exposure the organisation aims to shrink. Other useful metrics include the number and
+      types of incidents over time (revealing trends and recurring problems), how incidents were detected (internal
+      detection versus external notification, a telling measure of detection capability), dwell time, the rate of
+      recurring incidents (are root causes actually being fixed, connecting to post-incident review), and adherence
+      to the process. The caution is to choose metrics that drive the right behaviour and reflect real
+      effectiveness, rather than vanity numbers or metrics that can be gamed at the expense of thoroughness, a fast
+      MTTR achieved by closing incidents prematurely is worse than useless.
+
+      **Maturity assessment** complements metrics by evaluating the capability as a whole against a model, moving
+      from ad-hoc (response is improvised) through repeatable and defined (documented processes and playbooks, the
+      lifecycle and playbooks met earlier) to managed and optimising (measured, continuously improving, with
+      automation and proactive readiness). Assessing where the organisation sits reveals gaps, missing playbooks,
+      untested plans, poor detection, no metrics, and points to the next improvements. The two work together: a
+      maturity assessment shows structural gaps, while metrics track whether changes actually improve outcomes, and
+      both feed the continuous improvement that the post-incident review and tabletop lessons also drive. The
+      practical use is to measure consistently, review the metrics and maturity periodically, set concrete
+      improvement goals (reduce MTTD, add missing playbooks, increase the share of internally detected incidents),
+      and report progress to leadership. For the analyst and incident-response leader, the lessons are that
+      incident response is a measurable capability, that MTTD and MTTR and related metrics capture the window of
+      exposure the organisation works to shrink, that maturity assessment reveals the structural gaps to close, and
+      that using measurement and maturity together to set and track improvement goals is what makes response
+      steadily faster and more effective rather than perpetually reactive, provided the metrics chosen reflect real
+      effectiveness rather than numbers that merely look good.
+    examples:
+      - title: Response as a measurable capability
+        body: |
+          not just what you do in an incident -> a CAPABILITY you measure, assess, improve
+          without measurement you can't tell if you're improving or where you're slow -> stay reactive, repeat mistakes
+          measure + assess maturity -> deliberate improvement + shows value to leadership.
+      - title: Key metrics and maturity
+        body: |
+          MTTD (time to detect) + MTTR (time to respond/contain) = the window of exposure to shrink; also incident trends, internal-vs-external detection, dwell time, recurrence, process adherence
+          choose metrics that drive the RIGHT behaviour (a fast MTTR from closing incidents prematurely is worse than useless)
+          maturity: ad-hoc -> repeatable/defined -> managed/optimising; assessment reveals gaps; metrics track if changes improve outcomes.
+    exercise:
+      title: Measure and mature an incident response capability
+      environment: A described incident response team wanting to improve (or a scenario with sample incident data)
+      tools: [A scenario or sample incident data, a document, a notes file]
+      steps:
+        - Explain why measuring incident response matters and what it enables.
+        - Define MTTD and MTTR and why they capture the window of exposure.
+        - Describe two other useful metrics (for example internal-vs-external detection, recurrence rate).
+        - Explain the risk of metrics that can be gamed and how to choose meaningful ones.
+        - Describe a maturity model from ad-hoc to optimising and how assessment reveals gaps.
+        - Explain how metrics and maturity together drive concrete improvement goals.
+      deliverable: An IR measurement-and-maturity plan with the key metrics (MTTD, MTTR and others), a maturity assessment approach, and how both drive and track improvement goals reported to leadership.
+    expected_outcome: >
+      You can explain why measuring incident response matters, describe meaningful metrics like MTTD and MTTR, and
+      use maturity assessment with metrics to set and track improvements that make response faster and more effective.
+    quiz:
+      - prompt: Treating incident response as a measurable capability matters because
+        options:
+          - Metrics are an end in themselves
+          - Without measurement an organisation cannot tell if response is improving or where it is slow, so it stays reactive
+          - Response cannot be improved
+          - It replaces having a team
+        answer: 1
+        explanation: Measurement provides the feedback needed to improve deliberately rather than repeating mistakes.
+      - prompt: MTTD and MTTR together measure
+        options:
+          - The number of employees
+          - The window of exposure, how long until detection and then until containment, which the organisation aims to shrink
+          - Disk usage
+          - The marketing budget
+        answer: 1
+        explanation: Time to detect and time to contain capture how long an attacker operates and causes damage.
+      - prompt: A risk when choosing incident-response metrics is
+        options:
+          - Metrics always reflect real effectiveness
+          - Metrics can be gamed (e.g. a fast MTTR from closing incidents prematurely), so they must reflect real effectiveness
+          - There are no possible metrics
+          - Metrics are never reported
+        answer: 1
+        explanation: Vanity or gameable metrics can harm thoroughness, so metrics must drive the right behaviour.
+      - prompt: A maturity assessment complements metrics by
+        options:
+          - Replacing all metrics
+          - Evaluating the capability against a model to reveal structural gaps, while metrics track whether changes improve outcomes
+          - Measuring only disk space
+          - Ignoring process
+        answer: 1
+        explanation: Maturity assessment shows structural gaps to close; metrics show whether fixes actually work.
+  - slug: ir-csirt-team
+    title: Building and Running a CSIRT
+    order: 23
+    difficulty: intermediate
+    summary: Understand how an effective incident response capability depends on people and organisation, the roles, structure, authority and relationships of a Computer Security Incident Response Team, not just process and tools.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.8", "secplus:5.1", "cysa:3.2"]
+    learning_objectives:
+      - Explain the roles and structure of a CSIRT
+      - Describe the authority and relationships a CSIRT needs
+      - Recognise how team models and readiness affect response
+    theory: |
+      The incident response lifecycle, playbooks and tools covered earlier only work if the right **people** are
+      organised, empowered and ready to execute them, and that is the role of a **Computer Security Incident
+      Response Team (CSIRT)**, sometimes called a CIRT or CERT. A capable response depends as much on the team's
+      roles, structure, authority and relationships as on any process, because during a real incident, under
+      pressure, what determines success is whether the right people know their roles, can make decisions, and can
+      call on the rest of the organisation. Building and running a CSIRT is therefore a core part of incident
+      response readiness, turning plans and playbooks into an organisation that can actually act.
+
+      A CSIRT brings together several **roles**, whether as dedicated staff or people who step into incident roles
+      when needed. Core roles include an **incident commander or lead** who coordinates the response and makes
+      decisions (a critical role, so there is always someone in charge), **analysts and responders** who do the
+      technical investigation and containment, and often specialists for forensics, malware analysis and threat
+      intelligence. Crucially, a CSIRT extends beyond the security team: effective response needs **relationships
+      and defined involvement** with legal (for notification and evidence decisions, met earlier), communications
+      and public relations (for messaging), human resources (for insider cases), IT and system owners (who operate
+      the affected systems), and leadership (for major decisions). Defining who fills each role and how these
+      groups are engaged, before an incident, is what lets a CSIRT mobilise quickly rather than scrambling to work
+      out who should be involved while an incident unfolds.
+
+      Beyond roles, a CSIRT needs **authority, models and readiness**. It must have the **authority** to act,
+      pre-agreed power to take containment actions (isolate systems, disable accounts) quickly during an incident,
+      because response delayed for permission is response that fails; this authority, and clear escalation and
+      decision rights, are established in advance with leadership backing. CSIRTs follow different **structural
+      models**, a central team, distributed responders across business units, or a coordinating team that
+      marshals others, chosen to fit the organisation, and may be supplemented by external incident-response
+      **retainers** for surge capacity and specialist skills. **Readiness** comes from training, clear
+      documentation of roles and contacts, and the tabletop exercises met earlier that rehearse the team so roles
+      and relationships are practised before they are needed. The considerations are ensuring 24/7 coverage and
+      avoiding single points of failure (one person who alone knows how to do something), keeping contact
+      information and authority current, and sustaining the team between incidents. For the analyst and incident
+      responder, the lessons are that an effective incident response capability is as much about people and
+      organisation as about process, that a CSIRT needs defined roles, a clear incident commander, and pre-
+      established relationships across legal, communications, HR, IT and leadership, that it must hold the
+      authority to act quickly and fit an appropriate structural model with external support where useful, and that
+      readiness, through training, documentation and rehearsal, is what turns the team into one that performs under
+      the pressure of a real incident rather than improvising who does what.
+    examples:
+      - title: People make response work
+        body: |
+          lifecycle/playbooks/tools only work if the right PEOPLE are organised, empowered, ready
+          a CSIRT (CIRT/CERT): under pressure, success = right people know their roles, can decide, can call on the organisation.
+      - title: Roles, reach, authority
+        body: |
+          roles: incident COMMANDER/lead (always someone in charge), analysts/responders, forensics/malware/threat-intel specialists
+          reach BEYOND security: legal (notification/evidence), comms/PR, HR (insider), IT/system owners, leadership -> define involvement BEFORE an incident
+          AUTHORITY to act fast (isolate/disable) pre-agreed; models (central/distributed/coordinating) + external retainers; readiness via training + docs + tabletops.
+    exercise:
+      title: Design a CSIRT
+      environment: A described organisation building an incident response team (or a scenario)
+      tools: [A scenario, a document, a notes file]
+      steps:
+        - Explain why effective incident response depends on people and organisation, not just process.
+        - Describe the core CSIRT roles, including the incident commander.
+        - Explain which groups beyond the security team a CSIRT must involve and why.
+        - Explain why the CSIRT needs pre-agreed authority to act quickly.
+        - Describe the structural models and the role of external retainers.
+        - Explain how training, documentation and tabletop exercises build readiness.
+      deliverable: A CSIRT design covering roles and the incident commander, cross-organisation relationships, pre-established authority, a structural model with external support, and readiness through training and rehearsal.
+    expected_outcome: >
+      You can explain the roles and structure of a CSIRT, describe the authority and cross-organisation relationships
+      it needs, and recognise how team models and readiness determine whether response performs under pressure.
+    quiz:
+      - prompt: An effective incident response capability depends on
+        options:
+          - Process and tools alone
+          - People and organisation, roles, authority and relationships, as much as process and tools
+          - Only buying software
+          - Avoiding any team
+        answer: 1
+        explanation: Under pressure, organised, empowered, ready people determine whether plans actually execute.
+      - prompt: Why must a CSIRT extend beyond the security team?
+        options:
+          - It should not involve anyone else
+          - Effective response needs legal, communications, HR, IT and leadership, so their involvement is defined in advance
+          - Only IT matters
+          - Other groups slow it down and are excluded
+        answer: 1
+        explanation: Real incidents require legal, comms, HR, IT and leadership, engaged by pre-defined relationships.
+      - prompt: A CSIRT needs pre-agreed authority to act because
+        options:
+          - Permission is always instant
+          - Response delayed waiting for permission fails, so containment authority is established in advance with leadership backing
+          - It should never take action
+          - Authority is irrelevant
+        answer: 1
+        explanation: Quick containment requires authority granted beforehand, not negotiated mid-incident.
+      - prompt: Readiness of a CSIRT is built largely through
+        options:
+          - Never practising
+          - Training, clear documentation of roles and contacts, and tabletop exercises that rehearse the team
+          - Buying more tools only
+          - Hiring once and never training
+        answer: 1
+        explanation: Rehearsal, documentation and training prepare roles and relationships before they are needed.

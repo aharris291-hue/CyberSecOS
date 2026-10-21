@@ -1864,3 +1864,214 @@ lessons:
           - Share the PAM config publicly
         answer: 1
         explanation: PAM integrity is security-critical, so changes to it must be monitored and investigated.
+  - slug: linux-centralised-logging
+    title: Centralised Logging on Linux
+    order: 21
+    difficulty: intermediate
+    summary: Understand how Linux logging works (syslog and the journal), why logs must be shipped off the host to a central collector, and how centralised logging underpins both detection and tamper-resistant forensics.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.4", "sc200:2", "cysa:1.4"]
+    learning_objectives:
+      - Explain how Linux logging works and what it records
+      - Explain why logs must be centralised off the host
+      - Design centralised logging for detection and forensics
+    theory: |
+      Linux systems generate a wealth of security-relevant logs, authentication events, system messages, service
+      logs, and the auditd records met earlier, but by default these live **locally on each host**, which is both
+      hard to monitor at scale and dangerous, because an attacker who compromises the host can read, alter or
+      delete the very logs that would reveal them. Understanding Linux logging starts with how it is produced: the
+      traditional **syslog** mechanism and the modern **systemd journal (journald)** collect messages from the
+      kernel, services and applications, writing them to local files or the journal. These local logs are
+      essential, but relying on them alone leaves each host an island whose evidence an attacker controls, which is
+      why **centralised logging**, shipping logs off the host to a central collector, is a foundational practice.
+
+      The case for **centralisation** is both operational and security-critical. Operationally, a SOC cannot log in
+      to hundreds of hosts to read logs; it needs them aggregated where they can be searched, correlated and fed to
+      the SIEM, so that a detection can span many hosts and an analyst can investigate from one place (the
+      onboarding and correlation ideas from the SIEM module applied to Linux). Security-critically, shipping logs
+      off-host in near real time means that even if an attacker gains root and wipes the local logs, the evidence
+      already sent to the central collector survives, preserving the record of the attack. This tamper-resistance
+      is exactly why log deletion is a recognised attacker technique and why off-host logging defeats it, and it
+      makes the central collector itself a protected, high-value system. Centralisation also enables consistent
+      retention and integrity protection of logs that scattered local files cannot provide.
+
+      Designing centralised logging on Linux involves **collecting, forwarding and protecting** the right data. A
+      forwarding agent (rsyslog, the journal's own forwarding, or a log shipper) sends local logs, syslog messages,
+      journal entries, auth logs, auditd output, to the central collector or SIEM, ideally over a secure,
+      authenticated channel so logs are not readable or forgeable in transit. The design decides which logs to
+      ship (security-relevant ones prioritised), ensures reliable delivery (so a brief network outage does not
+      silently lose logs, connecting to the collection-health monitoring met earlier), and protects the collector.
+      Time synchronisation across hosts is important so that correlated events line up on one timeline. The
+      considerations are volume and cost (so not everything is shipped indiscriminately), reliability, and securing
+      the pipeline. For the analyst, the lessons are that Linux produces rich local logs via syslog and the journal
+      but that local-only logs are both unmanageable at scale and destroyable by an attacker, that centralising
+      logs off the host is what enables detection across many systems and preserves tamper-resistant evidence, and
+      that a sound design collects the right logs, forwards them securely and reliably to a protected collector,
+      and keeps clocks in sync, so that the record of what happened on every Linux host survives and is usable even
+      when the hosts themselves are compromised.
+    examples:
+      - title: Local logs are islands an attacker controls
+        body: |
+          syslog + systemd journal (journald) collect kernel/service/app messages locally; plus auth logs + auditd
+          local-only = hard to monitor at scale AND an attacker with root can read/alter/DELETE them
+          -> ship logs OFF the host.
+      - title: Why centralise
+        body: |
+          operational: aggregate -> search/correlate/SIEM, detection spans many hosts, investigate from one place
+          security: logs already sent survive local wiping -> tamper-resistant evidence (defeats log deletion); protect the collector
+          design: secure authenticated forwarding, reliable delivery (no silent loss), time sync across hosts.
+    exercise:
+      title: Design centralised Linux logging
+      environment: A described fleet of Linux hosts needing central logging (or a scenario)
+      tools: [A scenario, a document, a notes file]
+      steps:
+        - Explain how Linux produces logs via syslog and the systemd journal and what they record.
+        - Explain the two reasons (operational and security) that local-only logs are insufficient.
+        - Explain how off-host logging preserves evidence even when an attacker wipes local logs.
+        - Describe how logs are forwarded to a central collector and why the channel should be secure.
+        - Explain why reliable delivery and time synchronisation matter.
+        - Note the considerations (volume and cost, protecting the collector).
+      deliverable: A centralised-logging design covering Linux log sources, the operational and security case for centralising, secure reliable forwarding, time sync, and protecting the collector.
+    expected_outcome: >
+      You can explain Linux logging via syslog and the journal, explain why logs must be centralised off the host
+      for detection and tamper-resistant forensics, and design secure, reliable centralised logging across a fleet.
+    quiz:
+      - prompt: Relying only on local Linux logs is dangerous because
+        options:
+          - Local logs are always encrypted
+          - An attacker who compromises the host can read, alter or delete the logs that would reveal them
+          - Local logs cannot be written
+          - It improves detection
+        answer: 1
+        explanation: Local-only logs are controlled by whoever owns the host, so an attacker can destroy the evidence.
+      - prompt: Shipping logs off-host in near real time provides
+        options:
+          - Slower logging
+          - Tamper-resistant evidence, since logs already sent survive even if the attacker wipes the local copies
+          - No security benefit
+          - A way to delete logs faster
+        answer: 1
+        explanation: Centralised copies preserve the record even when local logs are destroyed, defeating log deletion.
+      - prompt: Time synchronisation across hosts matters for centralised logging because
+        options:
+          - It speeds up the network
+          - Correlated events from different hosts must line up on one accurate timeline
+          - It encrypts the logs
+          - It reduces log volume
+        answer: 1
+        explanation: Accurate clocks let events across hosts be correlated into a coherent timeline.
+      - prompt: A centralised logging design should forward logs
+        options:
+          - In clear text with no reliability
+          - Over a secure, authenticated channel with reliable delivery so logs are not forgeable or silently lost
+          - Only once a year
+          - Only to the same host
+        answer: 1
+        explanation: Secure, reliable forwarding protects logs in transit and avoids silent gaps.
+  - slug: linux-memory-forensics
+    title: Linux Memory and Process Forensics
+    order: 22
+    difficulty: advanced
+    summary: Learn how analysing a Linux system's memory and running processes reveals compromise that disk analysis misses, especially fileless and in-memory threats, and how to acquire and examine Linux memory safely.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.8", "sc200:3", "cysa:1.2"]
+    learning_objectives:
+      - Explain why memory and process forensics matter on Linux
+      - Describe how Linux memory and process state are acquired and examined
+      - Use memory and process analysis to find Linux compromise
+    theory: |
+      Much of what matters during a live Linux compromise exists only in **memory and running process state**, not
+      on disk, so examining them reveals threats that disk forensics alone misses. An attacker's running malware,
+      injected code, decrypted payloads, active network connections, and in-memory-only (fileless) implants may
+      leave little or nothing on disk, and a process whose executable was deleted from disk can still be running.
+      The live state of the system, what processes exist, what they are doing, what they have open, what is in
+      memory, is therefore a rich and sometimes irreplaceable source of evidence, which complements the disk and
+      log forensics covered elsewhere and is especially important for sophisticated, stealthy, or fileless Linux
+      threats that are designed to avoid leaving disk artifacts.
+
+      Examining this state comes in two related forms. **Live process analysis** inspects the running system through
+      its own interfaces: the process list and the rich information Linux exposes about each process (through /proc),
+      including the process's executable path (revealing a process whose binary was deleted, or one running from a
+      suspicious or temporary location), its open files and network connections, its command line, its environment,
+      and its memory maps. This can quickly surface a suspicious process, an unexpected listener, a process
+      masquerading under a normal name, or a binary running from /tmp. **Memory forensics** goes deeper by capturing
+      a full image of the system's RAM and analysing it offline with specialised tooling (memory-analysis
+      frameworks with Linux support), which can reconstruct processes, network connections, loaded kernel modules,
+      and injected or hidden code, including things an attacker tried to hide from the live system, such as a
+      rootkit concealing processes. Memory analysis can reveal what even a compromised live system would not show,
+      because the rootkit cannot hide from a raw memory image the way it hides from the tools it has subverted.
+
+      Doing this well requires **care in acquisition and interpretation**. Capturing memory from a running system
+      must be done carefully and ideally with a trusted mechanism, because the act of collection touches the system
+      and a compromised host's own tools may lie (which is why trusted, statically linked tools or a memory image
+      analysed offline are preferred, echoing the live-response caution met earlier). Timeliness matters, memory is
+      volatile and lost on reboot or shutdown, so if memory evidence is needed it must be captured before the system
+      is powered down, which is a key early decision in Linux incident response. Interpretation requires knowing
+      what normal process and memory state looks like so anomalies stand out, and findings are corroborated with
+      disk, log and network evidence. For the analyst, the lessons are that memory and running-process state hold
+      evidence of compromise, especially fileless and hidden threats, that disk analysis alone misses, that live
+      process analysis (via /proc and process information) and full memory forensics each reveal different depths,
+      with memory imaging able to expose what a subverted live system hides, and that capturing this volatile
+      evidence carefully and before shutdown, then interpreting it against a baseline and corroborating it, is how a
+      responder uncovers the in-memory reality of a Linux compromise.
+    examples:
+      - title: Why memory beats disk for live threats
+        body: |
+          running malware, injected code, decrypted payloads, active connections, fileless implants -> often ONLY in memory
+          a process whose binary was deleted from disk can still be running -> disk forensics misses it
+          live state is rich, sometimes irreplaceable evidence for stealthy/fileless Linux threats.
+      - title: Two forms, with care
+        body: |
+          live process analysis: /proc + process info (deleted/odd-location binary, open files, connections, cmdline, memory maps) -> surface a suspicious process fast
+          memory forensics: image RAM, analyse offline -> reconstruct processes/connections/modules/injected code; reveals what a rootkit HID from live tools
+          acquire carefully (trusted tools, memory is volatile -> capture BEFORE shutdown); baseline + corroborate.
+    exercise:
+      title: Analyse Linux memory and process state
+      environment: A described compromised Linux host (or a scenario with sample process/memory data)
+      tools: [A scenario or sample /proc and process data, a document, a notes file]
+      steps:
+        - Explain why memory and process state reveal compromise that disk analysis misses.
+        - Describe what live process analysis via /proc can surface (deleted binary, odd location, connections).
+        - Explain what full memory forensics adds and how it exposes hidden or injected code.
+        - Explain why memory imaging can reveal what a subverted live system hides.
+        - Explain why memory must be captured carefully and before shutdown.
+        - Explain how findings are interpreted against a baseline and corroborated.
+      deliverable: A Linux memory-and-process forensics plan covering why it matters, live process analysis via /proc, full memory forensics, careful volatile-evidence acquisition before shutdown, and interpretation with corroboration.
+    expected_outcome: >
+      You can explain why Linux memory and process forensics matter, describe live process analysis and full memory
+      imaging, and use them to find compromise, including fileless and hidden threats, that disk analysis misses.
+    quiz:
+      - prompt: Memory and process forensics matter on Linux because
+        options:
+          - Everything an attacker does is always on disk
+          - Running malware, injected code and fileless implants may exist only in memory, which disk analysis misses
+          - Memory holds no useful evidence
+          - Processes cannot be examined
+        answer: 1
+        explanation: Live, in-memory and fileless threats leave little on disk, so memory holds key evidence.
+      - prompt: Live process analysis via /proc can quickly reveal
+        options:
+          - Only the hostname
+          - A process whose binary was deleted or runs from a suspicious location, its open files and network connections
+          - The office temperature
+          - Nothing about running processes
+        answer: 1
+        explanation: /proc exposes a process's executable path, connections and more, surfacing suspicious processes.
+      - prompt: Full memory imaging can expose what a live system hides because
+        options:
+          - It cannot see memory
+          - A rootkit cannot hide from a raw memory image the way it hides from the live tools it has subverted
+          - It only reads disk
+          - It trusts the compromised tools
+        answer: 1
+        explanation: Offline analysis of a raw memory image bypasses the subverted tools a rootkit relies on.
+      - prompt: Memory evidence must be captured
+        options:
+          - Any time, since memory is permanent
+          - Carefully and before shutdown, because memory is volatile and lost on reboot or power-off
+          - Only after the system is powered down
+          - Never
+        answer: 1
+        explanation: Volatile memory is lost at shutdown, so it must be acquired, carefully, while the system runs.

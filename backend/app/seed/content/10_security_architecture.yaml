@@ -1962,3 +1962,335 @@ lessons:
           - Inventories slow down TLS
         answer: 1
         explanation: Visibility into all certificates is the basis for renewal, security and avoiding outages.
+  - slug: arch-high-availability
+    title: High Availability and Resilience Architecture
+    order: 21
+    difficulty: intermediate
+    summary: Understand how to architect systems that keep running despite failures and attacks, through redundancy, failover and resilience design, and why availability is a security property targeted by denial-of-service and ransomware.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:3.4", "secplus:3.1", "cysa:1.1"]
+    learning_objectives:
+      - Explain availability as a security property and how it is attacked
+      - Describe redundancy, failover and resilience design techniques
+      - Design for availability using recovery objectives
+    theory: |
+      Availability, the A of the CIA triad, is a genuine security property, and architecting systems to **keep
+      running despite failures and attacks** is a core part of security architecture, not just an operational
+      concern. Attacks directly target availability: denial-of-service floods (met in networking) aim to make
+      services unreachable, ransomware destroys availability by encrypting data and systems, and destructive
+      attacks seek to take operations down, so designing for resilience is designing against a whole class of
+      threats. Beyond attacks, systems fail, hardware dies, software crashes, data centers lose power, networks
+      partition, and a well-architected system treats failure as expected and continues to serve, because to the
+      business and its customers an outage is an outage whether its cause is an attacker or a failed disk.
+      Resilience architecture is this discipline: building systems that withstand and recover from disruption.
+
+      The techniques center on **removing single points of failure through redundancy and failover**. A single
+      point of failure is any component whose loss takes down the whole system, and resilience means identifying
+      and eliminating them by providing **redundancy**, more than one of a critical component so that if one fails
+      another carries the load. **Failover** is the mechanism by which traffic or work shifts to the redundant
+      component when the primary fails, ideally automatically and quickly. Redundancy is applied at many levels:
+      multiple servers behind a load balancer (clustering), redundant network paths and power, replicated
+      databases, and, for the highest resilience, spreading across multiple availability zones or geographic
+      regions so that the loss of an entire data center or region does not take the service down. Related ideas
+      include graceful degradation (continuing with reduced function rather than failing completely) and designing
+      so that a failure in one part does not cascade into others. The backup and recovery met in the data-resilience
+      lesson is the complement for data, here the focus is keeping the service itself available.
+
+      Designing for availability is driven by **recovery objectives and honest trade-offs**. Two key measures frame
+      the goals: the **Recovery Time Objective (RTO)**, how quickly a service must be restored after a disruption,
+      and the **Recovery Point Objective (RPO)**, how much data loss (measured in time) is acceptable. These, set
+      by the business based on how critical the service is, determine how much redundancy and how fast a failover
+      the architecture needs, and they connect to business continuity planning. The trade-off is cost: higher
+      availability (more redundancy, multi-region, faster automatic failover, near-zero RPO) costs more, so the
+      architecture matches resilience to the criticality of each service rather than gold-plating everything.
+      Resilience must also be tested, failover that has never been exercised often fails when needed, so regular
+      testing (and the chaos-style practice of deliberately injecting failures) validates that the design actually
+      works. For the architect, the lessons are that availability is a security property attacked by
+      denial-of-service and ransomware as well as threatened by ordinary failure, that resilience is achieved by
+      eliminating single points of failure through redundancy and fast failover across servers, sites and regions,
+      and that availability is designed to meet business-set recovery objectives (RTO/RPO) with cost-appropriate
+      trade-offs and tested failover, so that systems keep serving through both the failures and the attacks that
+      are certain to come.
+    examples:
+      - title: Availability is attacked
+        body: |
+          DoS floods (unreachable), ransomware (encrypts), destructive attacks (take ops down) -> resilience = defence vs a class of threats
+          plus ordinary failure (hardware/software/power/network) -> to users an outage is an outage whatever the cause.
+      - title: Redundancy, failover, objectives
+        body: |
+          remove SINGLE POINTS OF FAILURE: redundancy (more than one of a critical component) + FAILOVER (shift to the spare, auto + fast)
+          levels: clustered servers behind a load balancer, redundant paths/power, replicated DBs, multi-AZ/multi-region; graceful degradation; no cascading failure
+          drive by RTO (how fast to restore) + RPO (how much data loss ok); match cost to criticality; TEST failover.
+    exercise:
+      title: Design for high availability and resilience
+      environment: A described service with availability requirements (or a scenario)
+      tools: [A scenario, an architecture notes file, a document]
+      steps:
+        - Explain why availability is a security property and how attacks target it.
+        - Identify single points of failure in the described service.
+        - Describe how redundancy and failover remove those single points of failure.
+        - Explain redundancy at different levels (servers, paths, replication, multi-region).
+        - Use RTO and RPO to set the availability goals and match cost to criticality.
+        - Explain why failover must be tested regularly.
+      deliverable: A resilience design covering availability as a security property, single points of failure, redundancy and failover at multiple levels, RTO/RPO-driven goals with cost trade-offs, and failover testing.
+    expected_outcome: >
+      You can explain availability as an attacked security property, describe redundancy, failover and resilience
+      techniques, and design for availability using recovery objectives with cost-appropriate, tested failover.
+    quiz:
+      - prompt: Availability is a security property because
+        options:
+          - It has nothing to do with security
+          - Attacks like denial-of-service and ransomware directly target availability, alongside ordinary failures
+          - Only confidentiality matters
+          - Outages never affect the business
+        answer: 1
+        explanation: DoS, ransomware and destructive attacks attack availability, so resilience defends against them.
+      - prompt: Resilience is achieved primarily by
+        options:
+          - Adding more single points of failure
+          - Eliminating single points of failure through redundancy and fast failover
+          - Removing all servers
+          - Disabling backups
+        answer: 1
+        explanation: Redundancy plus failover ensures another component carries the load when one fails.
+      - prompt: RTO and RPO respectively define
+        options:
+          - Password length and complexity
+          - How quickly a service must be restored, and how much data loss (in time) is acceptable
+          - Network speed and latency
+          - CPU and memory limits
+        answer: 1
+        explanation: RTO sets the restore-time goal and RPO the acceptable data-loss window, driving the design.
+      - prompt: Failover should be tested regularly because
+        options:
+          - Testing is unnecessary
+          - Untested failover often fails when actually needed
+          - It reduces redundancy
+          - It increases single points of failure
+        answer: 1
+        explanation: Failover that is never exercised frequently does not work in a real disruption.
+  - slug: arch-container-orchestration
+    title: Container and Orchestration Security Architecture
+    order: 22
+    difficulty: advanced
+    summary: Understand how to architect security for containerised workloads and the orchestration platforms that run them, across the build, registry, deployment and runtime stages, as a layered design rather than a single control.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:3.1", "sc200:4", "cysa:1.1"]
+    learning_objectives:
+      - Explain the security concerns across the container lifecycle
+      - Describe how orchestration platforms are secured architecturally
+      - Design layered container and orchestration security
+    theory: |
+      Containers and the orchestration platforms that run them (such as Kubernetes) are now how a great deal of
+      software is built and deployed, and securing them is an architectural discipline that spans the whole
+      **container lifecycle**, build, registry, deployment and runtime, rather than any single control. The Linux
+      container-security and cloud Kubernetes lessons covered the mechanisms; here the focus is designing security
+      across the stages as a coherent, layered architecture, because a weakness at any stage, a vulnerable image, a
+      compromised registry, an over-privileged deployment, an unmonitored runtime, can undermine the rest. The
+      guiding idea is to apply controls at each stage so that security is built in from image creation through to
+      running workloads, and so that the orchestration platform itself, which has broad control over everything it
+      runs, is protected as critical infrastructure.
+
+      The **lifecycle stages** each have their controls. At **build**, images are built from trusted, minimal base
+      images, scanned for vulnerabilities and secrets (connecting to image scanning met earlier), and built through
+      a secure pipeline; minimal images reduce attack surface. At the **registry**, images are stored in a trusted
+      registry with access control, and **image signing and verification** ensure only approved, unmodified images
+      are deployed (admission control can enforce that only signed images from the trusted registry run), countering
+      supply-chain tampering. At **deployment**, the orchestration platform enforces policy: run containers with
+      **least privilege** (non-root, dropped capabilities, read-only filesystems where possible), apply **resource
+      limits**, use **network policies** to segment which workloads can talk to each other (microsegmentation
+      applied to containers), manage **secrets** properly (not baked into images), and use **admission controllers**
+      to reject non-compliant workloads. At **runtime**, workloads are monitored for suspicious behaviour and
+      container escapes (the workload-protection and eBPF approaches met earlier), and the platform detects and
+      responds to threats. Each stage's controls reinforce the others.
+
+      Securing the **orchestration platform itself** is the other half, because the control plane (for example the
+      Kubernetes API server and its datastore) governs the entire cluster, so its compromise is cluster-wide
+      compromise. Architecturally this means hardening and access-controlling the control plane (strong
+      authentication and fine-grained authorization such as role-based access control, so identities get only the
+      cluster permissions they need, tying to least privilege and the attack-path thinking met earlier), protecting
+      the cluster datastore, isolating workloads (namespaces, network policies, and stronger isolation for
+      multi-tenant or sensitive workloads), and monitoring the platform's own audit logs as a high-value detection
+      source. The design principle throughout is defence in depth across the lifecycle plus protection of the
+      orchestrator, with least privilege and segmentation as recurring themes. The considerations are complexity
+      (orchestration platforms are powerful and easy to misconfigure, so secure defaults and policy enforcement
+      matter) and the need to cover every stage rather than just one. For the architect, the lessons are that
+      container security is a lifecycle concern, from trusted minimal images and signed registry artifacts through
+      least-privilege, segmented, admission-controlled deployment to monitored runtime, that the orchestration
+      platform's control plane must be hardened and tightly access-controlled because it governs everything, and
+      that the result is a layered architecture in which no single stage is relied on alone to secure containerised
+      workloads.
+    examples:
+      - title: Security across the lifecycle
+        body: |
+          build: trusted minimal base images, scan for vulns/secrets, secure pipeline
+          registry: trusted registry + access control + image SIGNING/verification (admission control runs only signed, approved images) -> counters supply-chain tampering
+          deploy: least privilege (non-root, dropped caps, read-only fs), resource limits, network policies (segmentation), proper secrets, admission controllers
+          runtime: monitor behaviour + container escapes (workload protection/eBPF).
+      - title: Protect the orchestrator
+        body: |
+          the control plane (API server + datastore) governs the whole cluster -> its compromise = cluster-wide compromise
+          harden + access-control it (strong auth, fine-grained RBAC = least privilege), protect the datastore, isolate workloads (namespaces/network policies), monitor its audit logs
+          principle: defence in depth across the lifecycle + protect the orchestrator; least privilege + segmentation throughout.
+    exercise:
+      title: Design container and orchestration security
+      environment: A described containerised, orchestrated environment (or a scenario)
+      tools: [A scenario, an architecture notes file, a document]
+      steps:
+        - Explain why container security spans the whole lifecycle rather than a single control.
+        - Describe the build-stage controls (trusted minimal images, scanning).
+        - Describe the registry-stage controls (trusted registry, image signing and verification).
+        - Describe the deployment-stage controls (least privilege, network policies, admission control, secrets).
+        - Describe runtime monitoring for suspicious behaviour and escapes.
+        - Explain why the orchestration control plane must be hardened and access-controlled.
+      deliverable: A container and orchestration security design covering controls at build, registry, deployment and runtime, plus hardening and access control of the orchestration control plane, as a layered architecture.
+    expected_outcome: >
+      You can explain the security concerns across the container lifecycle, describe how orchestration platforms are
+      secured architecturally, and design layered container and orchestration security with least privilege and segmentation.
+    quiz:
+      - prompt: Container security is best treated as
+        options:
+          - A single runtime control
+          - A lifecycle concern spanning build, registry, deployment and runtime, since a weakness at any stage undermines the rest
+          - Only an image-scanning task
+          - Unnecessary
+        answer: 1
+        explanation: Controls are needed at every stage because a gap anywhere can compromise containerised workloads.
+      - prompt: Image signing and verification at the registry stage primarily
+        options:
+          - Speed up builds
+          - Ensure only approved, unmodified images are deployed, countering supply-chain tampering
+          - Remove access control
+          - Disable scanning
+        answer: 1
+        explanation: Signing plus admission verification ensures only trusted, unaltered images run.
+      - prompt: The orchestration control plane must be hardened and tightly access-controlled because
+        options:
+          - It does nothing
+          - It governs the entire cluster, so its compromise is cluster-wide compromise
+          - It only runs one container
+          - It cannot be attacked
+        answer: 1
+        explanation: The control plane commands everything the cluster runs, making it critical to protect.
+      - prompt: A recurring theme across container and orchestration security design is
+        options:
+          - Maximum privilege for every workload
+          - Least privilege and segmentation, applied across the lifecycle and the platform
+          - Avoiding all monitoring
+          - Trusting unsigned images
+        answer: 1
+        explanation: Least privilege and segmentation recur at deployment, in RBAC, and in workload isolation.
+  - slug: arch-remote-access
+    title: Secure Remote Access Architecture
+    order: 23
+    difficulty: intermediate
+    summary: Understand how to architect secure access for a remote and hybrid workforce, from traditional VPNs to zero-trust network access and virtual desktops, and the trade-offs that shape a modern remote-access design.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:3.1", "secplus:4.6", "cysa:1.1"]
+    learning_objectives:
+      - Explain the security goals of remote access architecture
+      - Compare VPN, zero-trust network access and virtual desktop approaches
+      - Design secure remote access for a modern workforce
+    theory: |
+      With remote and hybrid work now normal, **how people securely reach internal applications and data from
+      anywhere** is a core architectural problem, because remote access extends the organisation's trust boundary
+      to untrusted networks and personal environments. The security goals are to ensure that only authorised,
+      authenticated users and acceptably healthy devices can reach resources, that access is limited to what each
+      user needs, that the connection is protected in transit, and that remote access is monitored, all without
+      making legitimate work so cumbersome that people route around it. The architectural choices have shifted
+      significantly as the traditional model strained under remote work and as zero trust (met earlier) reshaped
+      thinking, so understanding the options and their trade-offs is key to a sound design.
+
+      Three broad **approaches** illustrate the evolution. The traditional **VPN** extends the corporate network to
+      the remote device, the user authenticates and then has network-level access as if on the internal network.
+      VPNs are well understood and still widely used, but the classic model has drawbacks: it often grants broad
+      network access (so a compromised remote device or stolen credential reaches much of the internal network,
+      the flat-access problem), it backhauls traffic, and the VPN gateway is a high-value target. **Zero Trust
+      Network Access (ZTNA)** addresses these by shifting from network-level access to **per-application,
+      identity- and context-aware access**: instead of putting the user on the network, ZTNA grants access to
+      specific applications only, after verifying identity, device posture and context for each, and hides
+      everything else, which dramatically limits what a compromised device or credential can reach (least privilege
+      and zero trust applied to remote access). **Virtual desktops and application streaming (VDI/DaaS)** take a
+      different tack: the user connects to a desktop or application running in the data center or cloud, so
+      sensitive data and processing stay centralised and never reside on the remote device, useful for high-
+      security needs, untrusted or personal devices, and third parties, at the cost of infrastructure and user
+      experience considerations.
+
+      Designing remote access combines these with the **surrounding controls**. Whatever the access method, enforce
+      **strong authentication (MFA)** because remote access is exposed to the internet and a prime target for
+      credential attacks, consider **device posture** (is the device managed, patched, healthy) as a condition of
+      access, apply **least privilege** so users reach only what they need (which ZTNA does natively and VPNs must
+      be segmented to approximate), protect the connection with encryption, and **monitor** remote access as a
+      high-value detection source (unusual remote logins, impossible travel, met earlier). The modern direction is
+      toward zero-trust, identity- and context-driven access (often delivered through SASE/SSE, met earlier) rather
+      than broad network-level VPN access, though VPNs remain common and appropriate in many cases. The trade-offs
+      are security versus usability and cost, broad VPN access is simple but risky, ZTNA is more secure but more
+      involved to implement, VDI is very controlled but heavier, so the design matches the approach to the
+      sensitivity of the resources and the nature of the users and devices. For the architect, the lessons are that
+      remote access extends trust to untrusted environments and must ensure authenticated, least-privilege,
+      monitored access without crippling usability, that the approaches range from traditional network-level VPNs
+      through per-application ZTNA to centralised virtual desktops, each with distinct trade-offs, and that modern
+      design leans toward zero-trust, identity- and context-aware access with strong authentication and device
+      posture, so that a workforce can reach what it needs from anywhere without extending broad, risky access into
+      the organisation.
+    examples:
+      - title: The problem and goals
+        body: |
+          remote/hybrid work extends the trust boundary to untrusted networks + personal devices
+          goals: only authorised/authenticated users + healthy devices reach resources, least privilege, protected in transit, monitored -- without crippling usability.
+      - title: Three approaches
+        body: |
+          VPN: extends the network to the device -> broad network-level access (compromised device/cred reaches much of the network = flat-access risk); gateway is a target
+          ZTNA: per-application, identity + context + device-posture access; hides everything else -> limits blast radius (zero trust for remote access)
+          VDI/DaaS: connect to a desktop/app in the data center/cloud -> data stays centralised, never on the remote device; good for untrusted devices/third parties.
+    exercise:
+      title: Design secure remote access
+      environment: A described organisation enabling remote and hybrid work (or a scenario)
+      tools: [A scenario, an architecture notes file, a document]
+      steps:
+        - Explain the security goals of remote access and why usability matters.
+        - Describe the traditional VPN approach and the flat-access risk of broad network-level access.
+        - Explain how ZTNA provides per-application, identity- and context-aware access and limits blast radius.
+        - Explain when virtual desktops (VDI/DaaS) are the right choice.
+        - Describe the surrounding controls (MFA, device posture, least privilege, monitoring).
+        - Explain the security-versus-usability trade-offs and how to match approach to sensitivity.
+      deliverable: A remote-access design comparing VPN, ZTNA and VDI with their trade-offs, plus the surrounding controls (MFA, device posture, least privilege, monitoring), matched to the resources and users.
+    expected_outcome: >
+      You can explain the goals of remote access architecture, compare VPN, ZTNA and virtual-desktop approaches and
+      their trade-offs, and design secure remote access with strong authentication, least privilege and monitoring.
+    quiz:
+      - prompt: A drawback of the traditional VPN model is that it often
+        options:
+          - Grants access to a single application only
+          - Grants broad network-level access, so a compromised device or credential can reach much of the internal network
+          - Requires no authentication ever
+          - Keeps all data in the data center
+        answer: 1
+        explanation: Classic VPNs put the user on the network, creating a flat-access risk if a device or credential is compromised.
+      - prompt: Zero Trust Network Access (ZTNA) improves on VPNs by
+        options:
+          - Granting even broader network access
+          - Granting per-application access after verifying identity, device posture and context, hiding everything else
+          - Removing authentication
+          - Backhauling all traffic
+        answer: 1
+        explanation: ZTNA limits access to specific applications with per-request verification, shrinking blast radius.
+      - prompt: Virtual desktops (VDI/DaaS) are especially useful when
+        options:
+          - Data should live on every remote device
+          - Sensitive data and processing must stay centralised and never reside on untrusted or personal remote devices
+          - No security is needed
+          - Users have no devices
+        answer: 1
+        explanation: VDI keeps data and compute centralised, so nothing sensitive sits on the remote endpoint.
+      - prompt: Whatever the remote-access method, a baseline control is
+        options:
+          - No authentication
+          - Strong authentication (MFA), since remote access is internet-exposed and a prime credential-attack target
+          - Broad access for everyone
+          - Disabling monitoring
+        answer: 1
+        explanation: Internet-exposed remote access demands MFA to resist credential attacks.

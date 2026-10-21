@@ -1927,3 +1927,325 @@ lessons:
           - Blocking the internet
         answer: 1
         explanation: SSPM assesses in-app posture; a CASB governs access and usage, so they are complementary.
+  - slug: cloud-identity-attack-paths
+    title: Cloud Identity Attack Paths and Privilege Escalation
+    order: 21
+    difficulty: advanced
+    summary: Understand how attackers escalate privilege and move through cloud environments by chaining identity and permission misconfigurations, and how to find and break these cloud identity attack paths.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.6", "sc200:2", "cysa:1.3"]
+    learning_objectives:
+      - Explain how cloud attacks chain identity and permission misconfigurations
+      - Describe common cloud privilege-escalation and lateral-movement paths
+      - Find and break cloud identity attack paths
+    theory: |
+      In the cloud, identity is the perimeter, and just as in Active Directory, attackers rarely rely on a single
+      flaw; instead they chain **identity and permission misconfigurations** into **attack paths** that escalate
+      privilege and move laterally through the environment. A cloud attacker who compromises one identity (a leaked
+      key, a phished user, a workload credential) then looks for ways to parlay that limited access into more: a
+      permission that lets them assume a more powerful role, a policy that lets them modify their own or others'
+      permissions, a resource whose credentials they can reach. Because cloud permission systems (IAM) are rich and
+      complex, small misconfigurations create these stepping stones, and the attacker reasons in paths from where
+      they are to the control they want, exactly the graph-of-relationships thinking met for AD, applied to cloud
+      IAM.
+
+      The **common path building blocks** revolve around IAM permissions that grant more than intended.
+      **Privilege escalation via IAM** is central: a permission to create or modify policies, to attach a powerful
+      policy to oneself, to create access keys for another identity, to update a function or instance that runs
+      with a powerful role, or to assume roles in a chain, each can let a low-privileged identity become
+      high-privileged. **Role assumption and chaining** let an attacker hop from a weak identity to a stronger one
+      and sometimes across accounts (a particular concern in multi-account and multi-cloud estates). **Access to
+      resource credentials**, reading secrets, retrieving a workload's token, accessing a storage location holding
+      keys, extends reach. The **confused-deputy** style abuse of over-trusting cross-account or cross-service
+      relationships is another. The unifying theme matches AD: individually minor permissions link into a route to
+      control, and the attacker finds the shortest such route.
+
+      Finding and breaking these paths uses **least privilege, analysis tooling and monitoring**. The primary
+      defence is rigorous **least privilege** in IAM, granting only the permissions actually needed, because most
+      cloud escalation paths exist only because identities hold excess or dangerous permissions (the risky ability
+      to modify permissions, assume powerful roles, or read credentials). Just as defenders graph AD, cloud
+      permission-analysis tools can model IAM and surface escalation paths and over-privileged identities, so you
+      can find and remove the dangerous permissions before an attacker chains them, and cloud providers offer
+      access analyzers and least-privilege recommendations toward the same end. Separating accounts and limiting
+      cross-account trust contain lateral movement, and the control-plane detections met in the cloud detection
+      lesson, an identity granting itself permissions, assuming unusual roles, creating keys, provide the alerting
+      layer for paths being walked. For the analyst, the lessons are that cloud compromise, like AD compromise, is
+      usually the chaining of identity and permission misconfigurations into escalation and lateral-movement paths,
+      that the dangerous building blocks are IAM permissions allowing self-escalation, role assumption and access
+      to credentials, and that breaking these paths relies on strict least privilege, proactively analysing IAM for
+      escalation routes, containing cross-account trust, and monitoring the control plane, because in a cloud where
+      identity is the perimeter, the paths through IAM are the paths to control.
+    examples:
+      - title: Chaining IAM misconfigurations
+        body: |
+          compromise one identity (leaked key, phished user, workload cred) -> parlay into more: assume a stronger role, modify your own permissions, reach resource credentials
+          rich complex IAM -> small misconfigs = stepping stones; attacker reasons in PATHS (shortest route to control), like AD applied to cloud IAM.
+      - title: Building blocks and defence
+        body: |
+          escalation: create/modify policies, attach a powerful policy to self, create keys for another identity, update a function/instance with a powerful role, role chaining (cross-account)
+          defend: strict LEAST PRIVILEGE (paths exist because of excess/dangerous permissions); graph IAM with analysis tools to find paths; limit cross-account trust; monitor the control plane.
+    exercise:
+      title: Find and break cloud identity attack paths
+      environment: A described cloud environment with IAM policies (or a scenario with sample permissions)
+      tools: [A scenario or sample IAM policies, a document, a notes file]
+      steps:
+        - Explain how a cloud attacker chains identity and permission misconfigurations into attack paths.
+        - Describe common IAM privilege-escalation building blocks.
+        - Explain role assumption and chaining, including the cross-account concern.
+        - Explain why least privilege is the primary defence against these paths.
+        - Describe how IAM analysis tooling finds escalation paths and over-privileged identities.
+        - Explain how limiting cross-account trust and monitoring the control plane help.
+      deliverable: A cloud identity attack-path plan covering how paths form in IAM, the escalation building blocks, and breaking them with least privilege, IAM analysis, cross-account containment and control-plane monitoring.
+    expected_outcome: >
+      You can explain how cloud attacks chain identity and permission misconfigurations into escalation and lateral
+      paths, and find and break cloud identity attack paths with least privilege, IAM analysis and monitoring.
+    quiz:
+      - prompt: Cloud identity attack paths form because
+        options:
+          - Cloud IAM has no permissions
+          - Attackers chain individually minor identity and permission misconfigurations into routes to greater control
+          - Only one flaw is ever needed and IAM is irrelevant
+          - Identities cannot be compromised
+        answer: 1
+        explanation: Like AD, cloud compromise chains small IAM misconfigurations into escalation and lateral paths.
+      - prompt: A central cloud privilege-escalation building block is
+        options:
+          - Reading a public website
+          - A permission to modify policies or attach a powerful policy to oneself, or to create keys for another identity
+          - A normal login
+          - Disk defragmentation
+        answer: 1
+        explanation: Permissions that let an identity change permissions or assume power enable escalation.
+      - prompt: The primary defence against cloud identity attack paths is
+        options:
+          - Granting all identities full permissions
+          - Rigorous least privilege, since most escalation paths exist only because identities hold excess or dangerous permissions
+          - Disabling logging
+          - Sharing all access keys
+        answer: 1
+        explanation: Removing unnecessary and dangerous permissions eliminates the stepping stones paths rely on.
+      - prompt: Defenders can proactively find cloud escalation paths by
+        options:
+          - Ignoring IAM entirely
+          - Using permission-analysis tools to model IAM and surface escalation paths and over-privileged identities
+          - Deleting all identities
+          - Only reading billing data
+        answer: 1
+        explanation: Analysing IAM as a graph reveals escalation routes and excess permissions to remove.
+  - slug: cloud-multicloud-hybrid
+    title: Multicloud and Hybrid Security
+    order: 22
+    difficulty: intermediate
+    summary: Understand the added security challenges of running across multiple cloud providers and alongside on-premises systems, where differing models, fragmented visibility and complex identity make consistent security harder.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:3.1", "sc900:4", "cysa:1.1"]
+    learning_objectives:
+      - Explain the security challenges of multicloud and hybrid environments
+      - Describe how visibility and identity complicate multicloud security
+      - Describe approaches for consistent security across clouds and on-premises
+    theory: |
+      Many organisations run across **multiple cloud providers (multicloud)** and alongside their own data centers
+      (**hybrid**), by deliberate strategy, acquisition, or organic growth, and spanning these environments adds
+      security challenges beyond those of any single cloud. The core difficulty is that each environment is
+      **different**: each cloud provider has its own security model, services, terminology, controls and logging,
+      and on-premises is different again, so there is no single way to configure, monitor or govern security across
+      them. This diversity makes consistency hard, the same security intent (enforce MFA, encrypt data, restrict
+      access, log activity) must be implemented differently in each environment, and gaps appear where one
+      environment is secured well and another is neglected or misunderstood. Understanding multicloud and hybrid
+      security is therefore about managing this heterogeneity so that security is consistent and complete across a
+      fragmented landscape, rather than strong in one place and weak in another.
+
+      Two problems dominate. The first is **fragmented visibility**: with assets, logs and configurations spread
+      across several clouds and on-premises, no single native tool sees everything, so a SOC can easily have blind
+      spots and struggle to correlate an attack that crosses environments. Achieving unified visibility, aggregating
+      logs and posture from all environments into a central place (the SIEM and the posture and workload-protection
+      approaches met earlier, applied across clouds), is a central challenge and a prerequisite for detection that
+      spans the whole estate. The second is **identity and access complexity**: each environment has its own
+      identity system, and managing consistent identity, authentication and least privilege across all of them is
+      hard, with the added risk of identity federation and trust relationships between environments creating paths
+      an attacker can traverse (the cloud and AD attack-path thinking applied across a multicloud, hybrid estate).
+      Fragmented identity is both an operational burden and a security risk.
+
+      Approaches to **consistent security** focus on unification and abstraction. **Centralise identity** where
+      possible, using a central identity provider and federation so that authentication, MFA and access policy are
+      governed consistently rather than per-environment, reducing the number of separate identity systems to
+      secure. **Unify visibility and posture management** with tools that work across providers (cloud security
+      posture management and SIEM that aggregate multiple clouds and on-premises), so the whole estate is monitored
+      and assessed together. **Define consistent policy and standards** (what good looks like for encryption,
+      access, logging, segmentation) and implement them in each environment, ideally through infrastructure-as-code
+      and automation so the same intent is enforced everywhere. **Understand each environment's shared-
+      responsibility model** so nothing falls through the gaps between them. The considerations are the genuine
+      complexity and skills burden (teams must understand several environments), the cost, and the reality that
+      perfect uniformity is impossible, so the goal is consistent security outcomes despite differing mechanisms.
+      For the analyst and architect, the lessons are that multicloud and hybrid environments add security challenges
+      through their heterogeneity, that fragmented visibility and complex identity are the dominant problems, and
+      that consistent security comes from centralising identity, unifying visibility and posture across all
+      environments, and defining and automating consistent policy, so that an estate spread across several clouds
+      and on-premises is secured as a whole rather than as disconnected pieces with gaps between them.
+    examples:
+      - title: Why spanning environments is hard
+        body: |
+          multicloud (several providers) + hybrid (plus on-prem); each has its OWN model, services, controls, logging, terminology
+          no single way to configure/monitor/govern -> same intent (MFA, encrypt, restrict, log) implemented differently everywhere -> gaps where one is neglected.
+      - title: Dominant problems and approaches
+        body: |
+          fragmented VISIBILITY (no native tool sees all -> blind spots, hard to correlate cross-environment attacks); complex IDENTITY (own system each, federation/trust = attack paths)
+          approaches: centralise identity (central IdP + federation), unify visibility + posture across providers (CSPM + SIEM), consistent policy via IaC/automation, understand each shared-responsibility model.
+    exercise:
+      title: Secure a multicloud and hybrid estate
+      environment: A described organisation running across two clouds and on-premises (or a scenario)
+      tools: [A scenario, an architecture notes file, a document]
+      steps:
+        - Explain why heterogeneity across clouds and on-premises makes consistent security hard.
+        - Explain the problem of fragmented visibility and why unified visibility matters.
+        - Explain the identity and access complexity and the attack-path risk of federation between environments.
+        - Describe how centralising identity helps.
+        - Describe how to unify visibility and posture management across environments.
+        - Explain how consistent policy and automation enforce the same intent everywhere.
+      deliverable: A multicloud and hybrid security plan addressing heterogeneity, fragmented visibility, identity complexity, and approaches (central identity, unified visibility and posture, consistent automated policy).
+    expected_outcome: >
+      You can explain the security challenges of multicloud and hybrid environments, describe how visibility and
+      identity complicate them, and describe approaches for consistent security across clouds and on-premises.
+    quiz:
+      - prompt: The core security difficulty of multicloud and hybrid environments is that
+        options:
+          - Every environment is identical
+          - Each environment has its own model, controls and logging, so consistent security must be implemented differently everywhere
+          - There is only one environment
+          - Security does not matter across them
+        answer: 1
+        explanation: Heterogeneity means the same intent is enforced differently in each environment, creating gaps.
+      - prompt: Fragmented visibility is a dominant multicloud problem because
+        options:
+          - One native tool sees everything
+          - Assets and logs are spread across environments, so no single native tool sees all and cross-environment attacks are hard to correlate
+          - Logs do not exist
+          - Visibility is irrelevant
+        answer: 1
+        explanation: Spread-out telemetry creates blind spots and hampers correlating attacks that cross environments.
+      - prompt: A key approach to consistent multicloud identity is to
+        options:
+          - Create a separate identity system per environment with no coordination
+          - Centralise identity with a central provider and federation so authentication and access policy are governed consistently
+          - Remove all authentication
+          - Share one password everywhere
+        answer: 1
+        explanation: Centralising identity reduces the number of systems to secure and makes policy consistent.
+      - prompt: The realistic goal of multicloud and hybrid security is
+        options:
+          - Perfect uniformity of mechanisms
+          - Consistent security outcomes despite differing mechanisms, via unified visibility, central identity and consistent automated policy
+          - Securing only one cloud
+          - Ignoring on-premises
+        answer: 1
+        explanation: Uniform mechanisms are impossible, so the aim is consistent outcomes across differing environments.
+  - slug: cloud-forensics
+    title: Cloud Forensics and Evidence Acquisition
+    order: 23
+    difficulty: advanced
+    summary: Understand how digital forensics changes in the cloud, where evidence is API-accessible but ephemeral and provider-bounded, and how to acquire and analyse cloud evidence soundly during an investigation.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.8", "sc200:4", "cysa:3.1"]
+    learning_objectives:
+      - Explain how forensics differs in the cloud
+      - Describe how cloud evidence is acquired soundly
+      - Recognise the constraints and sources unique to cloud forensics
+    theory: |
+      Digital forensics, acquiring and analysing evidence to understand what happened, changes substantially in the
+      cloud, and a responder who applies only on-premises forensic habits will both miss cloud evidence and
+      mishandle it. Three differences dominate. First, much cloud evidence is **API-accessible rather than
+      physical**: you cannot seize a server, but you can often acquire disk and memory of a virtual machine through
+      snapshots via the provider's API, and the richest evidence is frequently the provider's **logs** (the
+      control-plane audit log, met in cloud incident response) rather than host artifacts. Second, cloud resources
+      are **ephemeral**: an instance may be terminated or auto-scaled away before it can be examined, so evidence
+      must be captured quickly, which makes speed and automation central to cloud forensics. Third, the cloud is
+      **provider-bounded by shared responsibility**: you can acquire what the provider exposes (your instances,
+      your logs) but not the underlying infrastructure, so some evidence requires provider cooperation, and you
+      must understand what is and is not available to you.
+
+      Sound **acquisition** in the cloud adapts forensic principles to these realities. To preserve a running
+      instance, take a **snapshot** of its disk (and capture memory where supported) through the provider's API,
+      ideally automatically as part of incident response, and isolate rather than terminate the resource so it is
+      preserved for analysis (the quarantine-not-delete idea met earlier). Capture the relevant **logs** promptly,
+      control-plane/audit logs, identity logs, network flow logs, storage access logs, because these are often the
+      primary evidence and may age out of retention if not secured. As in all forensics, maintain **integrity and
+      chain of custody**: record what was collected, when and how, hash and protect evidence, and act in a way that
+      would withstand scrutiny, which in the cloud means relying on the provider's documented, API-based mechanisms
+      and the immutability features (write-once storage, log integrity validation) the platforms offer. Automation
+      matters because the ephemerality means manual, slow acquisition often arrives too late.
+
+      **Analysis and constraints** complete the picture. Acquired disk and memory images are analysed with the same
+      techniques as on-premises (disk and memory forensics, met earlier), while the cloud logs are analysed to
+      reconstruct the API-driven activity that on-premises forensics would not have (who did what in the account).
+      The constraints to keep in mind are the shared-responsibility limits on what you can access, the dependence
+      on logging having been enabled and retained in advance (you cannot forensicate evidence that was never
+      collected, the recurring cloud lesson), the need for appropriate permissions to perform forensic acquisition
+      (which should be prepared beforehand so responders can act fast), and multi-tenancy and legal considerations
+      (data location, provider involvement). Preparation is therefore decisive: enabling and retaining the right
+      logs, having forensic acquisition permissions and automation ready, and knowing the provider's processes
+      before an incident. For the analyst, the lessons are that cloud forensics shifts from seizing physical
+      hardware to API-based acquisition of snapshots and, above all, provider logs, that the ephemerality of cloud
+      resources makes fast, automated, integrity-preserving acquisition essential, that shared responsibility and
+      prior logging determine what evidence is even available, and that sound cloud forensics, like cloud incident
+      response, depends on preparation so that when an investigation is needed the evidence exists and can be
+      acquired and analysed soundly.
+    examples:
+      - title: How cloud forensics differs
+        body: |
+          API-accessible not physical: no server to seize; snapshot disk (+ memory where supported) via API; richest evidence = provider LOGS (control-plane/audit)
+          EPHEMERAL: instances vanish (terminate/auto-scale) -> capture fast, automate; PROVIDER-BOUNDED by shared responsibility: only what the provider exposes.
+      - title: Sound acquisition and constraints
+        body: |
+          preserve: snapshot disk/memory via API, ISOLATE not terminate (quarantine); capture logs promptly (they age out); integrity + chain of custody (hash, provider mechanisms, immutable/write-once storage)
+          constraints: shared-responsibility limits, logging must have been enabled + retained IN ADVANCE, forensic permissions prepared beforehand, multi-tenancy/legal -> PREPARATION is decisive.
+    exercise:
+      title: Acquire and analyse cloud evidence
+      environment: A described cloud incident requiring forensics (or a scenario with sample cloud evidence)
+      tools: [A scenario or sample cloud logs and resources, a document, a notes file]
+      steps:
+        - Explain the three main ways forensics differs in the cloud (API-accessible, ephemeral, provider-bounded).
+        - Describe how you would preserve a running instance (snapshot, isolate not terminate).
+        - Explain why capturing cloud logs promptly is essential and which logs matter.
+        - Explain how integrity and chain of custody are maintained for cloud evidence.
+        - Describe the constraints (shared responsibility, prior logging, permissions, legal).
+        - Explain why preparation is decisive for cloud forensics.
+      deliverable: A cloud-forensics plan covering API-based acquisition of snapshots and logs, isolate-not-terminate preservation, integrity and chain of custody, the constraints, and the preparation required.
+    expected_outcome: >
+      You can explain how forensics differs in the cloud, describe sound API-based acquisition of snapshots and logs
+      with integrity preserved, and recognise the constraints and the preparation that cloud forensics depends on.
+    quiz:
+      - prompt: A defining difference of cloud forensics is that evidence is
+        options:
+          - Always physical hardware you seize
+          - Often API-accessible (snapshots, and especially provider logs) rather than physical, and frequently ephemeral
+          - Never available
+          - Only on the analyst's laptop
+        answer: 1
+        explanation: Cloud evidence is acquired via APIs (snapshots, logs) and resources can vanish, unlike seizing hardware.
+      - prompt: To preserve a running cloud instance for analysis, you should
+        options:
+          - Immediately terminate it
+          - Snapshot its disk (and memory where supported) via the provider API and isolate rather than terminate it
+          - Delete all its logs
+          - Ignore it
+        answer: 1
+        explanation: Snapshotting and isolating preserves the evidence; terminating would destroy it.
+      - prompt: Cloud forensics depends heavily on preparation because
+        options:
+          - Evidence is always available regardless
+          - You cannot analyse evidence that was never collected, so logging must have been enabled and retained and permissions readied in advance
+          - Preparation is irrelevant
+          - The provider does everything automatically
+        answer: 1
+        explanation: Without prior logging, retention and acquisition permissions, the evidence simply will not exist when needed.
+      - prompt: Maintaining chain of custody for cloud evidence involves
+        options:
+          - Not recording anything
+          - Recording what was collected, when and how, hashing and protecting evidence, and using the provider's documented mechanisms and immutability features
+          - Editing the evidence freely
+          - Sharing it publicly
+        answer: 1
+        explanation: Integrity and documented, provider-based acquisition let cloud evidence withstand scrutiny.

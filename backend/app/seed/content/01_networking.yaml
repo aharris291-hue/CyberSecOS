@@ -1811,3 +1811,214 @@ lessons:
           - It only affects wireless
         answer: 1
         explanation: If routing is hijacked, traffic is redirected before endpoint protections are relevant.
+  - slug: net-nsm-zeek
+    title: Network Security Monitoring with Zeek
+    order: 21
+    difficulty: advanced
+    summary: Learn how network security monitoring with a tool like Zeek turns raw traffic into rich, structured logs of what happened on the network, giving analysts protocol-level visibility that packet capture alone does not.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.4", "sc200:2", "cysa:1.1"]
+    learning_objectives:
+      - Explain network security monitoring and what Zeek produces
+      - Describe the protocol-level logs Zeek generates and their value
+      - Use Zeek-style logs for detection and investigation
+    theory: |
+      Earlier lessons covered packet capture (seeing raw bytes) and flow analysis (seeing connection summaries);
+      **network security monitoring (NSM)** with a tool like **Zeek** sits powerfully between them, turning raw
+      traffic into **rich, structured logs of what actually happened** at the protocol level. Rather than storing
+      every packet (huge and hard to search) or only coarse flow records, Zeek observes traffic and produces a set
+      of high-level logs, one for connections, one for DNS queries and answers, one for HTTP requests, one for TLS
+      sessions and certificates, one for files transferred, and many more, each a structured record of the
+      meaningful events it saw. This gives analysts the protocol-level story of network activity in a form that is
+      compact, searchable and detection-friendly, which is why Zeek-style NSM is a backbone of many network
+      detection programs.
+
+      The **value of these logs** is that they answer investigative and detection questions directly. The DNS log
+      shows every domain looked up (feeding the DNS-abuse detection met earlier); the HTTP log shows requested URLs,
+      methods, user agents and responses; the TLS log shows the certificates and server names of encrypted sessions
+      (the metadata analysis met earlier, produced automatically); the connection log ties it together with who
+      talked to whom, for how long, and how much data moved; the files log records files seen crossing the network,
+      with hashes. Because these are structured fields, not raw packets, an analyst can search for all connections
+      to a suspicious domain, all TLS sessions using a certificate tied to malware, all HTTP requests with a
+      malicious user agent, or all large outbound transfers, quickly and at scale. Zeek can also run scripts that
+      raise its own notices on suspicious patterns. In effect, NSM converts the firehose of traffic into the
+      evidence a SOC needs.
+
+      Using NSM data, these logs become a **primary detection and investigation source** feeding the SIEM. For
+      detection, they power rules and hunts for command-and-control, data exfiltration, suspicious DNS and HTTP,
+      and anomalous connections, much of the network-based hunting and detection met earlier assumes exactly this
+      kind of structured network telemetry. For investigation, when an incident occurs, the connection, DNS, HTTP,
+      TLS and files logs let a responder reconstruct what a host did on the network over time, even without full
+      packet capture, and when full packets are also kept, the NSM logs are the index that tells you which packets
+      to examine. The considerations are placement (NSM needs to see the traffic, at a network tap or span port),
+      the challenge of encrypted traffic (where metadata rather than content is what NSM provides), and the usual
+      volume and tuning. For the analyst, the lessons are that network security monitoring with a tool like Zeek
+      produces rich, structured protocol logs that sit between raw packets and flow summaries, that these logs,
+      DNS, HTTP, TLS, connections, files, give searchable, detection-ready visibility into what happened on the
+      network, and that NSM is a foundational source for both network detection and incident investigation,
+      turning overwhelming raw traffic into usable evidence.
+    examples:
+      - title: Between packets and flows
+        body: |
+          packet capture = every byte (huge, hard to search); flow = coarse summaries; Zeek/NSM = rich STRUCTURED logs of what happened
+          one log each for connections, DNS, HTTP, TLS/certs, files, and more -> compact, searchable, detection-friendly.
+      - title: The logs answer questions
+        body: |
+          DNS log (every domain), HTTP log (URLs/methods/user agents), TLS log (certs/server names = auto metadata), conn log (who/how long/how much), files log (hashes)
+          search for a suspicious domain, a malware cert, a bad user agent, a big outbound transfer -> fast, at scale; Zeek scripts raise notices.
+    exercise:
+      title: Use network security monitoring logs
+      environment: A described network with an NSM sensor and sample Zeek-style logs (or a scenario)
+      tools: [A scenario or sample NSM logs, a document, a notes file]
+      steps:
+        - Explain network security monitoring and how Zeek sits between packet capture and flow analysis.
+        - List several of the structured logs Zeek produces and what each records.
+        - Explain why structured protocol logs make detection and investigation easier than raw packets.
+        - Use a sample DNS or connection log to find a suspicious pattern.
+        - Describe how NSM logs feed SIEM detection and incident investigation.
+        - Note the considerations (sensor placement, encrypted traffic, volume).
+      deliverable: An NSM plan covering what Zeek produces, the value of its protocol logs, a detection finding from sample logs, and how NSM supports detection and investigation.
+    expected_outcome: >
+      You can explain network security monitoring and what Zeek produces, describe its protocol-level logs and
+      their value, and use Zeek-style logs as a primary source for network detection and incident investigation.
+    quiz:
+      - prompt: Network security monitoring with Zeek produces
+        options:
+          - Only raw packet bytes
+          - Rich, structured protocol logs (connections, DNS, HTTP, TLS, files) of what happened on the network
+          - Only CPU metrics
+          - Nothing searchable
+        answer: 1
+        explanation: Zeek turns traffic into structured, searchable logs that sit between raw packets and flow summaries.
+      - prompt: Zeek's structured logs make detection easier than raw packets because
+        options:
+          - They are larger and harder to search
+          - They are compact structured fields you can search at scale (for a domain, a certificate, a user agent, a big transfer)
+          - They contain no useful data
+          - They cannot be fed to a SIEM
+        answer: 1
+        explanation: Structured fields let analysts query meaningful events quickly, unlike a packet firehose.
+      - prompt: For incident investigation, NSM logs let a responder
+        options:
+          - Do nothing without full packet capture
+          - Reconstruct what a host did on the network over time, even without full packets, and index which packets to examine
+          - Only see CPU usage
+          - Only read email
+        answer: 1
+        explanation: The connection, DNS, HTTP, TLS and files logs reconstruct network activity and guide packet review.
+      - prompt: A consideration for NSM is that
+        options:
+          - It needs no access to traffic
+          - It must see the traffic (tap or span port) and provides metadata rather than content for encrypted sessions
+          - It decrypts everything automatically
+          - It replaces all logging
+        answer: 1
+        explanation: NSM requires traffic visibility and yields metadata for encrypted sessions, with volume to tune.
+  - slug: net-sdwan
+    title: SD-WAN and Modern WAN Security
+    order: 22
+    difficulty: intermediate
+    summary: Understand how software-defined WAN changes the way organisations connect sites and reach the cloud, and the security implications and controls that come with moving from private circuits to internet-based, software-controlled connectivity.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:3.2", "secplus:3.1", "cysa:1.1"]
+    learning_objectives:
+      - Explain what SD-WAN is and why organisations adopt it
+      - Describe the security implications of software-defined WAN
+      - Describe the controls that secure an SD-WAN deployment
+    theory: |
+      Traditionally, organisations connected their branch offices and data centers with expensive private circuits
+      (such as MPLS) and backhauled internet and cloud traffic through a central site for inspection.
+      **Software-defined WAN (SD-WAN)** changes this by using software to intelligently route traffic over multiple
+      transport types, including ordinary broadband internet, choosing the best path per application in real time
+      and managing the whole WAN centrally through software. Organisations adopt it for cost and performance: cheap
+      internet links replace or supplement costly circuits, and branches can reach cloud and SaaS applications
+      directly (local breakout) rather than backhauling everything, which is faster and cheaper in a cloud-centric
+      world. Understanding SD-WAN matters because it reshapes where traffic flows and therefore where security must
+      be applied.
+
+      That reshaping has real **security implications**. The biggest is that traffic which once rode private
+      circuits and was inspected at a central chokepoint now often travels over the **public internet** and breaks
+      out to the cloud directly from each branch, so the old model of inspecting everything at one central firewall
+      no longer sees it. This both exposes traffic (it must be protected in transit) and creates many distribution
+      points that each need security, rather than one. SD-WAN also introduces a **centralised controller and
+      management plane** that programs the whole WAN, which is powerful and therefore a high-value target: compromise
+      the SD-WAN controller and an attacker could reroute or intercept traffic across the entire organisation, so
+      it must be protected like the critical infrastructure it is (connecting to the network-device and
+      control-plane lessons). The shift to direct internet breakout is also exactly what drives the SASE/SSE model
+      met in the architecture module, delivering security in the cloud at the edge where the traffic now goes.
+
+      The **controls** follow from these implications. **Encrypt WAN traffic** (SD-WAN typically builds encrypted
+      tunnels between sites over whatever transport) so that using the public internet does not expose data.
+      **Secure the direct internet breakout** at each branch, since traffic no longer passes a central firewall,
+      security must travel with it, through integrated next-generation firewall and secure web gateway capabilities
+      at the edge or, increasingly, through a cloud-delivered SASE/SSE service that inspects the breakout traffic.
+      **Protect the controller and management plane** with strong authentication, isolation and monitoring, because
+      it commands the whole WAN. **Apply segmentation** within the SD-WAN so that different traffic types and
+      business units are separated. And **monitor** the SD-WAN as a security-relevant system, its logs show traffic
+      patterns and configuration changes. For the analyst and architect, the lessons are that SD-WAN moves WAN
+      traffic from inspected private circuits onto the public internet with direct cloud breakout, that this
+      dissolves the single central inspection point and makes the controller a critical target, and that securing
+      it means encrypting WAN traffic, delivering security to each breakout point (often via SASE/SSE), hardening
+      and monitoring the controller, and segmenting the WAN, so that the cost and performance benefits of
+      software-defined connectivity do not come at the price of lost visibility and control.
+    examples:
+      - title: What changes with SD-WAN
+        body: |
+          old: private circuits (MPLS) + backhaul all traffic to one central firewall for inspection
+          SD-WAN: software routes per-app over multiple transports incl. cheap internet; branches break out to cloud DIRECTLY
+          -> traffic now rides the PUBLIC INTERNET from many points; the single central inspection chokepoint is gone.
+      - title: Implications and controls
+        body: |
+          controller/management plane commands the whole WAN = high-value target (reroute/intercept everywhere) -> protect like critical infra
+          controls: encrypt WAN tunnels; secure each direct breakout (NGFW/SWG at edge or cloud SASE/SSE); harden + monitor the controller; segment the WAN
+          direct breakout is exactly what drives the SASE/SSE model.
+    exercise:
+      title: Secure an SD-WAN deployment
+      environment: A described organisation moving to SD-WAN with direct cloud breakout (or a scenario)
+      tools: [A scenario, an architecture notes file, a document]
+      steps:
+        - Explain what SD-WAN is and why organisations adopt it.
+        - Explain how SD-WAN changes where traffic flows and dissolves the central inspection point.
+        - Explain why the SD-WAN controller is a high-value target.
+        - Describe how you would secure the direct internet breakout at branches.
+        - Explain how encrypting WAN traffic and segmenting the WAN help.
+        - Describe how SD-WAN relates to the SASE/SSE model.
+      deliverable: An SD-WAN security plan covering the shift to internet-based direct breakout, protecting the controller, securing breakout traffic (NGFW/SWG or SASE/SSE), encryption, segmentation and monitoring.
+    expected_outcome: >
+      You can explain SD-WAN and why it is adopted, describe how it reshapes WAN traffic and its security
+      implications, and describe the controls (encryption, secured breakout, controller protection, segmentation) that secure it.
+    quiz:
+      - prompt: The biggest security implication of SD-WAN is that
+        options:
+          - All traffic stays on private circuits inspected centrally
+          - Traffic often rides the public internet and breaks out to the cloud directly, so the single central inspection point no longer sees it
+          - It removes the need for any security
+          - It only affects wireless
+        answer: 1
+        explanation: Direct internet breakout dissolves the central chokepoint, so security must move to where traffic now flows.
+      - prompt: The SD-WAN controller must be protected like critical infrastructure because
+        options:
+          - It does nothing important
+          - It programs the whole WAN, so its compromise could reroute or intercept traffic across the organisation
+          - It only stores wallpaper
+          - It cannot be attacked
+        answer: 1
+        explanation: The controller commands the entire WAN, making it a high-value target.
+      - prompt: Securing the direct internet breakout at each branch typically means
+        options:
+          - Removing all security
+          - Delivering NGFW/secure-web-gateway capability at the edge or via a cloud SASE/SSE service, since traffic no longer passes a central firewall
+          - Backhauling everything again
+          - Disabling encryption
+        answer: 1
+        explanation: Security must travel with the breakout traffic, at the edge or through cloud-delivered SASE/SSE.
+      - prompt: SD-WAN typically protects data on the public internet by
+        options:
+          - Sending it in clear text
+          - Building encrypted tunnels between sites over whatever transport is used
+          - Disabling routing
+          - Using only private circuits
+        answer: 1
+        explanation: Encrypted WAN tunnels protect traffic even when it rides ordinary internet links.
