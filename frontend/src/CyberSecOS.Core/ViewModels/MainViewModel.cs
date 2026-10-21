@@ -26,6 +26,7 @@ public sealed partial class MainViewModel : ObservableObject
     [
         new("Dashboard", "\uE80F", typeof(DashboardViewModel)),
         new("Courses", "\uE82D", typeof(CoursesViewModel)),
+        new("Labs", "\uE943", typeof(LabsViewModel)),
         new("Progress", "\uE9D2", typeof(ProgressViewModel)),
         new("Study Plan", "\uE8BF", typeof(PlannerViewModel)),
         new("Insights", "\uE9D9", typeof(InsightsViewModel)),

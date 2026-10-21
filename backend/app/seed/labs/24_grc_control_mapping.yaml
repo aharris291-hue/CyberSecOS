@@ -1,0 +1,87 @@
+slug: lab-grc-control-mapping
+lesson: grc-frameworks-control-mapping
+title: Map controls to a framework and find the gaps
+pass_mark: 80
+scenario: |
+  The board has approved a NIST CSF 2.0 target profile: ten subcategories that must each be
+  met by at least one internal control. The control library already lists which framework
+  references each control maps to (CSF subcategory IDs and ISO 27001:2022 Annex A controls,
+  separated by semicolons).
+
+  Work out what is covered, where the gaps are, and which controls carry the most weight. This
+  is the core of a framework gap assessment: one control can satisfy several requirements, and
+  a requirement with no control is a finding.
+artifacts:
+- name: control_library.csv
+  kind: csv
+  description: Internal controls and their framework mappings (pipe-separated).
+  content: |
+    id|control|maps_to
+    C-01|MFA for all remote and privileged access|PR.AA-03; ISO A.8.5
+    C-02|Joiner-mover-leaver access reviews quarterly|PR.AA-05; ISO A.5.18
+    C-03|Endpoint detection and response on all laptops and servers|DE.CM-09; ISO A.8.7
+    C-04|Centralised logging to the SIEM with 12-month retention|DE.CM-01; DE.CM-09; ISO A.8.15
+    C-05|Monthly vulnerability scanning and risk-based patching|ID.RA-01; PR.PS-02; ISO A.8.8
+    C-06|Encrypted, immutable offline backups tested quarterly|PR.DS-11; RC.RP-03; ISO A.8.13
+    C-07|Annual security awareness and phishing training|PR.AT-01; ISO A.6.3
+    C-08|Asset inventory maintained in the CMDB|ID.AM-01; ID.AM-02; ISO A.5.9
+- name: target_profile.txt
+  kind: text
+  description: The CSF subcategories the board requires.
+  content: |
+    Board-approved target profile: NIST CSF 2.0 subcategories that must each map to at least one control
+
+    ID.AM-01  Inventories of hardware are maintained
+    ID.RA-01  Vulnerabilities in assets are identified
+    PR.AA-03  Users, services and hardware are authenticated
+    PR.AA-05  Access permissions are managed and reviewed
+    PR.AT-01  Personnel receive awareness and training
+    PR.DS-11  Backups of data are created, protected, maintained and tested
+    DE.CM-01  Networks are monitored for adverse events
+    RS.MA-01  The incident response plan is executed with relevant parties
+    RC.RP-03  Integrity of backups is verified before restoring
+    GV.SC-07  Supplier risks are identified, recorded and monitored
+tasks:
+- prompt: Which required CSF subcategories have no mapped control? List the IDs separated by commas.
+  type: set
+  accepted:
+  - RS.MA-01, GV.SC-07
+  hint: Check each of the ten required IDs against the maps_to column.
+  explanation: RS.MA-01 (executing the incident response plan) and GV.SC-07 (supplier risk) have no control. Those
+    are the gap-assessment findings, each needing a new control or an accepted-risk decision.
+- prompt: How many of the ten required subcategories are covered?
+  type: number
+  accepted:
+  - '8'
+  hint: Ten required minus the gaps.
+  explanation: Eight of ten, 80% coverage of the target profile.
+- prompt: Which required subcategory does the logging control C-04 support?
+  type: text
+  accepted:
+  - DE.CM-01
+  hint: Read C-04's mappings and keep the one that is in the target profile.
+  explanation: DE.CM-01 (monitoring networks for adverse events). C-04 also maps to DE.CM-09, which is useful but
+    not in this profile, so it earns no credit against the board's targets.
+  verify:
+    artifact: control_library.csv
+    op: set
+    pattern: ^C-04\|.*\b(DE\.CM-01)\b
+- prompt: How many controls map to an ISO 27001 Annex A reference?
+  type: number
+  accepted:
+  - '8'
+  hint: Count rows that mention ISO.
+  explanation: 'All eight, which means the same evidence can serve both the CSF profile and an ISO 27001 audit:
+    the efficiency that control mapping is for.'
+  verify:
+    artifact: control_library.csv
+    op: count
+    pattern: ISO A\.\d
+- prompt: Control C-06 is tested and found to be failing (backups have not been tested for a year). Which required
+    subcategories are affected?
+  type: set
+  accepted:
+  - PR.DS-11, RC.RP-03
+  hint: Read C-06's mappings and keep the ones in the target profile.
+  explanation: PR.DS-11 and RC.RP-03 both rely on C-06 alone, so one failing control opens two gaps in the profile.
+    That is why mapping tells you the blast radius of a control failure.

@@ -1,0 +1,119 @@
+slug: lab-sec-hashes-certificates
+lesson: sec-crypto-pki
+title: Verify downloads and read a TLS certificate
+pass_mark: 80
+scenario: |
+  Two quick checks before a change window. First, the desktop team downloaded the four
+  installers for a new endpoint agent; compare the hashes they computed with the vendor's
+  published SHA256SUMS before anything is deployed. Second, a developer wants to reuse the
+  portal's TLS certificate for a new site and asks what it actually covers.
+
+  Hashes must match exactly, character for character. For the certificate, read the validity
+  dates, the issuer and the Subject Alternative Names: browsers check the SAN list, and a
+  wildcard matches exactly one label.
+artifacts:
+- name: SHA256SUMS
+  kind: text
+  description: Hashes published by the vendor.
+  content: |
+    # SHA256SUMS published on the vendor's release page for agent v4.2.1
+    3f2a9c1e8b7d6054a1c2e3f4a5b6c7d8e9f00112233445566778899aabbccdde  agent-4.2.1-x64.msi
+    9b8c7d6e5f4a3b2c1d0e9f8a7b6c5d4e3f2a1b0c9d8e7f6a5b4c3d2e1f0a9b8c  agent-4.2.1-arm64.msi
+    c0ffee00112233445566778899aabbccddeeff00112233445566778899aabbcc  agent-4.2.1-linux.tar.gz
+    1234abcd5678ef901234abcd5678ef901234abcd5678ef901234abcd5678ef90  agent-4.2.1-macos.pkg
+- name: computed_hashes.txt
+  kind: text
+  description: sha256sum output for the files the team downloaded.
+  content: |
+    $ sha256sum agent-4.2.1-*
+    3f2a9c1e8b7d6054a1c2e3f4a5b6c7d8e9f00112233445566778899aabbccdde  agent-4.2.1-x64.msi
+    9b8c7d6e5f4a3b2c1d0e9f8a7b6c5d4e3f2a1b0c9d8e7f6a5b4c3d2e1f0a9b8c  agent-4.2.1-arm64.msi
+    c0ffee00112233445566778899aabbccddeeff00112233445566778899aabbcc  agent-4.2.1-linux.tar.gz
+    1234abcd5678ef901234abcd5678ef901234abcd5678ef901234abcd5678ef91  agent-4.2.1-macos.pkg
+- name: portal_certificate.txt
+  kind: text
+  description: openssl x509 -text dump of portal.crt.
+  content: |
+    $ openssl x509 -in portal.crt -noout -text
+    Certificate:
+        Data:
+            Version: 3 (0x2)
+            Serial Number:
+                4a:1f:9e:22:07:b3:5c:d1
+            Signature Algorithm: sha256WithRSAEncryption
+            Issuer: C = GB, O = Contoso Ltd, CN = Contoso Issuing CA 2
+            Validity
+                Not Before: Nov  2 00:00:00 2025 GMT
+                Not After : Nov  1 23:59:59 2026 GMT
+            Subject: C = GB, O = Contoso Ltd, CN = portal.contoso.example
+            Subject Public Key Info:
+                Public Key Algorithm: rsaEncryption
+                    Public-Key: (2048 bit)
+                    Exponent: 65537 (0x10001)
+            X509v3 extensions:
+                X509v3 Key Usage: critical
+                    Digital Signature, Key Encipherment
+                X509v3 Extended Key Usage:
+                    TLS Web Server Authentication
+                X509v3 Subject Alternative Name:
+                    DNS:portal.contoso.example, DNS:contoso.example, DNS:*.shop.contoso.example
+                X509v3 CRL Distribution Points:
+                    Full Name:
+                      URI:http://pki.contoso.example/crl/issuing-ca-2.crl
+tasks:
+- prompt: Which downloaded file does not match its published hash?
+  type: text
+  accepted:
+  - agent-4.2.1-macos.pkg
+  hint: Compare each pair of hashes to the last character.
+  explanation: 'agent-4.2.1-macos.pkg differs in the final character (…ef91 vs …ef90). Any difference means the
+    file is not the one the vendor published: corrupted or tampered. Do not deploy it; download again from the official
+    source and re-check.'
+- prompt: On what date does the portal certificate expire? Give it as written after 'Not After'.
+  type: text
+  accepted:
+  - Nov  1 23:59:59 2026 GMT
+  - Nov 1 23:59:59 2026 GMT
+  - Nov 1 2026
+  - '2026-11-01'
+  - 1 Nov 2026
+  hint: Look in the Validity block.
+  explanation: It expires on 1 November 2026. Expired certificates break sites and teach users to click through
+    warnings, so renewals belong in a tracked calendar.
+  verify:
+    artifact: portal_certificate.txt
+    op: first
+    pattern: 'Not After : (.+)$'
+- prompt: Which certificate authority issued it (the issuer CN)?
+  type: text
+  accepted:
+  - Contoso Issuing CA 2
+  hint: The Issuer line names the CA that signed the certificate.
+  explanation: Contoso Issuing CA 2, an internal CA. Issuer and Subject differ, so it is not self-signed, but only
+    machines that trust Contoso's root will accept it, so it cannot be used for a public website.
+  verify:
+    artifact: portal_certificate.txt
+    op: first
+    pattern: 'Issuer: .*CN = (.+)$'
+- prompt: How long is the certificate's RSA key, in bits?
+  type: number
+  accepted:
+  - '2048'
+  hint: Subject Public Key Info shows the key size.
+  explanation: 2048-bit RSA, the current minimum for public TLS. New keys are increasingly 3072-bit RSA or ECDSA
+    P-256.
+  verify:
+    artifact: portal_certificate.txt
+    op: first
+    pattern: 'Public-Key: \((\d+) bit\)'
+- prompt: Which of these hostnames does the certificate cover?
+  type: choice
+  options:
+  - api.contoso.example
+  - eu.shop.contoso.example
+  - pay.eu.shop.contoso.example
+  - www.contoso.example
+  answer: 1
+  hint: Check each against the SAN list. A wildcard stands for exactly one label.
+  explanation: '*.shop.contoso.example matches eu.shop.contoso.example. It does not match two labels (pay.eu.shop…),
+    and neither api. nor www. appears in the SAN list, so the developer needs a new certificate.'

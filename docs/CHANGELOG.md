@@ -1,5 +1,15 @@
 # Changelog
 
+## Phase 2 - A second graded lab per course and a Labs page
+
+### Twelve more labs the app can mark
+- Every course now has two graded labs (24 in total). The new labs: DNS tunnelling and a DGA in resolver logs; verifying download hashes and reading a TLS certificate; attacker persistence in an Autoruns export; a sudo-based privilege-escalation path on a Linux web server; a password spray in Entra ID sign-in logs (KQL thinking); verifying remediation by reconciling a rescan with owners' tickets; data exfiltration in proxy logs; a business email compromise in mailbox audit logs; tuning a noisy scheduled-task detection without blinding it; logging-coverage gaps against an asset inventory; IAM policy review for full-admin grants and a PassRole escalation path; and mapping controls to a NIST CSF profile to find the gaps.
+- Each one is checked: every fact-finding answer is derived from its own data by `test_lab_content.py`, and answers that need reasoning (hash comparison, scan reconciliation, coverage gaps, upload volume, noise share, control gaps) have dedicated checks. The suite also fails if any course drops below two labs.
+
+### See all your labs in one place
+- New **Labs** page in the desktop app (side bar, after Courses): every graded lab grouped by course, with Passed / In progress / Not started, best score and attempts, a headline count of labs passed, and an Open button that goes to the lab's lesson. It uses the existing `GET /api/labs`.
+- Tests: 559 backend; 6 new Core tests for the Labs page (137 Core tests); the full solution builds clean.
+
 ## Phase 2 - Graded labs with checked answers
 
 ### Real labs the app can mark

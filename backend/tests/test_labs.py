@@ -4,8 +4,10 @@ import pytest
 
 from app.models import Lab, LabAttempt, Lesson
 from app.services import lab as lab_service
+from app.services.seed import load_lab_files
 
 SLUG = "linux-auth-logs"
+LAB_COUNT = len(load_lab_files())
 
 
 def _lesson(db, slug=SLUG):
@@ -76,7 +78,7 @@ def test_grade_rejects_the_wrong_number_of_answers():
 
 def test_every_course_gets_a_lab_attached_to_a_lesson(db):
     labs = db.query(Lab).all()
-    assert len(labs) == 12
+    assert len(labs) == LAB_COUNT
     assert len({lab.lesson.course_id for lab in labs}) == 12
 
 
@@ -87,7 +89,7 @@ def test_reseeding_labs_is_idempotent_and_keeps_attempts(client, auth_headers, d
     _submit(client, auth_headers, lesson, _answers(lesson))
     lab_id = lesson.lab.id
     seed_database(db)
-    assert db.query(Lab).count() == 12
+    assert db.query(Lab).count() == LAB_COUNT
     assert _lesson(db).lab.id == lab_id
     assert db.query(LabAttempt).count() == 1
 
@@ -192,7 +194,7 @@ def test_lab_list_covers_every_course_in_order_with_status(client, auth_headers,
     lesson = _lesson(db)
     _submit(client, auth_headers, lesson, _answers(lesson, right=1))
     labs = client.get("/api/labs", headers=auth_headers).json()
-    assert len(labs) == 12
+    assert len(labs) == LAB_COUNT
     assert labs[0]["course_slug"] == "networking-foundations"
     mine = next(lab for lab in labs if lab["lesson_id"] == lesson.id)
     assert mine["status"]["attempts"] == 1 and mine["status"]["passed"] is False

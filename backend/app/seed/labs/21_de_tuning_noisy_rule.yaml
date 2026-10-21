@@ -1,0 +1,114 @@
+slug: lab-de-tuning-noisy-rule
+lesson: de-tuning-false-positives
+title: Tune a noisy scheduled-task detection
+pass_mark: 80
+scenario: |
+  The rule "Scheduled task created" fired 40 times last week and the SOC has started ignoring
+  it, which is exactly how a real attack slips through. You have the week's alerts (pipe
+  separated). Your job: find what makes the rule noisy, design an exclusion that removes the
+  noise without blinding the rule, and make sure the one real attack in the week would still
+  alert.
+
+  A good exclusion is as **narrow** as possible: a specific parent process *and* a specific
+  task, not a whole host, user or the rule itself.
+artifacts:
+- name: alerts.txt
+  kind: csv
+  description: Last week's alerts for the rule, pipe-separated.
+  content: |
+    time|host|user|parent_image|task_name|task_command
+    2026-09-01T00:31:00Z|WS-135|SYSTEM|C:\Windows\CCM\CcmExec.exe|\Microsoft\Configuration Manager\Configuration Manager Health Evaluation|C:\Windows\CCM\ccmeval.exe
+    2026-09-01T03:23:00Z|WS-399|SYSTEM|C:\Windows\CCM\CcmExec.exe|\Microsoft\Configuration Manager\Configuration Manager Health Evaluation|C:\Windows\CCM\ccmeval.exe
+    2026-09-01T05:09:00Z|WS-145|SYSTEM|C:\Windows\CCM\CcmExec.exe|\Microsoft\Configuration Manager\Configuration Manager Health Evaluation|C:\Windows\CCM\ccmeval.exe
+    2026-09-01T10:27:00Z|WS-308|SYSTEM|C:\Windows\CCM\CcmExec.exe|\Microsoft\Configuration Manager\Configuration Manager Health Evaluation|C:\Windows\CCM\ccmeval.exe
+    2026-09-01T18:07:00Z|WS-386|SYSTEM|C:\Windows\CCM\CcmExec.exe|\Microsoft\Configuration Manager\Configuration Manager Health Evaluation|C:\Windows\CCM\ccmeval.exe
+    2026-09-01T19:49:00Z|WS-201|SYSTEM|C:\Windows\CCM\CcmExec.exe|\Microsoft\Configuration Manager\Configuration Manager Health Evaluation|C:\Windows\CCM\ccmeval.exe
+    2026-09-01T23:10:00Z|WS-353|SYSTEM|C:\Windows\CCM\CcmExec.exe|\Microsoft\Configuration Manager\Configuration Manager Health Evaluation|C:\Windows\CCM\ccmeval.exe
+    2026-09-02T05:41:00Z|WS-288|SYSTEM|C:\Windows\CCM\CcmExec.exe|\Microsoft\Configuration Manager\Configuration Manager Health Evaluation|C:\Windows\CCM\ccmeval.exe
+    2026-09-02T07:51:00Z|WS-110|SYSTEM|C:\Windows\CCM\CcmExec.exe|\Microsoft\Configuration Manager\Configuration Manager Health Evaluation|C:\Windows\CCM\ccmeval.exe
+    2026-09-02T14:11:00Z|WS-119|SYSTEM|C:\Windows\CCM\CcmExec.exe|\Microsoft\Configuration Manager\Configuration Manager Health Evaluation|C:\Windows\CCM\ccmeval.exe
+    2026-09-02T16:00:00Z|WS-118|SYSTEM|C:\Program Files\Contoso Patch\patchagent.exe|\Contoso\PatchScan|C:\Program Files\Contoso Patch\scan.exe
+    2026-09-02T18:26:00Z|WS-314|SYSTEM|C:\Windows\CCM\CcmExec.exe|\Microsoft\Configuration Manager\Configuration Manager Health Evaluation|C:\Windows\CCM\ccmeval.exe
+    2026-09-02T22:32:00Z|WS-370|SYSTEM|C:\Windows\CCM\CcmExec.exe|\Microsoft\Configuration Manager\Configuration Manager Health Evaluation|C:\Windows\CCM\ccmeval.exe
+    2026-09-02T22:42:00Z|WS-187|SYSTEM|C:\Windows\CCM\CcmExec.exe|\Microsoft\Configuration Manager\Configuration Manager Health Evaluation|C:\Windows\CCM\ccmeval.exe
+    2026-09-03T03:21:00Z|WS-174|SYSTEM|C:\Windows\CCM\CcmExec.exe|\Microsoft\Configuration Manager\Configuration Manager Health Evaluation|C:\Windows\CCM\ccmeval.exe
+    2026-09-03T05:43:00Z|WS-397|SYSTEM|C:\Windows\CCM\CcmExec.exe|\Microsoft\Configuration Manager\Configuration Manager Health Evaluation|C:\Windows\CCM\ccmeval.exe
+    2026-09-03T08:36:00Z|WS-263|SYSTEM|C:\Windows\CCM\CcmExec.exe|\Microsoft\Configuration Manager\Configuration Manager Health Evaluation|C:\Windows\CCM\ccmeval.exe
+    2026-09-03T11:58:00Z|WS-219|SYSTEM|C:\Windows\CCM\CcmExec.exe|\Microsoft\Configuration Manager\Configuration Manager Health Evaluation|C:\Windows\CCM\ccmeval.exe
+    2026-09-03T12:00:00Z|WS-341|SYSTEM|C:\Program Files\Contoso Patch\patchagent.exe|\Contoso\PatchScan|C:\Program Files\Contoso Patch\scan.exe
+    2026-09-03T12:50:00Z|WS-101|SYSTEM|C:\Windows\CCM\CcmExec.exe|\Microsoft\Configuration Manager\Configuration Manager Health Evaluation|C:\Windows\CCM\ccmeval.exe
+    2026-09-04T00:30:00Z|WS-210|SYSTEM|C:\Windows\CCM\CcmExec.exe|\Microsoft\Configuration Manager\Configuration Manager Health Evaluation|C:\Windows\CCM\ccmeval.exe
+    2026-09-04T06:00:00Z|SRV-ADM-01|adm.r.cho|C:\Windows\System32\mmc.exe|\Ops\LogRotate2|C:\Scripts\rotate.cmd
+    2026-09-04T12:34:00Z|WS-354|SYSTEM|C:\Windows\CCM\CcmExec.exe|\Microsoft\Configuration Manager\Configuration Manager Health Evaluation|C:\Windows\CCM\ccmeval.exe
+    2026-09-04T15:25:00Z|WS-348|SYSTEM|C:\Windows\CCM\CcmExec.exe|\Microsoft\Configuration Manager\Configuration Manager Health Evaluation|C:\Windows\CCM\ccmeval.exe
+    2026-09-04T16:00:00Z|SRV-ADM-01|adm.r.cho|C:\Windows\System32\mmc.exe|\Ops\LogRotate0|C:\Scripts\rotate.cmd
+    2026-09-04T21:28:00Z|WS-356|SYSTEM|C:\Windows\CCM\CcmExec.exe|\Microsoft\Configuration Manager\Configuration Manager Health Evaluation|C:\Windows\CCM\ccmeval.exe
+    2026-09-05T01:12:00Z|WS-217|t.berg|C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe|\Updater|powershell.exe -w hidden -nop -c iex(gc $env:APPDATA\u.txt -raw)
+    2026-09-05T02:17:00Z|WS-113|SYSTEM|C:\Windows\CCM\CcmExec.exe|\Microsoft\Configuration Manager\Configuration Manager Health Evaluation|C:\Windows\CCM\ccmeval.exe
+    2026-09-05T02:20:00Z|WS-348|SYSTEM|C:\Windows\CCM\CcmExec.exe|\Microsoft\Configuration Manager\Configuration Manager Health Evaluation|C:\Windows\CCM\ccmeval.exe
+    2026-09-05T13:04:00Z|WS-174|SYSTEM|C:\Windows\CCM\CcmExec.exe|\Microsoft\Configuration Manager\Configuration Manager Health Evaluation|C:\Windows\CCM\ccmeval.exe
+    2026-09-05T20:10:00Z|WS-382|SYSTEM|C:\Windows\CCM\CcmExec.exe|\Microsoft\Configuration Manager\Configuration Manager Health Evaluation|C:\Windows\CCM\ccmeval.exe
+    2026-09-06T00:55:00Z|WS-220|SYSTEM|C:\Windows\CCM\CcmExec.exe|\Microsoft\Configuration Manager\Configuration Manager Health Evaluation|C:\Windows\CCM\ccmeval.exe
+    2026-09-06T01:35:00Z|WS-298|SYSTEM|C:\Windows\CCM\CcmExec.exe|\Microsoft\Configuration Manager\Configuration Manager Health Evaluation|C:\Windows\CCM\ccmeval.exe
+    2026-09-06T01:51:00Z|WS-362|SYSTEM|C:\Windows\CCM\CcmExec.exe|\Microsoft\Configuration Manager\Configuration Manager Health Evaluation|C:\Windows\CCM\ccmeval.exe
+    2026-09-06T17:26:00Z|WS-249|SYSTEM|C:\Windows\CCM\CcmExec.exe|\Microsoft\Configuration Manager\Configuration Manager Health Evaluation|C:\Windows\CCM\ccmeval.exe
+    2026-09-06T20:38:00Z|WS-367|SYSTEM|C:\Windows\CCM\CcmExec.exe|\Microsoft\Configuration Manager\Configuration Manager Health Evaluation|C:\Windows\CCM\ccmeval.exe
+    2026-09-06T22:39:00Z|WS-157|SYSTEM|C:\Windows\CCM\CcmExec.exe|\Microsoft\Configuration Manager\Configuration Manager Health Evaluation|C:\Windows\CCM\ccmeval.exe
+    2026-09-07T08:00:00Z|SRV-ADM-01|adm.r.cho|C:\Windows\System32\mmc.exe|\Ops\LogRotate1|C:\Scripts\rotate.cmd
+    2026-09-07T13:28:00Z|WS-117|SYSTEM|C:\Windows\CCM\CcmExec.exe|\Microsoft\Configuration Manager\Configuration Manager Health Evaluation|C:\Windows\CCM\ccmeval.exe
+    2026-09-07T16:22:00Z|WS-270|SYSTEM|C:\Windows\CCM\CcmExec.exe|\Microsoft\Configuration Manager\Configuration Manager Health Evaluation|C:\Windows\CCM\ccmeval.exe
+tasks:
+- prompt: Which parent process causes the most alerts? Give the file name.
+  type: text
+  accepted:
+  - CcmExec.exe
+  - C:\Windows\CCM\CcmExec.exe
+  hint: Count alerts by parent_image.
+  explanation: CcmExec.exe, the Configuration Manager (SCCM) client, re-creating its health-evaluation task across
+    the fleet.
+  verify:
+    artifact: alerts.txt
+    op: top
+    pattern: ^[^|]+\|[^|]+\|[^|]+\|[^|]*\\([^\\|]+)\|
+- prompt: What percentage of all alerts does that process account for?
+  type: number
+  accepted:
+  - '85'
+  tolerance: 1
+  hint: Its alert count divided by the total, times 100.
+  explanation: 34 of 40 alerts, 85%. One benign source producing most of a rule's volume is the classic tuning opportunity.
+- prompt: Which host had the genuinely malicious task?
+  type: text
+  accepted:
+  - WS-217
+  hint: Look for a task launched by PowerShell that runs hidden code from a user profile.
+  explanation: 'WS-217: a task named \Updater running hidden PowerShell that executes a script read from %APPDATA%.
+    That is the alert the rule exists for.'
+  verify:
+    artifact: alerts.txt
+    op: set
+    pattern: ^[^|]+\|([^|]+)\|.*-w hidden
+- prompt: Which exclusion should you add?
+  type: choice
+  options:
+  - Exclude user SYSTEM
+  - Exclude parent_image ending in \CCM\CcmExec.exe AND task_name equal to the Configuration Manager Health Evaluation
+    task
+  - Exclude every host whose name starts with WS-
+  - Disable the rule
+  answer: 1
+  hint: Which option removes the SCCM noise and nothing else?
+  explanation: Pairing the parent process with the exact task name removes the known-good behaviour only. Excluding
+    SYSTEM would also hide attacker tasks created as SYSTEM, and excluding hosts or disabling the rule blinds you
+    completely.
+- prompt: With that exclusion in place, how many of last week's alerts would still fire?
+  type: number
+  accepted:
+  - '6'
+  hint: Count the alerts not raised by that parent process.
+  explanation: 'Six: the three admin log-rotation tasks, the two patch-agent tasks (candidates for their own narrow
+    exclusion after review) and the real attack. The rule drops from 40 to 6 alerts a week and still catches WS-217.'
+  verify:
+    artifact: alerts.txt
+    op: count
+    pattern: ^\d{4}-[^|]+\|[^|]+\|[^|]+\|(?![^|]*CcmExec\.exe)[^|]*\|

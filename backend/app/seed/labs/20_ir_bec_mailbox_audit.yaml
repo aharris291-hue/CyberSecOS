@@ -1,0 +1,97 @@
+slug: lab-ir-bec-mailbox-audit
+lesson: ir-bec-account-takeover
+title: Investigate a business email compromise
+pass_mark: 80
+scenario: |
+  Accounts Payable received an email from Marta Fischer, the procurement lead, asking them to
+  update a supplier's bank details. Marta says she never sent it. You have pulled her mailbox
+  audit records and the rest of the day's mailbox events from the unified audit log (one JSON
+  event per line).
+
+  Find how the attacker got in, what they changed to hide and to keep access, and what they did
+  with the mailbox. One other user also created an inbox rule that day; decide whether it is
+  part of the incident.
+artifacts:
+- name: mailbox_audit.jsonl
+  kind: json
+  description: Unified audit log mailbox events, one per line (UTC).
+  content: |
+    {"CreationTime": "2026-07-07T09:02:11Z", "Operation": "UserLoggedIn", "UserId": "m.fischer@contoso.example", "ClientIP": "192.0.2.33", "ClientInfo": "Outlook/16.0"}
+    {"CreationTime": "2026-07-07T13:40:55Z", "Operation": "UserLoggedIn", "UserId": "m.fischer@contoso.example", "ClientIP": "198.51.100.140", "ClientInfo": "python-requests/2.31"}
+    {"CreationTime": "2026-07-07T13:42:10Z", "Operation": "MailItemsAccessed", "UserId": "m.fischer@contoso.example", "ClientIP": "198.51.100.140", "Folder": "Inbox", "Count": 412}
+    {"CreationTime": "2026-07-07T13:44:37Z", "Operation": "New-InboxRule", "UserId": "m.fischer@contoso.example", "ClientIP": "198.51.100.140", "Parameters": {"Name": "..", "SubjectOrBodyContainsWords": "invoice;payment;remittance", "MoveToFolder": "RSS Feeds", "MarkAsRead": true}}
+    {"CreationTime": "2026-07-07T13:45:02Z", "Operation": "Set-Mailbox", "UserId": "m.fischer@contoso.example", "ClientIP": "198.51.100.140", "Parameters": {"ForwardingSmtpAddress": "smtp:m.fischer.ap@freemail.example", "DeliverToMailboxAndForward": true}}
+    {"CreationTime": "2026-07-07T14:20:18Z", "Operation": "Send", "UserId": "m.fischer@contoso.example", "ClientIP": "198.51.100.140", "Recipients": "accounts.payable@contoso.example", "Subject": "Updated bank details for Q3 supplier payments"}
+    {"CreationTime": "2026-07-07T15:03:44Z", "Operation": "UserLoggedIn", "UserId": "j.novak@contoso.example", "ClientIP": "192.0.2.41", "ClientInfo": "Outlook/16.0"}
+    {"CreationTime": "2026-07-07T16:11:09Z", "Operation": "New-InboxRule", "UserId": "j.novak@contoso.example", "ClientIP": "192.0.2.41", "Parameters": {"Name": "Newsletters", "FromAddressContainsWords": "news@vendor.example", "MoveToFolder": "Newsletters"}}
+tasks:
+- prompt: From which IP address did the attacker use Marta's mailbox?
+  type: text
+  accepted:
+  - 198.51.100.140
+  hint: 'Compare the sign-ins: one comes from the office with Outlook, one from somewhere else with a scripting
+    client.'
+  explanation: 198.51.100.140, with a python-requests client, not Outlook. Every malicious change came from it.
+  verify:
+    artifact: mailbox_audit.jsonl
+    op: set
+    pattern: '"Operation": "New-InboxRule", "UserId": "m\.fischer@contoso\.example", "ClientIP": "([^"]+)"'
+- prompt: Into which folder does the attacker's inbox rule move matching emails?
+  type: text
+  accepted:
+  - RSS Feeds
+  hint: Read MoveToFolder on Marta's new rule.
+  explanation: 'RSS Feeds: a folder nobody looks at. Together with MarkAsRead and the keywords invoice, payment
+    and remittance, it hides the supplier''s and AP''s replies so Marta does not notice the fraud.'
+  verify:
+    artifact: mailbox_audit.jsonl
+    op: set
+    pattern: '"SubjectOrBodyContainsWords": "invoice[^"]*", "MoveToFolder": "([^"]+)"'
+- prompt: To which external address is Marta's mail now being forwarded?
+  type: text
+  accepted:
+  - m.fischer.ap@freemail.example
+  - smtp:m.fischer.ap@freemail.example
+  hint: Look at the Set-Mailbox event.
+  explanation: m.fischer.ap@freemail.example gets a copy of everything, so the attacker keeps reading her mail even
+    after a password reset. Forwarding must be removed explicitly.
+  verify:
+    artifact: mailbox_audit.jsonl
+    op: set
+    pattern: '"ForwardingSmtpAddress": "smtp:([^"]+)"'
+- prompt: How many messages did the attacker access in the MailItemsAccessed event?
+  type: number
+  accepted:
+  - '412'
+  hint: Read the Count field.
+  explanation: '412 items were read. This matters for scoping: those messages may contain personal or financial
+    data, which can make the incident notifiable.'
+  verify:
+    artifact: mailbox_audit.jsonl
+    op: set
+    pattern: '"Operation": "MailItemsAccessed".*"Count": (\d+)'
+- prompt: Is j.novak's inbox rule part of the incident?
+  type: choice
+  options:
+  - 'Yes: any inbox rule created that day is malicious'
+  - 'No: it was created from the office IP with Outlook, has a normal name, and files one vendor''s newsletters
+    into a Newsletters folder'
+  - Yes, because it moves mail to a folder
+  - Cannot tell without the password
+  answer: 1
+  hint: Compare source, client, rule name and what the rule filters on.
+  explanation: 'It is a routine user rule. The malicious rule stands out: created from an outside IP by a script,
+    named ''..'', keyed on payment words, and hiding mail in RSS Feeds.'
+- prompt: Which response is complete?
+  type: choice
+  options:
+  - Reset Marta's password
+  - Revoke her sessions and tokens, reset the password and re-register MFA, remove the rule and the forwarding,
+    tell AP not to act on the email, recall or warn recipients and check other mailboxes for the same rule
+  - Delete Marta's mailbox
+  - Block freemail.example and close the case
+  answer: 1
+  hint: The attacker has a session, a forwarding copy and a hidden rule, and the fraud email may already be acted
+    on.
+  explanation: A password reset alone leaves existing sessions, the forwarding and the rule in place. Stop the payment
+    first, remove every attacker change, and look for the same rule pattern in other mailboxes.

@@ -23,7 +23,18 @@ LABS = load_lab_files()
 LESSONS = {lesson["slug"]: (course, lesson) for course in load_course_files() for lesson in course["lessons"]}
 IDS = [lab["slug"] for lab in LABS]
 # Labs whose answers are derived by a dedicated test below instead of (or as well as) verify blocks.
-CHECKED_BY_CODE = {"lab-de-sigma-matching", "lab-grc-risk-register", "lab-arch-firewall-review", "lab-siem-alert-triage"}
+CHECKED_BY_CODE = {
+    "lab-de-sigma-matching",
+    "lab-grc-risk-register",
+    "lab-arch-firewall-review",
+    "lab-siem-alert-triage",
+    "lab-sec-hashes-certificates",
+    "lab-vm-remediation-verification",
+    "lab-arch-logging-coverage",
+    "lab-hunt-data-exfiltration",
+    "lab-de-tuning-noisy-rule",
+    "lab-grc-control-mapping",
+}
 
 
 def _artifact(lab: dict, name: str) -> str:
@@ -168,3 +179,83 @@ def test_siem_lab_encoded_command_decodes_to_the_answer():
     decoded = base64.b64decode(encoded).decode("utf-16-le")
     domain = re.search(r"https?://([^/]+)/", decoded).group(1)
     assert is_correct(_task(lab, "Decode the PowerShell"), domain)
+
+
+def test_every_course_has_at_least_two_graded_labs():
+    per_course = Counter(LESSONS[lab["lesson"]][0]["slug"] for lab in LABS)
+    assert min(per_course.values()) >= 2, per_course
+
+
+def _csv(lab: dict, name: str, sep: str = ",") -> list[dict]:
+    header, *rows = _artifact(lab, name).splitlines()
+    keys = header.split(sep)
+    return [dict(zip(keys, row.split(sep), strict=True)) for row in rows]
+
+
+def test_hash_lab_mismatch_is_the_only_one():
+    lab = _lab("lab-sec-hashes-certificates")
+
+    def hashes(name):
+        return {parts[1]: parts[0] for parts in (line.split() for line in _artifact(lab, name).splitlines()) if len(parts) == 2 and len(parts[0]) == 64}
+
+    published, computed = hashes("SHA256SUMS"), hashes("computed_hashes.txt")
+    assert published.keys() == computed.keys()
+    mismatched = [name for name in published if published[name] != computed[name]]
+    assert len(mismatched) == 1 and is_correct(_task(lab, "Which downloaded file"), mismatched[0])
+
+
+def test_rescan_lab_reconciles_scans_and_tickets():
+    lab = _lab("lab-vm-remediation-verification")
+    before = {(r["host"], r["cve"]) for r in _csv(lab, "scan_before.csv")}
+    after = {(r["host"], r["cve"]) for r in _csv(lab, "scan_after.csv")}
+    assert is_correct(_task(lab, "How many of last week's findings are verified fixed"), str(len(before - after)))
+    new = after - before
+    assert len(new) == 1 and is_correct(_task(lab, "Which CVE is new"), next(iter(new))[1])
+    still_open_but_resolved = [
+        parts[0]
+        for parts in (line.split() for line in _artifact(lab, "tickets.txt").splitlines())
+        if parts and parts[0].startswith("CHG-") and parts[-1] == "Resolved" and (parts[1], parts[2]) in after
+    ]
+    assert is_correct(_task(lab, "Which findings did an owner mark Resolved"), ", ".join(still_open_but_resolved))
+
+
+def test_logging_lab_coverage_gaps_follow_the_data():
+    from datetime import datetime, timedelta
+
+    lab = _lab("lab-arch-logging-coverage")
+    assets = {r["asset"]: r["criticality"] for r in _csv(lab, "asset_inventory.csv")}
+    report = datetime.fromisoformat("2026-10-21T00:00:00+00:00")
+    last = {r["source"]: datetime.fromisoformat(r["last_event"].replace("Z", "+00:00")) for r in _csv(lab, "siem_sources.csv")}
+    missing = [a for a in assets if a not in last]
+    silent = [s for s, t in last.items() if report - t > timedelta(hours=24)]
+    assert is_correct(_task(lab, "Which assets are not onboarded"), ", ".join(missing))
+    assert is_correct(_task(lab, "Which onboarded sources have been silent"), ", ".join(silent))
+    critical = [a for a in missing + silent if assets[a] == "critical"]
+    assert is_correct(_task(lab, "How many critical assets"), str(len(critical)))
+
+
+def test_exfiltration_lab_total_upload_matches():
+    lab = _lab("lab-hunt-data-exfiltration")
+    rows = [r for r in _csv(lab, "proxy.csv") if r["category"] == "uncategorized"]
+    total_mb = sum(int(r["bytes_out"]) for r in rows) / 1_000_000
+    assert is_correct(_task(lab, "About how many megabytes"), str(round(total_mb)))
+
+
+def test_tuning_lab_noise_share_matches():
+    lab = _lab("lab-de-tuning-noisy-rule")
+    rows = _csv(lab, "alerts.txt", sep="|")
+    share = 100 * sum(r["parent_image"].endswith("\\CcmExec.exe") for r in rows) / len(rows)
+    assert is_correct(_task(lab, "What percentage of all alerts"), str(round(share)))
+
+
+def test_mapping_lab_gaps_and_blast_radius_follow_the_data():
+    lab = _lab("lab-grc-control-mapping")
+    required = [line.split()[0] for line in _artifact(lab, "target_profile.txt").splitlines() if re.match(r"^[A-Z]{2}\.[A-Z]{2}-\d{2}\s", line)]
+    controls = {r["id"]: [m.strip() for m in r["maps_to"].split(";")] for r in _csv(lab, "control_library.csv", sep="|")}
+    mapped = {m for maps in controls.values() for m in maps}
+    gaps = [r for r in required if r not in mapped]
+    assert len(required) == 10
+    assert is_correct(_task(lab, "Which required CSF subcategories have no mapped control"), ", ".join(gaps))
+    assert is_correct(_task(lab, "How many of the ten required"), str(len(required) - len(gaps)))
+    affected = [m for m in controls["C-06"] if m in required]
+    assert is_correct(_task(lab, "Control C-06 is tested"), ", ".join(affected))
