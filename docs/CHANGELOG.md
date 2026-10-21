@@ -1,5 +1,11 @@
 # Changelog
 
+## Phase 2 - Thirteenth lesson per course (toward 300 hours)
+
+### Catalog to 156 lessons (~171 hours)
+- Added a thirteenth lesson to every course (144 → 156 lessons, ~171 hours), each a distinct topic checked against the existing catalog. New lessons: intrusion detection and prevention systems (Networking); choosing the right cryptographic solution (Security Foundations); Kerberos attacks and their detection (Windows); systemd and cron persistence (Linux); mapping SIEM detections to MITRE ATT&CK (SIEM); reading and scoring vulnerabilities with CVSS (Vulnerability Management); ATT&CK-driven hunting methodology (Threat Hunting); the incident response lifecycle and playbooks (Incident Response); detecting initial access and phishing (Detection Engineering); secure cloud architecture (Security Architecture); shared responsibility and cloud fundamentals (Cloud); and security frameworks, NIST CSF and ISO 27001 (Governance, Risk and Compliance).
+- All keep the six education-standard sections and the ~18/82 theory/lab split; content-standard, seeding, lab and full backend suites pass.
+
 ## Phase 2 - Twelfth lesson per course (toward 300 hours)
 
 ### Catalog to 144 lessons (~158 hours)

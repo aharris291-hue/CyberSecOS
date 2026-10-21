@@ -1079,3 +1079,100 @@ lessons:
           - A type of malware
         answer: 1
         explanation: Compensating controls provide equivalent protection when the preferred control cannot be implemented.
+  - slug: sec-cryptographic-solutions
+    title: Choosing the Right Cryptographic Solution
+    order: 13
+    difficulty: intermediate
+    summary: Go beyond crypto basics to choose the right tool for each goal, whether symmetric versus asymmetric, hashing versus encryption, or protecting data at rest, in transit and in use.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:1.4", "secplus:4.1", "sc900:3"]
+    learning_objectives:
+      - Match a cryptographic tool to the security goal it achieves
+      - Distinguish confidentiality, integrity and authenticity and the primitives behind each
+      - Explain how data is protected at rest, in transit and in use
+    theory: |
+      Cryptography is not one thing but a toolbox, and the common mistake is reaching for the wrong tool. The
+      first question is always **what goal** you are trying to achieve. For **confidentiality** (keeping data
+      secret) you use **encryption**: symmetric encryption like AES when the same party or a shared key protects
+      bulk data, and asymmetric encryption like RSA or elliptic-curve when two parties who do not share a secret
+      need to communicate, typically to exchange a symmetric key. For **integrity** (proving data has not
+      changed) you use a **hash** such as SHA-256, which is one-way and not encryption at all. For **authenticity
+      and non-repudiation** (proving who sent something) you use **digital signatures**, which combine hashing
+      with the sender's private key so anyone can verify with the public key.
+
+      These primitives combine into the solutions seen every day. **TLS** uses asymmetric cryptography to
+      authenticate the server and agree a key, then symmetric encryption for speed on the bulk traffic.
+      **Password storage** never uses reversible encryption; it uses a slow, salted hash (bcrypt, Argon2) so a
+      stolen database cannot be reversed. **Code signing** and **document signing** use digital signatures so a
+      recipient can trust origin and integrity. Recognising which goal each solution serves is what lets an
+      analyst or architect judge whether a design is sound: encrypting a password database, for instance, is a
+      red flag because the goal there is one-way verification, not recoverable secrecy.
+
+      Finally, data must be protected in three **states**, and each needs a different approach. **At rest** (on
+      disk) is protected by full-disk or database encryption and good key management. **In transit** (on the
+      network) is protected by TLS or a VPN. **In use** (in memory, being processed) is the hardest and uses
+      newer techniques like confidential computing and enclaves. Key management underpins all of it: the strength
+      of any cryptosystem rests on keys being generated well, stored safely (often in an HSM), rotated, and
+      destroyed when retired, because a leaked key defeats even perfect algorithms.
+    examples:
+      - title: Goal -> tool
+        body: |
+          confidentiality -> encryption (AES symmetric / RSA-ECC asymmetric)
+          integrity        -> hash (SHA-256, one-way, NOT encryption)
+          authenticity     -> digital signature (hash + private key, verify with public)
+          password storage -> slow salted hash (bcrypt/Argon2), never reversible encryption.
+      - title: Three states of data
+        body: |
+          at rest    -> full-disk/database encryption + key management
+          in transit -> TLS / VPN
+          in use     -> confidential computing / enclaves (hardest)
+          keys underpin all: generate well, store in HSM, rotate, destroy.
+    exercise:
+      title: Pick cryptographic solutions for a set of goals
+      environment: A list of described security goals and a system to protect (or a scenario)
+      tools: [A scenario, a document, a notes file]
+      steps:
+        - For a goal of keeping a file secret between two parties with no shared key, choose the primitive and explain why.
+        - For a goal of proving a downloaded file was not altered, choose the primitive and explain why.
+        - For a goal of proving who signed a document, choose the primitive and explain why.
+        - Explain why a password database must use a salted slow hash and not reversible encryption.
+        - Map a described system's data to the three states and name the protection for each.
+        - Identify one weak choice in a described design (for example encrypting passwords) and correct it.
+      deliverable: A goal-to-primitive mapping for several goals, a three-states protection plan for one system, and a corrected weak cryptographic choice with justification.
+    expected_outcome: >
+      You can match cryptographic primitives to confidentiality, integrity and authenticity goals, explain how
+      data is protected at rest, in transit and in use, and spot a design that uses the wrong cryptographic tool.
+    quiz:
+      - prompt: To prove a downloaded file has not been altered you would use
+        options:
+          - Symmetric encryption
+          - A cryptographic hash such as SHA-256
+          - A longer password
+          - A firewall rule
+        answer: 1
+        explanation: A hash provides integrity; comparing hashes shows whether the file changed.
+      - prompt: Passwords should be stored using
+        options:
+          - Reversible AES encryption
+          - A salted, slow hash such as bcrypt or Argon2
+          - Plain text for speed
+          - A digital certificate
+        answer: 1
+        explanation: Password verification needs a one-way salted slow hash, not recoverable encryption.
+      - prompt: TLS uses asymmetric cryptography mainly to
+        options:
+          - Encrypt all bulk traffic because it is faster
+          - Authenticate the server and agree a symmetric key, which then protects the bulk traffic
+          - Store passwords
+          - Replace hashing
+        answer: 1
+        explanation: Asymmetric crypto authenticates and exchanges a key; symmetric crypto then handles bulk data for speed.
+      - prompt: Protecting data in use (being processed in memory) is addressed by
+        options:
+          - Full-disk encryption
+          - TLS
+          - Confidential computing and enclaves
+          - Longer hashes
+        answer: 2
+        explanation: Data in use is protected by techniques like confidential computing; disk encryption and TLS cover rest and transit.

@@ -1118,3 +1118,102 @@ lessons:
         options: [Low priority always, High severity with little tuning, since few legitimate activities clear logs, Disabled safely, Ignored]
         answer: 1
         explanation: Log-clearing is rarely legitimate, so it warrants a high-severity, low-tuning detection with a small allow-list.
+  - slug: de-initial-access-detection
+    title: Detecting Initial Access and Phishing
+    order: 13
+    difficulty: advanced
+    summary: Engineer detections for the initial-access tactic, covering phishing delivery, malicious attachments and links, and the first-stage execution that follows a successful lure.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.4", "sc200:2", "cysa:1.3"]
+    learning_objectives:
+      - Identify the data sources that reveal initial access and phishing
+      - Engineer detections for delivery and first-stage execution
+      - Balance coverage against false positives for high-volume email and web activity
+    theory: |
+      **Initial access** is the tactic by which an attacker first gets into an environment, and because so many
+      intrusions begin with **phishing**, detecting this stage well pays off disproportionately: catching an
+      attacker at delivery or first execution stops the whole chain before persistence or lateral movement. The
+      challenge is that the raw material (email and web traffic) is enormous and almost entirely legitimate, so
+      detection engineering here is as much about controlling false positives as about coverage. The data sources
+      are email security logs (sender, authentication results such as SPF/DKIM/DMARC, attachment and URL
+      verdicts), web proxy logs (what links were clicked and where they led), and endpoint telemetry (what the
+      opened attachment or downloaded file actually did).
+
+      Effective detections target the **behaviours**, not just known-bad indicators which rotate quickly. At
+      **delivery**, signals include messages failing sender authentication, display-name spoofing of executives,
+      newly registered sender domains, and attachments of risky types or with macros. At **click/first stage**,
+      the highest-value detections sit on the endpoint: an Office application spawning a script interpreter
+      (`winword.exe` launching `powershell.exe`), a document process writing and executing a file, a browser
+      download immediately executing, or a LNK or ISO file launching a hidden payload. These behavioural
+      detections survive indicator churn because they catch the mechanism of the lure rather than a specific file
+      hash. Correlating a suspicious email with a subsequent endpoint behaviour on the recipient's host is a
+      powerful, high-confidence signal.
+
+      The engineering discipline is **tuning for a noisy domain**. A rule that fires on every macro-enabled
+      document will drown the SOC, so detections are scoped (unexpected parent-child process relationships,
+      execution from temporary paths, external senders combined with risky actions) and enriched (was the sender
+      external, was the domain newly registered, did the user actually interact). Coverage is measured against the
+      initial-access techniques in ATT&CK, and gaps (for example no detection for malicious OneNote or container
+      files) are prioritised by what current threat intelligence shows attackers using. The goal is a small set
+      of high-confidence, behaviour-based detections that catch the lure's mechanics while leaving ordinary email
+      and browsing unflagged.
+    examples:
+      - title: Where to detect initial access
+        body: |
+          delivery  -> email logs: SPF/DKIM/DMARC fails, display-name spoof, new domain, risky attachment
+          first stage -> endpoint: winword.exe -> powershell.exe, doc writes+runs a file, LNK/ISO launches payload
+          correlate suspicious email + later endpoint behaviour on recipient -> high confidence.
+      - title: Behaviour over indicators
+        body: |
+          hash/domain blocklist -> rotates fast, misses the next variant
+          behaviour (Office spawns script interpreter) -> catches the mechanism regardless of the file
+          -> prefer behavioural detections, enrich to cut false positives.
+    exercise:
+      title: Engineer initial-access detections
+      environment: A described environment with email, proxy and endpoint telemetry (or a scenario)
+      tools: [A scenario or sample email/endpoint events, the ATT&CK reference, a document, a notes file]
+      steps:
+        - Identify the data sources that reveal phishing delivery and first-stage execution.
+        - Write a delivery-stage detection idea (for example external sender failing DMARC with a macro attachment).
+        - Write an endpoint first-stage detection idea (for example an Office app spawning a script interpreter).
+        - Explain why behaviour-based detections outlast indicator-based ones for this tactic.
+        - Describe how you would correlate a suspicious email with later endpoint activity for higher confidence.
+        - Propose one tuning or enrichment step to keep false positives manageable in this high-volume domain.
+      deliverable: A set of initial-access detection ideas across delivery and first stage, a correlation approach, and a tuning or enrichment plan to control false positives.
+    expected_outcome: >
+      You can identify the telemetry for initial access and phishing, engineer behaviour-based detections for
+      delivery and first-stage execution, correlate email and endpoint signals, and tune for a high-volume domain.
+    quiz:
+      - prompt: Detecting an attacker at initial access is high value because it
+        options:
+          - Is the easiest stage
+          - Stops the attack chain before persistence and lateral movement develop
+          - Requires no data
+          - Only matters after data theft
+        answer: 1
+        explanation: Catching delivery or first execution prevents the whole later chain.
+      - prompt: A high-value endpoint signal for a successful phishing lure is
+        options:
+          - A normal system update
+          - An Office application spawning a script interpreter such as PowerShell
+          - A user reading email
+          - A scheduled backup
+        answer: 1
+        explanation: Office spawning a script interpreter is a classic first-stage execution behaviour.
+      - prompt: Behaviour-based detections are preferred for initial access because
+        options:
+          - They never fire
+          - They catch the mechanism of the lure and survive the fast churn of file hashes and domains
+          - Indicators never change
+          - They need no tuning
+        answer: 1
+        explanation: Behaviours persist while specific indicators rotate quickly, so they catch new variants.
+      - prompt: The main engineering challenge for initial-access detection is
+        options:
+          - There is no relevant data
+          - Email and web traffic are huge and mostly legitimate, so controlling false positives is as important as coverage
+          - Attackers never phish
+          - Endpoints have no logs
+        answer: 1
+        explanation: The domain is high-volume and benign-heavy, so false-positive control is central.

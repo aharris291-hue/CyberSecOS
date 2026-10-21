@@ -1059,3 +1059,101 @@ lessons:
           - A type of malware
         answer: 1
         explanation: Execution policy prevents accidental script runs but is easily bypassed, so it is not a security control.
+  - slug: win-kerberos-attacks
+    title: Kerberos Attacks and Their Detection
+    order: 13
+    difficulty: advanced
+    summary: Understand how Kerberos authentication works in Active Directory and the common attacks against it (Kerberoasting, AS-REP roasting, golden and silver tickets) and how to detect them.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.1", "sc200:2", "cysa:1.2"]
+    learning_objectives:
+      - Explain how Kerberos authentication issues and uses tickets in Active Directory
+      - Describe Kerberoasting, AS-REP roasting and forged-ticket attacks
+      - Identify log evidence and defences for each attack
+    theory: |
+      **Kerberos** is the authentication protocol at the heart of Active Directory, and understanding its ticket
+      flow is the key to spotting attacks on it. When a user logs on, they get a **ticket-granting ticket (TGT)**
+      from the domain controller's Key Distribution Center. To reach a service, they present the TGT and receive
+      a **service ticket (TGS)** encrypted with the service account's password hash. This design means a service
+      ticket's encryption is only as strong as the service account's password, which is the crack through which
+      several attacks reach.
+
+      The main attacks follow from that. **Kerberoasting** requests service tickets for accounts with a Service
+      Principal Name and then cracks them offline: because the ticket is encrypted with the service account's
+      password hash, a weak or non-rotated service-account password falls quickly, with no further contact with
+      the domain controller to alert defenders. **AS-REP roasting** targets accounts that do not require
+      pre-authentication, letting an attacker request material that can likewise be cracked offline. The most
+      severe are forged tickets: a **golden ticket** is a forged TGT made with the stolen KRBTGT account hash,
+      granting arbitrary access across the domain, and a **silver ticket** is a forged service ticket for a
+      single service made with that service's hash. These require the attacker to have already compromised key
+      hashes, so they are deep-persistence and privilege-escalation techniques, not initial access.
+
+      Detection combines **logs and hygiene**. Event ID 4769 (a service ticket was requested) is the primary
+      signal for Kerberoasting, especially a burst of requests using weak encryption types (RC4) from one
+      account. Anomalous ticket lifetimes, tickets for accounts that should not exist, and mismatches between a
+      ticket and normal logon behaviour hint at forgery. The strongest defences are preventive: long, randomly
+      generated and regularly rotated service-account passwords (or group-managed service accounts), disabling
+      RC4, protecting and rotating the KRBTGT hash, and limiting which accounts have SPNs. For the analyst, the
+      lesson is that Kerberos attacks are quiet by design, so baselining normal ticket activity and watching 4769
+      patterns is what turns them visible.
+    examples:
+      - title: Kerberos ticket flow
+        body: |
+          logon -> TGT from KDC (domain controller)
+          need service -> present TGT -> TGS service ticket, encrypted with SERVICE ACCOUNT hash
+          weak point: ticket strength = service account password strength.
+      - title: The attacks and their signals
+        body: |
+          Kerberoasting   -> request TGS for SPN accounts, crack offline  (Event 4769, RC4 burst)
+          AS-REP roasting -> accounts w/o pre-auth, crack offline
+          golden ticket   -> forged TGT with stolen KRBTGT hash (domain-wide)
+          silver ticket   -> forged TGS with one service's hash (single service)
+    exercise:
+      title: Analyse Kerberos attacks and plan detection
+      environment: A described AD environment with sample security logs (or a scenario)
+      tools: [A scenario or sample 4769/4768 events, a document, a notes file]
+      steps:
+        - Explain the Kerberos ticket flow (TGT then service ticket) and why a service ticket's strength depends on the service account password.
+        - Describe how Kerberoasting works and why it can run without alerting the domain controller further.
+        - Review sample events and identify a pattern consistent with Kerberoasting (burst of 4769, RC4 encryption).
+        - Explain the difference between a golden ticket and a silver ticket and what each requires the attacker to already hold.
+        - Recommend at least three preventive defences (service-account password hygiene, disabling RC4, KRBTGT rotation).
+        - State one forged-ticket indicator an analyst could watch for in logs.
+      deliverable: A Kerberos-attack analysis identifying a Kerberoasting pattern in sample logs, a golden-versus-silver comparison, and a prioritised list of preventive defences plus one forgery indicator.
+    expected_outcome: >
+      You can explain Kerberos ticketing, describe Kerberoasting, AS-REP roasting and forged-ticket attacks,
+      recognise their log evidence, and recommend the service-account and KRBTGT defences that counter them.
+    quiz:
+      - prompt: Kerberoasting succeeds against service accounts because
+        options:
+          - Kerberos has no encryption
+          - A service ticket is encrypted with the service account's password hash, so a weak password cracks offline
+          - Domain controllers ignore service tickets
+          - It needs no credentials at all
+        answer: 1
+        explanation: The ticket is encrypted with the service-account hash, so weak passwords fall to offline cracking.
+      - prompt: A golden ticket is forged using
+        options:
+          - Any user's password
+          - The stolen KRBTGT account hash, granting domain-wide access
+          - A public certificate
+          - A firewall rule
+        answer: 1
+        explanation: A golden ticket is a forged TGT made with the KRBTGT hash, giving broad domain access.
+      - prompt: The primary log event for spotting Kerberoasting is
+        options:
+          - A failed logon (4625)
+          - A service-ticket request (4769), especially a burst using RC4
+          - A file deletion
+          - A reboot event
+        answer: 1
+        explanation: Event 4769 records service-ticket requests; a burst with weak RC4 encryption suggests roasting.
+      - prompt: A strong preventive defence against Kerberoasting is
+        options:
+          - Disabling all logging
+          - Long, randomly generated, regularly rotated service-account passwords (or gMSAs) and disabling RC4
+          - Giving every account an SPN
+          - Shortening ticket lifetimes only
+        answer: 1
+        explanation: Strong, rotated service-account passwords and disabling RC4 make offline cracking infeasible.

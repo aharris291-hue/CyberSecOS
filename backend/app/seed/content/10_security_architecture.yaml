@@ -1134,3 +1134,102 @@ lessons:
           - Because it never blocks
         answer: 1
         explanation: Monitoring first reveals legitimate flows so enforcement does not interrupt normal work or breed workarounds.
+  - slug: arch-secure-cloud
+    title: Secure Cloud Architecture
+    order: 13
+    difficulty: intermediate
+    summary: Design cloud environments securely, covering account and network structure, identity as the perimeter, guardrails and landing zones, and the shared-responsibility model.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:3.1", "sc900:4", "cysa:1.1"]
+    learning_objectives:
+      - Explain how cloud changes the architectural perimeter to identity
+      - Design account, network and guardrail structure for a cloud environment
+      - Apply landing zones and preventive guardrails to enforce security at scale
+    theory: |
+      Securing a cloud environment is less about firewalls at an edge and more about **structure and identity**.
+      In the cloud the traditional network perimeter dissolves: resources are reachable over the provider's APIs,
+      and **identity becomes the primary perimeter**, so who can do what, enforced by least-privilege IAM, matters
+      more than where a packet comes from. Good cloud architecture starts by organising resources into separate
+      **accounts or subscriptions** (for example production, development, and shared services) so that a
+      compromise or mistake in one is contained and so that billing, logging and policy can be applied cleanly at
+      boundaries. This account structure is the cloud equivalent of segmentation and is one of the most
+      consequential early decisions.
+
+      On top of that structure sit **guardrails**. Rather than relying on every team to configure security
+      correctly, mature cloud architecture uses preventive policy (service control policies, Azure Policy,
+      organisation policies) to make insecure configurations impossible: blocking public storage buckets,
+      requiring encryption, restricting which regions can be used, and denying the disabling of logging. A
+      **landing zone** is a pre-built, secured foundation, accounts, networking, identity, logging and guardrails
+      configured to a baseline, so new workloads start secure by default instead of each reinventing it. This
+      shifts security left into the platform, where it scales, instead of depending on per-workload vigilance.
+
+      All of this is designed around the **shared-responsibility model**: the provider secures the cloud
+      (physical, hypervisor, managed-service internals) and the customer secures what they put in it
+      (configuration, identity, data, access). Cloud-native architecture therefore emphasises the customer's side:
+      centralised logging (CloudTrail, Azure Activity, audit logs) aggregated to a dedicated secured account,
+      encryption with well-managed keys, network controls (security groups, private endpoints) that keep data
+      paths private, and continuous posture management to catch drift. For the architect, the mindset shift is
+      from building and guarding a perimeter to defining a secure structure and letting automated guardrails and
+      identity enforce it everywhere, because in an environment that changes by API call every minute, only
+      automated, preventive design keeps pace.
+    examples:
+      - title: Identity as the perimeter
+        body: |
+          on-prem: guard the network edge
+          cloud: resources reachable via API -> IDENTITY is the perimeter
+          least-privilege IAM (who can do what) > where the packet came from.
+      - title: Structure + guardrails + landing zone
+        body: |
+          separate accounts (prod/dev/shared) -> blast-radius containment
+          preventive guardrails (SCPs/Azure Policy): no public buckets, must encrypt, cannot disable logging
+          landing zone: pre-secured foundation -> new workloads start secure by default.
+    exercise:
+      title: Design a secure cloud foundation
+      environment: A described organisation moving workloads to a cloud provider (or a scenario)
+      tools: [A scenario, a cloud architecture diagram or notes file, a document]
+      steps:
+        - Explain why identity rather than network location is the primary perimeter in the cloud.
+        - Propose an account or subscription structure and justify how it contains blast radius.
+        - Name at least three preventive guardrails you would enforce and the risk each removes.
+        - Explain what a landing zone is and how it makes new workloads secure by default.
+        - Map two example responsibilities to the provider versus the customer under shared responsibility.
+        - Describe how centralised logging and posture management fit into the design.
+      deliverable: A secure cloud foundation design with an account structure, a guardrail set, a landing-zone rationale, a shared-responsibility mapping, and a logging and posture approach.
+    expected_outcome: >
+      You can design a secure cloud foundation around identity, account structure, preventive guardrails and
+      landing zones, and align it to the shared-responsibility model with centralised logging and posture
+      management.
+    quiz:
+      - prompt: In cloud architecture the primary security perimeter shifts to
+        options:
+          - The physical data centre door
+          - Identity and least-privilege access, since resources are reachable over provider APIs
+          - The office firewall
+          - The employee badge
+        answer: 1
+        explanation: With API-reachable resources, who can do what (identity) becomes the main perimeter.
+      - prompt: Separating workloads into different cloud accounts or subscriptions mainly provides
+        options:
+          - Faster networking
+          - Blast-radius containment plus clean boundaries for logging, billing and policy
+          - Cheaper storage only
+          - A single point of failure
+        answer: 1
+        explanation: Account separation contains compromise and gives natural policy and logging boundaries.
+      - prompt: A preventive guardrail (for example a service control policy) works by
+        options:
+          - Alerting after a breach
+          - Making insecure configurations impossible, such as blocking public buckets or forbidding disabling logging
+          - Encrypting employee laptops
+          - Replacing identity
+        answer: 1
+        explanation: Guardrails prevent insecure actions up front rather than detecting them afterwards.
+      - prompt: Under the shared-responsibility model, the customer is responsible for
+        options:
+          - The physical hardware and hypervisor
+          - Configuration, identity, data and access of what they deploy
+          - The provider's data-centre security
+          - Nothing
+        answer: 1
+        explanation: The provider secures the cloud; the customer secures their configuration, identity and data in it.

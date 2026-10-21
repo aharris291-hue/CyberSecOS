@@ -1136,3 +1136,99 @@ lessons:
           - The colour of dashboards
         answer: 1
         explanation: Knowing the pipeline tells you how complete and timely the data is, and how much to trust an absence of alerts.
+  - slug: siem-attack-mapping
+    title: Mapping SIEM Detections to MITRE ATT&CK
+    order: 13
+    difficulty: intermediate
+    summary: Use the MITRE ATT&CK framework to organise SIEM detections by adversary technique, measure coverage, and find the gaps where no detection exists.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.4", "sc200:2", "cysa:4.1"]
+    learning_objectives:
+      - Explain the structure of MITRE ATT&CK (tactics, techniques, sub-techniques)
+      - Map existing SIEM detections to ATT&CK techniques
+      - Build a coverage view and identify the most important gaps
+    theory: |
+      A SIEM accumulates dozens or hundreds of detection rules over time, and without a framework it is hard to
+      answer a simple question: **what can we actually detect?** **MITRE ATT&CK** is the common language that
+      answers it. It organises real-world adversary behaviour into **tactics** (the attacker's goal at a stage,
+      such as Initial Access, Persistence, or Exfiltration) and, under each, **techniques** and
+      **sub-techniques** (the specific ways they achieve it, such as Phishing or Scheduled Task). Because it is
+      based on observed behaviour rather than specific tools, it gives the SOC a stable way to describe both what
+      attackers do and what the SIEM can see.
+
+      **Mapping** detections to ATT&CK means tagging each rule with the technique or techniques it detects. A rule
+      that fires on Office spawning PowerShell maps to execution and defense-evasion techniques; a rule on a burst
+      of Kerberos service-ticket requests maps to credential access. Once every rule carries its ATT&CK tags, the
+      SIEM's coverage can be laid over the ATT&CK matrix as a heat map, showing at a glance which techniques have
+      strong detection, which have weak or single detections, and which are entirely dark. This turns a pile of
+      rules into a picture of defensive posture that a manager, a hunter and an auditor can all read.
+
+      The value is in the **gaps and priorities**. Not all techniques matter equally: coverage should be weighted
+      toward the tactics and techniques most relevant to the organisation's threat model and most commonly used by
+      the actors that target its sector, informed by threat intelligence. A coverage map shows where to invest:
+      building a detection for a high-priority technique that is currently dark buys more risk reduction than a
+      fifth rule for an already-covered one. It also guards against a false sense of security, where a hundred
+      rules all cluster on a few easy techniques while whole tactics go unwatched. For the analyst, ATT&CK tags
+      also speed investigation: an alert's technique immediately suggests what the attacker was trying to do and
+      what to look for next.
+    examples:
+      - title: ATT&CK structure
+        body: |
+          tactic (goal)      -> Credential Access
+          technique (how)    -> T1558 Steal or Forge Kerberos Tickets
+          sub-technique      -> T1558.003 Kerberoasting
+          behaviour-based, tool-agnostic -> stable common language.
+      - title: Coverage heat map
+        body: |
+          tag every rule with its technique(s) -> overlay on ATT&CK matrix
+          strong / weak / dark per technique
+          invest in a DARK high-priority technique before a 5th rule on a covered one.
+    exercise:
+      title: Build an ATT&CK coverage map for a SIEM
+      environment: A list of described SIEM detection rules and a target threat model (or a scenario)
+      tools: [A scenario or sample rule list, the ATT&CK matrix reference, a document, a notes file]
+      steps:
+        - Explain the difference between an ATT&CK tactic, technique and sub-technique with an example.
+        - Map at least four described detection rules to the ATT&CK techniques they detect.
+        - Build a simple coverage view marking which techniques are strongly, weakly, or not covered.
+        - Identify the most important gap given the described threat model and justify the choice.
+        - Propose one new detection to close that gap and name the data source it needs.
+        - Explain how ATT&CK tags on an alert speed up an analyst's investigation.
+      deliverable: An ATT&CK coverage map for several rules, a prioritised top gap with justification, and a proposed detection to close it with its data source.
+    expected_outcome: >
+      You can map SIEM detections to MITRE ATT&CK, build a coverage view that shows strong, weak and dark
+      techniques, and prioritise the gaps that most reduce risk given a threat model.
+    quiz:
+      - prompt: In MITRE ATT&CK, a tactic represents
+        options:
+          - A specific malware family
+          - The adversary's goal at a stage of an attack, such as Persistence or Exfiltration
+          - A firewall rule
+          - A single log source
+        answer: 1
+        explanation: Tactics are the adversary's goals; techniques are the specific ways they achieve them.
+      - prompt: Mapping SIEM rules to ATT&CK lets a SOC
+        options:
+          - Delete all logs
+          - See which adversary techniques it can and cannot detect, as a coverage picture
+          - Avoid writing detections
+          - Encrypt its rules
+        answer: 1
+        explanation: Tagging rules by technique produces a coverage map of detectable versus dark techniques.
+      - prompt: When prioritising which detection gap to close first, you should favour
+        options:
+          - Any random technique
+          - A high-priority technique for your threat model that currently has no detection
+          - A technique already covered by several rules
+          - The technique with the longest name
+        answer: 1
+        explanation: Closing a dark, high-priority technique reduces more risk than adding redundant coverage.
+      - prompt: A risk of ignoring ATT&CK coverage mapping is that
+        options:
+          - Rules become too fast
+          - Many rules cluster on a few easy techniques while whole tactics go unwatched, giving false confidence
+          - Logs stop arriving
+          - Analysts work too efficiently
+        answer: 1
+        explanation: Without a coverage view, detections pile up on easy techniques and leave blind spots.
