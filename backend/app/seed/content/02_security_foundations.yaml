@@ -1079,3 +1079,197 @@ lessons:
           - A type of malware
         answer: 1
         explanation: Compensating controls provide equivalent protection when the preferred control cannot be implemented.
+  - slug: sec-cryptographic-solutions
+    title: Choosing the Right Cryptographic Solution
+    order: 13
+    difficulty: intermediate
+    summary: Go beyond crypto basics to choose the right tool for each goal, whether symmetric versus asymmetric, hashing versus encryption, or protecting data at rest, in transit and in use.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:1.4", "secplus:4.1", "sc900:3"]
+    learning_objectives:
+      - Match a cryptographic tool to the security goal it achieves
+      - Distinguish confidentiality, integrity and authenticity and the primitives behind each
+      - Explain how data is protected at rest, in transit and in use
+    theory: |
+      Cryptography is not one thing but a toolbox, and the common mistake is reaching for the wrong tool. The
+      first question is always **what goal** you are trying to achieve. For **confidentiality** (keeping data
+      secret) you use **encryption**: symmetric encryption like AES when the same party or a shared key protects
+      bulk data, and asymmetric encryption like RSA or elliptic-curve when two parties who do not share a secret
+      need to communicate, typically to exchange a symmetric key. For **integrity** (proving data has not
+      changed) you use a **hash** such as SHA-256, which is one-way and not encryption at all. For **authenticity
+      and non-repudiation** (proving who sent something) you use **digital signatures**, which combine hashing
+      with the sender's private key so anyone can verify with the public key.
+
+      These primitives combine into the solutions seen every day. **TLS** uses asymmetric cryptography to
+      authenticate the server and agree a key, then symmetric encryption for speed on the bulk traffic.
+      **Password storage** never uses reversible encryption; it uses a slow, salted hash (bcrypt, Argon2) so a
+      stolen database cannot be reversed. **Code signing** and **document signing** use digital signatures so a
+      recipient can trust origin and integrity. Recognising which goal each solution serves is what lets an
+      analyst or architect judge whether a design is sound: encrypting a password database, for instance, is a
+      red flag because the goal there is one-way verification, not recoverable secrecy.
+
+      Finally, data must be protected in three **states**, and each needs a different approach. **At rest** (on
+      disk) is protected by full-disk or database encryption and good key management. **In transit** (on the
+      network) is protected by TLS or a VPN. **In use** (in memory, being processed) is the hardest and uses
+      newer techniques like confidential computing and enclaves. Key management underpins all of it: the strength
+      of any cryptosystem rests on keys being generated well, stored safely (often in an HSM), rotated, and
+      destroyed when retired, because a leaked key defeats even perfect algorithms.
+    examples:
+      - title: Goal -> tool
+        body: |
+          confidentiality -> encryption (AES symmetric / RSA-ECC asymmetric)
+          integrity        -> hash (SHA-256, one-way, NOT encryption)
+          authenticity     -> digital signature (hash + private key, verify with public)
+          password storage -> slow salted hash (bcrypt/Argon2), never reversible encryption.
+      - title: Three states of data
+        body: |
+          at rest    -> full-disk/database encryption + key management
+          in transit -> TLS / VPN
+          in use     -> confidential computing / enclaves (hardest)
+          keys underpin all: generate well, store in HSM, rotate, destroy.
+    exercise:
+      title: Pick cryptographic solutions for a set of goals
+      environment: A list of described security goals and a system to protect (or a scenario)
+      tools: [A scenario, a document, a notes file]
+      steps:
+        - For a goal of keeping a file secret between two parties with no shared key, choose the primitive and explain why.
+        - For a goal of proving a downloaded file was not altered, choose the primitive and explain why.
+        - For a goal of proving who signed a document, choose the primitive and explain why.
+        - Explain why a password database must use a salted slow hash and not reversible encryption.
+        - Map a described system's data to the three states and name the protection for each.
+        - Identify one weak choice in a described design (for example encrypting passwords) and correct it.
+      deliverable: A goal-to-primitive mapping for several goals, a three-states protection plan for one system, and a corrected weak cryptographic choice with justification.
+    expected_outcome: >
+      You can match cryptographic primitives to confidentiality, integrity and authenticity goals, explain how
+      data is protected at rest, in transit and in use, and spot a design that uses the wrong cryptographic tool.
+    quiz:
+      - prompt: To prove a downloaded file has not been altered you would use
+        options:
+          - Symmetric encryption
+          - A cryptographic hash such as SHA-256
+          - A longer password
+          - A firewall rule
+        answer: 1
+        explanation: A hash provides integrity; comparing hashes shows whether the file changed.
+      - prompt: Passwords should be stored using
+        options:
+          - Reversible AES encryption
+          - A salted, slow hash such as bcrypt or Argon2
+          - Plain text for speed
+          - A digital certificate
+        answer: 1
+        explanation: Password verification needs a one-way salted slow hash, not recoverable encryption.
+      - prompt: TLS uses asymmetric cryptography mainly to
+        options:
+          - Encrypt all bulk traffic because it is faster
+          - Authenticate the server and agree a symmetric key, which then protects the bulk traffic
+          - Store passwords
+          - Replace hashing
+        answer: 1
+        explanation: Asymmetric crypto authenticates and exchanges a key; symmetric crypto then handles bulk data for speed.
+      - prompt: Protecting data in use (being processed in memory) is addressed by
+        options:
+          - Full-disk encryption
+          - TLS
+          - Confidential computing and enclaves
+          - Longer hashes
+        answer: 2
+        explanation: Data in use is protected by techniques like confidential computing; disk encryption and TLS cover rest and transit.
+  - slug: sec-mobile-byod
+    title: Mobile Device and BYOD Security
+    order: 14
+    difficulty: beginner
+    summary: Understand the security challenges of mobile devices and bring-your-own-device programmes, the deployment models, and how mobile device management enforces policy without owning the device.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:3.1", "secplus:4.1", "sc900:3"]
+    learning_objectives:
+      - Explain the security risks specific to mobile devices
+      - Compare BYOD, corporate-owned and other deployment models
+      - Describe how MDM and containerisation enforce policy and protect data
+    theory: |
+      Mobile devices are now primary work tools, and they break the assumptions of traditional endpoint security:
+      they leave the office, join untrusted networks, mix personal and work data, and are easily lost or stolen.
+      The core risks follow from this. **Loss and theft** put data at physical risk, so encryption and remote wipe
+      matter. **Untrusted networks and apps** expose devices to interception and malicious software. **Mixing
+      personal and work data** on one device creates privacy and data-leakage tension, especially when the device
+      belongs to the employee. And mobile platforms have their own threats, from malicious apps to
+      jailbreaking/rooting that removes built-in protections.
+
+      Organisations choose a **deployment model** that trades control against convenience and cost. **BYOD** (bring
+      your own device) lets employees use personal devices, which is cheap and popular but gives the organisation
+      the least control and the most privacy tension. **COPE** (corporate-owned, personally enabled) gives staff a
+      company device they may also use personally, balancing control with usability. **COBO** (corporate-owned,
+      business only) maximises control for sensitive roles. **CYOD** (choose your own device) lets staff pick from
+      an approved, managed list. The right model depends on the sensitivity of the data and the organisation's
+      risk tolerance, and the choice drives everything else about how the devices are secured.
+
+      The enforcement technology is **mobile device management (MDM)**, now often part of broader unified endpoint
+      management. MDM lets the organisation push policy to enrolled devices: require a passcode and encryption,
+      restrict risky settings, deploy and update managed apps, and remotely lock or wipe a lost device. For BYOD,
+      the key technique is **containerisation**, keeping work data in a managed, encrypted container separate from
+      personal data, so the organisation can wipe only the work container without touching the employee's photos
+      and messages, resolving much of the privacy tension. For the analyst and architect, the goal is to enforce
+      the security baseline (encryption, authentication, patch level, no jailbreak) and protect corporate data
+      regardless of who owns the hardware, while respecting the personal boundary that BYOD inevitably creates.
+    examples:
+      - title: Deployment models
+        body: |
+          BYOD  -> personal device, least org control, most privacy tension (cheap, popular)
+          COPE  -> company device, personal use allowed (balanced)
+          COBO  -> company device, business only (max control, sensitive roles)
+          CYOD  -> pick from an approved managed list
+      - title: MDM + containerisation
+        body: |
+          MDM: push policy (passcode, encryption, managed apps, remote lock/wipe)
+          BYOD container: work data in a managed encrypted container, separate from personal
+          -> wipe only the work container; employee's personal data untouched.
+    exercise:
+      title: Design a mobile security approach
+      environment: A described organisation with roles of differing data sensitivity (or a scenario)
+      tools: [A scenario, a mobile-policy template, a document, a notes file]
+      steps:
+        - List the security risks that make mobile devices different from fixed endpoints.
+        - Recommend a deployment model for a general workforce and justify the control-versus-privacy trade-off.
+        - Recommend a different model for a role handling highly sensitive data and say why.
+        - Describe the baseline policy MDM should enforce (passcode, encryption, patch level, no jailbreak).
+        - Explain how containerisation resolves the privacy tension in a BYOD programme.
+        - State what should happen to corporate data when a BYOD device is lost or the employee leaves.
+      deliverable: A mobile security approach with deployment-model choices for two role types, an MDM baseline policy, and a BYOD data-protection and offboarding plan.
+    expected_outcome: >
+      You can explain mobile-specific risks, compare BYOD, COPE, COBO and CYOD, and describe how MDM and
+      containerisation enforce a security baseline and protect corporate data while respecting personal privacy.
+    quiz:
+      - prompt: Compared with corporate-owned models, BYOD gives the organisation
+        options:
+          - More control over the device
+          - The least control and the most privacy tension, since the device is the employee's
+          - No security options at all
+          - Full ownership of personal data
+        answer: 1
+        explanation: BYOD trades control and privacy for cost and convenience; the device belongs to the employee.
+      - prompt: Containerisation on a BYOD device lets the organisation
+        options:
+          - Read the employee's personal photos
+          - Keep work data in a managed, encrypted container that can be wiped without touching personal data
+          - Prevent all personal use
+          - Avoid any policy
+        answer: 1
+        explanation: A separate work container can be wiped alone, protecting corporate data and personal privacy.
+      - prompt: A primary mobile risk that drives encryption and remote wipe is
+        options:
+          - Devices never leave the office
+          - Loss or theft, which puts data at physical risk
+          - They cannot run apps
+          - They have no network
+        answer: 1
+        explanation: Mobile devices are easily lost or stolen, so encryption and remote wipe protect the data.
+      - prompt: Mobile device management (MDM) primarily lets an organisation
+        options:
+          - Replace the device hardware
+          - Push and enforce policy (passcode, encryption, managed apps, remote lock/wipe) on enrolled devices
+          - Choose the employee's personal apps
+          - Disable the cellular network
+        answer: 1
+        explanation: MDM enforces the security baseline and can lock or wipe enrolled devices remotely.

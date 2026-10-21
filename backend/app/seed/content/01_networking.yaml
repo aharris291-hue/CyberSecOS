@@ -1020,3 +1020,196 @@ lessons:
         options: [The full content, The destination and metadata but not the encrypted content, Nothing at all, The user's password]
         answer: 1
         explanation: Without inspection the proxy sees the destination and metadata but not the encrypted payload.
+  - slug: net-ids-ips
+    title: Intrusion Detection and Prevention Systems
+    order: 13
+    difficulty: intermediate
+    summary: Understand how network IDS and IPS work, the difference between signature and anomaly detection, where they sit in the network, and how to read and tune their alerts.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:3.2", "secplus:4.4", "cysa:1.1"]
+    learning_objectives:
+      - Explain how an IDS detects and an IPS blocks malicious network activity
+      - Contrast signature-based and anomaly-based detection and their trade-offs
+      - Read IDS/IPS alerts and reason about placement and false positives
+    theory: |
+      An **intrusion detection system (IDS)** watches network traffic and raises an alert when it sees something
+      that matches a known attack or looks abnormal; an **intrusion prevention system (IPS)** does the same but
+      sits **inline** so it can also drop or reset the connection. The difference is placement and authority: an
+      IDS observes a copy of traffic (from a SPAN port or tap) and is purely a detection source, while an IPS is
+      in the path of the traffic and can stop an attack in real time at the cost of becoming a potential
+      bottleneck and single point of failure. Both are a core SOC data source, turning raw packets into
+      named, investigable events.
+
+      Detection works two broad ways. **Signature-based** detection matches traffic against a library of known
+      patterns, for example the byte sequence of a specific exploit or a known-bad user-agent. It is precise and
+      explains itself but is blind to anything not yet in the signature set, so it misses novel attacks.
+      **Anomaly-based** detection builds a model of normal traffic and flags deviations, for example an
+      unusual volume, protocol, or destination. It can catch new attacks but produces more false positives and is
+      harder to explain. Mature deployments use both: signatures for the known, anomaly models for the unknown,
+      with threat-intelligence feeds keeping signatures current.
+
+      For the analyst, the practical work is **triage and tuning**. Every alert carries a signature name or rule
+      id, a source and destination, and often a snippet of the matching traffic, which is where investigation
+      starts. Many alerts are **false positives** (a vulnerability scanner, a backup job, a benign tool that
+      resembles an attack), so the skill is deciding quickly whether an alert reflects real malicious activity and
+      suppressing or refining noisy rules without blinding the sensor. Placement matters too: a sensor at the
+      perimeter sees traffic entering and leaving, while one inside sees lateral movement, so understanding what a
+      given sensor can and cannot see is essential to interpreting what it reports and what it would miss.
+    examples:
+      - title: IDS versus IPS
+        body: |
+          IDS: copy of traffic (SPAN/tap) -> alert only (detection source)
+          IPS: inline -> alert + drop/reset (can stop the attack, can bottleneck)
+          same detection engine, different placement and authority.
+      - title: Signature versus anomaly
+        body: |
+          signature: matches known patterns -> precise, self-explaining, blind to novel
+          anomaly:   models normal, flags deviations -> catches new, noisier, harder to explain
+          mature sensors run both; threat intel keeps signatures current.
+    exercise:
+      title: Triage and tune IDS/IPS alerts
+      environment: A described network with an IDS/IPS and a set of sample alerts (or a scenario)
+      tools: [A scenario or sample IDS alerts, a document, a notes file]
+      steps:
+        - Explain the difference between an IDS and an IPS in placement and what each can do to traffic.
+        - Contrast signature-based and anomaly-based detection and give one attack each is better at catching.
+        - Review the sample alerts and classify at least three as likely true or false positives, with reasoning.
+        - For one likely false positive, describe how you would tune or suppress the rule without blinding the sensor.
+        - Decide where you would place a sensor to see lateral movement versus perimeter traffic and why.
+        - State one attack the current sensor would miss and what would be needed to detect it.
+      deliverable: An alert-triage note classifying several alerts true or false positive, a tuning plan for one noisy rule, a sensor-placement decision, and one identified detection gap.
+    expected_outcome: >
+      You can explain how IDS and IPS detect and respond to network attacks, contrast signature and anomaly
+      detection, triage alerts into true and false positives, and reason about sensor placement and detection
+      gaps when reading IDS/IPS output.
+    quiz:
+      - prompt: The key difference between an IDS and an IPS is that
+        options:
+          - An IDS is faster
+          - An IPS sits inline and can drop or reset malicious connections, while an IDS only observes and alerts
+          - An IDS encrypts traffic
+          - They are identical
+        answer: 1
+        explanation: An IPS is inline and can block; an IDS observes a copy of traffic and only alerts.
+      - prompt: Signature-based detection's main weakness is that it
+        options:
+          - Is always wrong
+          - Cannot detect attacks that are not yet in its signature library
+          - Needs no updates
+          - Only works on encrypted traffic
+        answer: 1
+        explanation: Signatures match known patterns, so novel attacks with no signature are missed.
+      - prompt: Anomaly-based detection is valuable because it can
+        options:
+          - Never produce false positives
+          - Flag deviations from normal and so catch attacks that have no known signature
+          - Replace all logging
+          - Decrypt traffic by itself
+        answer: 1
+        explanation: Modelling normal lets it catch novel activity, at the cost of more false positives.
+      - prompt: A perimeter IDS sensor would be least able to see
+        options:
+          - Traffic entering from the internet
+          - Traffic leaving to the internet
+          - Lateral movement between two internal hosts that never crosses the perimeter
+          - Inbound scans
+        answer: 2
+        explanation: Purely internal lateral movement never reaches the perimeter, so a perimeter sensor misses it.
+  - slug: net-dhcp-arp-attacks
+    title: DHCP, ARP and Layer 2 Attacks
+    order: 14
+    difficulty: intermediate
+    summary: Understand how DHCP and ARP work on a local network, the Layer 2 attacks that abuse them (ARP spoofing, rogue DHCP, DHCP starvation), and the switch features that defend against them.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:3.2", "secplus:4.4", "cysa:1.1"]
+    learning_objectives:
+      - Explain how DHCP assigns addresses and how ARP resolves them on a LAN
+      - Describe ARP spoofing, rogue DHCP and DHCP starvation attacks
+      - Identify switch defences such as DHCP snooping and dynamic ARP inspection
+    theory: |
+      Many attacks happen not at the perimeter but on the **local network**, at Layer 2, where two protocols that
+      assume a trusted LAN become weapons. **DHCP** hands out IP configuration: a client broadcasts a request and
+      a DHCP server replies with an address, gateway and DNS servers. **ARP** resolves an IP address to the MAC
+      address of the machine that holds it, again by broadcast, and hosts simply cache whatever answer they hear.
+      Both were designed for a cooperative local network and have no authentication, which is exactly the weakness
+      attackers exploit once they have a foothold on the LAN.
+
+      The classic attacks follow directly. **ARP spoofing** (or poisoning) is an attacker answering ARP requests
+      with its own MAC, so victims send traffic meant for the gateway or a peer to the attacker instead, enabling
+      a man-in-the-middle position to read or alter traffic. **Rogue DHCP** is an attacker running an
+      unauthorised DHCP server that answers faster than the real one, handing victims a malicious gateway or DNS
+      so their traffic is steered through the attacker. **DHCP starvation** floods the real server with requests
+      to exhaust its address pool, often as a setup for a rogue server to take over. None of these needs to defeat
+      encryption; they exploit the trust built into Layer 2, and because they are local and quiet they are easy to
+      miss without the right controls.
+
+      The defences live on the **switch**. **DHCP snooping** lets the switch learn which ports are allowed to send
+      DHCP server replies (the trusted uplink to the real server) and drop server replies from any other port,
+      killing rogue DHCP. **Dynamic ARP inspection** builds on the snooping table to validate ARP messages and
+      drop spoofed ones. **Port security** limits how many MAC addresses a port may learn, blunting starvation and
+      MAC flooding. For the analyst, the signals of these attacks are duplicate-IP or changed-MAC warnings,
+      gateway MAC addresses that suddenly change, and DHCP offers from unexpected sources, so understanding the
+      normal Layer 2 behaviour of a segment is what makes an attack on it visible. The broader lesson is that a
+      secure network hardens the access layer, not just the edge.
+    examples:
+      - title: The Layer 2 attacks
+        body: |
+          ARP spoofing   -> attacker answers ARP with its MAC -> MITM (victims send via attacker)
+          rogue DHCP     -> attacker's DHCP answers first -> malicious gateway/DNS
+          DHCP starvation-> flood requests, exhaust pool -> sets up rogue takeover
+          all exploit unauthenticated, trusting Layer 2.
+      - title: Switch defences
+        body: |
+          DHCP snooping          -> only trusted port may send DHCP server replies -> kills rogue DHCP
+          dynamic ARP inspection -> validate ARP against snooping table -> drops spoofed ARP
+          port security          -> limit MACs per port -> blunts starvation/flooding.
+    exercise:
+      title: Analyse and defend a Layer 2 segment
+      environment: A described LAN segment with sample symptoms or a packet summary (or a scenario)
+      tools: [A scenario or sample ARP/DHCP evidence, a document, a notes file]
+      steps:
+        - Explain how DHCP assigns configuration and how ARP resolves IP to MAC on a LAN.
+        - Describe ARP spoofing and how it puts an attacker in the middle of traffic.
+        - Describe rogue DHCP and DHCP starvation and how they work together.
+        - Given sample symptoms (changed gateway MAC, DHCP offer from an odd source), identify the likely attack.
+        - Recommend the switch defences that stop each attack and say what each one does.
+        - State one observable signal an analyst could monitor to catch these attacks early.
+      deliverable: A Layer 2 analysis identifying the likely attack from sample symptoms, a mapping of each attack to its switch defence, and one monitoring signal.
+    expected_outcome: >
+      You can explain DHCP and ARP on a LAN, describe ARP spoofing, rogue DHCP and DHCP starvation, and recommend
+      the switch defences (DHCP snooping, dynamic ARP inspection, port security) and signals that counter them.
+    quiz:
+      - prompt: ARP spoofing lets an attacker intercept traffic because
+        options:
+          - It breaks TLS encryption
+          - Hosts cache whatever ARP reply they hear, so a forged reply redirects traffic to the attacker
+          - It requires physical access to the server
+          - It only affects wireless
+        answer: 1
+        explanation: ARP has no authentication; hosts trust forged replies and send traffic to the attacker.
+      - prompt: A rogue DHCP server harms victims mainly by
+        options:
+          - Speeding up their connection
+          - Handing them a malicious gateway or DNS so their traffic is steered through the attacker
+          - Encrypting their disks
+          - Blocking all DHCP
+        answer: 1
+        explanation: A rogue DHCP server supplies attacker-controlled gateway and DNS settings.
+      - prompt: DHCP snooping defends a network by
+        options:
+          - Encrypting DHCP
+          - Allowing DHCP server replies only from trusted ports and dropping them from others
+          - Disabling ARP
+          - Assigning static IPs only
+        answer: 1
+        explanation: Snooping permits server replies only from the trusted uplink, stopping rogue DHCP servers.
+      - prompt: Dynamic ARP inspection relies on
+        options:
+          - A longer password
+          - The DHCP snooping binding table to validate ARP messages and drop spoofed ones
+          - Turning off the switch
+          - Encrypting ARP
+        answer: 1
+        explanation: Dynamic ARP inspection checks ARP against the snooping table and discards forged entries.

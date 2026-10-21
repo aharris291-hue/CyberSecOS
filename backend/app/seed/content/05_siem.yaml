@@ -1136,3 +1136,197 @@ lessons:
           - The colour of dashboards
         answer: 1
         explanation: Knowing the pipeline tells you how complete and timely the data is, and how much to trust an absence of alerts.
+  - slug: siem-attack-mapping
+    title: Mapping SIEM Detections to MITRE ATT&CK
+    order: 13
+    difficulty: intermediate
+    summary: Use the MITRE ATT&CK framework to organise SIEM detections by adversary technique, measure coverage, and find the gaps where no detection exists.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.4", "sc200:2", "cysa:4.1"]
+    learning_objectives:
+      - Explain the structure of MITRE ATT&CK (tactics, techniques, sub-techniques)
+      - Map existing SIEM detections to ATT&CK techniques
+      - Build a coverage view and identify the most important gaps
+    theory: |
+      A SIEM accumulates dozens or hundreds of detection rules over time, and without a framework it is hard to
+      answer a simple question: **what can we actually detect?** **MITRE ATT&CK** is the common language that
+      answers it. It organises real-world adversary behaviour into **tactics** (the attacker's goal at a stage,
+      such as Initial Access, Persistence, or Exfiltration) and, under each, **techniques** and
+      **sub-techniques** (the specific ways they achieve it, such as Phishing or Scheduled Task). Because it is
+      based on observed behaviour rather than specific tools, it gives the SOC a stable way to describe both what
+      attackers do and what the SIEM can see.
+
+      **Mapping** detections to ATT&CK means tagging each rule with the technique or techniques it detects. A rule
+      that fires on Office spawning PowerShell maps to execution and defense-evasion techniques; a rule on a burst
+      of Kerberos service-ticket requests maps to credential access. Once every rule carries its ATT&CK tags, the
+      SIEM's coverage can be laid over the ATT&CK matrix as a heat map, showing at a glance which techniques have
+      strong detection, which have weak or single detections, and which are entirely dark. This turns a pile of
+      rules into a picture of defensive posture that a manager, a hunter and an auditor can all read.
+
+      The value is in the **gaps and priorities**. Not all techniques matter equally: coverage should be weighted
+      toward the tactics and techniques most relevant to the organisation's threat model and most commonly used by
+      the actors that target its sector, informed by threat intelligence. A coverage map shows where to invest:
+      building a detection for a high-priority technique that is currently dark buys more risk reduction than a
+      fifth rule for an already-covered one. It also guards against a false sense of security, where a hundred
+      rules all cluster on a few easy techniques while whole tactics go unwatched. For the analyst, ATT&CK tags
+      also speed investigation: an alert's technique immediately suggests what the attacker was trying to do and
+      what to look for next.
+    examples:
+      - title: ATT&CK structure
+        body: |
+          tactic (goal)      -> Credential Access
+          technique (how)    -> T1558 Steal or Forge Kerberos Tickets
+          sub-technique      -> T1558.003 Kerberoasting
+          behaviour-based, tool-agnostic -> stable common language.
+      - title: Coverage heat map
+        body: |
+          tag every rule with its technique(s) -> overlay on ATT&CK matrix
+          strong / weak / dark per technique
+          invest in a DARK high-priority technique before a 5th rule on a covered one.
+    exercise:
+      title: Build an ATT&CK coverage map for a SIEM
+      environment: A list of described SIEM detection rules and a target threat model (or a scenario)
+      tools: [A scenario or sample rule list, the ATT&CK matrix reference, a document, a notes file]
+      steps:
+        - Explain the difference between an ATT&CK tactic, technique and sub-technique with an example.
+        - Map at least four described detection rules to the ATT&CK techniques they detect.
+        - Build a simple coverage view marking which techniques are strongly, weakly, or not covered.
+        - Identify the most important gap given the described threat model and justify the choice.
+        - Propose one new detection to close that gap and name the data source it needs.
+        - Explain how ATT&CK tags on an alert speed up an analyst's investigation.
+      deliverable: An ATT&CK coverage map for several rules, a prioritised top gap with justification, and a proposed detection to close it with its data source.
+    expected_outcome: >
+      You can map SIEM detections to MITRE ATT&CK, build a coverage view that shows strong, weak and dark
+      techniques, and prioritise the gaps that most reduce risk given a threat model.
+    quiz:
+      - prompt: In MITRE ATT&CK, a tactic represents
+        options:
+          - A specific malware family
+          - The adversary's goal at a stage of an attack, such as Persistence or Exfiltration
+          - A firewall rule
+          - A single log source
+        answer: 1
+        explanation: Tactics are the adversary's goals; techniques are the specific ways they achieve them.
+      - prompt: Mapping SIEM rules to ATT&CK lets a SOC
+        options:
+          - Delete all logs
+          - See which adversary techniques it can and cannot detect, as a coverage picture
+          - Avoid writing detections
+          - Encrypt its rules
+        answer: 1
+        explanation: Tagging rules by technique produces a coverage map of detectable versus dark techniques.
+      - prompt: When prioritising which detection gap to close first, you should favour
+        options:
+          - Any random technique
+          - A high-priority technique for your threat model that currently has no detection
+          - A technique already covered by several rules
+          - The technique with the longest name
+        answer: 1
+        explanation: Closing a dark, high-priority technique reduces more risk than adding redundant coverage.
+      - prompt: A risk of ignoring ATT&CK coverage mapping is that
+        options:
+          - Rules become too fast
+          - Many rules cluster on a few easy techniques while whole tactics go unwatched, giving false confidence
+          - Logs stop arriving
+          - Analysts work too efficiently
+        answer: 1
+        explanation: Without a coverage view, detections pile up on easy techniques and leave blind spots.
+  - slug: siem-log-source-onboarding
+    title: Onboarding and Validating Log Sources
+    order: 14
+    difficulty: intermediate
+    summary: Learn the engineering of getting a new log source into the SIEM correctly, covering collection, parsing, normalisation, timestamps and time zones, and validating that the data is complete and usable.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.4", "sc200:1", "cysa:4.1"]
+    learning_objectives:
+      - Describe the steps to onboard a new log source into a SIEM
+      - Explain why parsing, normalisation and correct timestamps matter
+      - Validate that an onboarded source is complete and usable for detection
+    theory: |
+      A SIEM is only as good as the data in it, and getting a new **log source** in correctly is unglamorous
+      engineering that determines whether later detection works at all. Onboarding starts with **collection**:
+      deciding how the data gets in (an agent, syslog, an API pull, a cloud event stream), ensuring the transport
+      is reliable and secure, and confirming the source is actually sending everything it should. A source that is
+      half-configured, dropping events under load, or sending only a subset of event types will quietly create
+      blind spots that no detection rule can overcome, so verifying completeness at the source is the first job.
+
+      Next comes making the data **usable**. Raw logs arrive in many formats, so **parsing** extracts the fields
+      (user, host, source IP, action) from each event, and **normalisation** maps them to a common schema so a
+      field means the same thing across sources, letting one rule or search work over many log types. Getting
+      **timestamps and time zones** right is critical and often botched: if a source logs in local time or with a
+      wrong clock, its events will sort incorrectly against others and wreck timeline analysis, so every source
+      should be normalised to a single reference (usually UTC) and its clock kept in sync. Enrichment, adding
+      context like geolocation or asset criticality, can be layered on once the basics are right. Each of these
+      steps is where silent data-quality problems creep in.
+
+      Finally, the source must be **validated** before anyone trusts it. Validation means generating known
+      activity and confirming it appears in the SIEM parsed correctly, checking that expected fields are populated
+      and not landing in a catch-all, confirming event volume matches expectations (neither suspiciously low nor
+      duplicated), and confirming timestamps line up with reality. Only after validation should detections be
+      built on the source, and ongoing **health monitoring** should alert if the source stops sending or its
+      format changes after a vendor update, which is a common cause of detections silently going dark. For the
+      analyst, the practical lesson is to never assume a log source is complete and correct: a surprising gap in
+      an investigation is often not an attacker being clever but a source that was never fully onboarded or quietly
+      broke, so knowing the state and coverage of your sources is part of reading their data.
+    examples:
+      - title: The onboarding steps
+        body: |
+          collect (agent/syslog/API/stream, reliable + complete)
+          -> parse (extract fields) -> normalise (common schema) -> fix timestamps/time zones (UTC)
+          -> enrich (geo, asset criticality) -> VALIDATE -> then build detections.
+      - title: Where it silently breaks
+        body: |
+          source drops events under load -> blind spot no rule can fix
+          wrong time zone -> events misorder -> timeline analysis wrecked
+          vendor format change -> parsing fails -> detections go dark
+          -> validate on onboarding AND monitor source health continuously.
+    exercise:
+      title: Onboard and validate a new log source
+      environment: A described new log source to bring into a SIEM (or a scenario with sample raw events)
+      tools: [A scenario or sample raw logs, a document, a notes file]
+      steps:
+        - Choose a collection method for the described source and say why it is reliable and secure.
+        - Parse a sample raw event into its key fields (user, host, source IP, action).
+        - Map those fields to a common normalised schema and explain the benefit.
+        - Identify a timestamp or time-zone issue in the sample and state how you would normalise it.
+        - Describe how you would validate the source (generate known activity, check fields, volume and times).
+        - Propose a health-monitoring check that would catch the source going dark or changing format.
+      deliverable: An onboarding plan for one source, covering collection method, a parsed and normalised sample event, a timestamp fix, a validation procedure, and a health-monitoring check.
+    expected_outcome: >
+      You can onboard a log source into a SIEM through collection, parsing, normalisation and timestamp handling,
+      validate that it is complete and correct, and monitor its health so detections do not silently go dark.
+    quiz:
+      - prompt: Normalising parsed fields to a common schema is valuable because it
+        options:
+          - Deletes old logs
+          - Makes a field mean the same thing across sources, so one rule or search works over many log types
+          - Encrypts the data
+          - Slows down the SIEM
+        answer: 1
+        explanation: A common schema lets detections and searches span many source types consistently.
+      - prompt: Getting time zones wrong on a log source mainly harms
+        options:
+          - Disk space
+          - Timeline analysis, because events sort incorrectly against other sources
+          - The network speed
+          - Password strength
+        answer: 1
+        explanation: Misaligned clocks or zones misorder events and break cross-source timelines.
+      - prompt: A source that drops events under load creates
+        options:
+          - Faster detection
+          - A silent blind spot that no detection rule can overcome
+          - Better compression
+          - Stronger encryption
+        answer: 1
+        explanation: Missing events are invisible gaps that detections built on the source cannot see past.
+      - prompt: Before building detections on a newly onboarded source you should
+        options:
+          - Assume it is correct
+          - Validate it by generating known activity and confirming it is parsed, complete and correctly timed
+          - Delete the raw logs
+          - Disable health monitoring
+        answer: 1
+        explanation: Validation confirms the source is complete and correct so detections can be trusted.
