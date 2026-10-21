@@ -1,0 +1,87 @@
+slug: lab-sec-access-review
+lesson: sec-identity-access-management
+title: Run a quarterly user access review
+pass_mark: 80
+scenario: |
+  It is the quarterly access review. You have the directory export of every account and HR's
+  list of people who left in the last four months. Policy:
+
+  - Leavers' accounts must be disabled on their leaving date.
+  - Every account must have MFA enrolled.
+  - Accounts must belong to one named person; shared accounts are not allowed.
+  - Administrator rights are for IT staff only.
+artifacts:
+- name: directory_export.csv
+  kind: csv
+  description: Every account in the directory.
+  content: |
+    username,department,status,mfa_enrolled,role,last_sign_in
+    a.berg,Finance,active,yes,standard,2026-10-19
+    b.cole,IT,active,yes,admin,2026-10-20
+    c.diaz,Sales,active,no,standard,2026-10-18
+    d.evans,IT,active,no,admin,2026-10-20
+    e.fox,HR,active,yes,standard,2026-07-02
+    f.garcia,Finance,active,yes,admin,2026-10-17
+    g.hughes,Sales,active,yes,standard,2026-10-20
+    h.ito,IT,active,yes,admin,2026-10-19
+    i.jones,Marketing,active,yes,standard,2026-09-30
+    sales.shared,Sales,active,no,standard,2026-10-20
+    j.kim,Finance,disabled,yes,standard,2026-08-11
+- name: hr_leavers.txt
+  kind: text
+  description: HR's leavers report.
+  content: |
+    HR leavers report - last 120 days
+    Employee   Leaving date
+    e.fox      2026-07-31
+    j.kim      2026-08-15
+    k.lee      2026-09-05
+tasks:
+- prompt: Which leaver still has an active account?
+  type: text
+  accepted:
+  - e.fox
+  hint: Check each leaver's status in the directory export. One leaver has no account at all.
+  explanation: e.fox left on 31 July but is still active. j.kim was disabled correctly, and k.lee's account was
+    already removed. An active leaver account is a classic way back in for a disgruntled ex-employee or an attacker.
+- prompt: Which active accounts have no MFA enrolled? List them separated by commas.
+  type: set
+  accepted:
+  - c.diaz, d.evans, sales.shared
+  hint: Filter status active and mfa_enrolled no.
+  explanation: c.diaz, d.evans and sales.shared. d.evans is an administrator without MFA, the most urgent of all.
+  verify:
+    artifact: directory_export.csv
+    op: set
+    pattern: ^([^,]+),[^,]+,active,no,
+- prompt: Which account breaks the one-person-per-account rule?
+  type: text
+  accepted:
+  - sales.shared
+  hint: Look for a name that is not a person.
+  explanation: 'sales.shared is a shared account: nobody can be held accountable for what it does, and its password
+    is known to the whole team. Replace it with named accounts (or a shared mailbox with delegated access).'
+- prompt: Which non-IT account has administrator rights?
+  type: text
+  accepted:
+  - f.garcia
+  hint: Filter role admin and compare department.
+  explanation: 'f.garcia in Finance is an admin. Unless there is a documented exception, remove the rights: admin
+    access outside IT is privilege creep.'
+  verify:
+    artifact: directory_export.csv
+    op: set
+    pattern: ^([^,]+),(?!IT,)[^,]+,active,[^,]+,admin,
+- prompt: What should the review output be?
+  type: choice
+  options:
+  - A note saying the review was completed
+  - 'A list of findings with an owner and due date for each: disable e.fox, enforce MFA on three accounts, replace
+    sales.shared, remove f.garcia''s admin rights, and evidence of each fix'
+  - Disable every account that has not signed in this week
+  - Ask HR to send the leavers list monthly and close
+  answer: 1
+  hint: An auditor will ask what was found and what was done about it.
+  explanation: An access review is only a control if its findings are actioned and evidenced. Each issue needs an
+    owner, a deadline and proof of the fix; the leaver gap also points to a broken joiner-mover-leaver process to
+    fix at the source.

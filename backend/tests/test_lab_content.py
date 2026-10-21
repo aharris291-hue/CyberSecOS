@@ -181,9 +181,9 @@ def test_siem_lab_encoded_command_decodes_to_the_answer():
     assert is_correct(_task(lab, "Decode the PowerShell"), domain)
 
 
-def test_every_course_has_at_least_two_graded_labs():
+def test_every_course_has_at_least_three_graded_labs():
     per_course = Counter(LESSONS[lab["lesson"]][0]["slug"] for lab in LABS)
-    assert min(per_course.values()) >= 2, per_course
+    assert min(per_course.values()) >= 3, per_course
 
 
 def _csv(lab: dict, name: str, sep: str = ",") -> list[dict]:
@@ -259,3 +259,77 @@ def test_mapping_lab_gaps_and_blast_radius_follow_the_data():
     assert is_correct(_task(lab, "How many of the ten required"), str(len(required) - len(gaps)))
     affected = [m for m in controls["C-06"] if m in required]
     assert is_correct(_task(lab, "Control C-06 is tested"), ", ".join(affected))
+
+
+def test_access_review_leaver_and_admin_findings_follow_the_data():
+    lab = _lab("lab-sec-access-review")
+    accounts = {r["username"]: r for r in _csv(lab, "directory_export.csv")}
+    leavers = [line.split()[0] for line in _artifact(lab, "hr_leavers.txt").splitlines() if re.match(r"^[a-z]\.\w+\s+\d{4}-", line)]
+    active_leavers = [u for u in leavers if accounts.get(u, {}).get("status") == "active"]
+    assert len(leavers) == 3 and is_correct(_task(lab, "Which leaver still has"), ", ".join(active_leavers))
+
+
+def test_ti_lab_feed_hygiene_follows_the_feed():
+    lab = _lab("lab-siem-ti-matching")
+    feed = _csv(lab, "ti_feed.csv")
+    errors = [r["indicator"] for r in feed if r["context"].startswith("Feed error")]
+    assert errors and is_correct(_task(lab, "Which feed indicator is a feed error"), errors[0])
+    live_high = {r["indicator"] for r in feed if r["confidence"] == "high" and r["expires"] > "2026-10-14"}
+    hosts = {r["host"] for r in _csv(lab, "connections.csv") if r["dest_ip"] in live_high or r["dest_domain"] in live_high}
+    assert is_correct(_task(lab, "Which hosts matched a high-confidence"), ", ".join(hosts))
+
+
+def test_custody_lab_hash_mismatch_and_gap_follow_the_log():
+    lab = _lab("lab-ir-chain-of-custody")
+    rows = [line.split() for line in _artifact(lab, "chain_of_custody.txt").splitlines() if line.startswith("EV-")]
+    recorded = {r[0]: r[-1] for r in rows if len(r[-1]) == 16}
+    today = {m.group(2): m.group(1)[:16] for m in re.finditer(r"^([0-9a-f]{64})\s+/evidence/(EV-\d+)_", _artifact(lab, "verification.txt"), re.M)}
+    changed = [ev for ev, h in today.items() if recorded[ev] != h]
+    assert is_correct(_task(lab, "Which evidence item's hash"), ", ".join(changed))
+    holder, gaps = {}, []
+    for line in _artifact(lab, "chain_of_custody.txt").splitlines():
+        m = re.search(r"^(EV-\d+) .*\s(?:Transferred|Checked out for analysis|Returned)\s+(\S+)\s+(\S+)\s+\w{16}$", line)
+        if m:
+            ev, src, dst = m.groups()
+            if holder.get(ev, src) != src:
+                gaps.append(src)
+            holder[ev] = dst
+        elif (m := re.search(r"^(EV-\d+) .*\s-\s+(\S+)\s+\w{16}$", line)):
+            holder[m.group(1)] = m.group(2)
+    assert gaps and is_correct(_task(lab, "Which person returned"), ", ".join(gaps))
+
+
+def test_coverage_lab_gaps_follow_the_library_and_results():
+    lab = _lab("lab-de-attack-coverage")
+    library = {r["technique"]: r["rule"] for r in _csv(lab, "detection_library.csv", sep="|")}
+    results = {r["technique"]: r["result"] for r in _csv(lab, "emulation_results.csv", sep="|")}
+    missed = [t for t, res in results.items() if res == "no alert"]
+    failing = [t for t in missed if t in library]
+    assert is_correct(_task(lab, "Which technique has a rule"), ", ".join(failing))
+    assert is_correct(_task(lab, "Which emulated techniques have no rule"), ", ".join(t for t in missed if t not in library))
+    untested = [rule for t, rule in library.items() if t not in results]
+    assert is_correct(_task(lab, "Which rule in the library was not exercised"), ", ".join(untested))
+
+
+def test_zero_trust_lab_decisions_follow_the_policy():
+    lab = _lab("lab-arch-zero-trust-policy")
+    rows = _csv(lab, "access_requests.csv", sep="|")
+
+    def allowed(r):
+        return (
+            r["group"] == "Finance"
+            and r["device"] == "managed"
+            and r["device_state"] == "compliant"
+            and r["mfa_method"] in {"fido2", "hello"}
+            and r["signin_risk"] != "high"
+        )
+
+    assert is_correct(_task(lab, "Which requests would the policy allow"), ", ".join(r["request"] for r in rows if allowed(r)))
+    blocked_office = [r for r in rows if r["network"] == "office" and not allowed(r)]
+    assert is_correct(_task(lab, "How many requests come from the office"), str(len(blocked_office)))
+
+
+def test_persistence_lab_counts_each_mechanism_once():
+    lab = _lab("lab-linux-persistence-hunt")
+    keys = {m.group(1) for m in re.finditer(r'key="(\w+)"', _artifact(lab, "audit.log"))}
+    assert is_correct(_task(lab, "How many separate persistence"), str(len(keys)))

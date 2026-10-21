@@ -1,0 +1,99 @@
+slug: lab-win-lsass-access
+lesson: win-credential-theft
+title: Spot credential dumping in Sysmon LSASS access events
+pass_mark: 80
+scenario: |
+  Sysmon on finance laptop **FIN-LT-02** logs every process that opens a handle to `lsass.exe`
+  (Event ID 10), plus process creation (1) and file creation (11). Security tools and Windows
+  components touch LSASS all day; credential dumpers do too.
+
+  Separate the two. Look at **who** opened LSASS (path, signer location, user), with **what
+  rights** (GrantedAccess: 0x1000 or 0x1010 is query-only; 0x1fffff is PROCESS_ALL_ACCESS, enough
+  to read its memory), and what happened next on disk.
+artifacts:
+- name: sysmon_lsass_access.txt
+  kind: log
+  description: Sysmon Event ID 10 where the target is lsass.exe.
+  content: |
+    UtcTime: 2026-09-08T09:12:44Z | EventID: 10 | SourceImage: C:\ProgramData\Microsoft\Windows Defender\Platform\4.18.24090\MsMpEng.exe | TargetImage: C:\Windows\System32\lsass.exe | GrantedAccess: 0x1010 | SourceUser: NT AUTHORITY\SYSTEM
+    UtcTime: 2026-09-08T09:40:02Z | EventID: 10 | SourceImage: C:\Windows\System32\svchost.exe | TargetImage: C:\Windows\System32\lsass.exe | GrantedAccess: 0x1000 | SourceUser: NT AUTHORITY\SYSTEM
+    UtcTime: 2026-09-08T10:05:19Z | EventID: 10 | SourceImage: C:\Program Files\Contoso EDR\edr-sensor.exe | TargetImage: C:\Windows\System32\lsass.exe | GrantedAccess: 0x1410 | SourceUser: NT AUTHORITY\SYSTEM
+    UtcTime: 2026-09-08T11:27:51Z | EventID: 10 | SourceImage: C:\Users\Public\Music\dllhost32.exe | TargetImage: C:\Windows\System32\lsass.exe | GrantedAccess: 0x1fffff | SourceUser: CONTOSO\l.marsh
+    UtcTime: 2026-09-08T11:28:03Z | EventID: 10 | SourceImage: C:\Windows\System32\rundll32.exe | TargetImage: C:\Windows\System32\lsass.exe | GrantedAccess: 0x1fffff | SourceUser: CONTOSO\l.marsh
+    UtcTime: 2026-09-08T12:02:37Z | EventID: 10 | SourceImage: C:\Windows\System32\wbem\WmiPrvSE.exe | TargetImage: C:\Windows\System32\lsass.exe | GrantedAccess: 0x1000 | SourceUser: NT AUTHORITY\NETWORK SERVICE
+    UtcTime: 2026-09-08T13:15:10Z | EventID: 10 | SourceImage: C:\ProgramData\Microsoft\Windows Defender\Platform\4.18.24090\MsMpEng.exe | TargetImage: C:\Windows\System32\lsass.exe | GrantedAccess: 0x1010 | SourceUser: NT AUTHORITY\SYSTEM
+- name: sysmon_process_file.txt
+  kind: log
+  description: Related Sysmon Event ID 1 and 11 records.
+  content: |
+    UtcTime: 2026-09-08T11:27:58Z | EventID: 1 | Image: C:\Windows\System32\rundll32.exe | CommandLine: rundll32.exe C:\Windows\System32\comsvcs.dll, MiniDump 664 C:\Users\Public\Music\d.bin full | ParentImage: C:\Users\Public\Music\dllhost32.exe | User: CONTOSO\l.marsh
+    UtcTime: 2026-09-08T11:29:40Z | EventID: 11 | Image: C:\Windows\System32\rundll32.exe | TargetFilename: C:\Users\Public\Music\d.bin | User: CONTOSO\l.marsh
+tasks:
+- prompt: How many LSASS access events requested full access (0x1fffff)?
+  type: number
+  accepted:
+  - '2'
+  hint: 'Count GrantedAccess: 0x1fffff.'
+  explanation: Two. Full access is rarely needed by anything except a debugger or a dumper; the security products
+    here only ask for query rights.
+  verify:
+    artifact: sysmon_lsass_access.txt
+    op: count
+    pattern: 'GrantedAccess: 0x1fffff'
+- prompt: Which unusual executable opened LSASS first? Give its full path.
+  type: text
+  accepted:
+  - C:\Users\Public\Music\dllhost32.exe
+  hint: Look for a binary in a user-writable folder with a name that imitates a Windows process.
+  explanation: 'C:\Users\Public\Music\dllhost32.exe: a fake ''dllhost'' in a public music folder, running as a normal
+    user, asking for full access to LSASS.'
+  verify:
+    artifact: sysmon_lsass_access.txt
+    op: first
+    pattern: 'SourceImage: (C:\\Users\\[^|]+?) \|'
+- prompt: Which Windows DLL was abused to write the memory dump?
+  type: text
+  accepted:
+  - comsvcs.dll
+  - C:\Windows\System32\comsvcs.dll
+  hint: Read the rundll32 command line in the process events.
+  explanation: comsvcs.dll's MiniDump export, run through rundll32, writes a full LSASS dump with only built-in
+    tools (living off the land). Its target PID (664) is LSASS.
+  verify:
+    artifact: sysmon_process_file.txt
+    op: set
+    pattern: \\(comsvcs\.dll),
+- prompt: Where was the dump file written? Give the full path.
+  type: text
+  accepted:
+  - C:\Users\Public\Music\d.bin
+  hint: The Event ID 11 record.
+  explanation: C:\Users\Public\Music\d.bin holds every credential in LSASS memory at that moment. Collect it as
+    evidence and assume every account that was logged on to this laptop is compromised.
+  verify:
+    artifact: sysmon_process_file.txt
+    op: set
+    pattern: 'TargetFilename: (\S+)'
+- prompt: Which account's session ran the attack?
+  type: text
+  accepted:
+  - l.marsh
+  - CONTOSO\l.marsh
+  hint: The SourceUser of the full-access events.
+  explanation: CONTOSO\l.marsh, which also means the account had local admin rights (needed to read LSASS). Removing
+    local admin rights from everyday accounts blocks this technique.
+  verify:
+    artifact: sysmon_lsass_access.txt
+    op: set
+    pattern: 'GrantedAccess: 0x1fffff \| SourceUser: CONTOSO\\(\S+)'
+- prompt: Which control would have stopped the dump from yielding usable credentials?
+  type: choice
+  options:
+  - A stronger screen-lock password
+  - LSA protection (RunAsPPL) and Credential Guard, plus the ASR rule that blocks credential stealing from LSASS
+  - Disabling Sysmon Event ID 10
+  - Renaming lsass.exe
+  answer: 1
+  hint: The lesson covered protections built into Windows for exactly this.
+  explanation: Running LSASS as a protected process and isolating secrets with Credential Guard means a normal process
+    cannot open or read it, and the ASR rule blocks the access attempt outright.
