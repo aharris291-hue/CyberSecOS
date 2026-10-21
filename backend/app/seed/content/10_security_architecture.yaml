@@ -839,3 +839,298 @@ lessons:
           - Only run yearly
         answer: 1
         explanation: Automated per-change checks catch most issues cheaply, with human review and documented exceptions for the rest.
+  - slug: arch-defense-in-depth-zones
+    title: Defense in Depth and Security Zones
+    order: 10
+    difficulty: beginner
+    summary: Design layered security with multiple independent controls and network zones of differing trust, so that no single failure exposes everything and an attacker must defeat control after control.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:3.1", "secplus:2.1", "cysa:1.1"]
+    learning_objectives:
+      - Explain defense in depth and why layered, independent controls matter
+      - Design security zones of differing trust with controlled boundaries
+      - Recognise how zoning limits the blast radius of a compromise
+    theory: |
+      No single security control is perfect, so sound architecture never relies on one. **Defense in depth** is
+      the principle of layering multiple, independent controls so that if one fails or is bypassed, others still
+      stand between the attacker and the asset. The layers are deliberately different in kind, prevention,
+      detection, and response; technical, physical, and administrative, so that a weakness in one type does not
+      collapse the whole. The goal is not to make any single wall impenetrable but to make the attacker defeat a
+      series of them, raising cost and the chance of detection at every step.
+
+      A central expression of this in networks is **security zones**: dividing the environment into regions of
+      differing trust with controlled boundaries between them. A classic design places public-facing services in
+      a **DMZ** (demilitarised zone) that is isolated from the internal network, so a compromised web server
+      cannot reach internal systems directly; internal user networks, server networks, and highly sensitive
+      zones (cardholder data, control systems) each sit in their own segment with firewalls or gateways
+      governing what may cross. Traffic between zones is allowed only where there is a need, and the more
+      sensitive the zone, the stricter the boundary. This is the architectural form of least privilege applied to
+      the network itself.
+
+      The payoff is a limited **blast radius**. When zones are well designed, a compromise in a low-trust area,
+      a public web server, a user's workstation, does not translate into access to the crown jewels, because the
+      attacker still has to cross guarded boundaries to get there, and those crossings are exactly where
+      monitoring and controls concentrate. This is why flat networks are dangerous: one foothold reaches
+      everything. Defense in depth and zoning together mean that breaches, which will happen, stay contained and
+      visible rather than catastrophic. For the analyst, zone boundaries are also prime monitoring points,
+      unexpected traffic crossing from a low-trust to a high-trust zone is a strong signal worth investigating.
+    examples:
+      - title: Layers that each must be defeated
+        body: |
+          email filter -> endpoint protection -> least privilege -> network segmentation -> monitoring
+          one layer fails -> the next still stands
+          The attacker must beat a series, not a single wall.
+      - title: Zones and blast radius
+        body: |
+          DMZ (web) | internal users | servers | sensitive (card data)
+          compromised web server -> stuck in DMZ, cannot reach sensitive zone directly
+          Flat network: one foothold reaches everything.
+    exercise:
+      title: Design layered controls and security zones for a network
+      environment: A described organisation and its services, plus a diagramming tool or document
+      tools: [A diagram or document, a reference architecture, a notes file]
+      steps:
+        - Explain defense in depth and why the layered controls should be independent and of different kinds.
+        - For a sample environment, list a chain of layered controls an attacker would have to defeat to reach a sensitive asset.
+        - Design security zones of differing trust (for example DMZ, user, server, sensitive) with the boundaries between them.
+        - Specify what traffic may cross one boundary and why, applying least privilege to the network.
+        - Explain how this zoning limits the blast radius of a compromise in a low-trust zone.
+        - Identify a zone boundary that would be a high-value monitoring point and the crossing that would be suspicious.
+      deliverable: A layered-defence and zoning design showing the control chain, the zones and their boundaries with a least-privilege crossing rule, the blast-radius benefit, and one boundary monitoring point.
+    expected_outcome: >
+      You can explain defense in depth, design security zones of differing trust with controlled boundaries,
+      and show how layered controls and zoning limit the blast radius of a compromise while creating prime
+      monitoring points.
+    quiz:
+      - prompt: Defense in depth means
+        options:
+          - Relying on one strong control
+          - Layering multiple independent controls so that if one fails, others still protect the asset
+          - Removing all controls
+          - Using only firewalls
+        answer: 1
+        explanation: Layered, independent controls ensure no single failure exposes everything.
+      - prompt: Placing public-facing services in a DMZ
+        options:
+          - Speeds up the website
+          - Isolates them so a compromised public server cannot directly reach the internal network
+          - Removes the need for firewalls
+          - Encrypts all data
+        answer: 1
+        explanation: A DMZ separates exposed services from internal systems, containing a web-server compromise.
+      - prompt: Why is a flat network dangerous?
+        options:
+          - It is slow
+          - A single foothold can reach everything because there are no guarded boundaries
+          - It uses too many zones
+          - It cannot be monitored
+        answer: 1
+        explanation: Without zones, one compromise has unrestricted reach across the whole environment.
+      - prompt: Zone boundaries are valuable monitoring points because
+        options:
+          - Nothing crosses them
+          - Unexpected traffic crossing from low-trust to high-trust zones is a strong signal to investigate
+          - They slow the network
+          - They store logs
+        answer: 1
+        explanation: Controlled crossings concentrate both enforcement and the telemetry that reveals lateral movement.
+  - slug: arch-endpoint-security
+    title: Endpoint Security Architecture
+    order: 11
+    difficulty: intermediate
+    summary: Design layered endpoint protection, hardening, EDR, application control and least privilege, so that endpoints, the most numerous and most targeted assets, resist and reveal compromise.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.1", "secplus:2.5", "cysa:1.3"]
+    learning_objectives:
+      - Explain why endpoints are a primary target and need layered protection
+      - Describe the layers of an endpoint security architecture
+      - Balance protection, detection and manageability across many endpoints
+    theory: |
+      Endpoints, laptops, desktops, servers, are where users work, where email is opened, and where most
+      intrusions begin, so they are both the most numerous assets and the most targeted. A single endpoint
+      security product is not enough; sound architecture layers several complementary controls so that one
+      endpoint's compromise is hard to achieve, limited in impact, and quickly visible. The design balances
+      three goals that can tension against each other: **protection** (stopping bad things), **detection**
+      (seeing what gets through), and **manageability** (deploying and maintaining it across thousands of
+      machines without breaking users' work).
+
+      The layers build on each other. **Hardening** reduces the attack surface, removing unneeded software and
+      services, disk encryption, secure configuration from a baseline, so there is less to attack.
+      **Preventive protection** (modern anti-malware) blocks known and many unknown threats. **Application
+      control** (allow-listing what may run) is powerful because it stops unauthorised executables outright,
+      though it needs effort to maintain. **Endpoint detection and response** (EDR) is the detection and
+      investigation layer: it records rich telemetry, detects suspicious behaviour, and lets responders
+      investigate and contain a host remotely, crucial because prevention is never complete. **Least
+      privilege**, users not running as local administrators, limits what a compromise can do. Together these
+      mean an attacker must defeat hardening, evade prevention, get past application control, avoid EDR
+      detection, and escape a non-privileged context.
+
+      The architectural judgement is in **balancing** these for the environment. Aggressive application control
+      is excellent for fixed-function servers but hard on developers' machines; EDR everywhere is essential but
+      generates telemetry that must flow to the SOC to be useful; least privilege is high-impact but needs a
+      way for users to get legitimate elevation. The layers also feed the SOC: EDR telemetry is often the
+      richest endpoint detection source, so endpoint architecture and detection engineering are tightly linked.
+      For the analyst, the lesson is that endpoints are defended in depth like everything else, no single agent
+      is a silver bullet, and the strongest posture comes from layered controls that each raise the cost of
+      compromise while feeding visibility back to the SOC.
+    examples:
+      - title: Layers an attacker must defeat
+        body: |
+          hardening (less to attack) -> anti-malware (block known/unknown)
+          -> application control (only allowed runs) -> EDR (detect + contain)
+          -> least privilege (limit impact)
+          No single agent is a silver bullet; the stack is.
+      - title: Balancing by machine type
+        body: |
+          fixed-function server -> aggressive application allow-listing (easy)
+          developer workstation -> allow-listing harder; lean on EDR + least privilege
+          EDR everywhere, but telemetry must reach the SOC to be useful.
+    exercise:
+      title: Design an endpoint security architecture
+      environment: A described organisation with different endpoint types (or your own context), plus a diagram or document
+      tools: [A diagram or document, a reference on endpoint controls, a notes file]
+      steps:
+        - Explain why endpoints are a primary target and why a single product is insufficient.
+        - Lay out the endpoint security layers (hardening, anti-malware, application control, EDR, least privilege) and what each contributes.
+        - Describe how the layers combine so an attacker must defeat several to succeed.
+        - For two different endpoint types (such as a server and a developer workstation), balance the controls appropriately and justify the differences.
+        - Explain how EDR telemetry feeds the SOC and links endpoint architecture to detection engineering.
+        - Identify one tension (for example application control versus developer flexibility) and how you would resolve it.
+      deliverable: An endpoint security architecture describing the layered controls, how they combine, a per-endpoint-type balance, the EDR-to-SOC link, and one resolved tension.
+    expected_outcome: >
+      You can design a layered endpoint security architecture of hardening, prevention, application control,
+      EDR and least privilege, balance those controls across different endpoint types, and connect endpoint
+      telemetry to SOC detection.
+    quiz:
+      - prompt: Why do endpoints need layered protection rather than a single product?
+        options:
+          - Endpoints are rarely attacked
+          - They are the most numerous and targeted assets, and no single control stops everything
+          - One product is always enough
+          - Layering slows them down for no reason
+        answer: 1
+        explanation: Endpoints are where most intrusions begin, so layered controls raise the cost and catch what each misses.
+      - prompt: Application control (allow-listing) is powerful because it
+        options:
+          - Speeds up the machine
+          - Stops unauthorised executables from running outright
+          - Replaces EDR
+          - Needs no maintenance
+        answer: 1
+        explanation: Allow-listing blocks anything not explicitly permitted, though it requires maintenance effort.
+      - prompt: EDR's primary role in the stack is
+        options:
+          - Prevention only
+          - Detection, rich telemetry and remote investigation/containment, since prevention is never complete
+          - Encrypting disks
+          - Managing passwords
+        answer: 1
+        explanation: EDR provides the detection, visibility and response layer that complements imperfect prevention.
+      - prompt: A key architectural judgement for endpoints is
+        options:
+          - Using one agent everywhere identically
+          - Balancing protection, detection and manageability, and tailoring controls to endpoint type
+          - Ignoring developer machines
+          - Disabling least privilege
+        answer: 1
+        explanation: The architecture must balance the three goals and adapt controls to different endpoint types.
+  - slug: arch-dlp
+    title: Data Loss Prevention Architecture
+    order: 12
+    difficulty: intermediate
+    summary: Design data loss prevention that detects and stops sensitive data leaving the organisation, across endpoints, network and cloud, by knowing what data matters, where it flows, and how to enforce without crippling work.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:3.3", "secplus:4.5", "cysa:1.1"]
+    learning_objectives:
+      - Explain what data loss prevention protects and the channels it covers
+      - Describe how DLP identifies sensitive data and enforces policy
+      - Balance DLP enforcement against false positives and business friction
+    theory: |
+      Much of what an organisation must protect is **data**, customer records, intellectual property, regulated
+      information, and **data loss prevention** (DLP) is the architecture aimed squarely at stopping that data
+      from leaving inappropriately, whether through malice, compromise, or simple mistake. DLP matters because a
+      great deal of data loss is not dramatic exfiltration but everyday leakage: an employee emailing a
+      spreadsheet of customer data to a personal account, uploading a document to a personal cloud drive, or
+      copying files to a USB stick. DLP addresses the data itself, wherever it tries to go.
+
+      A DLP architecture spans the channels data uses. **Endpoint DLP** controls data on and leaving devices,
+      copying to USB, printing, uploading. **Network DLP** inspects data in motion, email, web uploads, other
+      egress, often at the same gateways that do web filtering. **Cloud DLP** covers data in and moving through
+      cloud services and storage. Across these, DLP must first **identify** sensitive data, by pattern matching
+      (credit-card and ID number formats), keywords and classifiers, by **data classification** labels applied
+      to documents, or by fingerprinting known sensitive files. The quality of this identification is the heart
+      of DLP: too loose and it misses real leaks or floods on false matches, too narrow and sensitive data
+      slips by unlabelled.
+
+      Enforcement is where DLP meets reality. Policies can **monitor** (log and alert), **warn** the user, or
+      **block** an action outright, and the architectural judgement is matching enforcement to confidence and
+      impact: block a clear mass export of customer records, but perhaps only warn on an ambiguous case, because
+      aggressive blocking that interrupts legitimate work breeds resentment and workarounds. DLP is also prone
+      to **false positives**, so it is tuned and usually rolled out in monitor mode first to learn normal data
+      flows before enforcing. For the analyst, DLP is both a control and a detection source: its alerts, "a user
+      just tried to email 10,000 customer records externally", are high-value leads for both insider risk and
+      compromised-account exfiltration, confirmed against the user's legitimate role before acting. Designed
+      well, DLP protects data across its channels without grinding legitimate work to a halt.
+    examples:
+      - title: Everyday leakage DLP addresses
+        body: |
+          customer spreadsheet emailed to a personal account
+          document uploaded to a personal cloud drive; files copied to USB
+          not just dramatic exfil -> DLP guards the data wherever it goes.
+      - title: Matching enforcement to confidence
+        body: |
+          clear mass export of customer records -> BLOCK
+          ambiguous single-file case            -> WARN / log
+          monitor mode first to learn normal flows; aggressive blocking breeds workarounds.
+    exercise:
+      title: Design a DLP architecture for an organisation
+      environment: A described organisation with sensitive data types and data flows, plus a diagram or document
+      tools: [A description of data types and flows, a diagram or document, a notes file]
+      steps:
+        - Identify the sensitive data types the organisation must protect and the everyday ways they could leak.
+        - Design DLP coverage across endpoint, network and cloud channels and what each addresses.
+        - Describe how DLP would identify the sensitive data (patterns, classification labels, fingerprinting) and the trade-off of loose versus narrow identification.
+        - Define enforcement levels (monitor, warn, block) and match them to the confidence and impact of different scenarios.
+        - Explain why you would roll DLP out in monitor mode first and how you would tune false positives.
+        - Describe how a DLP alert would serve as a detection lead and how you would confirm it against the user's role before acting.
+      deliverable: A DLP architecture covering the data to protect, endpoint/network/cloud coverage, the identification method and its trade-off, enforcement levels matched to scenarios, a monitor-first rollout, and DLP alerts as detection leads.
+    expected_outcome: >
+      You can design data loss prevention across endpoint, network and cloud channels, explain how it
+      identifies sensitive data and enforces policy, and balance enforcement against false positives and
+      business friction while using DLP alerts as detection leads.
+    quiz:
+      - prompt: Data loss prevention primarily protects against
+        options:
+          - Slow networks
+          - Sensitive data leaving the organisation inappropriately, through malice, compromise or mistake
+          - Weak passwords only
+          - Disk failure
+        answer: 1
+        explanation: DLP focuses on stopping sensitive data from leaving, including everyday accidental leakage.
+      - prompt: A DLP architecture covers channels including
+        options:
+          - Only email
+          - Endpoint, network and cloud (USB/print, email/web egress, cloud services)
+          - Only USB drives
+          - Only printers
+        answer: 1
+        explanation: DLP spans endpoint, network and cloud to cover the channels data uses to leave.
+      - prompt: The heart of DLP effectiveness is
+        options:
+          - The colour of alerts
+          - How well it identifies sensitive data (patterns, classification labels, fingerprinting)
+          - The number of servers
+          - The time of day
+        answer: 1
+        explanation: Accurate identification determines whether DLP catches real leaks without flooding on false matches.
+      - prompt: Why is DLP usually rolled out in monitor mode first?
+        options:
+          - To block everything immediately
+          - To learn normal data flows and tune false positives before enforcing, avoiding disruption
+          - To disable logging
+          - Because it never blocks
+        answer: 1
+        explanation: Monitoring first reveals legitimate flows so enforcement does not interrupt normal work or breed workarounds.

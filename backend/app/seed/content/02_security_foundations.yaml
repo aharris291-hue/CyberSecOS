@@ -793,3 +793,289 @@ lessons:
           - Stored in email
         answer: 1
         explanation: With no shared secret and binding to the legitimate domain, a phishing site cannot use the passkey.
+  - slug: sec-security-awareness-training
+    title: Security Awareness and the Human Firewall
+    order: 10
+    difficulty: beginner
+    summary: Understand why people are both the biggest attack surface and a powerful line of defence, and how awareness programs, phishing simulations and a reporting culture turn users into sensors.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:5.6", "secplus:2.2", "sc900:1"]
+    learning_objectives:
+      - Explain why the human layer is central to security outcomes
+      - Describe what an effective security-awareness program contains
+      - Build a reporting culture that turns users into a detection source
+    theory: |
+      Most breaches involve a person, a clicked link, a reused password, a wire sent on a convincing request,
+      because attackers target people as the path of least resistance. That makes the **human layer** both the
+      largest attack surface and, done right, a powerful line of defence. Technical controls stop a great deal,
+      but they cannot catch everything, and the user is often the one who sees the suspicious email or the odd
+      request first. Security awareness is the discipline of turning that human layer from a liability into a
+      sensor, and it is a recognised security control in its own right, not a poster on the wall.
+
+      An effective **awareness program** is specific and ongoing, not an annual slideshow. It teaches the
+      threats people actually face, phishing and its variants, social engineering, safe handling of data,
+      password and MFA hygiene, in short, relevant pieces rather than a once-a-year dump, and it is tailored to
+      roles (finance staff face invoice fraud; developers face credential leaks). **Phishing simulations** are
+      a core tool: sending realistic but safe test phishing to measure who clicks and to give immediate,
+      non-punitive teaching when they do. The measure of success is behaviour change, fewer clicks, more
+      reports, over time, which is why programs track metrics and repeat.
+
+      The highest-value outcome is a **reporting culture**. A user who spots a phishing email and reports it
+      gives the SOC an early warning that may protect everyone else, so the goal is to make reporting easy (a
+      one-click button) and safe (never punishing someone who reports, even if they also clicked). A blame-free
+      culture is essential: if people fear punishment they hide mistakes, and a hidden click is far more
+      dangerous than a reported one. The lesson for an analyst is that users are part of the detection
+      pipeline, every reported phish is a lead, and the organisations that defend best are the ones where
+      people feel safe raising their hand the moment something looks wrong.
+    examples:
+      - title: The human layer, both ways
+        body: |
+          Liability: user clicks a phishing link -> foothold
+          Sensor:    user reports a phishing email -> early warning for everyone
+          Awareness turns the same person from the first into the second.
+      - title: Blame-free reporting
+        body: |
+          User clicks AND reports it -> thank them, investigate fast, contain
+          Punish the click -> next time they hide it -> far more dangerous
+          Easy + safe reporting is the whole point.
+    exercise:
+      title: Design a security-awareness program and reporting flow
+      environment: A described organisation (or your own context) and a document or template
+      tools: [A document or template, a reference on common threats, a notes file]
+      steps:
+        - Explain why the human layer is both the biggest attack surface and a potential line of defence.
+        - Outline an ongoing awareness program, the topics, the cadence, and how it is tailored to at least two roles.
+        - Design a phishing-simulation approach and state what you would measure and how you would teach non-punitively.
+        - Define the metrics that show the program is working (click rate, report rate over time).
+        - Design an easy, safe reporting flow that feeds reported phishing to the SOC as leads.
+        - Explain why a blame-free culture matters and what happens to detection if people fear punishment.
+      deliverable: An awareness-program design with role-tailored topics and cadence, a phishing-simulation and metrics plan, a reporting flow into the SOC, and the rationale for a blame-free culture.
+    expected_outcome: >
+      You can explain why the human layer is central to security, design an ongoing awareness program with
+      simulations and metrics, and build a blame-free reporting culture that turns users into an early
+      detection source.
+    quiz:
+      - prompt: Why is the human layer central to security outcomes?
+        options:
+          - People never make mistakes
+          - Attackers target people as the path of least resistance, and users often see threats first
+          - Humans are irrelevant to breaches
+          - Only technology matters
+        answer: 1
+        explanation: Most breaches involve a person, so the human layer is both the main target and a key defence.
+      - prompt: An effective awareness program is
+        options:
+          - A single annual slideshow
+          - Ongoing, relevant and tailored to the threats different roles actually face
+          - Only for executives
+          - A one-time poster
+        answer: 1
+        explanation: Awareness works when it is continuous, relevant and role-specific, not a yearly formality.
+      - prompt: A blame-free reporting culture matters because
+        options:
+          - It avoids all training
+          - If people fear punishment they hide mistakes, and a hidden click is more dangerous than a reported one
+          - It punishes clicks
+          - It removes the SOC
+        answer: 1
+        explanation: Safe reporting surfaces incidents early; fear drives them underground where they do more harm.
+      - prompt: A reported phishing email is valuable to the SOC because it
+        options:
+          - Wastes time
+          - Is an early warning that may protect everyone else who received it
+          - Must be ignored
+          - Cannot be investigated
+        answer: 1
+        explanation: User reports act as early detection, letting the SOC contain a campaign before it spreads.
+  - slug: sec-authorization-models
+    title: Authorization Models and Least Privilege
+    order: 11
+    difficulty: beginner
+    summary: Understand how systems decide what an authenticated user may do, discretionary, role-based and attribute-based access control, and why least privilege underpins them all.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.6", "sc900:3", "secplus:3.1"]
+    learning_objectives:
+      - Distinguish authentication from authorization
+      - Compare discretionary, role-based and attribute-based access control
+      - Apply least privilege and separation of duties to a real scenario
+    theory: |
+      Authentication proves who you are; **authorization** decides what you are allowed to do once you are in,
+      and keeping the two ideas separate is the starting point. A system can know perfectly well who a user is
+      and still need a clear, consistent way to decide whether they may read this file, approve that payment,
+      or change a setting. Authorization models are the different schemes for making that decision at scale,
+      and choosing and configuring one well is central to limiting what a compromised or malicious account can
+      do.
+
+      Three models are common. **Discretionary access control** (DAC) lets the owner of a resource decide who
+      may access it, flexible but inconsistent, since control is spread across many individual owners.
+      **Role-based access control** (RBAC) assigns permissions to **roles** (such as "finance clerk" or
+      "server administrator") and assigns users to roles, so access is granted by job function rather than
+      per person, which scales well and is the workhorse of most organisations. **Attribute-based access
+      control** (ABAC) decides dynamically from attributes of the user, resource and context (department, data
+      classification, time of day, device), which is the most granular and powerful but more complex to manage.
+      Most real environments use RBAC as the backbone with some ABAC for fine-grained cases.
+
+      Underpinning every model are two principles. **Least privilege** means granting each user, role or
+      process only the access it genuinely needs and no more, so that a compromised account or an insider can
+      reach only a limited blast radius. **Separation of duties** splits a sensitive action across more than
+      one person so no single account can complete it alone (the person who requests a payment cannot also
+      approve it), which limits both fraud and the damage of one stolen credential. Over time, access tends to
+      accumulate, people change roles but keep old permissions, so **access reviews** periodically prune this
+      "privilege creep". For the analyst, the practical lesson is that well-designed authorization is what
+      makes a stolen credential a contained problem rather than a catastrophe, and over-permissioned accounts
+      are a risk to watch for.
+    examples:
+      - title: Three models at a glance
+        body: |
+          DAC   owner decides (flexible, inconsistent)
+          RBAC  permissions -> roles -> users (scales by job function)
+          ABAC  decide from attributes (user/resource/context) (granular, complex)
+          Most orgs: RBAC backbone + some ABAC.
+      - title: Separation of duties
+        body: |
+          requester of a payment  != approver of a payment
+          one stolen account cannot complete the action alone
+          limits both fraud and the blast radius of a compromise.
+    exercise:
+      title: Design authorization for a scenario
+      environment: A described organisation with several roles and sensitive actions, plus a document
+      tools: [A document or template, a scenario with roles and resources, a notes file]
+      steps:
+        - Explain the difference between authentication and authorization with an example.
+        - For the scenario, choose an authorization model (or mix) and justify it against the organisation's needs.
+        - Define two or three roles with the least-privilege permissions each genuinely needs.
+        - Identify one sensitive action and apply separation of duties so no single account can complete it alone.
+        - Describe how an attribute (such as data classification or device) could refine access with ABAC.
+        - Explain how privilege creep happens and how an access review would catch it.
+      deliverable: An authorization design naming the model, least-privilege roles, a separation-of-duties control on a sensitive action, one ABAC refinement, and an access-review approach to privilege creep.
+    expected_outcome: >
+      You can distinguish authentication from authorization, compare DAC, RBAC and ABAC, and apply least
+      privilege and separation of duties so that a compromised account has a limited blast radius.
+    quiz:
+      - prompt: Authorization (as opposed to authentication) decides
+        options:
+          - Who a user claims to be
+          - What an authenticated user is allowed to do
+          - How fast the network is
+          - Which password to use
+        answer: 1
+        explanation: Authentication proves identity; authorization governs what that identity may do.
+      - prompt: Role-based access control grants permissions by
+        options:
+          - Each resource owner's discretion
+          - Job function, assigning permissions to roles and users to roles
+          - Random assignment
+          - Time of day only
+        answer: 1
+        explanation: RBAC ties permissions to roles and users to those roles, scaling by job function.
+      - prompt: Least privilege means
+        options:
+          - Giving everyone admin to be safe
+          - Granting only the access genuinely needed, so a compromise has a limited blast radius
+          - Removing all access
+          - Sharing one account
+        answer: 1
+        explanation: Minimal necessary access limits what any compromised or malicious account can reach.
+      - prompt: Separation of duties limits fraud and credential misuse by
+        options:
+          - Using longer passwords
+          - Splitting a sensitive action so no single account can complete it alone
+          - Disabling logging
+          - Granting more roles
+        answer: 1
+        explanation: Requiring more than one party for a sensitive action stops a single account from completing it.
+  - slug: sec-control-types
+    title: Security Control Types and Functions
+    order: 12
+    difficulty: beginner
+    summary: Classify security controls by how they are implemented (technical, administrative, physical) and what they do (preventive, detective, corrective and more), a vocabulary that underpins how defences are designed and assessed.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:1.1", "secplus:5.1", "sc900:1"]
+    learning_objectives:
+      - Classify controls by category (technical, administrative, physical)
+      - Classify controls by function (preventive, detective, corrective, and others)
+      - Use the taxonomy to find gaps and design balanced defences
+    theory: |
+      Security professionals need a shared vocabulary for the defences they deploy, and that vocabulary is the
+      classification of **security controls** along two axes: how a control is implemented and what it does.
+      Getting fluent in it matters because it is how defences are designed, discussed and assessed, and it is
+      how you spot that a system is strong in one dimension and dangerously weak in another.
+
+      The first axis is **category**, how the control is implemented. **Technical** (or logical) controls are
+      enforced by technology: firewalls, encryption, access control lists, antivirus. **Administrative** (or
+      managerial) controls are policies, procedures and processes: security policies, training, background
+      checks, change management. **Physical** controls protect the tangible world: locks, fences, guards,
+      cameras. A sound program uses all three, because a brilliant technical control is undone by an
+      administrative gap (no process to review access) or a physical one (anyone can walk in and take the
+      server).
+
+      The second axis is **function**, what the control does relative to an incident. **Preventive** controls
+      stop an incident before it happens (a firewall blocking traffic, a lock). **Detective** controls identify
+      that something happened (IDS alerts, log monitoring, cameras). **Corrective** controls fix or limit damage
+      after the fact (restoring from backup, patching the exploited flaw). The model also names **deterrent**
+      controls (discouraging an attacker, like warning signs), **compensating** controls (an alternative when
+      the primary control is not feasible), and **directive** controls (instructing behaviour, like a policy).
+      The practical power of the taxonomy is in finding **gaps**: a system with strong preventive controls but
+      no detective ones will be breached silently, and one with detection but no corrective capability will see
+      the attack but not recover. Mapping your controls across both axes reveals where you are over- and
+      under-invested, which is exactly how a defender turns a pile of tools into a balanced, layered defence.
+    examples:
+      - title: Two axes of classification
+        body: |
+          category:  technical (firewall) | administrative (policy) | physical (lock)
+          function:  preventive (block) | detective (alert) | corrective (restore)
+                     + deterrent, compensating, directive
+          every control has one of each.
+      - title: Finding a gap with the taxonomy
+        body: |
+          strong preventive, NO detective -> breached silently (never notice)
+          detective, NO corrective        -> see the attack, can't recover
+          mapping both axes reveals where you're under-invested.
+    exercise:
+      title: Classify controls and find the gaps
+      environment: A described environment with a set of existing controls (or your own context) and a document or spreadsheet
+      tools: [A list of controls, a spreadsheet or document, a notes file]
+      steps:
+        - For several existing controls, classify each by category (technical, administrative, physical).
+        - Classify each by function (preventive, detective, corrective, or another type) and explain the choice.
+        - Give an example of a control that is strong technically but undermined by a missing administrative or physical control.
+        - Map the controls across both axes and identify where the environment is over-invested and where it has a gap.
+        - For one gap (such as no detective controls for a critical asset), recommend a control to fill it.
+        - Explain how a compensating control would be used when a primary control is not feasible.
+      deliverable: A control inventory classified on both axes, an identified gap with a recommended control to fill it, and an example of a compensating control.
+    expected_outcome: >
+      You can classify security controls by category and function, use the taxonomy to find where defences are
+      over- or under-invested, and design a balanced mix of preventive, detective and corrective controls
+      across technical, administrative and physical categories.
+    quiz:
+      - prompt: A firewall is which category of control?
+        options: [Administrative, Technical (logical), Physical, Directive]
+        answer: 1
+        explanation: A firewall is enforced by technology, making it a technical/logical control.
+      - prompt: Detective controls
+        options:
+          - Stop an incident before it happens
+          - Identify that something happened (such as IDS alerts or log monitoring)
+          - Restore from backup
+          - Discourage attackers
+        answer: 1
+        explanation: Detective controls reveal that an event occurred, as opposed to preventing or correcting it.
+      - prompt: A system with strong preventive but no detective controls will
+        options:
+          - Be perfectly secure
+          - Tend to be breached silently, because nothing reveals a successful attack
+          - Recover automatically
+          - Need no further controls
+        answer: 1
+        explanation: Without detection, a successful breach goes unnoticed, which is why both functions are needed.
+      - prompt: A compensating control is
+        options:
+          - A control that never works
+          - An alternative control used when the primary control is not feasible
+          - A physical lock only
+          - A type of malware
+        answer: 1
+        explanation: Compensating controls provide equivalent protection when the preferred control cannot be implemented.

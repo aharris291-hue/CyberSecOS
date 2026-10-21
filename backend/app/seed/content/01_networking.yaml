@@ -652,91 +652,371 @@ lessons:
         options: [Always fine, A lead to confirm against travel and device as possible account takeover, Proof of a firewall fault, A reason to disable logging]
         answer: 1
         explanation: Impossible concurrent sessions are a classic takeover tell, confirmed against context before action.
-  - slug: net-dns-security
-    title: DNS Security and Abuse Detection
+  - slug: net-nac-8021x
+    title: Network Access Control and 802.1X
     order: 9
     difficulty: intermediate
-    summary: Understand how DNS is abused for command-and-control and exfiltration, how DNSSEC and encrypted DNS change the picture, and how to spot malicious DNS in logs.
+    summary: Control which devices are allowed onto the network at the moment they connect, using 802.1X and NAC, so an unknown or non-compliant device cannot simply plug in and belong.
     theory_minutes: 12
     lab_minutes: 54
-    objectives: ["secplus:3.2", "secplus:4.1", "cysa:1.1"]
+    objectives: ["secplus:4.1", "secplus:4.4", "cysa:1.3"]
     learning_objectives:
-      - Explain how DNS works and why attackers abuse it
-      - Describe DNSSEC, DNS over HTTPS and their security trade-offs
-      - Detect DNS tunnelling, DGA and other malicious DNS in logs
+      - Explain what network access control decides and why it matters
+      - Describe 802.1X authentication and its supplicant/authenticator/server roles
+      - Design NAC enforcement including posture checks and quarantine
     theory: |
-      DNS turns names into addresses, and because almost every network allows it outbound, attackers lean
-      on it heavily. The protocol was built without security, so three problems follow. First, answers can
-      be **forged or poisoned**, sending users to attacker servers. Second, DNS is a near-universal
-      **covert channel**: malware encodes data or commands into the names it looks up, so **DNS tunnelling**
-      smuggles command-and-control and stolen data past firewalls that trust port 53. Third, malware uses
-      **domain generation algorithms** (DGA) to compute hundreds of random-looking domains so defenders
-      cannot simply block one hard-coded address.
+      Most network controls assume a device is already on the network; **network access control** (NAC) asks
+      the earlier question of whether a device should be let on at all. Without it, anyone who reaches a
+      network port or wireless SSID is effectively trusted, a visitor's laptop, an attacker's implant, an
+      unpatched personal device can all join and start talking to internal systems. NAC moves the trust
+      decision to the moment of connection: authenticate the device and its user, check that it meets policy,
+      and only then grant access, often to a specific segment rather than the whole network.
 
-      Two technologies change the defensive picture. **DNSSEC** signs DNS records so a resolver can verify
-      an answer was not forged, addressing poisoning, though it does not encrypt anything. **DNS over HTTPS**
-      (DoH) and DNS over TLS encrypt the queries themselves for privacy, which is good for users but a
-      double-edged sword for defenders: it hides DNS inside HTTPS where the usual DNS monitoring cannot see
-      it, so enterprises often force internal resolvers and block external DoH to keep visibility.
+      The core technology is **802.1X**, a standard for port-based authentication with three roles. The
+      **supplicant** is the device trying to connect; the **authenticator** is the switch or wireless access
+      point it connects through, which holds the port closed to everything except the authentication exchange;
+      and the **authentication server** (usually RADIUS) makes the decision, typically against the directory
+      or certificates. Until the supplicant proves who it is, the port passes nothing else, so an
+      unauthenticated device simply cannot reach the network. This is how enterprises stop a random device in
+      a conference-room jack from gaining access.
 
-      For the SOC, DNS logs are one of the richest detection sources precisely because malware cannot avoid
-      using names. The tells are specific: abnormally long or high-entropy subdomains (the signature of
-      tunnelling), a host querying hundreds of never-before-seen random domains (DGA), queries to known-bad
-      or newly registered domains, and a huge volume of TXT-record lookups. As always a single odd query is
-      a lead, confirmed against the host's normal behaviour, but DNS is where a lot of otherwise-hidden C2
-      first becomes visible.
+      Mature NAC adds **posture** and **enforcement**. Posture checks ask whether the connecting device is
+      compliant, patched, running endpoint protection, disk encrypted, and a device that fails is placed in a
+      **quarantine** VLAN with access only to remediation resources rather than the production network. NAC
+      also handles the devices that cannot do 802.1X (printers, IoT) through MAC-based profiling, carefully,
+      since MACs can be spoofed. For the analyst, NAC is both a control and a telemetry source: it logs every
+      join, every failed authentication, and every quarantined device, so a burst of failed 802.1X attempts or
+      an unknown device repeatedly trying to connect is a lead worth confirming against what is expected on
+      that segment.
     examples:
-      - title: DNS tunnelling in the logs
+      - title: The 802.1X three roles
         body: |
-          Normal:  www.example.com  -> short, dictionary-like
-          Tunnel:  a7f3k9x2.e91bq.exfil.bad.com -> long, high-entropy, repeated
-          Data is encoded in the subdomain and carried out over port 53.
-      - title: DNSSEC versus DoH
+          supplicant (laptop) -> authenticator (switch port, held closed)
+          -> authentication server (RADIUS) decides
+          Until the laptop authenticates, the port passes only the auth exchange.
+      - title: Posture-based quarantine
         body: |
-          DNSSEC  signs answers -> detects forgery/poisoning (no encryption)
-          DoH     encrypts queries -> privacy, but hides DNS from monitoring
-          Different goals; enterprises often force internal resolvers to keep visibility.
+          Device connects, 802.1X ok, posture check: AV disabled, 40 patches behind
+          -> placed in quarantine VLAN (remediation only), not production
+          Compliant devices get full access; non-compliant get fixed first.
     exercise:
-      title: Hunt DNS logs for abuse
-      environment: A SIEM or notebook with sample DNS query logs containing some benign and some malicious patterns
-      tools: [A SIEM or notebook, sample DNS logs, a notes file]
+      title: Design NAC enforcement for a network
+      environment: A lab with an 802.1X-capable switch/RADIUS (or a described network and NAC policy to design)
+      tools: [A switch/RADIUS lab or a network description, a NAC policy template, a notes file]
       steps:
-        - Describe how DNS tunnelling and DGA each appear differently in query logs.
-        - Search the logs for abnormally long or high-entropy subdomains and flag candidate tunnelling.
-        - Identify a host querying many never-before-seen random domains and explain why that suggests DGA.
-        - Pick out queries to newly registered or known-bad domains and note how you would enrich them with threat intel.
-        - For your strongest finding, state how you would confirm it against the host's normal DNS behaviour before acting.
-        - Recommend one control (DNSSEC, forced internal resolver, blocking external DoH, DNS filtering) and the problem it addresses.
-      deliverable: A DNS hunt write-up identifying one tunnelling and one DGA candidate, the enrichment and confirmation steps, and one recommended control with its rationale.
+        - Explain what access decision NAC makes and the risk of a network with no access control at the port.
+        - Describe the supplicant, authenticator and authentication-server roles in an 802.1X exchange for a connecting device.
+        - Design an authentication policy, which devices use 802.1X with certificates versus credentials, and how printers or IoT are handled safely.
+        - Add a posture check and define what a non-compliant device gets (quarantine VLAN and remediation access).
+        - Identify one NAC log signal (a burst of failed authentications, an unknown device) that would be worth investigating.
+        - State how you would confirm that signal against the devices expected on that segment before acting.
+      deliverable: A NAC design with an 802.1X authentication policy, handling for non-802.1X devices, a posture-and-quarantine rule, and one log signal with its confirmation step.
     expected_outcome: >
-      You can explain why DNS is abused, describe what DNSSEC and encrypted DNS do and do not protect, and
-      detect tunnelling, DGA and malicious lookups in DNS logs while confirming against normal behaviour.
+      You can explain what network access control decides, describe 802.1X and its three roles, and design
+      NAC enforcement with posture checks and quarantine so only authenticated, compliant devices reach the
+      production network.
     quiz:
-      - prompt: Why is DNS a favoured covert channel for attackers?
+      - prompt: Network access control primarily decides
         options:
-          - It is encrypted by default
-          - It is almost always allowed outbound and can carry encoded data in queries
-          - It is never logged
-          - It blocks malware
+          - How fast the network runs
+          - Whether a device should be allowed onto the network at the moment it connects
+          - Which websites are blocked
+          - How logs are stored
         answer: 1
-        explanation: DNS is near-universally permitted, so malware can tunnel C2 and data through it.
-      - prompt: DNSSEC primarily protects against
+        explanation: NAC moves the trust decision to connection time, authenticating and checking a device before granting access.
+      - prompt: In 802.1X, the switch port that holds the connection closed until authentication is the
+        options: [Supplicant, Authenticator, Authentication server, Directory]
+        answer: 1
+        explanation: The authenticator (switch or access point) passes only the auth exchange until the supplicant proves its identity.
+      - prompt: A device that fails a NAC posture check is best
         options:
-          - Eavesdropping on queries
-          - Forged or poisoned DNS answers
-          - Slow lookups
-          - Malware downloads
+          - Given full access anyway
+          - Placed in a quarantine VLAN with access only to remediation resources
+          - Blocked from the internet only
+          - Logged and ignored
         answer: 1
-        explanation: DNSSEC signs records so forgery is detectable; it does not encrypt the queries.
-      - prompt: A host suddenly querying hundreds of random-looking, never-seen domains suggests
-        options: [A faster network, A domain generation algorithm used by malware, A DNSSEC upgrade, Normal browsing]
+        explanation: Quarantine lets the device be remediated without exposing the production network.
+      - prompt: A burst of failed 802.1X authentications on a segment is
+        options: [Routine, A lead to confirm against the devices expected there, Proof of a switch failure, A reason to disable NAC]
         answer: 1
-        explanation: DGA produces many random domains so defenders cannot block a single hard-coded address.
-      - prompt: Why can DNS over HTTPS reduce a defender's visibility?
+        explanation: Repeated failed joins can indicate an unauthorised device trying to connect, worth investigating in context.
+  - slug: net-ddos-defense
+    title: Defending Against DDoS and Volumetric Attacks
+    order: 10
+    difficulty: intermediate
+    summary: Understand how denial-of-service attacks overwhelm a target, the layers they hit, and the defences, from upstream scrubbing to rate limiting, that keep a service available.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:2.4", "secplus:4.4", "cysa:1.1"]
+    learning_objectives:
+      - Explain how volumetric, protocol and application DDoS attacks work
+      - Describe the layered defences that keep a service available under attack
+      - Recognise a DDoS in traffic patterns and distinguish it from a real spike
+    theory: |
+      Availability is one of the three pillars of security, and **denial-of-service** attacks target it
+      directly by overwhelming a system so legitimate users cannot reach it. A **distributed** denial of
+      service (DDoS) uses many sources at once, often a botnet of compromised devices, which makes it both
+      more powerful and harder to block by simply dropping one address. Understanding the attack means seeing
+      that it comes in different flavours aimed at different layers, and the defence differs for each.
+
+      There are three broad types. **Volumetric** attacks flood the target's bandwidth with sheer traffic
+      (amplification attacks abuse protocols like DNS and NTP to multiply the volume), so the link saturates
+      before packets even reach the server. **Protocol** attacks exhaust connection state, a SYN flood leaves
+      half-open connections until the server's table fills. **Application-layer** attacks are subtler and
+      lower-volume: they send requests that look legitimate but are expensive to serve (a flood of searches or
+      logins), exhausting the application rather than the pipe, which makes them hard to tell from a genuine
+      traffic surge.
+
+      Defence is layered and mostly about scale and filtering. Because a large volumetric attack can exceed
+      any single site's bandwidth, the heavy lifting happens **upstream**: cloud scrubbing services and
+      content delivery networks absorb and filter the flood before it reaches the origin, and the origin's
+      address is kept hidden behind them. Closer in, **rate limiting**, connection limits, SYN cookies and
+      web-application-firewall rules handle protocol and application attacks. The analyst's role is detection
+      and coordination: recognising the pattern (a sudden flood from many sources, or a spike of expensive
+      requests), distinguishing it from a legitimate surge or a flash crowd, and engaging the upstream
+      defences, because a DDoS is survived by preparation and capacity, not fixed after the fact.
+    examples:
+      - title: Three layers of DoS
+        body: |
+          Volumetric  flood bandwidth (DNS/NTP amplification) -> link saturates
+          Protocol    exhaust state (SYN flood) -> connection table fills
+          Application expensive requests (search/login flood) -> app exhausted
+          Each needs a different defence.
+      - title: Upstream scrubbing
+        body: |
+          attack traffic -> cloud scrubbing / CDN (absorb + filter) -> clean traffic -> origin
+          origin address hidden behind the service
+          A flood bigger than your pipe must be stopped before your pipe.
+    exercise:
+      title: Plan DDoS defences and recognise an attack
+      environment: A described service and its architecture, plus sample traffic data (or a scenario) showing an attack
+      tools: [A service description, sample traffic data or a scenario, a notes file]
+      steps:
+        - Explain how a distributed attack differs from a single-source one and why that matters for blocking.
+        - For a sample service, identify which layer (volumetric, protocol, application) each of two attack scenarios targets.
+        - Describe the upstream defence (scrubbing or CDN) that handles a large volumetric attack and why it must be upstream.
+        - Specify the closer-in defences (rate limiting, SYN cookies, WAF rules) for the protocol and application attacks.
+        - Review the traffic pattern and distinguish a DDoS from a legitimate surge or flash crowd, stating the signals you used.
+        - Outline the response steps and who you would engage when an attack is confirmed.
+      deliverable: A DDoS defence plan mapping each attack type to its layer and defence, the upstream-versus-origin split, and a traffic analysis distinguishing attack from legitimate surge with a response outline.
+    expected_outcome: >
+      You can explain volumetric, protocol and application denial-of-service attacks, design the layered
+      defences that keep a service available, and recognise an attack in traffic patterns while telling it
+      apart from a legitimate surge.
+    quiz:
+      - prompt: A distributed denial-of-service attack is harder to block because
+        options:
+          - It uses one powerful computer
+          - It comes from many sources at once, so dropping a single address does not stop it
+          - It is always encrypted
+          - It only targets email
+        answer: 1
+        explanation: Many simultaneous sources mean no single block stops it, and the volume is larger.
+      - prompt: A volumetric attack must be mitigated upstream because
+        options:
+          - Upstream is cheaper
+          - A flood larger than your own bandwidth must be absorbed before it reaches your link
+          - The origin has no CPU
+          - Logging is upstream
+        answer: 1
+        explanation: If the attack exceeds your pipe, only upstream scrubbing or a CDN can absorb it before it saturates you.
+      - prompt: An application-layer DDoS is hard to detect because
+        options:
+          - It uses huge bandwidth
+          - Its requests look legitimate but are expensive to serve, resembling a real traffic surge
+          - It never reaches the server
+          - It only uses ICMP
+        answer: 1
+        explanation: Low-volume but costly requests mimic genuine traffic, making them hard to distinguish from a surge.
+      - prompt: A SYN flood is which type of attack?
+        options: [Volumetric, Protocol (exhausting connection state), Application-layer, Physical]
+        answer: 1
+        explanation: A SYN flood exhausts the connection-state table, a protocol-layer attack.
+  - slug: net-segmentation-vlans
+    title: Network Segmentation and VLANs
+    order: 11
+    difficulty: intermediate
+    summary: Divide a flat network into segments with VLANs and access control so a compromise in one area cannot reach the rest, and so monitoring concentrates at the boundaries.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:3.1", "secplus:4.4", "cysa:1.3"]
+    learning_objectives:
+      - Explain why a flat network is dangerous and segmentation limits blast radius
+      - Describe how VLANs and inter-VLAN access control implement segmentation
+      - Place monitoring at segment boundaries to catch lateral movement
+    theory: |
+      A **flat network**, where every device can reach every other, is one of the most common and most
+      dangerous conditions in security, because a single compromised host can then reach everything: servers,
+      other users, sensitive systems. **Segmentation** breaks that reachability into zones so that a foothold
+      in one part of the network does not grant access to the rest, directly limiting the **blast radius** of
+      any compromise. It is the network embodiment of least privilege: devices can reach only what they have a
+      genuine need to reach.
+
+      The common building block is the **VLAN** (virtual LAN), which divides one physical switch
+      infrastructure into separate logical networks, so that, for example, user workstations, servers, VoIP
+      phones, and guest devices each sit on their own VLAN even though they share the same switches. VLANs
+      alone only separate broadcast domains; the security comes from **inter-VLAN access control**, a firewall
+      or layer-3 device between VLANs that permits only the traffic that should cross (users reach the
+      application servers they need, but not each other, and guests reach only the internet). The more
+      sensitive the segment, cardholder data, industrial control systems, the stricter and more isolated it is.
+
+      Segmentation also transforms monitoring. When traffic must cross a controlled boundary to move between
+      zones, those boundaries become natural **choke points** where the SOC can watch and enforce: east-west
+      traffic that used to be invisible on a flat network now passes a firewall that logs it, so lateral
+      movement from one segment toward another is far more likely to be seen. For the analyst, the practical
+      upshot is twofold, segmentation contains incidents and it creates visibility, and unexpected traffic
+      attempting to cross from a low-trust segment toward a sensitive one is a high-value signal to confirm
+      against what is normally allowed. Micro-segmentation takes this to its logical end, isolating individual
+      workloads, but even coarse VLAN segmentation is one of the highest-impact architectural controls a
+      network can have.
+    examples:
+      - title: Flat versus segmented
+        body: |
+          Flat:      one compromised desktop -> reaches servers + every other host
+          Segmented: users | servers | guests | sensitive, boundaries controlled
+          A foothold is stuck in its segment unless it defeats a boundary.
+      - title: Boundary as a choke point
+        body: |
+          user VLAN -> [firewall logs + rules] -> server VLAN
+          east-west traffic now crosses a monitored boundary
+          lateral movement toward sensitive zones becomes visible.
+    exercise:
+      title: Design network segmentation and its monitoring
+      environment: A described network with mixed device types (or a lab with VLAN-capable switching), plus a diagram or document
+      tools: [A network description or VLAN lab, a diagram or document, a notes file]
+      steps:
+        - Explain the risk of the current flat network and what a single compromise could reach.
+        - Divide the environment into VLANs by function (users, servers, guests, sensitive) and justify the split.
+        - Specify the inter-VLAN access control, what traffic may cross each boundary and why, applying least privilege.
+        - Identify the most sensitive segment and describe how strictly it is isolated.
+        - Choose one boundary as a monitoring choke point and state the crossing that would be suspicious.
+        - Explain how this segmentation would contain a compromise that started in the user VLAN.
+      deliverable: A segmentation design with VLANs by function, inter-VLAN access rules, the isolation of the sensitive segment, a boundary monitoring point, and the blast-radius containment it provides.
+    expected_outcome: >
+      You can explain why flat networks are dangerous, segment a network with VLANs and inter-VLAN access
+      control to limit blast radius, and use segment boundaries as monitoring choke points that reveal lateral
+      movement.
+    quiz:
+      - prompt: Why is a flat network dangerous?
+        options:
+          - It is slow
+          - A single compromised host can reach every other device, including sensitive systems
+          - It uses too many VLANs
+          - It cannot be monitored at all
+        answer: 1
+        explanation: With no segmentation, one foothold has unrestricted reach across the whole network.
+      - prompt: VLANs provide security only when combined with
+        options:
+          - More switches
+          - Inter-VLAN access control that permits only the traffic that should cross
+          - Faster cabling
+          - Disabled logging
+        answer: 1
+        explanation: VLANs separate networks logically, but a firewall or layer-3 control between them enforces what may cross.
+      - prompt: Segmentation improves monitoring because
         options:
           - It deletes logs
-          - It hides DNS queries inside HTTPS where normal DNS monitoring cannot see them
-          - It disables DNS
-          - It slows the network
+          - Traffic must cross controlled boundaries that act as choke points where the SOC can watch and enforce
+          - It hides east-west traffic
+          - It removes firewalls
         answer: 1
-        explanation: Encrypting DNS inside HTTPS removes the plaintext DNS the SOC usually monitors, so enterprises force internal resolvers.
+        explanation: Boundaries make previously invisible east-west traffic pass a monitored, logged control.
+      - prompt: Traffic attempting to cross from a low-trust segment toward a sensitive one is
+        options: [Always fine, A high-value signal to confirm against what is normally allowed, A backup, A routine broadcast]
+        answer: 1
+        explanation: Unexpected crossings toward sensitive zones are classic lateral-movement signals worth investigating.
+  - slug: net-proxy-tls-inspection
+    title: Web Proxies, Gateways and TLS Inspection
+    order: 12
+    difficulty: intermediate
+    summary: Understand how forward proxies and secure web gateways control and inspect outbound web traffic, why TLS inspection is needed to see inside encryption, and the trade-offs it brings.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:3.2", "secplus:4.4", "cysa:1.1"]
+    learning_objectives:
+      - Explain how forward proxies and secure web gateways control outbound traffic
+      - Describe why and how TLS inspection reveals encrypted content
+      - Weigh the security value of inspection against its privacy and risk trade-offs
+    theory: |
+      Most of what users and malware do reaches the internet over the web, so controlling and seeing outbound
+      web traffic is a high-value capability. A **forward proxy** sits between users and the internet: every web
+      request passes through it, so it can enforce policy (block categories of sites, known-bad domains and
+      file types), cache content, and, importantly, **log** every request for the SOC. A **secure web gateway**
+      (SWG) is the modern, feature-rich version, adding malware scanning, URL filtering, data-loss checks and
+      threat intelligence. Routing web traffic through such a choke point turns a sprawling, invisible flow into
+      something policy-controlled and observable.
+
+      The complication is **encryption**. The majority of web traffic is now HTTPS, which hides the content, and
+      the URL path, from a proxy that only sees the destination. **TLS inspection** (also called SSL inspection
+      or break-and-inspect) lets the gateway decrypt, examine, and re-encrypt traffic so it can apply malware
+      scanning and policy to the actual content. It works by having the gateway act as a trusted man-in-the-
+      middle: clients trust a certificate the organisation controls, so the gateway can terminate and re-
+      establish the TLS session. Without it, an SWG is largely blind to the inside of encrypted traffic, which
+      is where modern malware and data exfiltration hide.
+
+      Inspection is powerful but carries real **trade-offs** to weigh honestly. It raises privacy concerns
+      (the organisation can see inside employees' encrypted sessions, so sensitive categories like banking and
+      health are usually exempted), it can break applications that use certificate pinning or mutual TLS, and
+      the inspection point itself becomes a high-value target and a potential single point of failure holding
+      decrypted traffic. The engineering decision is therefore selective: inspect what policy and risk justify,
+      exempt what privacy or compatibility require, and protect the inspection infrastructure well. For the
+      analyst, the proxy and gateway logs are a primary detection source, revealing connections to malicious
+      sites, large uploads, and odd user-agents, so understanding what the gateway can and cannot see (encrypted
+      versus inspected) is essential to interpreting them.
+    examples:
+      - title: What a proxy/SWG adds
+        body: |
+          user -> [proxy/SWG: policy + malware scan + logging] -> internet
+          blocks bad categories/domains/file types; logs every request for the SOC
+          turns invisible outbound web into a controlled, observable choke point.
+      - title: TLS inspection trade-off
+        body: |
+          without: HTTPS content hidden -> malware/exfil inside encryption unseen
+          with:    gateway decrypts/inspects/re-encrypts (trusted MITM)
+          but: privacy concerns, breaks cert-pinned apps, high-value decryption point
+          -> inspect selectively, exempt sensitive categories.
+    exercise:
+      title: Design web-gateway policy and inspection scope
+      environment: A described organisation and its web-access needs, plus sample proxy logs (or a scenario)
+      tools: [A scenario or sample proxy logs, a document, a notes file]
+      steps:
+        - Explain what a forward proxy or secure web gateway controls and logs for outbound web traffic.
+        - Explain why TLS inspection is needed to see inside HTTPS and how the gateway acts as a trusted intermediary.
+        - Decide which traffic to inspect and which to exempt (for example banking, health) and justify the privacy trade-off.
+        - Identify one application that TLS inspection could break and how you would handle it.
+        - Review sample proxy logs and identify one request worth investigating (malicious domain, large upload, odd user-agent).
+        - State what the gateway can and cannot see for an encrypted-but-not-inspected session, and how that affects your analysis.
+      deliverable: A web-gateway design with an inspection-versus-exemption policy and its trade-offs, a broken-app handling note, and a proxy-log review identifying one suspicious request with the visibility caveat.
+    expected_outcome: >
+      You can explain how proxies and secure web gateways control and log outbound web traffic, why TLS
+      inspection is needed to see inside encryption, and weigh inspection's security value against its privacy,
+      compatibility and risk trade-offs when reading gateway logs.
+    quiz:
+      - prompt: A secure web gateway improves security mainly by
+        options:
+          - Speeding up the internet
+          - Routing outbound web traffic through a choke point that enforces policy, scans for malware and logs every request
+          - Encrypting the disk
+          - Replacing the firewall entirely
+        answer: 1
+        explanation: An SWG makes sprawling outbound web traffic policy-controlled and observable.
+      - prompt: TLS inspection is needed because
+        options:
+          - HTTPS is slow
+          - Without it the gateway cannot see inside encrypted traffic, where malware and exfiltration hide
+          - It disables logging
+          - Encryption is illegal
+        answer: 1
+        explanation: Most web traffic is HTTPS, so inspection is required to apply scanning and policy to the content.
+      - prompt: A genuine trade-off of TLS inspection is
+        options:
+          - It makes traffic faster
+          - Privacy concerns and breaking apps that use certificate pinning, plus a high-value decryption point
+          - It removes all risk
+          - It needs no certificates
+        answer: 1
+        explanation: Inspection raises privacy issues, can break pinned apps, and concentrates decrypted traffic at a sensitive point.
+      - prompt: For an encrypted session the gateway does NOT inspect, the proxy log shows
+        options: [The full content, The destination and metadata but not the encrypted content, Nothing at all, The user's password]
+        answer: 1
+        explanation: Without inspection the proxy sees the destination and metadata but not the encrypted payload.
