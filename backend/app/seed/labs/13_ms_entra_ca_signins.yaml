@@ -1,0 +1,109 @@
+slug: lab-ms-entra-ca-signins
+lesson: ms-entra-governance-protection
+title: Audit Entra sign-ins against a Conditional Access baseline
+pass_mark: 80
+scenario: 'You exported a day of Microsoft Entra ID sign-in logs as CSV. The SOC suspects a password
+
+  spray and at least one risky sign-in. Columns are TimeGenerated, UserPrincipalName,
+
+  IPAddress, Location, ClientApp, ResultType, RiskLevel and ConditionalAccessStatus. Result
+
+  type 50126 is an invalid-credential failure, 50074 means MFA was required, and a ClientApp
+
+  of ''Other clients'' is legacy authentication that cannot be challenged by MFA. Work out the
+
+  spray source, the risky accounts, and which Conditional Access control would have stopped it.'
+artifacts:
+- name: signin_logs.csv
+  kind: csv
+  description: A day of Entra ID sign-in log events exported as CSV.
+  content: 'TimeGenerated,UserPrincipalName,IPAddress,Location,ClientApp,ResultType,RiskLevel,ConditionalAccessStatus
+
+    2026-09-02T08:01:00Z,jmorgan@contoso.example,198.51.100.10,New York US,Browser,0,none,success
+
+    2026-09-02T08:05:00Z,jmorgan@contoso.example,203.0.113.200,Moscow RU,Browser,0,high,notApplied
+
+    2026-09-02T09:00:11Z,asingh@contoso.example,203.0.113.44,Unknown,Other clients,50126,none,notApplied
+
+    2026-09-02T09:00:19Z,bwong@contoso.example,203.0.113.44,Unknown,Other clients,50126,none,notApplied
+
+    2026-09-02T09:00:27Z,cdiaz@contoso.example,203.0.113.44,Unknown,Other clients,50126,none,notApplied
+
+    2026-09-02T09:00:35Z,dpatel@contoso.example,203.0.113.44,Unknown,Other clients,50126,none,notApplied
+
+    2026-09-02T09:00:43Z,efoster@contoso.example,203.0.113.44,Unknown,Other clients,50126,none,notApplied
+
+    2026-09-02T09:00:51Z,ggarcia@contoso.example,203.0.113.44,Unknown,Other clients,50126,none,notApplied
+
+    2026-09-02T09:00:59Z,hkhan@contoso.example,203.0.113.44,Unknown,Other clients,50126,none,notApplied
+
+    2026-09-02T09:01:07Z,mlópez@contoso.example,203.0.113.44,Unknown,Other clients,50126,none,notApplied
+
+    2026-09-02T07:30:00Z,svc-backup@contoso.example,192.0.2.10,London GB,Other clients,0,none,success
+
+    2026-09-02T10:15:00Z,jmorgan@contoso.example,198.51.100.10,New York US,Browser,50074,none,success
+
+    2026-09-02T11:02:00Z,lchen@contoso.example,203.0.113.77,Anonymous proxy,Browser,0,high,notApplied
+
+    2026-09-02T11:40:00Z,asingh@contoso.example,198.51.100.10,New York US,Browser,0,none,success
+
+    '
+tasks:
+- prompt: How many sign-ins were invalid-credential failures?
+  type: number
+  hint: Count the rows whose ResultType is the invalid-credential code.
+  explanation: These are the failed attempts that make up the password spray.
+  verify:
+    artifact: signin_logs.csv
+    op: count
+    pattern: ',50126,'
+  accepted:
+  - '8'
+- prompt: Which IP address is the source of the password spray?
+  type: text
+  hint: Look at the address shared by the legacy-auth failures.
+  explanation: One address made all the legacy-auth invalid-credential attempts across many accounts, which is the spray signature.
+  verify:
+    artifact: signin_logs.csv
+    op: top
+    pattern: ',([0-9.]+),[^,]+,Other clients,50126,'
+  accepted:
+  - 203.0.113.44
+- prompt: Which user principal names had a high-risk sign-in?
+  type: set
+  hint: Filter on the risk-level column and list every account it flags.
+  explanation: Identity Protection scored these sign-ins high risk (impossible travel and an anonymous proxy); they need a
+    risk-based Conditional Access response.
+  verify:
+    artifact: signin_logs.csv
+    op: set
+    pattern: ',([^,]+@contoso\.example),[^,]+,[^,]+,[^,]+,[^,]+,high,'
+  accepted:
+  - jmorgan@contoso.example, lchen@contoso.example
+- prompt: How many sign-ins used legacy authentication?
+  type: number
+  hint: Count the rows whose client app is the legacy category.
+  explanation: Legacy authentication ('Other clients') bypasses modern MFA, which is why the spray used it.
+  verify:
+    artifact: signin_logs.csv
+    op: count
+    pattern: ',Other clients,'
+  accepted:
+  - '9'
+- prompt: Which account shows impossible travel?
+  type: text
+  accepted:
+  - jmorgan@contoso.example
+  hint: Find one account that signed in from two very distant cities only minutes apart.
+  explanation: jmorgan@contoso.example signed in from New York and then Moscow four minutes later, which no real travel allows.
+- prompt: Which Conditional Access control would most directly stop this spray source?
+  type: choice
+  options:
+  - Require MFA for every sign-in from that IP
+  - Block legacy authentication protocols
+  - Grant access with no additional controls
+  - Delete the Conditional Access policy
+  answer: 1
+  hint: The spray succeeds because it uses a protocol MFA cannot challenge.
+  explanation: The spray uses legacy 'Other clients' auth, which MFA cannot challenge, so blocking legacy authentication removes
+    the avenue outright.

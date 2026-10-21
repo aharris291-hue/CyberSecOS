@@ -1325,3 +1325,947 @@ lessons:
           - Keeping findings undocumented
         answer: 1
         explanation: The payoff is converting exposed weaknesses into actions that raise real readiness.
+  - slug: ir-ddos-response
+    title: Responding to a Denial-of-Service Attack
+    order: 15
+    difficulty: intermediate
+    summary: Learn how to recognise and respond to denial-of-service and distributed denial-of-service attacks, where the goal is disruption rather than intrusion, and how mitigation differs from other incidents.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.8", "sc200:4", "cysa:3.1"]
+    learning_objectives:
+      - Distinguish denial-of-service attack types and recognise them
+      - Apply a response process focused on availability
+      - Work with providers and plan mitigation before an attack
+    theory: |
+      A denial-of-service attack is unusual among incidents because the attacker is not trying to get **in**; they
+      are trying to make a service **unavailable**. A **distributed denial-of-service (DDoS)** attack uses many
+      sources, often a botnet, to overwhelm a target. The response goal is therefore different from an intrusion:
+      the priority is restoring and protecting **availability**, not containing a foothold. Attacks come in broad
+      types. **Volumetric** attacks flood the target's bandwidth with sheer traffic (often amplified through
+      reflection off misconfigured servers). **Protocol** attacks exhaust connection-state resources, such as a
+      SYN flood filling a server's connection table. **Application-layer** attacks are lower-volume but target
+      expensive operations (a flood of searches or logins), so they can take a service down with far less traffic
+      and look more like legitimate requests, making them harder to filter.
+
+      Recognising an attack and distinguishing it from a legitimate traffic surge is the first response step. The
+      signals are a sudden, sustained spike in traffic or errors, often from unusual geographies or with telltale
+      patterns (many identical requests, spoofed sources, a single targeted endpoint), accompanied by degraded
+      service or exhausted resources. It is important to rule out non-malicious causes (a marketing campaign, a
+      viral link, a misbehaving client) and, crucially, to check whether the apparent DoS is a **smokescreen** for
+      another attack, since adversaries sometimes use the noise and distraction of a DDoS to cover intrusion or
+      data theft. Once confirmed, the response focuses on mitigation while keeping the service up for legitimate
+      users.
+
+      Mitigation relies heavily on **capacity and upstream help**, which is why preparation matters more here than
+      almost any other incident. Techniques include filtering and rate-limiting obviously bad traffic, blocking
+      or challenging suspicious sources, scaling capacity, and above all engaging **upstream providers and DDoS
+      mitigation services** who can absorb and scrub volumetric floods far better than an on-premises link ever
+      could, since a flood that saturates your internet connection cannot be fixed on your side of that
+      connection. The best responses are planned in advance: knowing who to call, having mitigation services
+      contracted and tested, understanding what traffic is normal, and having runbooks ready, because a DDoS gives
+      little time to improvise. For the analyst, the key judgements are confirming it is truly an attack,
+      classifying its type to choose the right mitigation, staying alert to a possible smokescreen, and escalating
+      to providers early rather than trying to weather a volumetric flood alone.
+    examples:
+      - title: DoS attack types
+        body: |
+          volumetric  -> flood bandwidth with sheer traffic (often amplified/reflected)
+          protocol    -> exhaust connection state (SYN flood fills the connection table)
+          application -> low-volume, hits expensive operations; looks like real requests, hard to filter.
+      - title: Response priorities
+        body: |
+          confirm it is an attack (not a marketing spike); classify the type
+          check for a SMOKESCREEN hiding another attack
+          mitigate while keeping service up -> engage upstream providers / DDoS scrubbing EARLY
+          a flood saturating your link cannot be fixed on your side of it.
+    exercise:
+      title: Respond to a denial-of-service incident
+      environment: A described service experiencing a traffic event (or a scenario)
+      tools: [A scenario or sample traffic metrics, a document, a notes file]
+      steps:
+        - Distinguish volumetric, protocol and application-layer denial-of-service attacks.
+        - Given sample symptoms, decide whether it is an attack and rule out a legitimate surge.
+        - Classify the attack type and choose an appropriate mitigation for it.
+        - Explain why and when you would engage upstream providers or a scrubbing service.
+        - Check for the possibility that the attack is a smokescreen and say what else you would watch.
+        - Identify one preparation step that would make a future response faster.
+      deliverable: A denial-of-service response covering attack classification, confirmation versus a legitimate surge, type-appropriate mitigation, upstream engagement, a smokescreen check, and one preparation improvement.
+    expected_outcome: >
+      You can distinguish denial-of-service attack types, confirm and classify an attack, apply availability-
+      focused mitigation including upstream help, watch for a smokescreen, and plan mitigation before an attack.
+    quiz:
+      - prompt: The response goal in a denial-of-service incident differs from an intrusion because the priority is
+        options:
+          - Containing a foothold
+          - Restoring and protecting availability, since the attacker aims to disrupt, not get in
+          - Recovering stolen data
+          - Resetting all passwords
+        answer: 1
+        explanation: DoS targets availability, so the response focuses on keeping the service up, not eviction.
+      - prompt: An application-layer DoS attack is harder to filter because it
+        options:
+          - Uses enormous bandwidth
+          - Is low-volume and resembles legitimate requests while hitting expensive operations
+          - Only targets the network card
+          - Cannot affect servers
+        answer: 1
+        explanation: Low-volume, legitimate-looking requests to costly endpoints are difficult to distinguish.
+      - prompt: Volumetric floods usually require upstream provider help because
+        options:
+          - On-premises tools are always enough
+          - A flood that saturates your internet link cannot be fixed on your side of that link
+          - Providers cause the attack
+          - They are never large
+        answer: 1
+        explanation: Once the link itself is saturated, only upstream scrubbing can absorb the flood.
+      - prompt: A DDoS should also prompt analysts to check whether it is
+        options:
+          - A reason to ignore other alerts
+          - A smokescreen distracting from a simultaneous intrusion or data theft
+          - Always harmless
+          - A hardware upgrade
+        answer: 1
+        explanation: Attackers sometimes use DDoS noise to cover a quieter, more damaging attack.
+  - slug: ir-post-incident-review
+    title: Post-Incident Review and Lessons Learned
+    order: 16
+    difficulty: beginner
+    summary: Learn how the post-incident review turns a resolved incident into lasting improvement through a blameless analysis of what happened, what worked, and what to change.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.8", "sc200:4", "cysa:3.3"]
+    learning_objectives:
+      - Explain the purpose of a post-incident review
+      - Describe how to run a blameless, effective review
+      - Turn review findings into concrete, tracked improvements
+    theory: |
+      The incident is contained and recovered, but the response is not finished: the **post-incident review**
+      (also called a post-mortem or lessons-learned) is the phase that converts a painful event into lasting
+      improvement, and skipping it means paying the cost of an incident without collecting the return. The review
+      brings the people involved together, usually within a week or two while memories are fresh, to reconstruct
+      what actually happened and how the organisation responded. Its purpose is explicitly **learning and
+      improvement**, not judgement: a well-run review answers what happened, how and when we detected it, how we
+      responded, what worked well, what did not, and what we will change, producing a clear timeline and a set of
+      concrete actions.
+
+      The single most important principle is that the review must be **blameless**. If people fear being punished,
+      they hide mistakes and the organisation learns nothing; a blameless review treats errors as signals of
+      system and process weaknesses to fix rather than individual failings to punish, which is what gets the honest
+      account needed to actually improve. Good reviews dig past the surface to **root causes** using techniques
+      like asking why repeatedly, distinguishing the immediate trigger from the underlying conditions that let it
+      happen or let it spread. They look at the whole arc: not just the technical vulnerability that was exploited,
+      but whether detection was fast enough, whether the right people were engaged, whether communication worked,
+      whether the playbook was adequate, and whether recovery was clean. Both failures and successes are worth
+      capturing, because knowing what worked tells you what to preserve.
+
+      The review only delivers value if its findings become **tracked action**. Each lesson should turn into a
+      specific, owned, time-bound improvement, a detection to build so this is caught sooner next time, a control
+      to add or fix, a playbook to update, a gap in logging or access to close, a training need to meet, and these
+      actions must be assigned and followed up, not filed and forgotten. These improvements feed directly back into
+      the **preparation** phase of the incident response lifecycle, which is how an organisation gets measurably
+      better incident after incident rather than repeating the same mistakes. For the analyst, participating in
+      reviews is both how the SOC improves its detections (many new detection rules are born from a post-incident
+      review of something that was missed) and how you contribute the ground-truth detail of what the attack looked
+      like, so the lesson is to document honestly, focus on systemic fixes over blame, and make sure the actions
+      are real and tracked.
+    examples:
+      - title: Purpose and the blameless rule
+        body: |
+          after containment/recovery: reconstruct what happened + how we responded (while fresh)
+          purpose = learning, NOT judgement
+          BLAMELESS: errors are signals of process/system weakness to fix, not people to punish -> gets honest accounts.
+      - title: From lessons to tracked action
+        body: |
+          dig to ROOT cause (ask why repeatedly; trigger vs underlying conditions)
+          capture failures AND successes (what to preserve)
+          each lesson -> specific, owned, time-bound action (new detection, fixed control, updated playbook, closed gap)
+          -> feeds the Preparation phase -> better next time.
+    exercise:
+      title: Run a post-incident review
+      environment: A described resolved incident with a rough timeline (or a scenario)
+      tools: [A scenario, a post-incident-review template, a document, a notes file]
+      steps:
+        - Explain the purpose of a post-incident review and why it must happen promptly.
+        - Explain what blameless means and why it produces better learning.
+        - Reconstruct a brief timeline for the described incident (detection, response, recovery).
+        - Identify a root cause by looking past the immediate trigger to underlying conditions.
+        - Capture one thing that worked well and one that did not.
+        - Turn two lessons into specific, owned, time-bound improvements that feed back into preparation.
+      deliverable: A post-incident review with a timeline, a blameless root-cause analysis, what worked and what did not, and two tracked improvements feeding the preparation phase.
+    expected_outcome: >
+      You can explain the purpose of a post-incident review, run it blamelessly to find root causes, and convert
+      its lessons into specific, owned, tracked improvements that strengthen future preparation.
+    quiz:
+      - prompt: The purpose of a post-incident review is primarily to
+        options:
+          - Assign blame for the incident
+          - Learn and improve by understanding what happened and what to change
+          - Close the ticket faster
+          - Avoid documentation
+        answer: 1
+        explanation: The review exists to turn the incident into lasting improvement, not to punish.
+      - prompt: A review is kept blameless because
+        options:
+          - Blame makes people work harder
+          - Fear of punishment makes people hide mistakes, so the organisation learns nothing
+          - It is required by law only
+          - It speeds up the network
+        answer: 1
+        explanation: Blamelessness elicits the honest account needed to fix systemic weaknesses.
+      - prompt: Looking for a root cause means
+        options:
+          - Stopping at the first symptom
+          - Digging past the immediate trigger to the underlying conditions that allowed or spread the incident
+          - Blaming the newest employee
+          - Rebooting the servers
+        answer: 1
+        explanation: Root-cause analysis distinguishes the trigger from the deeper conditions behind it.
+      - prompt: A post-incident review delivers value only if its findings become
+        options:
+          - A filed report no one reads
+          - Specific, owned, time-bound improvements that are tracked and feed back into preparation
+          - A list of people to blame
+          - Deleted immediately
+        answer: 1
+        explanation: Lessons must become tracked, owned actions to actually strengthen future response.
+  - slug: ir-timeline-analysis
+    title: Timeline Analysis in Incident Response
+    order: 17
+    difficulty: intermediate
+    summary: Learn to build a timeline of an incident from many evidence sources, the backbone technique of investigation that reveals the sequence of attacker actions and answers what happened when.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.8", "sc200:4", "cysa:3.2"]
+    learning_objectives:
+      - Explain why a timeline is central to incident investigation
+      - Combine multiple evidence sources into a coherent timeline
+      - Use a timeline to establish scope, root cause and attacker actions
+    theory: |
+      At the heart of almost every incident investigation is a **timeline**, an ordered reconstruction of what
+      happened and when, because understanding the **sequence** of events is what turns scattered evidence into a
+      coherent story of the attack. A timeline answers the questions that matter most: when did the attacker get
+      in, what did they do first, how did they move, what did they access or take, and when. Without a timeline,
+      an investigator has a pile of disconnected artifacts; with one, they can see cause and effect, establish the
+      scope (what was and was not affected), find the root cause (the initial entry point), and determine whether
+      the attacker is still active. Building and reasoning over a timeline is therefore a backbone skill of
+      incident response and digital forensics.
+
+      A good timeline is built by **combining many sources**, because no single source tells the whole story.
+      Filesystem timestamps show when files were created, modified or accessed; logs (authentication, process
+      creation, network, application, cloud audit) show actions with their times; registry and artifact
+      timestamps on Windows, shell history and auditd on Linux, and memory artifacts all contribute. The analyst
+      normalises these to a **common time reference** (a recurring theme, everything to UTC) and merges them into
+      a single ordered view, often called a **super-timeline** when it aggregates many artifact types
+      automatically. The power comes from correlation: a suspicious login in one source lines up with a process
+      launch in another and an outbound connection in a third, and together they tell a story none told alone.
+      Building the timeline also surfaces **gaps and inconsistencies**, a period with no logs, a timestamp that
+      does not fit, which are themselves findings, often pointing at anti-forensics or missing visibility.
+
+      Using the timeline well requires **discipline and healthy skepticism**. Timestamps can be manipulated by
+      attackers (timestomping), clocks can be wrong, and different sources record time differently, so the analyst
+      corroborates key events across independent sources rather than trusting any single timestamp, and treats a
+      lone unverified time with caution. The timeline is refined iteratively as new evidence arrives, and it feeds
+      directly into the rest of the response: it defines the scope that guides containment, identifies the root
+      cause that must be fixed, and provides the factual spine of the incident report and any legal or regulatory
+      account. For the analyst, the practical approach is to start building the timeline early, pull from every
+      available source and align their times, let the sequence reveal the attack's story, corroborate important
+      moments across sources, and treat gaps and anomalies as leads, because in incident response the question is
+      almost always not just what happened but in what order, and the timeline is how that is answered.
+    examples:
+      - title: Why the timeline is central
+        body: |
+          sequence turns scattered artifacts into the story: when they got in, what first, how they moved, what they took
+          enables scope, root cause (initial entry), and whether the attacker is still active.
+      - title: Build it from many sources, with skepticism
+        body: |
+          combine filesystem timestamps + logs (auth/process/network/cloud) + registry/history/memory -> all to UTC
+          super-timeline aggregates artifact types; correlation across sources tells the real story
+          beware timestomping / wrong clocks -> corroborate key events across independent sources; gaps are findings.
+    exercise:
+      title: Build an incident timeline
+      environment: A described incident with several evidence sources (or a scenario)
+      tools: [A scenario or sample logs and timestamps, a timeline template, a document, a notes file]
+      steps:
+        - Explain why a timeline is central to understanding an incident.
+        - List the evidence sources you would pull from and what each contributes.
+        - Explain why normalising all times to a common reference is essential.
+        - Merge sample events from different sources into a short ordered timeline.
+        - Corroborate one key event across two independent sources and explain why.
+        - Identify a gap or inconsistency in the timeline and what it might indicate.
+      deliverable: A reconstructed incident timeline merging multiple sources to a common time, with one corroborated key event and one identified gap or anomaly and its possible meaning.
+    expected_outcome: >
+      You can explain why a timeline anchors an investigation, combine many evidence sources into a coherent,
+      time-normalised sequence, and use it to establish scope, root cause and attacker actions while guarding against manipulated timestamps.
+    quiz:
+      - prompt: A timeline is central to incident investigation because it
+        options:
+          - Replaces the need for evidence
+          - Reveals the sequence of events, turning scattered artifacts into a coherent story of the attack
+          - Encrypts the logs
+          - Only matters for compliance
+        answer: 1
+        explanation: Understanding the order of events establishes scope, root cause and attacker actions.
+      - prompt: Building a reliable timeline requires normalising all sources to
+        options:
+          - Different local time zones
+          - A common time reference such as UTC, so events from different sources align
+          - No timestamps at all
+          - The analyst's wristwatch
+        answer: 1
+        explanation: Aligning times to one reference lets events from many sources be correctly sequenced.
+      - prompt: Because attackers can manipulate timestamps (timestomping), an analyst should
+        options:
+          - Trust every single timestamp
+          - Corroborate key events across independent sources rather than trusting one timestamp
+          - Ignore all times
+          - Delete the timeline
+        answer: 1
+        explanation: Cross-source corroboration guards against manipulated or incorrect individual timestamps.
+      - prompt: A gap in the timeline (for example a period with no logs) should be treated as
+        options:
+          - Proof nothing happened
+          - A finding that may indicate anti-forensics or missing visibility
+          - An error to ignore
+          - A reason to stop
+        answer: 1
+        explanation: Gaps often point at tampering or telemetry blind spots and are themselves investigative leads.
+  - slug: ir-malware-analysis-basics
+    title: Malware Analysis Basics for Responders
+    order: 18
+    difficulty: advanced
+    summary: Learn the fundamentals of static and dynamic malware analysis that an incident responder uses to understand a suspicious file quickly and safely, enough to extract indicators and inform the response.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.8", "sc200:3", "cysa:1.2"]
+    learning_objectives:
+      - Distinguish static and dynamic malware analysis
+      - Safely analyse a suspicious file to extract useful information
+      - Produce indicators and understanding that inform the response
+    theory: |
+      During an incident, a responder often holds a suspicious file and needs to understand it quickly: what does
+      it do, how does it persist, what does it talk to, so that the response can be scoped and contained. Full
+      reverse engineering is a deep specialty, but **basic malware analysis** gives a responder enough to act, and
+      it comes in two complementary forms. **Static analysis** examines the file **without running it**: looking at
+      its type and format, the strings it contains (which can reveal URLs, IP addresses, file paths, commands and
+      error messages), its hashes (to check against threat intelligence and see if it is known), and structural
+      details like imported functions that hint at capability. Static analysis is safe (the code never executes)
+      and quick, but sophisticated malware is often packed or obfuscated to defeat it, so it may reveal little on
+      its own.
+
+      **Dynamic analysis** runs the malware in a **controlled, isolated environment** (a sandbox or an isolated
+      analysis VM) and observes its behaviour: what files it creates or modifies, what registry or persistence
+      changes it makes, what processes it spawns, and crucially what **network connections** it attempts (command-
+      and-control domains and IPs). Behaviour reveals what static analysis cannot, because the malware must
+      actually do its job when it runs, so even packed samples expose themselves. The catch is **safety**: dynamic
+      analysis must be done in a properly isolated environment that cannot reach production or the internet
+      uncontrolled, because you are deliberately running live malware, and advanced samples may detect the sandbox
+      and refuse to run, so results are informative but not infallible. Automated sandboxes make this accessible by
+      detonating a sample and producing a behavioural report.
+
+      For a responder, the goal is **actionable understanding and indicators**, not a full reverse-engineering
+      report. From basic analysis you aim to extract **indicators of compromise**, file hashes, command-and-control
+      domains and IPs, file paths, registry keys, so you can hunt for the malware elsewhere in the environment and
+      block its infrastructure, and a basic understanding of what it does, is it ransomware, a backdoor, a stealer,
+      how it persists, so you can scope and contain appropriately. The safety rules are paramount: handle samples
+      carefully (never run them outside isolation, be wary even of double-clicking), use isolated analysis
+      environments, and know when to escalate to specialist reverse engineers for samples that matter and resist
+      basic analysis. For the analyst, the lesson is that a responder does not need to be a reverse engineer to get
+      real value from a sample: safe static analysis for quick triage and indicators, controlled dynamic analysis
+      for behaviour, and the discipline to extract the indicators that let you find and stop the malware across the
+      environment, while always treating the sample as the live threat it is.
+    examples:
+      - title: Static vs dynamic
+        body: |
+          static (don't run it): type, strings (URLs/IPs/paths/commands), hashes (vs threat intel), imports -> safe, quick, but packing hides it
+          dynamic (run it in ISOLATION): files/registry/persistence changes, processes, NETWORK connections -> behaviour reveals what static can't.
+      - title: Responder's goal and safety
+        body: |
+          aim: actionable understanding + INDICATORS (hashes, C2 domains/IPs, paths, keys) -> hunt + block across the environment
+          understand type (ransomware/backdoor/stealer) + persistence -> scope + contain
+          SAFETY: isolated environment only; never run outside isolation; sandbox-evasion exists; escalate hard samples.
+    exercise:
+      title: Perform basic analysis on a suspicious file
+      environment: A described suspicious file in an incident, with an isolated analysis environment (or a scenario)
+      tools: [A scenario or sample static/dynamic output, a document, a notes file]
+      steps:
+        - Explain the difference between static and dynamic analysis and what each reveals.
+        - From static analysis of the sample, extract useful information (strings, hash, imports).
+        - Explain why packing or obfuscation limits static analysis.
+        - Describe what dynamic analysis would show and why it must be done in isolation.
+        - Extract a set of indicators of compromise to hunt and block across the environment.
+        - State when you would escalate the sample to a specialist reverse engineer.
+      deliverable: A basic malware-analysis write-up with static findings, expected dynamic behaviour, extracted indicators of compromise, the safety precautions, and an escalation decision.
+    expected_outcome: >
+      You can distinguish static and dynamic malware analysis, safely extract indicators and behaviour from a
+      suspicious file, and produce the understanding and indicators needed to scope, hunt and contain an incident.
+    quiz:
+      - prompt: Static malware analysis examines a file
+        options:
+          - By running it on a production server
+          - Without running it, looking at type, strings, hashes and structure
+          - Only after it has spread
+          - By deleting it
+        answer: 1
+        explanation: Static analysis inspects the file safely without executing it.
+      - prompt: Dynamic analysis must be performed in an isolated environment because
+        options:
+          - It is faster there
+          - You are deliberately running live malware that must not reach production or the internet uncontrolled
+          - Isolation improves the strings
+          - It needs no safety
+        answer: 1
+        explanation: Running live malware safely requires containment so it cannot cause real harm.
+      - prompt: For a responder, the main goal of basic analysis is to
+        options:
+          - Produce a full reverse-engineering report
+          - Extract actionable indicators and a basic understanding to scope, hunt and contain the threat
+          - Run the malware everywhere
+          - Avoid any analysis
+        answer: 1
+        explanation: Responders need indicators and enough understanding to act, not full reverse engineering.
+      - prompt: A limitation of static analysis is that
+        options:
+          - It is unsafe
+          - Packed or obfuscated malware may reveal little until it is actually run
+          - It requires running the malware
+          - It never finds strings
+        answer: 1
+        explanation: Obfuscation and packing hide static features, so dynamic analysis is often needed too.
+  - slug: ir-cloud-incident-response
+    title: Cloud Incident Response
+    order: 19
+    difficulty: advanced
+    summary: Learn how incident response changes in the cloud, where the control plane, shared responsibility, ephemeral resources and provider logs reshape how you detect, investigate and contain an incident.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.8", "sc200:4", "cysa:3.1"]
+    learning_objectives:
+      - Explain how cloud incident response differs from on-premises
+      - Investigate a cloud incident using the control plane and provider logs
+      - Contain and recover in a cloud environment
+    theory: |
+      Incident response in the cloud follows the same lifecycle as on-premises, prepare, detect, contain,
+      eradicate, recover, learn, but the environment reshapes how each phase works, and responders who apply only
+      on-premises instincts miss both evidence and containment options. The biggest shift is the **control plane**:
+      in the cloud, much of an attack and much of the evidence lives not inside a server but in the provider's
+      API-driven management layer, where resources are created, permissions granted, and data accessed. A cloud
+      intrusion often looks less like malware on a host and more like **abuse of credentials and the control
+      plane**, an attacker using stolen keys to enumerate the account, escalate IAM privileges, read storage, and
+      spin up resources, so the primary evidence is the provider's **audit log** of API activity (as met in the
+      cloud investigation lesson), not just host artifacts. Shared responsibility also matters: the provider
+      secures and may hold logs for the underlying infrastructure, so responders work within what the provider
+      exposes and may need to engage provider support.
+
+      Investigation therefore centres on **cloud-native evidence**. The control-plane audit log is the backbone,
+      reconstructing who (which identity or key) did what API action, when, and from where, revealing the
+      attacker's path through the account. Identity and access logs show credential use and permission changes.
+      Resource and network logs (flow logs, storage access logs) show data access and movement. A complication is
+      that cloud resources are **ephemeral**, a compromised instance may be gone (auto-scaled away or terminated)
+      before it can be examined, so evidence must be captured quickly (snapshots of disks and memory, preserving
+      the instance) and, ideally, automated, because you cannot analyse a server that no longer exists. The same
+      ephemerality that complicates forensics can aid recovery, since rebuilding from known-good images is often
+      straightforward.
+
+      **Containment and recovery** have powerful cloud-specific levers. Because everything is API-driven,
+      containment can be fast and surgical: disable or rotate the compromised credentials and keys immediately
+      (often the single most important action, since the control plane is the attack surface), revoke sessions,
+      isolate a resource by changing its security group or network rules, and quarantine rather than delete so
+      evidence is preserved. IAM is central, an incident frequently requires auditing and tightening permissions
+      the attacker used or could use. Recovery leans on cloud strengths: redeploy from clean infrastructure-as-code
+      and images, restore data from immutable backups, and rotate all potentially exposed secrets. Preparation is
+      decisive, because cloud response depends on logging being enabled in advance (you cannot investigate what was
+      never logged), on having the right access and runbooks, and on automation to capture ephemeral evidence and
+      respond at API speed. For the analyst, the lessons are that cloud incidents revolve around the control plane
+      and credentials rather than host malware, that the provider's audit logs are the primary evidence and must be
+      enabled before an incident, that ephemeral resources force fast, automated evidence capture, and that the
+      cloud offers fast, API-driven containment, rotate the keys, isolate the resource, tighten IAM, whose speed
+      and precision are a real advantage when responders are prepared to use them.
+    examples:
+      - title: What changes in the cloud
+        body: |
+          same lifecycle, different terrain: attack + evidence live in the CONTROL PLANE (API management layer), not just on a host
+          a cloud intrusion = credential/control-plane abuse (stolen keys -> enumerate, escalate IAM, read storage, spin up resources)
+          primary evidence = provider AUDIT LOG of API activity; shared responsibility bounds what you can see.
+      - title: Ephemeral evidence and fast containment
+        body: |
+          resources are EPHEMERAL -> capture fast (snapshot disk/memory, preserve instance), automate, or the server is gone
+          containment is API-fast + surgical: rotate/disable compromised keys (often #1), revoke sessions, isolate via security group, quarantine not delete
+          recovery: redeploy from clean IaC/images, restore from immutable backups, rotate all exposed secrets; PREPARE (logging on in advance).
+    exercise:
+      title: Respond to a cloud incident
+      environment: A described cloud account compromise with sample control-plane logs (or a scenario)
+      tools: [A scenario or sample cloud audit logs, a document, a notes file]
+      steps:
+        - Explain how cloud incident response differs from on-premises, especially the role of the control plane.
+        - Describe why the provider's audit log is the primary evidence and what it reveals.
+        - Explain how ephemeral resources complicate forensics and how you capture evidence fast.
+        - Reconstruct the attacker's path from the sample control-plane logs.
+        - Describe the fast, API-driven containment actions you would take (starting with credentials).
+        - Explain what preparation must be in place before a cloud incident for response to work.
+      deliverable: A cloud incident-response write-up reconstructing the attack from control-plane logs, with ephemeral-evidence capture, credential-first containment and recovery, and the preparation required.
+    expected_outcome: >
+      You can explain how cloud incident response differs from on-premises, investigate using the control plane and
+      provider logs, capture ephemeral evidence, and contain and recover with fast, API-driven cloud-specific actions.
+    quiz:
+      - prompt: The biggest shift in cloud incident response is that
+        options:
+          - Nothing changes from on-premises
+          - Much of the attack and evidence lives in the API-driven control plane, not just inside a server
+          - Logs do not exist in the cloud
+          - Containment is impossible
+        answer: 1
+        explanation: Cloud incidents revolve around the control plane and credentials, so evidence and actions shift there.
+      - prompt: The primary evidence in a cloud intrusion is usually
+        options:
+          - A screenshot of the desktop
+          - The provider's audit log of API activity, which must be enabled before the incident
+          - The office CCTV
+          - Nothing is available
+        answer: 1
+        explanation: Control-plane audit logs reconstruct the attacker's API actions, if logging was enabled in advance.
+      - prompt: Ephemeral cloud resources affect forensics because
+        options:
+          - They last forever
+          - A compromised instance may be gone before it can be examined, so evidence must be captured fast and ideally automatically
+          - They cannot be snapshotted
+          - They never change
+        answer: 1
+        explanation: Auto-scaling and termination can destroy evidence, forcing rapid, automated capture.
+      - prompt: Often the single most important cloud containment action is to
+        options:
+          - Reboot the office router
+          - Rotate or disable the compromised credentials and keys, since the control plane is the attack surface
+          - Delete all logs
+          - Do nothing
+        answer: 1
+        explanation: Cutting off the abused credentials quickly stops control-plane access; API-driven containment is fast.
+  - slug: ir-threat-intel-integration
+    title: Threat Intelligence in Incident Response
+    order: 20
+    difficulty: intermediate
+    summary: Learn how threat intelligence strengthens every phase of incident response, from recognising what you are facing to scoping, attribution and prevention, and how response in turn feeds intelligence back.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.8", "sc200:2", "cysa:1.4"]
+    learning_objectives:
+      - Explain how threat intelligence supports incident response
+      - Use intelligence to scope, understand and attribute an incident
+      - Feed intelligence back from the response
+    theory: |
+      **Threat intelligence** and **incident response** reinforce each other, and a responder who uses intelligence
+      well handles an incident faster, more completely and with better decisions than one working blind.
+      Intelligence is knowledge about adversaries, their tools, techniques, infrastructure and behaviour, and
+      bringing it to bear on an incident helps answer the questions that drive response: what are we actually
+      facing, how does this adversary operate, what else should we look for, and how do we stop them coming back.
+      Rather than treating each incident as entirely novel, intelligence lets a responder recognise patterns, if
+      the observed behaviour matches a known malware family, tool or threat group, a great deal is immediately
+      known about what to expect, which short-circuits investigation and informs containment.
+
+      Intelligence strengthens the specific phases. In **identification and understanding**, matching observed
+      indicators and techniques against intelligence tells you whether you are dealing with commodity malware or a
+      targeted actor, and what that actor typically does next, so you can anticipate rather than merely react. In
+      **scoping**, intelligence about an adversary's known tools and techniques tells you what other artifacts and
+      behaviours to hunt for across the environment, finding the full extent of the compromise rather than just the
+      first host, the TTPs (tactics, techniques, procedures) are more durable than specific indicators, so knowing
+      an actor's TTPs helps find activity that changed its indicators. In **containment and eradication**,
+      understanding how the adversary persists and operates ensures you remove all their footholds rather than
+      leaving some behind. **Attribution** (identifying who is behind an attack), while often less important than
+      stopping it, can matter for understanding motive, likely targets and appropriate response, and is grounded in
+      intelligence. And in **prevention and recovery**, intelligence about the adversary informs which defences and
+      detections to strengthen so the same actor cannot simply return.
+
+      The relationship is **bidirectional**: incident response is also a producer of intelligence. The indicators,
+      techniques and tools observed during an incident, the malware samples, the command-and-control infrastructure,
+      the behaviours, are valuable intelligence that should be captured, documented and fed back, into the
+      organisation's own detections (so the same attack is caught next time), into the threat intelligence platform,
+      and sometimes into community sharing. This closes the loop: intelligence improves response, and response
+      generates intelligence. Practically, this means responders enrich their investigation with intelligence
+      lookups, pivot on an adversary's known TTPs when scoping, and always extract and record indicators and
+      techniques as a deliverable of the incident. The considerations are the familiar ones, intelligence must be
+      assessed for relevance and confidence (not every match is meaningful), and attribution especially should be
+      held with appropriate humility. For the analyst, the lessons are that threat intelligence makes response
+      faster and more complete by letting you recognise what you face and anticipate what comes next, that
+      TTP-level intelligence is especially valuable for scoping and eradication because it is more durable than
+      indicators, and that every incident should feed its hard-won intelligence back into the organisation's
+      defences, because the knowledge gained from one attack is the best preparation for the next.
+    examples:
+      - title: Intelligence into response
+        body: |
+          match observed behaviour to a known family/tool/group -> you instantly know a lot about what to expect -> anticipate, not just react
+          identification (commodity vs targeted), scoping (hunt the actor's other TTPs/artifacts), eradication (remove ALL footholds), attribution, prevention (strengthen defences vs this actor).
+      - title: Response into intelligence (the loop)
+        body: |
+          an incident PRODUCES intelligence: malware samples, C2 infrastructure, observed TTPs
+          capture + feed back -> own detections (catch it next time), the TIP, sometimes community sharing
+          TTPs are more durable than indicators -> best for scoping/eradication; assess relevance + confidence; attribution with humility.
+    exercise:
+      title: Use threat intelligence in an incident
+      environment: A described incident with observed indicators and techniques (or a scenario)
+      tools: [A scenario or sample indicators, a document, a notes file]
+      steps:
+        - Explain how matching observed behaviour to known intelligence speeds and improves response.
+        - Explain how intelligence helps distinguish commodity malware from a targeted actor.
+        - Describe how an adversary's known TTPs help you scope the full extent of a compromise.
+        - Explain why TTP-level intelligence is more durable than specific indicators.
+        - Describe how the incident itself produces intelligence to feed back into defences.
+        - Note why relevance, confidence and attribution require care.
+      deliverable: A write-up showing how threat intelligence informs each response phase for the incident, how TTPs guide scoping and eradication, and what intelligence the incident produces to feed back.
+    expected_outcome: >
+      You can explain how threat intelligence strengthens each phase of incident response, use an adversary's TTPs
+      to scope and eradicate, and feed the intelligence gained from an incident back into the organisation's defences.
+    quiz:
+      - prompt: Threat intelligence speeds incident response mainly by letting a responder
+        options:
+          - Treat every incident as entirely novel
+          - Recognise known patterns and anticipate what the adversary typically does next
+          - Skip containment
+          - Avoid investigation entirely
+        answer: 1
+        explanation: Matching observed behaviour to known intelligence short-circuits investigation and informs action.
+      - prompt: For scoping a compromise, TTP-level intelligence is especially valuable because
+        options:
+          - TTPs change every minute
+          - TTPs are more durable than specific indicators, so knowing an actor's techniques finds activity that changed its indicators
+          - Indicators never change
+          - TTPs are irrelevant to scoping
+        answer: 1
+        explanation: Durable techniques help find the full compromise even when specific indicators have changed.
+      - prompt: Incident response relates to threat intelligence bidirectionally because
+        options:
+          - Response consumes intelligence but never produces it
+          - An incident produces intelligence (indicators, TTPs, infrastructure) that should be fed back into defences
+          - Intelligence and response are unrelated
+          - Only vendors produce intelligence
+        answer: 1
+        explanation: Each incident yields intelligence that should improve the organisation's future detection and defence.
+      - prompt: Attribution during an incident should be held
+        options:
+          - As absolute certainty always
+          - With appropriate humility, since it is grounded in intelligence and is often less urgent than stopping the attack
+          - As irrelevant to everything
+          - Without any evidence
+        answer: 1
+        explanation: Attribution is uncertain and secondary to containment, so it warrants caution.
+  - slug: ir-ot-ics-response
+    title: Incident Response in OT and ICS Environments
+    order: 21
+    difficulty: advanced
+    summary: Understand why incident response in operational technology and industrial control systems differs fundamentally from IT, where safety and availability come first, and how responders must adapt their approach accordingly.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.8", "sc200:4", "cysa:3.1"]
+    learning_objectives:
+      - Explain why OT/ICS incident response differs from IT
+      - Describe the constraints safety and availability impose on response
+      - Adapt response actions for an OT/ICS environment
+    theory: |
+      **Operational technology (OT)** and **industrial control systems (ICS)**, the computers and controllers that
+      run physical processes in manufacturing, energy, water, transport and similar sectors, demand an incident
+      response approach fundamentally different from IT, and a responder who applies IT instincts unchanged can
+      make an OT incident far worse. The defining difference is priorities: in IT, the classic emphasis is
+      confidentiality, integrity and availability, but in OT the overriding concern is **safety and the physical
+      process**, because these systems control equipment that can injure people, damage the environment, or cause
+      major physical harm if it malfunctions. Availability is paramount too, stopping a process is not a free,
+      reversible action as isolating an IT server often is; it can halt production, disrupt critical services, or
+      create dangerous conditions. So the first rule of OT incident response is that actions must not endanger
+      safety or the process, which reshapes everything.
+
+      These priorities impose hard **constraints** on familiar response actions. **Containment by isolation**, a
+      reflex in IT, can be dangerous or impossible in OT: pulling a controller offline or cutting network
+      connectivity might stop a physical process in an unsafe state or lose the operator's visibility and control
+      of equipment, so containment decisions must involve the engineers and operators who understand the physical
+      consequences, and often prioritise keeping the process safe over cleaning the network. **Rebooting or
+      re-imaging**, routine in IT, may be unacceptable for systems that run continuously and whose restart is
+      complex or hazardous. **Patching and changes** cannot be applied freely because OT systems are often fragile,
+      certified, or unable to tolerate downtime (the fragile-environment caution met in the scanning lesson).
+      Forensics is constrained because you often cannot take a running controller offline to image it. Even the
+      people differ: OT response must bring together IT/security responders with the plant engineers and operators
+      who own safety and the process, a collaboration that must be established before an incident.
+
+      Adapting response means applying the lifecycle **through an OT lens**. Preparation is especially decisive:
+      understand the environment and its safety constraints in advance, build OT-aware playbooks jointly with
+      engineering, know what can and cannot be done safely, and plan to maintain safe operation during an incident
+      (there are often manual or fail-safe modes). Detection leans on monitoring that is passive and OT-appropriate
+      (watching the specialised protocols and the IT/OT boundary without disrupting the process). Containment favors
+      actions that protect safety and the process, segment at the IT/OT boundary to stop spread without disrupting
+      control, bring in engineering for any action affecting the process, and consider moving to manual or safe
+      operating modes rather than abrupt isolation. Recovery must restore systems in a validated, safe way.
+      Throughout, the guiding question is not just how to stop the attacker but how to do so without creating a
+      physical or safety problem. For the analyst and responder, the lessons are that OT/ICS incident response puts
+      safety and the physical process above the usual IT priorities, that standard reflexes like isolate, reboot
+      and patch can be dangerous or impossible and must be rethought, and that effective OT response depends on
+      preparation and close collaboration with the engineers who own the process, because in these environments an
+      incident, and a careless response, can have consequences in the physical world.
+    examples:
+      - title: Different priorities
+        body: |
+          OT/ICS run PHYSICAL processes (energy, water, manufacturing, transport) -> overriding concern is SAFETY + the process
+          IT reflexes can make it worse: stopping a process isn't free/reversible like isolating a server; it can be unsafe or halt critical services.
+      - title: Reflexes that must be rethought
+        body: |
+          isolation can leave a process in an unsafe state or lose operator control; reboot/re-image may be unacceptable for continuous systems; patch freely? no (fragile/certified)
+          containment must involve the ENGINEERS/operators; segment at the IT/OT boundary; consider manual/fail-safe modes; prepare + collaborate before an incident.
+    exercise:
+      title: Plan incident response for an OT/ICS environment
+      environment: A described OT/ICS environment with an incident (or a scenario)
+      tools: [A scenario, a document, a notes file]
+      steps:
+        - Explain why OT/ICS incident response prioritises safety and the physical process over usual IT priorities.
+        - Explain why containment by isolation can be dangerous or impossible in OT.
+        - Explain why rebooting, re-imaging and free patching may be unacceptable.
+        - Describe OT-appropriate detection and containment actions.
+        - Explain why engineers and operators must be part of response decisions.
+        - Describe the preparation needed before an OT incident.
+      deliverable: An OT/ICS incident-response plan covering the safety-first priorities, the constraints on standard actions, OT-appropriate detection and containment, and the preparation and collaboration required.
+    expected_outcome: >
+      You can explain why OT/ICS incident response differs from IT, describe the constraints safety and availability
+      impose on response, and adapt detection, containment and recovery for an OT/ICS environment with engineering.
+    quiz:
+      - prompt: The overriding concern in OT/ICS incident response is
+        options:
+          - Confidentiality above all
+          - Safety and the physical process, since these systems control equipment that can cause physical harm
+          - Marketing impact
+          - Disk space
+        answer: 1
+        explanation: OT systems control physical processes, so safety and keeping the process safe come first.
+      - prompt: Containment by isolation is problematic in OT because
+        options:
+          - It is always easy and safe
+          - Pulling a controller offline can stop a process in an unsafe state or lose operator control of equipment
+          - OT has no network
+          - Isolation improves safety automatically
+        answer: 1
+        explanation: Cutting off OT systems can create unsafe physical conditions, so isolation must be rethought.
+      - prompt: Rebooting or re-imaging OT systems during an incident
+        options:
+          - Is always the first step
+          - May be unacceptable for continuously running systems whose restart is complex or hazardous
+          - Has no physical consequences
+          - Is required by every playbook
+        answer: 1
+        explanation: Restarting OT systems can be hazardous or disruptive, unlike routine IT re-imaging.
+      - prompt: Effective OT incident response depends above all on
+        options:
+          - Acting alone with IT reflexes
+          - Preparation and close collaboration with the engineers and operators who own safety and the process
+          - Ignoring the physical process
+          - Patching everything immediately
+        answer: 1
+        explanation: Safe OT response requires planning and the process engineers' knowledge of physical consequences.
+  - slug: ir-metrics-maturity
+    title: Incident Response Metrics and Program Maturity
+    order: 22
+    difficulty: intermediate
+    summary: Understand how to measure an incident response capability with meaningful metrics, assess its maturity, and use both to improve, so that response gets faster and more effective over time rather than staying reactive.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.8", "secplus:5.1", "cysa:3.2"]
+    learning_objectives:
+      - Explain why measuring incident response matters
+      - Describe meaningful incident response metrics
+      - Use maturity assessment to improve the response capability
+    theory: |
+      Incident response is not only something a team does during an incident; it is a **capability** that can be
+      measured, assessed and improved, and treating it that way is what turns a reactive team into one that gets
+      measurably faster and more effective over time. Without measurement, an organisation cannot tell whether its
+      response is improving, where it is slow, or whether investments are paying off, so it tends to stay reactive,
+      repeating the same mistakes. Measuring response, and honestly assessing the maturity of the capability, gives
+      the feedback needed to improve deliberately, and it also demonstrates the value of the function to leadership,
+      which sustains the support and resources it needs. The point is not metrics for their own sake but using
+      measurement to drive improvement in how quickly and well the organisation detects and handles incidents.
+
+      The most important **metrics** capture speed and effectiveness. **Mean time to detect (MTTD)** measures how
+      long it takes to discover an incident after it begins, a crucial measure because the longer an attacker goes
+      undetected, the more damage they do. **Mean time to respond or contain (MTTR)** measures how quickly, once
+      detected, the team contains and remediates the incident, directly tied to limiting impact. Together these
+      measure the window of exposure the organisation aims to shrink. Other useful metrics include the number and
+      types of incidents over time (revealing trends and recurring problems), how incidents were detected (internal
+      detection versus external notification, a telling measure of detection capability), dwell time, the rate of
+      recurring incidents (are root causes actually being fixed, connecting to post-incident review), and adherence
+      to the process. The caution is to choose metrics that drive the right behaviour and reflect real
+      effectiveness, rather than vanity numbers or metrics that can be gamed at the expense of thoroughness, a fast
+      MTTR achieved by closing incidents prematurely is worse than useless.
+
+      **Maturity assessment** complements metrics by evaluating the capability as a whole against a model, moving
+      from ad-hoc (response is improvised) through repeatable and defined (documented processes and playbooks, the
+      lifecycle and playbooks met earlier) to managed and optimising (measured, continuously improving, with
+      automation and proactive readiness). Assessing where the organisation sits reveals gaps, missing playbooks,
+      untested plans, poor detection, no metrics, and points to the next improvements. The two work together: a
+      maturity assessment shows structural gaps, while metrics track whether changes actually improve outcomes, and
+      both feed the continuous improvement that the post-incident review and tabletop lessons also drive. The
+      practical use is to measure consistently, review the metrics and maturity periodically, set concrete
+      improvement goals (reduce MTTD, add missing playbooks, increase the share of internally detected incidents),
+      and report progress to leadership. For the analyst and incident-response leader, the lessons are that
+      incident response is a measurable capability, that MTTD and MTTR and related metrics capture the window of
+      exposure the organisation works to shrink, that maturity assessment reveals the structural gaps to close, and
+      that using measurement and maturity together to set and track improvement goals is what makes response
+      steadily faster and more effective rather than perpetually reactive, provided the metrics chosen reflect real
+      effectiveness rather than numbers that merely look good.
+    examples:
+      - title: Response as a measurable capability
+        body: |
+          not just what you do in an incident -> a CAPABILITY you measure, assess, improve
+          without measurement you can't tell if you're improving or where you're slow -> stay reactive, repeat mistakes
+          measure + assess maturity -> deliberate improvement + shows value to leadership.
+      - title: Key metrics and maturity
+        body: |
+          MTTD (time to detect) + MTTR (time to respond/contain) = the window of exposure to shrink; also incident trends, internal-vs-external detection, dwell time, recurrence, process adherence
+          choose metrics that drive the RIGHT behaviour (a fast MTTR from closing incidents prematurely is worse than useless)
+          maturity: ad-hoc -> repeatable/defined -> managed/optimising; assessment reveals gaps; metrics track if changes improve outcomes.
+    exercise:
+      title: Measure and mature an incident response capability
+      environment: A described incident response team wanting to improve (or a scenario with sample incident data)
+      tools: [A scenario or sample incident data, a document, a notes file]
+      steps:
+        - Explain why measuring incident response matters and what it enables.
+        - Define MTTD and MTTR and why they capture the window of exposure.
+        - Describe two other useful metrics (for example internal-vs-external detection, recurrence rate).
+        - Explain the risk of metrics that can be gamed and how to choose meaningful ones.
+        - Describe a maturity model from ad-hoc to optimising and how assessment reveals gaps.
+        - Explain how metrics and maturity together drive concrete improvement goals.
+      deliverable: An IR measurement-and-maturity plan with the key metrics (MTTD, MTTR and others), a maturity assessment approach, and how both drive and track improvement goals reported to leadership.
+    expected_outcome: >
+      You can explain why measuring incident response matters, describe meaningful metrics like MTTD and MTTR, and
+      use maturity assessment with metrics to set and track improvements that make response faster and more effective.
+    quiz:
+      - prompt: Treating incident response as a measurable capability matters because
+        options:
+          - Metrics are an end in themselves
+          - Without measurement an organisation cannot tell if response is improving or where it is slow, so it stays reactive
+          - Response cannot be improved
+          - It replaces having a team
+        answer: 1
+        explanation: Measurement provides the feedback needed to improve deliberately rather than repeating mistakes.
+      - prompt: MTTD and MTTR together measure
+        options:
+          - The number of employees
+          - The window of exposure, how long until detection and then until containment, which the organisation aims to shrink
+          - Disk usage
+          - The marketing budget
+        answer: 1
+        explanation: Time to detect and time to contain capture how long an attacker operates and causes damage.
+      - prompt: A risk when choosing incident-response metrics is
+        options:
+          - Metrics always reflect real effectiveness
+          - Metrics can be gamed (e.g. a fast MTTR from closing incidents prematurely), so they must reflect real effectiveness
+          - There are no possible metrics
+          - Metrics are never reported
+        answer: 1
+        explanation: Vanity or gameable metrics can harm thoroughness, so metrics must drive the right behaviour.
+      - prompt: A maturity assessment complements metrics by
+        options:
+          - Replacing all metrics
+          - Evaluating the capability against a model to reveal structural gaps, while metrics track whether changes improve outcomes
+          - Measuring only disk space
+          - Ignoring process
+        answer: 1
+        explanation: Maturity assessment shows structural gaps to close; metrics show whether fixes actually work.
+  - slug: ir-csirt-team
+    title: Building and Running a CSIRT
+    order: 23
+    difficulty: intermediate
+    summary: Understand how an effective incident response capability depends on people and organisation, the roles, structure, authority and relationships of a Computer Security Incident Response Team, not just process and tools.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.8", "secplus:5.1", "cysa:3.2"]
+    learning_objectives:
+      - Explain the roles and structure of a CSIRT
+      - Describe the authority and relationships a CSIRT needs
+      - Recognise how team models and readiness affect response
+    theory: |
+      The incident response lifecycle, playbooks and tools covered earlier only work if the right **people** are
+      organised, empowered and ready to execute them, and that is the role of a **Computer Security Incident
+      Response Team (CSIRT)**, sometimes called a CIRT or CERT. A capable response depends as much on the team's
+      roles, structure, authority and relationships as on any process, because during a real incident, under
+      pressure, what determines success is whether the right people know their roles, can make decisions, and can
+      call on the rest of the organisation. Building and running a CSIRT is therefore a core part of incident
+      response readiness, turning plans and playbooks into an organisation that can actually act.
+
+      A CSIRT brings together several **roles**, whether as dedicated staff or people who step into incident roles
+      when needed. Core roles include an **incident commander or lead** who coordinates the response and makes
+      decisions (a critical role, so there is always someone in charge), **analysts and responders** who do the
+      technical investigation and containment, and often specialists for forensics, malware analysis and threat
+      intelligence. Crucially, a CSIRT extends beyond the security team: effective response needs **relationships
+      and defined involvement** with legal (for notification and evidence decisions, met earlier), communications
+      and public relations (for messaging), human resources (for insider cases), IT and system owners (who operate
+      the affected systems), and leadership (for major decisions). Defining who fills each role and how these
+      groups are engaged, before an incident, is what lets a CSIRT mobilise quickly rather than scrambling to work
+      out who should be involved while an incident unfolds.
+
+      Beyond roles, a CSIRT needs **authority, models and readiness**. It must have the **authority** to act,
+      pre-agreed power to take containment actions (isolate systems, disable accounts) quickly during an incident,
+      because response delayed for permission is response that fails; this authority, and clear escalation and
+      decision rights, are established in advance with leadership backing. CSIRTs follow different **structural
+      models**, a central team, distributed responders across business units, or a coordinating team that
+      marshals others, chosen to fit the organisation, and may be supplemented by external incident-response
+      **retainers** for surge capacity and specialist skills. **Readiness** comes from training, clear
+      documentation of roles and contacts, and the tabletop exercises met earlier that rehearse the team so roles
+      and relationships are practised before they are needed. The considerations are ensuring 24/7 coverage and
+      avoiding single points of failure (one person who alone knows how to do something), keeping contact
+      information and authority current, and sustaining the team between incidents. For the analyst and incident
+      responder, the lessons are that an effective incident response capability is as much about people and
+      organisation as about process, that a CSIRT needs defined roles, a clear incident commander, and pre-
+      established relationships across legal, communications, HR, IT and leadership, that it must hold the
+      authority to act quickly and fit an appropriate structural model with external support where useful, and that
+      readiness, through training, documentation and rehearsal, is what turns the team into one that performs under
+      the pressure of a real incident rather than improvising who does what.
+    examples:
+      - title: People make response work
+        body: |
+          lifecycle/playbooks/tools only work if the right PEOPLE are organised, empowered, ready
+          a CSIRT (CIRT/CERT): under pressure, success = right people know their roles, can decide, can call on the organisation.
+      - title: Roles, reach, authority
+        body: |
+          roles: incident COMMANDER/lead (always someone in charge), analysts/responders, forensics/malware/threat-intel specialists
+          reach BEYOND security: legal (notification/evidence), comms/PR, HR (insider), IT/system owners, leadership -> define involvement BEFORE an incident
+          AUTHORITY to act fast (isolate/disable) pre-agreed; models (central/distributed/coordinating) + external retainers; readiness via training + docs + tabletops.
+    exercise:
+      title: Design a CSIRT
+      environment: A described organisation building an incident response team (or a scenario)
+      tools: [A scenario, a document, a notes file]
+      steps:
+        - Explain why effective incident response depends on people and organisation, not just process.
+        - Describe the core CSIRT roles, including the incident commander.
+        - Explain which groups beyond the security team a CSIRT must involve and why.
+        - Explain why the CSIRT needs pre-agreed authority to act quickly.
+        - Describe the structural models and the role of external retainers.
+        - Explain how training, documentation and tabletop exercises build readiness.
+      deliverable: A CSIRT design covering roles and the incident commander, cross-organisation relationships, pre-established authority, a structural model with external support, and readiness through training and rehearsal.
+    expected_outcome: >
+      You can explain the roles and structure of a CSIRT, describe the authority and cross-organisation relationships
+      it needs, and recognise how team models and readiness determine whether response performs under pressure.
+    quiz:
+      - prompt: An effective incident response capability depends on
+        options:
+          - Process and tools alone
+          - People and organisation, roles, authority and relationships, as much as process and tools
+          - Only buying software
+          - Avoiding any team
+        answer: 1
+        explanation: Under pressure, organised, empowered, ready people determine whether plans actually execute.
+      - prompt: Why must a CSIRT extend beyond the security team?
+        options:
+          - It should not involve anyone else
+          - Effective response needs legal, communications, HR, IT and leadership, so their involvement is defined in advance
+          - Only IT matters
+          - Other groups slow it down and are excluded
+        answer: 1
+        explanation: Real incidents require legal, comms, HR, IT and leadership, engaged by pre-defined relationships.
+      - prompt: A CSIRT needs pre-agreed authority to act because
+        options:
+          - Permission is always instant
+          - Response delayed waiting for permission fails, so containment authority is established in advance with leadership backing
+          - It should never take action
+          - Authority is irrelevant
+        answer: 1
+        explanation: Quick containment requires authority granted beforehand, not negotiated mid-incident.
+      - prompt: Readiness of a CSIRT is built largely through
+        options:
+          - Never practising
+          - Training, clear documentation of roles and contacts, and tabletop exercises that rehearse the team
+          - Buying more tools only
+          - Hiring once and never training
+        answer: 1
+        explanation: Rehearsal, documentation and training prepare roles and relationships before they are needed.

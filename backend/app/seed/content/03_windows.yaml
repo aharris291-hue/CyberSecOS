@@ -1256,3 +1256,931 @@ lessons:
           - The Windows firewall logs
         answer: 1
         explanation: Poisoning LLMNR/NBT-NS tricks victims into authenticating to the attacker, enabling relay.
+  - slug: win-application-control
+    title: Application Control with AppLocker and WDAC
+    order: 15
+    difficulty: advanced
+    summary: Understand how Windows application control stops unauthorised code from running, the difference between AppLocker and Windows Defender Application Control, and how allow-listing defeats many attacks.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:2.5", "secplus:4.1", "cysa:1.3"]
+    learning_objectives:
+      - Explain how application control and allow-listing work on Windows
+      - Compare AppLocker and Windows Defender Application Control
+      - Describe how application control defeats common attack techniques
+    theory: |
+      Most endpoint defences try to spot bad software; **application control** takes the opposite, stronger
+      approach of only allowing **known-good** software to run and blocking everything else. This allow-listing
+      (as opposed to block-listing) flips the default from permit to deny, so a brand-new piece of malware, an
+      unsigned script, or a tool dropped by an attacker simply will not execute because it is not on the approved
+      list. On Windows the two main technologies are **AppLocker**, the older and more flexible rule-based system,
+      and **Windows Defender Application Control (WDAC)**, the newer, stronger, kernel-enforced approach. Both let
+      an organisation define what is allowed to run by publisher (code-signing certificate), path, or file hash,
+      with publisher rules being the most robust because they survive updates and are hard to forge.
+
+      Application control is powerful against a wide range of attacks precisely because it attacks the attacker's
+      need to **run code**. Malware delivered by phishing cannot execute if it is not approved; **living-off-the-
+      land** abuse of otherwise-legitimate tools can be constrained by blocking or restricting the risky
+      interpreters and binaries; and attacker-dropped utilities are stopped at the door. It complements rather
+      than replaces detection: where detection notices bad things that ran, application control prevents many of
+      them from running at all, which is why it appears near the top of hardening guidance such as the Essential
+      Eight. The trade-off is operational: building and maintaining the allow-list is real work, because every
+      legitimate application and update must be accounted for, and a too-strict policy breaks business while a
+      too-loose one (for example broad path rules in user-writable locations) can be bypassed.
+
+      Deploying it well is therefore a careful process. Organisations typically start in **audit mode**, where
+      the policy logs what *would* have been blocked without actually blocking, to discover the real software in
+      use and tune rules before enforcing. Rules favour publisher over path over hash where possible, writable
+      locations are not blindly trusted, and the policy is maintained as software changes. For the analyst,
+      application control is both a strong preventive control to recommend and a rich log source: its audit and
+      enforcement events show exactly what tried to run and was allowed or blocked, which is valuable for
+      detection and investigation. The underlying principle, allow only what is explicitly trusted, is the same
+      default-deny thinking that makes firewalls and zero trust effective, applied to code execution.
+    examples:
+      - title: Allow-list, not block-list
+        body: |
+          block-list: try to spot bad -> misses novel malware
+          allow-list (application control): only known-good runs, everything else BLOCKED
+          -> new malware, unsigned scripts, dropped tools simply do not execute.
+      - title: AppLocker vs WDAC and rule types
+        body: |
+          AppLocker: older, flexible, rule-based    WDAC: newer, stronger, kernel-enforced
+          rules by publisher (best, survives updates) > path > hash
+          start in AUDIT mode (log would-be blocks) -> tune -> then enforce.
+    exercise:
+      title: Design an application control policy
+      environment: A described Windows fleet and its software needs (or a scenario)
+      tools: [A scenario, a policy notes file, a document]
+      steps:
+        - Explain the difference between allow-listing and block-listing and why allow-listing is stronger.
+        - Compare AppLocker and WDAC at a high level.
+        - Explain why publisher rules are generally preferred over path and hash rules.
+        - Describe two attack techniques application control defeats and how.
+        - Explain the role of audit mode before enforcement.
+        - Identify one weak rule design (for example trusting a user-writable path) and correct it.
+      deliverable: An application control plan covering the allow-list principle, an AppLocker-versus-WDAC choice, rule-type preference, the attacks it defeats, an audit-mode rollout, and a corrected weak rule.
+    expected_outcome: >
+      You can explain Windows application control and allow-listing, compare AppLocker and WDAC, and design a
+      policy that defeats common attacks while rolling out safely through audit mode.
+    quiz:
+      - prompt: Application control is stronger than traditional anti-malware because it
+        options:
+          - Scans faster
+          - Allows only known-good software to run and blocks everything else, stopping even novel malware
+          - Encrypts the disk
+          - Needs no maintenance
+        answer: 1
+        explanation: Default-deny allow-listing stops unapproved code regardless of whether it is known-bad.
+      - prompt: The most robust type of application control rule is generally
+        options:
+          - A path rule in a user-writable folder
+          - A publisher rule based on the code-signing certificate, which survives updates and is hard to forge
+          - A rule that allows everything
+          - A rule based on file size
+        answer: 1
+        explanation: Publisher rules are durable across updates and difficult to bypass, unlike broad path rules.
+      - prompt: Audit mode is used before enforcing application control to
+        options:
+          - Encrypt the logs
+          - Log what would have been blocked so real software is discovered and rules are tuned first
+          - Block everything immediately
+          - Disable logging
+        answer: 1
+        explanation: Audit mode reveals the real software in use so enforcement does not break business.
+      - prompt: Application control is especially effective against
+        options:
+          - Physical theft of a laptop
+          - Phishing-delivered malware and dropped tools, because unapproved code cannot execute
+          - Network cabling faults
+          - Power outages
+        answer: 1
+        explanation: By preventing unapproved code from running, it stops much malware and attacker tooling at execution.
+  - slug: win-bitlocker-encryption
+    title: BitLocker and Windows Disk Encryption
+    order: 16
+    difficulty: intermediate
+    summary: Understand how BitLocker protects data at rest on Windows, how it uses the TPM and recovery keys, the threats it does and does not address, and how to manage it across a fleet.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:1.4", "secplus:4.1", "sc900:3"]
+    learning_objectives:
+      - Explain how BitLocker encrypts a Windows volume and uses the TPM
+      - Describe recovery keys and how BitLocker is managed at scale
+      - Identify the threats BitLocker does and does not mitigate
+    theory: |
+      **BitLocker** is Windows' full-volume encryption, and its core purpose is narrow but important: protecting
+      **data at rest** so that a lost or stolen device, or a disk pulled from a machine, does not hand over its
+      contents. It encrypts the whole volume, and the central design question is where the decryption key lives.
+      BitLocker typically seals the key to the **TPM**, the hardware security chip, so the key is released only
+      when the machine boots the expected, unmodified software; this makes decryption automatic for the legitimate
+      user on the genuine device while useless to someone who removes the disk or tampers with the boot process.
+      For stronger protection, BitLocker can require an additional factor at boot, a PIN or a USB key, so that
+      possession of the powered-off device alone is not enough.
+
+      Because keys sealed to hardware can become inaccessible (a TPM change, a forgotten PIN, a firmware update),
+      BitLocker has a **recovery key**, a long numeric key that unlocks the volume when the normal path fails.
+      Managing these recovery keys is the heart of operating BitLocker at scale: they must be **escrowed**
+      somewhere safe and retrievable (Active Directory or a cloud management service such as Intune/Entra), because
+      a recovery key that is lost means the data is unrecoverable, while a recovery key that is poorly protected
+      undermines the encryption. Fleet management also covers enforcing BitLocker by policy, confirming devices
+      are actually encrypted (reporting compliance), and choosing settings like requiring a PIN for high-risk
+      roles. The operational discipline around recovery-key escrow and compliance reporting is what separates real
+      protection from a feature that is on paper but silently not enabled on half the fleet.
+
+      It is equally important to understand what BitLocker does **not** do. It protects data at rest, so it is
+      excellent against device theft and disposal, but it provides **no protection while the system is running and
+      unlocked**: once the user has logged in and the volume is decrypted in use, malware or an attacker operating
+      on the live system sees data normally, so BitLocker is not a defence against remote compromise, malware, or
+      an attacker with access to the running machine. It also does not protect data that leaves the device. For
+      the analyst and architect, the lesson is to deploy BitLocker everywhere as baseline protection against the
+      very common risk of lost and stolen devices, manage recovery keys rigorously, and recognise that disk
+      encryption is one specific control, strong for its purpose and silent for everything else, to be layered with
+      the controls that address running-system threats.
+    examples:
+      - title: Where the key lives
+        body: |
+          whole-volume encryption; key sealed to the TPM -> released only on expected, unmodified boot
+          automatic for legitimate user on genuine device; useless if disk removed or boot tampered
+          add a PIN/USB key -> powered-off device alone is not enough.
+      - title: Recovery keys and the limit
+        body: |
+          recovery key unlocks when the normal path fails -> MUST be escrowed (AD / Intune) and protected
+          lost recovery key = unrecoverable data; poorly protected key = broken encryption
+          LIMIT: protects data at REST only; running + unlocked system sees data normally.
+    exercise:
+      title: Plan BitLocker deployment and recovery
+      environment: A described Windows fleet with mixed-risk roles (or a scenario)
+      tools: [A scenario, a policy notes file, a document]
+      steps:
+        - Explain how BitLocker encrypts a volume and how sealing the key to the TPM works.
+        - Explain when you would require an additional PIN or USB key at boot.
+        - Describe the role of the recovery key and why escrowing it safely is critical.
+        - Describe how you would confirm the whole fleet is actually encrypted.
+        - State clearly what threat BitLocker addresses and one threat it does not.
+        - Recommend a BitLocker policy for a high-risk role and justify it.
+      deliverable: A BitLocker plan covering TPM-sealed encryption, when to add a PIN, recovery-key escrow, fleet compliance reporting, the threats it does and does not cover, and a high-risk-role policy.
+    expected_outcome: >
+      You can explain how BitLocker encrypts data at rest using the TPM, manage recovery keys and fleet
+      compliance, and articulate the threats it mitigates (theft, disposal) versus those it does not (running-system compromise).
+    quiz:
+      - prompt: BitLocker's primary purpose is to protect
+        options:
+          - Data in use on a running, unlocked system
+          - Data at rest, so a lost or stolen device or removed disk does not reveal its contents
+          - Network traffic
+          - Email in transit
+        answer: 1
+        explanation: BitLocker encrypts the volume at rest, defending against device theft, loss and disposal.
+      - prompt: Sealing the BitLocker key to the TPM means the key is released only when
+        options:
+          - Any disk is inserted
+          - The machine boots the expected, unmodified software on the genuine device
+          - The user types their email
+          - The network is connected
+        answer: 1
+        explanation: TPM sealing ties key release to a known-good boot state on the real device.
+      - prompt: Managing BitLocker at scale centres on
+        options:
+          - Deleting recovery keys
+          - Escrowing recovery keys safely and reporting which devices are actually encrypted
+          - Disabling the TPM
+          - Sharing one key for all devices
+        answer: 1
+        explanation: Safe recovery-key escrow and encryption-compliance reporting are the core of fleet management.
+      - prompt: A threat BitLocker does NOT mitigate is
+        options:
+          - A stolen powered-off laptop
+          - Malware or an attacker operating on the running, unlocked system where data is already decrypted
+          - A disk removed and read elsewhere
+          - A discarded drive
+        answer: 1
+        explanation: Once the system is running and unlocked, data is decrypted in use and BitLocker does not protect it.
+  - slug: win-wmi-com-abuse
+    title: WMI and COM Abuse on Windows
+    order: 17
+    difficulty: advanced
+    summary: Understand how attackers abuse Windows Management Instrumentation and COM for fileless execution, lateral movement and persistence, and how to detect this living-off-the-land activity.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.1", "sc200:2", "cysa:1.2"]
+    learning_objectives:
+      - Explain what WMI and COM are and why attackers abuse them
+      - Describe WMI-based execution, lateral movement and persistence
+      - Identify the telemetry and detections for WMI/COM abuse
+    theory: |
+      **Windows Management Instrumentation (WMI)** and **COM** (the Component Object Model) are powerful,
+      legitimate parts of Windows used for management and inter-process communication, and that legitimacy is
+      exactly why attackers love them. WMI provides a standard way to query and control almost everything on a
+      Windows system and to do so **remotely**, while COM lets components invoke each other. Because these are
+      built-in, trusted and used by administrators and software constantly, abusing them is a form of **living off
+      the land**: the attacker uses native Windows machinery rather than dropping obvious malware, which helps
+      them blend in and often run **filelessly**, with little or nothing written to disk.
+
+      The abuse spans several attack stages. For **execution**, WMI can launch processes locally or remotely, so an
+      attacker can run commands on a target without a traditional remote-access tool. For **lateral movement**,
+      WMI's remote capability lets an attacker with valid credentials execute on other machines across the
+      network, a common and stealthy technique. For **persistence**, WMI offers a particularly sneaky mechanism:
+      **WMI event subscriptions** can be configured so that a chosen action runs automatically when a defined
+      event occurs (at a certain time, at boot, when a condition is met), giving durable, fileless persistence
+      that lives in the WMI repository rather than in obvious autorun locations, which is why it evades casual
+      inspection. COM and related mechanisms similarly offer hijacking opportunities where an attacker substitutes
+      a malicious component for one the system expects to load.
+
+      Detecting this requires the right **telemetry and focus**, because the tools themselves are legitimate. Key
+      sources include process-creation logs showing WMI's provider host (`WmiPrvSE.exe`) spawning unexpected
+      children such as script interpreters, command lines invoking WMI for remote execution, and crucially the
+      dedicated **WMI activity and event-subscription logging** that records when permanent subscriptions are
+      created, which is one of the strongest signals because legitimate permanent WMI subscriptions are relatively
+      rare. As with all living-off-the-land detection, context matters: WMI remote execution from an unusual
+      source, a subscription created outside normal administration, or `WmiPrvSE.exe` spawning a shell are
+      suspicious patterns rather than any single event being inherently bad. Defences include monitoring and
+      restricting WMI remote access, baselining normal WMI subscriptions so new ones stand out, and applying
+      least privilege so fewer accounts can wield WMI across the network. For the analyst, the lesson is that
+      native management tooling is a major attack surface, and catching its abuse depends on knowing what normal
+      WMI and COM activity looks like and watching the specific, rarely-legitimate signals like new permanent
+      event subscriptions.
+    examples:
+      - title: Why WMI/COM are abused
+        body: |
+          built-in, trusted, powerful, remote-capable management + component machinery
+          living off the land: use native Windows, little/no malware on disk (fileless) -> blend in.
+      - title: Abuse by stage + the key signal
+        body: |
+          execution: WMI launches processes (local/remote)
+          lateral movement: WMI remote execution with valid creds
+          persistence: WMI EVENT SUBSCRIPTION runs an action on an event (durable, fileless, in the WMI repo)
+          detect: WmiPrvSE.exe spawning a shell; permanent-subscription creation (rarely legitimate) in WMI activity logs.
+    exercise:
+      title: Detect WMI and COM abuse
+      environment: A described Windows environment with process and WMI activity logs (or a scenario)
+      tools: [A scenario or sample events, a document, a notes file]
+      steps:
+        - Explain what WMI and COM are and why their legitimacy makes them attractive to attackers.
+        - Describe how WMI is used for remote execution and lateral movement.
+        - Explain WMI event-subscription persistence and why it evades casual inspection.
+        - Identify the telemetry that reveals WMI abuse (WmiPrvSE.exe children, subscription creation).
+        - Explain why a newly created permanent WMI subscription is a strong signal.
+        - Recommend two defences (restrict remote WMI, baseline subscriptions, least privilege).
+      deliverable: A detection plan for WMI/COM abuse covering execution, lateral movement and subscription persistence, the key telemetry and the strongest signal, plus two defences.
+    expected_outcome: >
+      You can explain why WMI and COM are abused, describe WMI-based execution, lateral movement and
+      event-subscription persistence, and identify the telemetry and defences that catch this living-off-the-land activity.
+    quiz:
+      - prompt: Attackers abuse WMI and COM mainly because they are
+        options:
+          - Rarely present on Windows
+          - Built-in, trusted and powerful, enabling fileless living-off-the-land execution that blends in
+          - Only available to malware
+          - Unable to run code
+        answer: 1
+        explanation: Native, trusted management tooling lets attackers operate without obvious malware.
+      - prompt: WMI event subscriptions are a favoured persistence mechanism because they
+        options:
+          - Write large files to disk
+          - Run an action automatically on an event, durably and filelessly, living in the WMI repository
+          - Require a reboot to work
+          - Appear in every antivirus scan
+        answer: 1
+        explanation: Permanent subscriptions give fileless persistence outside obvious autorun locations.
+      - prompt: A strong detection signal for WMI abuse is
+        options:
+          - Any use of Windows
+          - WmiPrvSE.exe spawning a script interpreter, or creation of a permanent WMI subscription
+          - A normal user login
+          - A scheduled backup
+        answer: 1
+        explanation: The WMI host spawning a shell, or a new permanent subscription, are rarely-legitimate signals.
+      - prompt: Because WMI is a legitimate tool, detecting its abuse depends on
+        options:
+          - Blocking WMI entirely for everyone
+          - Context and baselining normal activity so unusual remote execution or new subscriptions stand out
+          - Ignoring it
+          - Deleting the logs
+        answer: 1
+        explanation: Knowing normal WMI behaviour lets the abnormal remote use or new subscriptions be flagged.
+  - slug: win-registry-forensics
+    title: Windows Registry Forensics
+    order: 18
+    difficulty: advanced
+    summary: Learn how the Windows registry records a wealth of forensic evidence about system configuration, user activity, program execution and persistence, and how to locate and interpret the key artifacts.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.8", "sc200:3", "cysa:1.2"]
+    learning_objectives:
+      - Explain what the registry is and why it is a forensic goldmine
+      - Locate key registry artifacts for execution, persistence and user activity
+      - Interpret registry evidence in an investigation
+    theory: |
+      The Windows **registry** is a hierarchical database holding much of the system's and users' configuration,
+      and because Windows and applications constantly record state there, it is one of the richest sources of
+      forensic evidence on a Windows host. For an investigator, the registry answers questions across many
+      categories: what software is installed and configured, what runs automatically (a prime place for
+      persistence), what programs a user has executed, what devices (including USB storage) have been attached,
+      what networks the machine has joined, and traces of user activity. Knowing that the registry records all
+      this, and where, turns it from an opaque configuration store into an investigative map.
+
+      The evidence lives in known **hives and keys**. System-wide hives (such as SYSTEM and SOFTWARE) and
+      per-user hives (NTUSER.DAT for each profile) hold different artifacts. For **persistence and autostart**,
+      the Run and RunOnce keys, services, and other autostart locations show what launches automatically, a top
+      priority when hunting attacker persistence. For **program execution**, artifacts like UserAssist,
+      ShimCache/AppCompatCache and AmCache record evidence that programs were run, sometimes with timestamps, even
+      for programs since deleted, which is invaluable for proving an attacker tool executed. For **user and device
+      activity**, keys record recently opened files, typed paths, mounted USB devices and their first/last
+      connection times, and wireless networks joined. Each of these keys is a specific, well-documented artifact
+      that forensic tools parse, and an analyst's skill is knowing which key answers which question.
+
+      Interpreting registry evidence requires **care and corroboration**. Registry keys carry last-write
+      timestamps that help build a timeline, but as with all forensic artifacts these can be misread or
+      manipulated, so key findings are corroborated across artifacts and with other sources (event logs,
+      filesystem). The registry is also a target for attackers themselves, both as a persistence location and as
+      something they may try to clean, so the absence or modification of expected keys is itself informative.
+      Practically, investigators extract the hive files (live or from an image), parse them with forensic tooling,
+      and focus on the artifacts relevant to the question, persistence keys when hunting footholds, execution
+      artifacts to prove what ran, USB and recent-files keys when data theft is suspected. For the analyst, the
+      lesson is that the registry is a forensic goldmine hiding in plain sight on every Windows system, and that
+      competence means knowing the handful of key artifact locations for execution, persistence and user activity,
+      interpreting their timestamps carefully, and corroborating what they show against the rest of the evidence.
+    examples:
+      - title: What the registry reveals
+        body: |
+          installed/configured software; AUTOSTART (persistence); program EXECUTION evidence;
+          attached USB devices; networks joined; recent files + user activity.
+      - title: Key artifacts by question
+        body: |
+          persistence: Run/RunOnce keys, services, autostart locations
+          execution: UserAssist, ShimCache/AppCompatCache, AmCache (even for deleted programs, sometimes timestamped)
+          activity/devices: recent files, typed paths, USB first/last connect, wireless networks
+          -> use last-write timestamps for timeline, but corroborate (attackers manipulate too).
+    exercise:
+      title: Mine the registry in an investigation
+      environment: A described Windows host or registry extract and an investigative question (or a scenario)
+      tools: [A scenario or sample registry artifacts, a document, a notes file]
+      steps:
+        - Explain what the registry is and why it is a rich forensic source.
+        - Identify which keys you would check to find attacker persistence.
+        - Identify which artifacts prove a program was executed, even if it was later deleted.
+        - Identify which artifacts help when USB data theft is suspected.
+        - Use a key's last-write timestamp in a timeline and note why you would corroborate it.
+        - Explain how the modification or absence of an expected key can itself be evidence.
+      deliverable: A registry-forensics plan mapping investigative questions (persistence, execution, device/data theft) to specific artifacts, with timestamp interpretation and corroboration.
+    expected_outcome: >
+      You can explain why the registry is a forensic goldmine, locate the key artifacts for persistence, execution
+      and user or device activity, and interpret them carefully with corroboration in an investigation.
+    quiz:
+      - prompt: The Windows registry is valuable in forensics because it
+        options:
+          - Contains only wallpaper settings
+          - Records configuration, autostart/persistence, program execution, device and user activity
+          - Cannot be read after a reboot
+          - Stores nothing useful
+        answer: 1
+        explanation: The registry continually records state across many categories relevant to investigations.
+      - prompt: Artifacts like ShimCache/AppCompatCache and AmCache are valuable because they
+        options:
+          - Encrypt the disk
+          - Record evidence that programs were executed, sometimes even for programs since deleted
+          - Store user passwords in clear text
+          - Disable persistence
+        answer: 1
+        explanation: These execution artifacts can prove a (possibly deleted) program ran on the system.
+      - prompt: To hunt attacker persistence in the registry you would examine
+        options:
+          - The wallpaper key
+          - Run/RunOnce keys, services and other autostart locations
+          - Only the recent-files list
+          - The screensaver timeout
+        answer: 1
+        explanation: Autostart keys are a prime location for persistence mechanisms.
+      - prompt: Registry last-write timestamps should be
+        options:
+          - Trusted absolutely with no checking
+          - Used for timelines but corroborated, since artifacts can be misread or manipulated
+          - Ignored entirely
+          - Deleted before analysis
+        answer: 1
+        explanation: Timestamps aid timelines but, like all artifacts, need corroboration against other evidence.
+  - slug: win-privilege-escalation
+    title: Windows Privilege Escalation and Its Detection
+    order: 19
+    difficulty: advanced
+    summary: Learn how attackers escalate from a normal user to administrator or SYSTEM on Windows, the common techniques they use, and how to detect and prevent privilege escalation.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.8", "sc200:3", "cysa:1.2"]
+    learning_objectives:
+      - Explain why privilege escalation is a key stage of a Windows attack
+      - Describe common Windows privilege-escalation techniques
+      - Detect and prevent privilege escalation on Windows
+    theory: |
+      When an attacker first gains access to a Windows host, they usually land with the rights of a normal user,
+      which is often not enough to achieve their goals, so **privilege escalation**, moving from limited rights to
+      administrator or the all-powerful SYSTEM account, is a pivotal stage of most Windows intrusions. Escalation
+      unlocks the ability to disable defences, access credentials in memory, install persistence, and move
+      laterally, so detecting or preventing it breaks the attack at a crucial point. Escalation comes in two
+      flavours: vertical (a low-privileged user gaining higher privileges) and, loosely, abusing already-held
+      rights; the focus here is the vertical jump from user to admin or SYSTEM.
+
+      The **techniques** exploit misconfigurations and weaknesses rather than always needing an exploit.
+      **Misconfigured services** are a classic: a service running as SYSTEM whose executable or configuration a
+      normal user can modify lets the user run their own code as SYSTEM; related issues include unquoted service
+      paths and weak service permissions. **UAC bypasses** abuse the way User Account Control elevates certain
+      processes to run attacker code with full admin rights without a prompt. **Token manipulation and
+      impersonation** abuse Windows access tokens to assume the privileges of another process or account.
+      **Exploiting vulnerabilities** in the kernel or privileged software escalates directly. Other avenues include
+      stored credentials, scheduled tasks a user can alter, DLL hijacking of privileged processes, and abusing
+      powerful privileges a user has been granted. The common theme is that small misconfigurations, a writable
+      service binary, an over-privileged account, an unpatched driver, open the door to full control.
+
+      **Detecting** privilege escalation relies on spotting the behaviours and the state changes it produces.
+      Watch for a process unexpectedly running as SYSTEM or with elevated privileges when its parent or context
+      does not justify it, for modifications to service configurations and binaries, for suspicious token
+      manipulation and unusual parent-child process relationships (a user process spawning a SYSTEM process), and
+      for the exploitation of known-vulnerable drivers (bring-your-own-vulnerable-driver). Good endpoint telemetry
+      (Sysmon, EDR) makes these visible. **Prevention** is about denying the misconfigurations: run services with
+      least privilege, fix weak service and file permissions and unquoted paths, patch promptly (kernel and
+      drivers), enforce UAC at its strongest, limit local admin rights, and apply application control so attacker
+      tools cannot run. For the analyst, the lessons are that privilege escalation is the hinge between a foothold
+      and full compromise, that it most often exploits misconfigurations rather than exotic exploits, and that
+      detecting the tell-tale state changes and process relationships, and closing the misconfigurations that
+      enable it, protects one of the most important choke points in a Windows attack.
+    examples:
+      - title: Why escalation matters
+        body: |
+          attacker lands as a normal user -> needs admin/SYSTEM to disable defences, grab credentials, persist, move laterally
+          escalation = the hinge between a foothold and full compromise -> a crucial place to detect/prevent.
+      - title: Common techniques and detection
+        body: |
+          misconfigured services (writable binary/unquoted path/weak perms) run YOUR code as SYSTEM; UAC bypass; token manipulation; vulnerable driver/kernel exploit
+          detect: a process running as SYSTEM without justification, service config/binary changes, odd user->SYSTEM parent-child, BYOVD
+          prevent: least-privilege services, fix perms/paths, patch, strong UAC, limit local admin, application control.
+    exercise:
+      title: Investigate and prevent Windows privilege escalation
+      environment: A described Windows host with sample process and service telemetry (or a scenario)
+      tools: [A scenario or sample telemetry, the ATT&CK reference, a document, a notes file]
+      steps:
+        - Explain why privilege escalation is a pivotal stage of a Windows intrusion.
+        - Describe how a misconfigured service can let a normal user run code as SYSTEM.
+        - Describe one other escalation technique (UAC bypass, token manipulation or vulnerable driver).
+        - Identify a privilege-escalation signal in the sample telemetry (for example a user process spawning SYSTEM).
+        - List the telemetry you would collect to detect escalation.
+        - Recommend preventive measures that close the enabling misconfigurations.
+      deliverable: A privilege-escalation write-up covering why it matters, two techniques, a detection signal from the telemetry, the telemetry to collect, and preventive measures.
+    expected_outcome: >
+      You can explain Windows privilege escalation and its role in an intrusion, describe common techniques, and
+      detect and prevent escalation by spotting its behaviours and closing the misconfigurations that enable it.
+    quiz:
+      - prompt: Privilege escalation is a pivotal stage because it
+        options:
+          - Ends the attack harmlessly
+          - Takes an attacker from limited rights to admin or SYSTEM, unlocking defence evasion, credential theft and persistence
+          - Only affects printers
+          - Cannot be detected or prevented
+        answer: 1
+        explanation: Escalation unlocks the capabilities an attacker needs for full compromise, so it is a key choke point.
+      - prompt: A misconfigured service enables escalation when
+        options:
+          - It uses a strong password
+          - A normal user can modify the service's executable or configuration that runs as SYSTEM
+          - It is fully patched
+          - It has least privilege
+        answer: 1
+        explanation: A writable SYSTEM-service binary or weak service permissions let a user run code as SYSTEM.
+      - prompt: A useful detection signal for privilege escalation is
+        options:
+          - A normal user logging in once
+          - A user process spawning a SYSTEM process, or a process running elevated without justification
+          - A scheduled reboot
+          - A DNS lookup
+        answer: 1
+        explanation: Unexpected elevation and anomalous parent-child relationships indicate escalation.
+      - prompt: Most Windows privilege escalation exploits
+        options:
+          - Only zero-day kernel bugs
+          - Misconfigurations like weak service permissions, unquoted paths and excess local admin rights
+          - Physical access only
+          - Nothing at all
+        answer: 1
+        explanation: Misconfigurations, not exotic exploits, are the most common escalation path, so fixing them prevents it.
+  - slug: win-etw-telemetry
+    title: Advanced Windows Telemetry with ETW
+    order: 20
+    difficulty: advanced
+    summary: Understand Event Tracing for Windows (ETW), the low-level telemetry framework that feeds Windows security tools, what visibility it provides beyond standard event logs, and how defenders and attackers interact with it.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.4", "sc200:3", "cysa:1.1"]
+    learning_objectives:
+      - Explain what ETW is and how it relates to Windows security telemetry
+      - Describe the deep visibility ETW provides beyond event logs
+      - Recognise how EDR uses ETW and how attackers try to evade it
+    theory: |
+      Beneath the familiar Windows Security event logs lies **Event Tracing for Windows (ETW)**, a high-performance,
+      low-level tracing framework built into Windows that many components and the operating system itself use to
+      emit detailed events, and it is the foundation on which much advanced Windows security telemetry is built.
+      Where the Security event log records a curated set of audit events, ETW exposes a far richer and more granular
+      stream from thousands of **providers**, covering process and thread activity, network connections, DNS
+      queries, PowerShell and .NET activity, registry and file operations, and much more. Security tools subscribe
+      to the ETW providers relevant to threat detection to get visibility that standard logs do not offer, which is
+      why understanding ETW explains where modern Windows detection telemetry actually comes from.
+
+      The **visibility** ETW provides is what makes behaviour-based detection on Windows possible. Specific
+      providers expose deep detail: PowerShell providers surface script block content (even when obfuscated, after
+      de-obfuscation), .NET and CLR providers reveal in-memory and reflective loading used by fileless malware,
+      threat-intelligence and kernel providers surface sensitive API calls and process injection, and DNS and
+      network providers show connections at the source. Tools like Sysmon (met earlier) and commercial EDR consume
+      ETW (among other sources) to build their detections, so the Sysmon process and network events already used
+      ultimately trace back to this kind of low-level instrumentation. For an analyst, the practical point is that
+      the richest Windows detections, catching encoded PowerShell, fileless and in-memory techniques, injection,
+      depend on ETW-sourced telemetry, and that configuring and collecting the right providers (directly or via
+      tools) is what gives a SOC that depth.
+
+      Because ETW is so central to detection, it is also a target for **evasion**, which defenders must understand.
+      Sophisticated attackers attempt **ETW tampering**, patching or disabling ETW in their own process (for
+      example neutralising the providers that would reveal their .NET or AMSI activity) so their malicious actions
+      are not traced, a recognised defense-evasion technique. This makes the **integrity of the telemetry itself** a
+      concern: just as with log deletion, an attempt to blind ETW is both an attack step and a threat to
+      visibility, so detecting ETW tampering (and collecting telemetry centrally, off the endpoint, so it cannot be
+      retroactively erased) matters. The considerations are the volume ETW can produce (so providers are chosen and
+      filtered) and that consuming ETW well is usually done through tools rather than by hand. For the analyst, the
+      lessons are that ETW is the low-level engine behind advanced Windows telemetry, that it provides the deep
+      process, memory, script and network visibility that catches sophisticated techniques standard logs miss, that
+      EDR and Sysmon are largely ETW consumers, and that because ETW is so valuable, attackers try to tamper with
+      it, so protecting and monitoring the integrity of the telemetry is part of defending Windows.
+    examples:
+      - title: Below the event log
+        body: |
+          ETW = low-level tracing framework built into Windows; thousands of PROVIDERS emit granular events
+          Security event log = a curated audit subset; ETW = process/thread, network, DNS, PowerShell, .NET/CLR, registry, file, injection
+          -> the foundation modern Windows detection telemetry is built on.
+      - title: Deep visibility and evasion
+        body: |
+          PowerShell providers (script block even after de-obfuscation), .NET/CLR (reflective/in-memory loading = fileless), kernel/TI providers (injection, sensitive APIs)
+          Sysmon + EDR are largely ETW CONSUMERS -> that's where their rich events come from
+          attackers patch/disable ETW in their process (defense evasion) -> detect ETW tampering + collect telemetry off-host.
+    exercise:
+      title: Plan ETW-based Windows visibility
+      environment: A described Windows environment needing deep detection telemetry (or a scenario)
+      tools: [A scenario, a document, a notes file]
+      steps:
+        - Explain what ETW is and how it relates to the standard Windows Security event log.
+        - Describe the kinds of deep visibility specific ETW providers give that standard logs do not.
+        - Explain how ETW visibility catches fileless, in-memory and encoded-PowerShell techniques.
+        - Explain how Sysmon and EDR relate to ETW.
+        - Describe ETW tampering as an attacker evasion technique and why it threatens visibility.
+        - Recommend how to protect telemetry integrity (detect tampering, collect off-host).
+      deliverable: An ETW visibility plan covering what ETW is, the advanced visibility it provides, EDR/Sysmon's reliance on it, and protecting telemetry integrity against tampering.
+    expected_outcome: >
+      You can explain ETW and its role in Windows telemetry, describe the deep visibility it provides beyond event
+      logs, and recognise how EDR consumes ETW and how attackers try to tamper with it.
+    quiz:
+      - prompt: Event Tracing for Windows (ETW) differs from the Security event log in that it
+        options:
+          - Records fewer events than the Security log
+          - Exposes a far richer, more granular low-level stream from thousands of providers
+          - Only logs logons
+          - Cannot be consumed by security tools
+        answer: 1
+        explanation: ETW is the deep, high-volume telemetry framework beneath the curated Security event log.
+      - prompt: ETW is valuable for catching fileless and in-memory techniques because
+        options:
+          - It only sees disk files
+          - Providers reveal .NET/CLR reflective loading, injection and de-obfuscated script activity standard logs miss
+          - It disables PowerShell
+          - It records nothing about memory
+        answer: 1
+        explanation: ETW providers surface the in-memory and script behaviours fileless malware relies on.
+      - prompt: Sysmon and commercial EDR relate to ETW by
+        options:
+          - Replacing it entirely
+          - Consuming ETW (among other sources) to build their detections
+          - Blocking ETW
+          - Being unrelated to it
+        answer: 1
+        explanation: Much EDR and Sysmon telemetry ultimately comes from ETW providers.
+      - prompt: Attackers tamper with ETW because
+        options:
+          - It makes their malware slower
+          - Disabling ETW in their process blinds the telemetry that would reveal their activity, a defense-evasion step
+          - It has no detection value
+          - It only affects wallpaper
+        answer: 1
+        explanation: Because ETW feeds detection, neutralising it hides the attacker, so tampering must itself be detected.
+  - slug: win-ad-attack-paths
+    title: Active Directory Attack Paths and Tiering
+    order: 21
+    difficulty: advanced
+    summary: Understand how attackers chain small misconfigurations in Active Directory into paths to domain dominance, how tools map these paths, and how tiered administration and hardening break them.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.8", "sc200:3", "cysa:1.2"]
+    learning_objectives:
+      - Explain how Active Directory attack paths lead to domain dominance
+      - Describe how attackers and defenders map these paths
+      - Apply tiering and hardening to break attack paths
+    theory: |
+      **Active Directory (AD)** is the identity backbone of most enterprises, and its interconnected nature creates
+      something distinctive: **attack paths**, chains of individually minor misconfigurations and permissions that,
+      linked together, let an attacker move from an ordinary foothold all the way to domain dominance. No single
+      step may look alarming, a user who is a local admin here, a group that can reset a password there, a service
+      account with a risky delegation, an access-control entry granting a seemingly innocuous right, but AD's web
+      of relationships means these connect into a route an attacker can walk. This is why defending AD requires
+      thinking not just about individual vulnerabilities but about the **graph of relationships** and the paths
+      through it, because attackers explicitly hunt for the shortest chain from where they are to Domain Admin.
+
+      Attackers (and defenders) **map these paths** systematically. Tools famously model AD as a graph, nodes are
+      users, computers, groups, and edges are the rights and relationships between them (member of, admin to, can
+      reset password, has session on, can be delegated), and then compute the shortest paths from a compromised
+      account to high-value targets like Domain Admins. This turns a sprawling, hard-to-reason-about environment
+      into concrete attack routes. The building blocks of these paths include the specific attacks met earlier
+      (Kerberos abuses, NTLM relay, credential theft) plus privilege-granting misconfigurations: excessive group
+      memberships, dangerous access-control entries (ACL abuse), unconstrained or misconfigured delegation,
+      credentials cached on many machines, and local-admin sprawl that lets an attacker harvest credentials and
+      pivot. Understanding that an attacker reasons in paths, not isolated flaws, reframes the defensive problem:
+      the goal is to cut the edges that let paths form.
+
+      Breaking attack paths relies above all on **tiered administration** plus targeted hardening. The **tier
+      model** separates administration into levels, tier 0 (the identity plane, domain controllers, AD, and the
+      accounts and systems that control it) is the crown jewels and must be administered only from clean, protected
+      systems and never exposed to lower tiers; tier 1 (servers) and tier 2 (workstations) are kept separate, so a
+      compromised workstation cannot harvest a domain-admin credential because such credentials never touch it.
+      Tiering directly severs the most dangerous paths, those that let workstation compromise reach the domain core.
+      Alongside it: reduce local-admin and privileged-group membership (least privilege), fix dangerous
+      delegations and risky ACLs, protect and limit where privileged credentials are used (connecting to PAM and
+      Credential Guard met earlier), and continuously map your own AD to find and remediate paths before attackers
+      do, using the same graphing tools defensively. Monitoring for the techniques along these paths (the detection
+      lessons on Kerberos, credential access and lateral movement) provides the alerting layer. For the analyst and
+      administrator, the lessons are that AD compromise is usually the result of chained attack paths rather than
+      one flaw, that modelling AD as a graph reveals the concrete routes to domain dominance, and that tiered
+      administration together with least privilege, fixing dangerous rights and delegations, and proactively
+      mapping your own environment is what cuts those paths, protecting the identity backbone that, once fully
+      compromised, gives an attacker the entire domain.
+    examples:
+      - title: Chained paths to domain dominance
+        body: |
+          AD's web of relationships: local admin here + password-reset right there + risky delegation + an innocuous ACL = a walkable route to Domain Admin
+          no single step looks alarming -> defend the GRAPH of relationships, not just isolated flaws.
+      - title: Mapping and breaking paths
+        body: |
+          graph AD (users/computers/groups as nodes; member-of, admin-to, can-reset, has-session, delegation as edges) -> shortest path to Domain Admins
+          break with TIERING: tier 0 (DCs/AD/identity) administered only from clean systems, never exposed to workstations -> DA creds never touch a workstation
+          plus least privilege, fix delegations/ACLs, protect privileged creds (PAM/Cred Guard), map your own AD proactively.
+    exercise:
+      title: Find and break Active Directory attack paths
+      environment: A described Active Directory environment (or a scenario with sample relationships)
+      tools: [A scenario or sample AD relationships, the ATT&CK reference, a document, a notes file]
+      steps:
+        - Explain how minor misconfigurations chain into an attack path to domain dominance.
+        - Describe how modelling AD as a graph reveals concrete routes to high-value targets.
+        - Give examples of the path building blocks (ACL abuse, delegation, local-admin sprawl, credential caching).
+        - Explain the tier model and how it severs the most dangerous paths.
+        - Describe additional hardening (least privilege, fixing delegations, protecting credentials).
+        - Explain how proactively mapping your own AD and monitoring the path techniques helps.
+      deliverable: An AD attack-path plan covering how paths form, graph-based mapping, the tier model, hardening to cut paths, and proactive mapping with detection.
+    expected_outcome: >
+      You can explain how Active Directory attack paths lead to domain dominance, describe how they are mapped as a
+      graph, and apply tiered administration and hardening to break the paths that protect the identity backbone.
+    quiz:
+      - prompt: An Active Directory attack path is
+        options:
+          - A single critical vulnerability
+          - A chain of individually minor misconfigurations and rights that together lead from a foothold to domain dominance
+          - A physical cable route
+          - A backup schedule
+        answer: 1
+        explanation: AD compromise usually comes from chaining small, linked misconfigurations into a route to Domain Admin.
+      - prompt: Modelling AD as a graph helps because it
+        options:
+          - Hides the relationships
+          - Reveals concrete shortest paths from a compromised account to high-value targets like Domain Admins
+          - Encrypts the domain
+          - Removes all accounts
+        answer: 1
+        explanation: Graphing nodes and the rights between them exposes the actual routes attackers can walk.
+      - prompt: The tier model breaks attack paths by
+        options:
+          - Giving every workstation domain-admin rights
+          - Keeping tier 0 (identity/DCs) administered only from clean systems so privileged credentials never touch lower tiers
+          - Removing authentication
+          - Sharing all credentials
+        answer: 1
+        explanation: Tiering ensures a compromised workstation cannot harvest a credential that reaches the domain core.
+      - prompt: Defenders should map their own AD with the same graphing tools in order to
+        options:
+          - Help attackers
+          - Find and remediate dangerous attack paths before attackers exploit them
+          - Delete the domain
+          - Avoid any hardening
+        answer: 1
+        explanation: Proactive mapping finds the paths so they can be cut before an attacker uses them.
+  - slug: win-amsi-script-defense
+    title: AMSI and Script-Based Attack Defense
+    order: 22
+    difficulty: advanced
+    summary: Understand how attackers use scripts and in-memory techniques to evade file-based detection, how the Antimalware Scan Interface (AMSI) gives defenders visibility into that activity, and how to defend against script-based attacks.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.4", "sc200:3", "cysa:1.2"]
+    learning_objectives:
+      - Explain why script-based and in-memory attacks evade file detection
+      - Describe how AMSI gives visibility into script content
+      - Defend against script-based attacks and AMSI evasion
+    theory: |
+      A great deal of modern Windows attack activity happens through **scripts** (PowerShell, JScript, VBScript,
+      Office macros) and **in-memory execution** rather than dropping traditional executable files, precisely
+      because file-based antivirus struggles to catch what never touches disk as a recognisable file. An attacker
+      can run a malicious PowerShell command that downloads and executes code entirely in memory, or heavily
+      obfuscate a script so its true content is hidden until runtime, defeating simple signature scanning. This
+      living-off-the-land and fileless style (met in hunting and detection) is a core evasion technique, so
+      defenders need a way to see what scripts actually do when they run, not just what the file on disk looks like.
+
+      The **Antimalware Scan Interface (AMSI)** is Microsoft's answer to this. AMSI is a Windows interface that lets
+      scripting engines and applications submit content to the installed antimalware product for scanning **at the
+      point of execution**, after it has been de-obfuscated into what will actually run. So when a PowerShell script
+      is about to execute, its real, de-obfuscated content is passed through AMSI to be scanned, which means that
+      even a script obfuscated to defeat on-disk scanning is inspected in its true form at runtime. AMSI gives
+      defenders and antimalware visibility into script content, macro behaviour and other dynamic execution that
+      would otherwise be hidden, and it is an important source feeding script-based detection (connecting to the
+      PowerShell logging and ETW telemetry met earlier). In effect, AMSI moves the inspection point from the file
+      to the moment of execution, where obfuscation has already been undone.
+
+      Because AMSI is so useful to defenders, attackers try to **evade or disable it**, and understanding this is
+      part of the defense. Sophisticated malware attempts **AMSI bypass**, tampering with AMSI in its own process
+      so that its script content is never scanned (patching the AMSI function, or other techniques), which is a
+      recognised defense-evasion move, and, like ETW tampering, an attempt to disable AMSI is itself a detectable
+      and suspicious event. So defending against script-based attacks combines several layers: keep AMSI and
+      antimalware enabled and monitor for AMSI tampering, enable rich **script logging** (PowerShell script-block
+      logging, met earlier) so script content and execution are recorded regardless, apply **execution controls**
+      (constrained language mode, application control, macro restrictions, disabling or restricting scripting where
+      not needed), and feed all of this into detection so obfuscated and in-memory script activity is caught. The
+      considerations are that AMSI is one layer, not a complete solution (bypasses exist), so it is combined with
+      logging and execution controls rather than relied on alone. For the analyst, the lessons are that scripts and
+      in-memory techniques evade file-based detection, that AMSI restores visibility by scanning content at the
+      moment of execution after de-obfuscation, that attackers in turn try to disable AMSI (itself a detectable
+      signal), and that defending against script-based attacks means combining AMSI, thorough script logging and
+      execution controls so that the fileless, obfuscated techniques attackers rely on are seen and stopped.
+    examples:
+      - title: Why scripts evade file detection
+        body: |
+          scripts (PowerShell/JScript/VBScript/macros) + in-memory execution -> nothing recognisable touches disk; obfuscation hides content until runtime
+          file-based AV struggles -> living-off-the-land/fileless is a core evasion -> defenders must see what scripts DO at runtime.
+      - title: AMSI and its evasion
+        body: |
+          AMSI: scripting engines submit content to antimalware AT EXECUTION, after DE-OBFUSCATION -> the real content is scanned even if the file was obfuscated
+          attackers attempt AMSI BYPASS (patch AMSI in their process) = defense evasion, itself detectable
+          defend in layers: keep AMSI on + watch for tampering, script-block logging, execution controls (constrained language, app control, macro limits).
+    exercise:
+      title: Defend against script-based attacks
+      environment: A described Windows environment facing script-based threats (or a scenario)
+      tools: [A scenario or sample script telemetry, a document, a notes file]
+      steps:
+        - Explain why script-based and in-memory techniques evade file-based detection.
+        - Explain how AMSI scans script content at the moment of execution after de-obfuscation.
+        - Explain why AMSI catches obfuscated scripts that on-disk scanning misses.
+        - Describe AMSI bypass as an evasion technique and why an attempt to disable AMSI is itself a signal.
+        - List the layered defences (AMSI, script logging, execution controls) and why no single one suffices.
+        - Describe how this telemetry feeds script-based detection.
+      deliverable: A script-defense plan covering why scripts evade file detection, how AMSI restores visibility, AMSI evasion as a detectable signal, and the layered defences (AMSI, logging, execution controls).
+    expected_outcome: >
+      You can explain why script and in-memory attacks evade file detection, describe how AMSI scans content at
+      execution, and defend against script-based attacks with AMSI, script logging and execution controls.
+    quiz:
+      - prompt: Script-based and in-memory attacks evade file-based detection because
+        options:
+          - They always drop a recognisable executable to disk
+          - Little or nothing recognisable touches disk, and obfuscation hides the content until runtime
+          - They cannot run on Windows
+          - They are always signed
+        answer: 1
+        explanation: Fileless, obfuscated execution defeats on-disk signature scanning.
+      - prompt: AMSI restores visibility by scanning script content
+        options:
+          - Only as it sits obfuscated on disk
+          - At the point of execution, after de-obfuscation, so the real content is inspected
+          - Never
+          - Only after the attack completes
+        answer: 1
+        explanation: AMSI inspects the de-obfuscated content at runtime, catching scripts that evade disk scanning.
+      - prompt: An attempt to bypass or disable AMSI should be treated as
+        options:
+          - Normal, harmless activity
+          - A defense-evasion technique and itself a detectable, suspicious signal
+          - A performance optimisation
+          - Proof the system is secure
+        answer: 1
+        explanation: Like ETW tampering, disabling AMSI hides the attacker and is a strong signal to detect.
+      - prompt: Defending against script-based attacks should
+        options:
+          - Rely on AMSI alone
+          - Combine AMSI with script-block logging and execution controls, since AMSI can be bypassed
+          - Disable all logging
+          - Trust obfuscated scripts
+        answer: 1
+        explanation: AMSI is one layer; logging and execution controls provide defense in depth against bypasses.
+  - slug: win-defender-edr
+    title: Microsoft Defender for Endpoint and EDR on Windows
+    order: 23
+    difficulty: intermediate
+    summary: Understand what endpoint detection and response (EDR) brings to Windows beyond traditional antivirus, how a platform like Microsoft Defender for Endpoint works, and how analysts use it to detect, investigate and respond.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.5", "sc200:3", "cysa:1.1"]
+    learning_objectives:
+      - Explain how EDR differs from traditional antivirus
+      - Describe the capabilities of a Windows EDR platform
+      - Use EDR to detect, investigate and respond on endpoints
+    theory: |
+      Traditional antivirus mostly asks a single question, does this file match known-bad signatures, and blocks
+      it if so, which misses the fileless, in-memory, living-off-the-land and novel techniques covered throughout
+      this module. **Endpoint Detection and Response (EDR)** is the modern answer: rather than only scanning files,
+      EDR continuously records endpoint **behaviour**, process execution, file and registry activity, network
+      connections, script and in-memory activity (drawing on the ETW and AMSI telemetry met earlier), and uses that
+      rich behavioural data to detect suspicious activity, give analysts deep visibility, and enable response. On
+      Windows, Microsoft Defender for Endpoint is a prominent example, and understanding EDR matters because it is
+      the primary detection-and-response tool on modern endpoints and a central source feeding the SOC.
+
+      An EDR platform's **capabilities** span detection, visibility and response. For **detection**, it combines
+      behavioural analytics, machine learning, threat intelligence and rules to flag suspicious behaviour, catching
+      the techniques signature antivirus misses, and it still includes traditional prevention (next-generation
+      antivirus) as a layer. For **visibility and investigation**, it records detailed endpoint telemetry and
+      retains it, so an analyst can see exactly what happened on a host, a process tree showing how a threat
+      executed, what it touched, what it connected to, and can search across all endpoints for indicators and
+      behaviours (threat hunting, met earlier), which is invaluable for scoping an incident across the fleet. For
+      **response**, EDR provides actions an analyst can take remotely and quickly, isolate a compromised host from
+      the network (while keeping the EDR connection for investigation), kill a malicious process, quarantine a
+      file, collect an investigation package, and sometimes automate these responses, which is exactly the fast,
+      remote containment that incident response needs.
+
+      Using EDR well fits it into the broader SOC. Its alerts feed the SIEM and the alert-to-response workflow (met
+      in the SOC lesson), its rich telemetry powers both detection and investigation, and its response actions are
+      a core containment capability for incident response. EDR is also a target and a dependency to protect:
+      attackers try to disable or evade it (tampering with the agent, the ETW/AMSI evasion met earlier), so
+      tamper protection and monitoring the EDR's own health matter, and an endpoint that stops reporting to EDR is,
+      like a silent log source, a potential blind spot and attack signal. The considerations are tuning (EDR can
+      generate many alerts, so it needs the detection-engineering discipline met earlier), coverage (every endpoint
+      needs the agent), and that EDR is one layer in defense in depth, not a complete solution. Increasingly EDR
+      extends into XDR, correlating endpoint data with identity, email and cloud signals for a broader picture. For
+      the analyst, the lessons are that EDR moves endpoint security from signature file-scanning to continuous
+      behavioural detection, deep forensic visibility and fast remote response, that a platform like Microsoft
+      Defender for Endpoint is the primary detection-and-response tool on modern Windows endpoints and a key SOC
+      source, and that using it means leveraging its telemetry for detection, investigation and hunting, its
+      actions for containment, and protecting the EDR itself as the critical sensor and control point it has become.
+    examples:
+      - title: EDR vs traditional antivirus
+        body: |
+          AV: does this FILE match known-bad signatures? -> misses fileless/in-memory/living-off-the-land/novel
+          EDR: continuously records BEHAVIOUR (process/file/registry/network/script/in-memory, via ETW/AMSI) -> behavioural detection + deep visibility + response
+          Microsoft Defender for Endpoint = a prominent Windows example; primary endpoint detection-and-response tool.
+      - title: Capabilities
+        body: |
+          detect: behavioural analytics + ML + threat intel + rules (+ NGAV prevention layer)
+          investigate: detailed retained telemetry -> process tree of what happened; search all endpoints for indicators (hunting), scope across the fleet
+          respond: isolate host (keep EDR link), kill process, quarantine file, collect package, often automated -> fast remote containment
+          protect the EDR itself (tamper protection); a host that stops reporting = potential blind spot/attack signal.
+    exercise:
+      title: Use EDR to detect, investigate and respond
+      environment: A described Windows fleet with an EDR platform (or a scenario with sample EDR data)
+      tools: [A scenario or sample EDR telemetry, a document, a notes file]
+      steps:
+        - Explain how EDR differs from traditional signature-based antivirus and what it catches that AV misses.
+        - Describe how EDR detects suspicious behaviour.
+        - Explain how EDR's retained telemetry supports investigation and fleet-wide hunting.
+        - Describe the response actions EDR provides and why host isolation keeps the EDR link.
+        - Explain how EDR fits the SOC alert-to-response workflow and incident response.
+        - Explain why the EDR itself must be protected and monitored for tampering.
+      deliverable: An EDR usage plan covering behavioural detection, forensic visibility and hunting, remote response actions, integration with the SOC workflow, and protecting the EDR as a critical sensor.
+    expected_outcome: >
+      You can explain how EDR differs from antivirus, describe a Windows EDR platform's detection, visibility and
+      response capabilities, and use EDR to detect, investigate, hunt and respond while protecting the EDR itself.
+    quiz:
+      - prompt: EDR differs from traditional antivirus mainly because it
+        options:
+          - Only scans files for known-bad signatures
+          - Continuously records endpoint behaviour and uses it to detect suspicious activity, catching fileless and novel techniques AV misses
+          - Does not run on endpoints
+          - Cannot respond to threats
+        answer: 1
+        explanation: EDR adds behavioural detection and response beyond signature file-scanning.
+      - prompt: A key EDR response capability is to
+        options:
+          - Only send an email
+          - Isolate a compromised host from the network (while keeping the EDR link), kill processes and quarantine files, often remotely
+          - Delete all endpoints
+          - Do nothing automatically
+        answer: 1
+        explanation: EDR enables fast remote containment such as host isolation and process termination.
+      - prompt: EDR's retained telemetry is valuable for investigation because it
+        options:
+          - Shows nothing about what happened
+          - Lets an analyst reconstruct exactly what a threat did (process tree, files, connections) and search all endpoints for it
+          - Only records CPU temperature
+          - Cannot be searched
+        answer: 1
+        explanation: Rich, retained behavioural data reconstructs incidents and enables fleet-wide hunting.
+      - prompt: An endpoint that stops reporting to EDR should be treated as
+        options:
+          - Always perfectly secure
+          - A potential blind spot and attack signal, since attackers try to disable or evade EDR
+          - A performance improvement
+          - Irrelevant
+        answer: 1
+        explanation: A silent EDR agent may mean tampering, so it is a potential blind spot and signal, like a silent log source.

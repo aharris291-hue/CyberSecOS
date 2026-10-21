@@ -1213,3 +1213,812 @@ lessons:
           - Encrypting ARP
         answer: 1
         explanation: Dynamic ARP inspection checks ARP against the snooping table and discards forged entries.
+  - slug: net-ipv6-security
+    title: IPv6 Security for SOC Analysts
+    order: 15
+    difficulty: intermediate
+    summary: Understand how IPv6 differs from IPv4, the security risks of an often-overlooked protocol that is on by default, and how to monitor and control it.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:3.2", "secplus:4.4", "cysa:1.1"]
+    learning_objectives:
+      - Explain the key differences between IPv6 and IPv4 that matter for security
+      - Identify the risks of IPv6 being enabled but unmonitored
+      - Recommend controls to monitor and govern IPv6 on a network
+    theory: |
+      IPv6 is not a future concern but a present one: it is enabled by default on modern operating systems and is
+      often running on networks whose defenders think only in IPv4. That gap is the core security problem. IPv6
+      differs from IPv4 in ways that matter: addresses are vastly larger (128-bit), hosts can **autoconfigure**
+      addresses without DHCP using router advertisements, there is no NAT in the traditional sense (every host can
+      have a globally routable address), and link-local addressing and multicast behave differently. Each of these
+      is fine when understood and managed, and a liability when ignored.
+
+      The risks follow from being unmanaged. A network with firewalls and monitoring carefully tuned for IPv4 may
+      pass IPv6 traffic unfiltered, giving an attacker a path that the defences never inspect. **Rogue router
+      advertisements** are the IPv6 analogue of rogue DHCP: an attacker sends crafted advertisements so victims
+      autoconfigure a malicious gateway, enabling man-in-the-middle, and the defence (RA Guard) is often not
+      enabled because no one was thinking about IPv6. Tunnelling technologies that carry IPv6 over IPv4 can let
+      traffic bypass controls entirely. Attackers also use IPv6 for covert channels and to evade IPv4-only
+      detection. The theme is that IPv6 enlarges the attack surface precisely because it is present but
+      unwatched.
+
+      The controls are mostly about **parity and visibility**. If IPv6 is not needed, it can be disabled, but a
+      cleaner approach is to manage it as deliberately as IPv4: apply equivalent firewall rules to IPv6, ensure
+      the SIEM ingests and parses IPv6 addresses and events, enable RA Guard and related Layer 2 protections on
+      switches, and include IPv6 in vulnerability scanning and asset inventory. For the analyst, the practical
+      lesson is to check whether IPv6 is active and monitored, because an investigation that only looks at IPv4
+      can miss half the picture, and to recognise IPv6 addresses and their forms in logs. The broader point is
+      that a protocol enabled by default must be governed on purpose, not left as an unexamined default.
+    examples:
+      - title: What is different in IPv6
+        body: |
+          128-bit addresses; autoconfiguration via router advertisements (no DHCP needed)
+          no traditional NAT (hosts can be globally routable); link-local + multicast behave differently
+          on by default on modern OSes.
+      - title: The core risk and defence
+        body: |
+          IPv4-tuned firewalls/monitoring may pass IPv6 UNFILTERED -> an uninspected path
+          rogue router advertisement = IPv6 rogue DHCP -> malicious gateway (defence: RA Guard, often off)
+          -> achieve parity: equal firewall rules, SIEM parses IPv6, RA Guard on, IPv6 in scans + inventory.
+    exercise:
+      title: Assess and govern IPv6 on a network
+      environment: A described network that has not deliberately managed IPv6 (or a scenario)
+      tools: [A scenario or sample config, a document, a notes file]
+      steps:
+        - Explain two ways IPv6 differs from IPv4 that have security consequences.
+        - Describe the risk of IPv6 being enabled but unmonitored on an IPv4-focused network.
+        - Explain a rogue router advertisement attack and the RA Guard defence.
+        - Decide whether to disable or deliberately manage IPv6 for the described network and justify it.
+        - Recommend three parity controls (firewall, SIEM parsing, scanning, inventory) for IPv6.
+        - State one thing an analyst should check in logs to confirm IPv6 is visible.
+      deliverable: An IPv6 assessment covering the security-relevant differences, the unmonitored risk, the rogue-RA defence, a manage-or-disable decision, and parity controls.
+    expected_outcome: >
+      You can explain how IPv6 differs from IPv4, the risks of leaving it enabled but unmonitored, and the parity
+      controls and defences (RA Guard, equal firewalling, SIEM parsing, scanning) that bring it under governance.
+    quiz:
+      - prompt: A central IPv6 security risk on many networks is that
+        options:
+          - IPv6 cannot be attacked
+          - It is enabled by default but passes unfiltered and unmonitored on IPv4-tuned defences
+          - It encrypts all traffic automatically
+          - It has fewer addresses than IPv4
+        answer: 1
+        explanation: IPv6 is on by default; defences tuned only for IPv4 may ignore it, creating a blind path.
+      - prompt: A rogue router advertisement attack is the IPv6 analogue of
+        options:
+          - Password cracking
+          - Rogue DHCP, tricking hosts into autoconfiguring a malicious gateway
+          - Disk encryption
+          - A denial-of-service flood
+        answer: 1
+        explanation: Crafted router advertisements make victims adopt an attacker gateway, like rogue DHCP in IPv4.
+      - prompt: RA Guard is a switch feature that
+        options:
+          - Encrypts IPv6 traffic
+          - Blocks unauthorised router advertisements to prevent rogue-gateway attacks
+          - Assigns IPv4 addresses
+          - Disables multicast
+        answer: 1
+        explanation: RA Guard drops router advertisements from untrusted ports, stopping rogue-RA attacks.
+      - prompt: The best general approach to IPv6 if it is present is to
+        options:
+          - Ignore it
+          - Govern it with parity to IPv4 (equal firewalling, SIEM parsing, scanning, inventory) or disable it deliberately
+          - Assume the firewall already covers it
+          - Only scan it once a year
+        answer: 1
+        explanation: IPv6 should be managed as deliberately as IPv4, or disabled on purpose, not left unexamined.
+  - slug: net-email-authentication
+    title: Email Authentication with SPF, DKIM and DMARC
+    order: 16
+    difficulty: intermediate
+    summary: Understand the DNS-based mechanisms that prove an email's sender is legitimate, how SPF, DKIM and DMARC work together to fight spoofing, and how to read their results in headers.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:3.2", "secplus:2.4", "cysa:1.1"]
+    learning_objectives:
+      - Explain how SPF, DKIM and DMARC each help authenticate email
+      - Describe how the three work together to prevent domain spoofing
+      - Read authentication results in email headers
+    theory: |
+      Plain email has no built-in way to prove who sent it, which is why spoofing, forging the From address, is so
+      common in phishing. Three DNS-based standards close that gap, and understanding them is essential for both
+      defending a domain and investigating suspicious mail. **SPF** (Sender Policy Framework) lets a domain owner
+      publish, in DNS, which mail servers are allowed to send on its behalf; a receiving server checks whether the
+      message came from a listed server. **DKIM** (DomainKeys Identified Mail) adds a cryptographic signature to
+      each message using a private key, which the receiver verifies against a public key in DNS, proving the
+      message was not altered and came from a server holding the key. SPF checks the sending path; DKIM checks the
+      message's integrity and origin.
+
+      Individually, SPF and DKIM have gaps, which is where **DMARC** (Domain-based Message Authentication,
+      Reporting and Conformance) ties them together. DMARC lets the domain owner publish a policy saying what to
+      do with mail that fails authentication, and crucially it requires **alignment**: the domain the user
+      actually sees in the From address must match the domain that SPF or DKIM validated, which stops an attacker
+      from passing SPF for their own throwaway domain while forging someone else's From. The DMARC policy can be
+      none (monitor only), quarantine (send to spam), or reject (refuse), and DMARC also provides **reporting** so
+      the domain owner learns who is sending mail as their domain, legitimate or not. Together the three let a
+      receiver answer: is this really from the domain it claims, and what should I do if not?
+
+      For the analyst, the practical skill is **reading the results** in the message headers, where receiving
+      servers record the outcome (an Authentication-Results header showing spf=pass/fail, dkim=pass/fail and
+      dmarc=pass/fail). A phishing email spoofing a known brand will typically fail DMARC or show misaligned
+      domains, which is strong evidence during triage, while legitimate mail from a well-configured sender passes
+      all three aligned. On the defensive side, publishing SPF and DKIM and moving DMARC from monitoring to reject
+      is one of the highest-value anti-phishing steps an organisation can take to stop others impersonating its
+      domain. The limitation worth remembering is that these prove the *domain*, not that the content is safe, and
+      they do not stop look-alike domains or a compromised legitimate account, so they are a powerful layer, not a
+      complete defence.
+    examples:
+      - title: What each one proves
+        body: |
+          SPF  -> DNS lists which servers may send for the domain (checks the sending path)
+          DKIM -> cryptographic signature verified via DNS public key (integrity + origin)
+          DMARC-> policy (none/quarantine/reject) + ALIGNMENT (visible From must match what passed) + reporting.
+      - title: Reading the headers
+        body: |
+          Authentication-Results: spf=pass dkim=pass dmarc=pass  -> legitimate, aligned
+          brand spoof in phishing -> typically dmarc=fail or misaligned From
+          note: proves the DOMAIN, not that content is safe; look-alike domains still get through.
+    exercise:
+      title: Analyse email authentication and harden a domain
+      environment: A described domain plus sample email headers (or a scenario)
+      tools: [A scenario or sample email headers, a document, a notes file]
+      steps:
+        - Explain what SPF, DKIM and DMARC each check.
+        - Explain what DMARC alignment adds that SPF and DKIM alone do not.
+        - Read a sample Authentication-Results header and state whether the message is trustworthy.
+        - Identify a spoofed message by its failed or misaligned authentication and explain the signal.
+        - Recommend a DMARC policy progression for a domain and justify moving toward reject.
+        - State one thing these mechanisms do not protect against.
+      deliverable: An email-authentication analysis reading sample headers, identifying a spoofed message, a DMARC hardening recommendation, and a note on the mechanisms' limits.
+    expected_outcome: >
+      You can explain SPF, DKIM and DMARC and how alignment ties them together, read authentication results in
+      headers to spot spoofing, and recommend a DMARC policy that stops others impersonating a domain.
+    quiz:
+      - prompt: DKIM proves that an email
+        options:
+          - Was sent from an allowed server path
+          - Carries a valid cryptographic signature, showing it was not altered and came from a key-holding sender
+          - Contains no malware
+          - Was read by the recipient
+        answer: 1
+        explanation: DKIM signs the message so the receiver can verify integrity and origin via a DNS public key.
+      - prompt: DMARC's alignment requirement is important because it
+        options:
+          - Encrypts the message body
+          - Requires the visible From domain to match what SPF or DKIM validated, stopping spoofing via throwaway domains
+          - Deletes spam automatically
+          - Replaces SPF and DKIM
+        answer: 1
+        explanation: Alignment prevents passing authentication for one domain while forging another in the From field.
+      - prompt: An analyst triaging a suspected brand-spoofing email should check the headers for
+        options:
+          - The font used
+          - Authentication-Results showing dmarc=fail or misaligned domains
+          - The image sizes
+          - The subject length
+        answer: 1
+        explanation: A failed or misaligned DMARC result is strong evidence of domain spoofing.
+      - prompt: A limitation of SPF, DKIM and DMARC is that they
+        options:
+          - Prove the content is safe
+          - Prove the sending domain but not that content is safe, and do not stop look-alike domains
+          - Block all phishing
+          - Encrypt every message
+        answer: 1
+        explanation: They authenticate the domain, not content, and do not address look-alike domains or account takeover.
+  - slug: net-load-balancing-reverse-proxy
+    title: Load Balancers and Reverse Proxies
+    order: 17
+    difficulty: intermediate
+    summary: Understand how load balancers and reverse proxies sit in front of services, the security functions they add such as TLS termination and filtering, and what their logs reveal to an analyst.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:3.1", "secplus:3.2", "cysa:1.1"]
+    learning_objectives:
+      - Explain how load balancers and reverse proxies front services
+      - Describe the security functions they provide
+      - Interpret their logs and understand how they affect visibility
+    theory: |
+      Public services are rarely exposed directly; they usually sit behind a **load balancer** or **reverse
+      proxy**, and understanding this tier matters because it is both a security control and a place that shapes
+      what an analyst sees. A **reverse proxy** receives client requests and forwards them to one or more backend
+      servers, presenting a single front door to the outside while hiding the internal topology. A **load
+      balancer** does the same while distributing traffic across many backends for scale and availability, with
+      health checks that route around failed servers. The two roles overlap heavily in modern appliances and
+      cloud services, and the key idea is that this tier is a deliberate **choke point** through which traffic is
+      funneled, which is exactly what makes it useful for both performance and security.
+
+      Because everything passes through it, this tier can enforce **security functions** centrally. It commonly
+      performs **TLS termination**, decrypting inbound HTTPS so it can inspect, route and re-encrypt, which
+      centralises certificate management and enables inspection. It can host a **web application firewall** to
+      filter application-layer attacks, apply **rate limiting** and connection controls to blunt abuse and
+      denial-of-service, hide backend details that would aid reconnaissance, and add authentication or access
+      control in front of applications that lack it. By concentrating these controls at the edge of a service, the
+      reverse proxy or load balancer protects backends that may be harder to secure individually and gives one
+      consistent place to apply policy.
+
+      For the analyst, this tier is a rich **log source** but also something that changes **visibility** in ways
+      worth understanding. Its access logs capture every request with client details, paths and response codes,
+      often enriched, making it a prime detection source for web attacks and abuse. But because it sits in the
+      middle, it affects what backends see: unless configured to pass the original client address (for example via
+      an X-Forwarded-For header), backend logs may show the proxy's address instead of the real client, which can
+      mislead an investigation that only looks at the backend. TLS termination also means the proxy, not the
+      backend, is where encrypted traffic is visible. The practical lessons are to use the proxy or load-balancer
+      logs as a front-line view of what reached a service, to know whether real client addresses are being
+      preserved so attribution is correct, and to recognise this tier as a valuable place to add defensive
+      controls and a key point to monitor, since it is the funnel through which attacks on the service must pass.
+    examples:
+      - title: What they do
+        body: |
+          reverse proxy: single front door, forwards to backends, hides internal topology
+          load balancer: distributes across backends for scale + availability, health-checks around failures
+          both = a deliberate CHOKE POINT for traffic.
+      - title: Security + visibility effects
+        body: |
+          functions: TLS termination, WAF, rate limiting, hide backends, add auth in front
+          visibility: backend may see the PROXY's IP unless X-Forwarded-For passes the real client
+          -> proxy/LB logs are a front-line view; confirm client IPs are preserved for correct attribution.
+    exercise:
+      title: Analyse a service behind a reverse proxy or load balancer
+      environment: A described service fronted by a proxy or load balancer, with sample logs (or a scenario)
+      tools: [A scenario or sample proxy/LB logs, a document, a notes file]
+      steps:
+        - Explain the difference and overlap between a reverse proxy and a load balancer.
+        - Describe three security functions this tier can provide.
+        - Explain why it is a good place to put a web application firewall and rate limiting.
+        - Read a sample access log entry and extract the client, path and response.
+        - Explain how backend logs can be misleading if the real client address is not preserved.
+        - State what TLS termination at the proxy means for where encrypted traffic is visible.
+      deliverable: An analysis of a proxied service covering the roles involved, security functions, a read of sample logs, the client-address visibility caveat, and the implication of TLS termination.
+    expected_outcome: >
+      You can explain how load balancers and reverse proxies front services, the security functions they add, and
+      how to read their logs and account for the visibility and attribution effects of this middle tier.
+    quiz:
+      - prompt: A reverse proxy improves security partly by
+        options:
+          - Exposing every backend directly to the internet
+          - Presenting a single front door that hides internal topology and concentrates controls at the edge
+          - Disabling TLS
+          - Removing all logging
+        answer: 1
+        explanation: It funnels traffic through one controlled choke point, hiding backends and centralising policy.
+      - prompt: TLS termination at a load balancer or reverse proxy means
+        options:
+          - Traffic is never encrypted
+          - The proxy decrypts inbound HTTPS, so inspection and encrypted-traffic visibility happen there, not at the backend
+          - Backends must each manage certificates
+          - Encryption is impossible
+        answer: 1
+        explanation: Terminating TLS at the edge centralises certificates and moves inspection to the proxy.
+      - prompt: Backend logs behind a proxy can mislead an investigation when
+        options:
+          - They are encrypted
+          - The real client address is not preserved, so backends log the proxy's address instead
+          - They are too detailed
+          - The proxy is removed
+        answer: 1
+        explanation: Without passing the original client IP, backends attribute traffic to the proxy, not the client.
+      - prompt: This tier is valuable to an analyst because it
+        options:
+          - Never sees any traffic
+          - Is a choke point whose logs give a front-line view of every request reaching the service
+          - Hides all attacks
+          - Replaces the SIEM
+        answer: 1
+        explanation: As the funnel for service traffic, its logs capture every request, a prime detection source.
+  - slug: net-dns-security-dnssec
+    title: DNS Architecture and Security
+    order: 18
+    difficulty: intermediate
+    summary: Understand how DNS resolution works, why DNS is a critical and trusted dependency, and the security mechanisms (DNSSEC, DoH/DoT, filtering) that protect it and the visibility it gives defenders.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:3.2", "secplus:4.4", "cysa:1.1"]
+    learning_objectives:
+      - Explain how DNS resolution works and why it is a trusted dependency
+      - Describe DNSSEC, encrypted DNS and DNS filtering
+      - Use DNS as a security control and a detection source
+    theory: |
+      Almost every connection starts with a **DNS** lookup turning a name into an address, which makes DNS both a
+      critical dependency and a trusted one that is widely abused. Resolution is hierarchical: a client asks a
+      resolver, which, if it does not have the answer cached, walks from the root servers to the authoritative
+      server for the domain and returns the address. The design assumes answers are honest, and classic DNS has
+      no authentication, so an attacker who can tamper with responses (cache poisoning, on-path spoofing) can
+      redirect victims to malicious servers, and attackers also abuse DNS for their own purposes, resolving
+      command-and-control domains, tunnelling data in queries, and using fast-changing domains. Understanding the
+      resolution path is the basis for both defending DNS and reading it.
+
+      Several mechanisms harden DNS. **DNSSEC** adds cryptographic signatures to DNS records so a resolver can
+      verify that an answer genuinely came from the authoritative source and was not altered, addressing the
+      integrity gap (though it does not add confidentiality). **Encrypted DNS**, DNS over HTTPS (DoH) and DNS over
+      TLS (DoT), encrypts the query between client and resolver so it cannot be read or modified in transit, which
+      protects user privacy but, notably, can also **reduce defenders' visibility** if endpoints use external
+      encrypted resolvers that bypass the organisation's own DNS, a real trade-off security teams must manage.
+      **DNS filtering** uses the resolver as a control point, blocking or sinkholing known-malicious domains so a
+      lookup for a bad domain simply fails, which is a cheap and effective layer against malware and phishing.
+
+      For the analyst, DNS is one of the **richest detection sources** precisely because nearly everything uses
+      it. DNS logs reveal connections to known-bad or newly registered domains, the beaconing rhythm of
+      command-and-control by resolution pattern, data exfiltration via abnormally long or high-volume queries
+      (tunnelling), and algorithmically generated domains. Because a lookup usually precedes the actual
+      connection, DNS can give early warning. The architectural lessons are to run and control internal DNS so you
+      keep that visibility (and to govern the use of external encrypted resolvers that would blind you), to apply
+      DNSSEC validation and DNS filtering, and to log and monitor DNS centrally. The recurring theme is that DNS is
+      a trusted foundation attackers exploit, so hardening it (DNSSEC, filtering), managing the visibility
+      trade-off of encryption, and mining its logs are all high-value, because the one thing almost every attack
+      touches is the name lookup that starts its connections.
+    examples:
+      - title: Resolution and its trust gap
+        body: |
+          client -> resolver -> (root -> TLD -> authoritative) -> address; cached along the way
+          classic DNS has no authentication -> cache poisoning/spoofing can redirect victims
+          attackers also abuse DNS: C2 domains, tunnelling, fast-changing/generated domains.
+      - title: Hardening and the visibility trade-off
+        body: |
+          DNSSEC: signs records -> verify integrity/origin (no confidentiality)
+          DoH/DoT: encrypt the query -> privacy, BUT external encrypted resolvers can BLIND defenders
+          DNS filtering: block/sinkhole bad domains at the resolver; DNS logs are a rich early detection source.
+    exercise:
+      title: Secure DNS and use it for detection
+      environment: A described network with its DNS setup and sample DNS logs (or a scenario)
+      tools: [A scenario or sample DNS logs, a document, a notes file]
+      steps:
+        - Explain how DNS resolution works and why classic DNS answers are trusted but unauthenticated.
+        - Explain what DNSSEC adds and what it does not (integrity, not confidentiality).
+        - Explain how encrypted DNS (DoH/DoT) helps privacy but can reduce defender visibility.
+        - Describe how DNS filtering acts as a control point against malware and phishing.
+        - Identify a suspicious pattern in sample DNS logs (new domain, long queries, beaconing).
+        - Recommend how to keep DNS visibility while managing external encrypted resolvers.
+      deliverable: A DNS security plan covering the resolution trust gap, DNSSEC, the encrypted-DNS visibility trade-off, filtering, and a detection finding from sample logs.
+    expected_outcome: >
+      You can explain DNS resolution and its trust gap, describe DNSSEC, encrypted DNS and filtering, manage the
+      visibility trade-off of encrypted resolvers, and use DNS logs as an early, high-value detection source.
+    quiz:
+      - prompt: Classic DNS is abusable for redirection because
+        options:
+          - It encrypts everything
+          - It has no authentication, so tampered or spoofed answers can redirect victims
+          - It never caches
+          - It cannot resolve names
+        answer: 1
+        explanation: Without authentication, poisoned or spoofed responses can send victims to malicious servers.
+      - prompt: DNSSEC provides
+        options:
+          - Confidentiality of queries
+          - Cryptographic verification that answers are authentic and unaltered (integrity and origin)
+          - Faster resolution
+          - DNS filtering
+        answer: 1
+        explanation: DNSSEC signs records for integrity and origin; it does not encrypt the query.
+      - prompt: A security trade-off of DNS over HTTPS (DoH) is that it
+        options:
+          - Always improves defender visibility
+          - Can reduce defender visibility if endpoints use external encrypted resolvers that bypass organisational DNS
+          - Disables DNS entirely
+          - Removes the need for filtering
+        answer: 1
+        explanation: Encrypted external resolvers can bypass organisational DNS, blinding monitoring.
+      - prompt: DNS logs are a valuable detection source because
+        options:
+          - Almost nothing uses DNS
+          - Nearly every connection begins with a lookup, so DNS reveals bad domains, beaconing and tunnelling, often early
+          - They contain no useful data
+          - They cannot be collected
+        answer: 1
+        explanation: Since lookups precede connections, DNS logs expose malicious infrastructure and patterns early.
+  - slug: net-device-infrastructure-security
+    title: Network Device and Infrastructure Security
+    order: 19
+    difficulty: intermediate
+    summary: Learn why routers, switches and other network infrastructure are high-value targets, how to harden their management, and why their logs and configurations matter to a SOC.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:3.2", "secplus:4.5", "cysa:1.1"]
+    learning_objectives:
+      - Explain why network infrastructure devices are high-value targets
+      - Harden the management of routers, switches and similar devices
+      - Use device configuration and logs as a security source
+    theory: |
+      The routers, switches, firewalls and other devices that move traffic are the **infrastructure** of a network,
+      and because they sit in the path of everything, compromising one gives an attacker enormous power, to
+      reroute, intercept, or block traffic, to pivot deeper, and to hide. Yet these devices are often less well
+      secured than servers: they may run outdated firmware, use default or weak credentials, expose management
+      interfaces, and be monitored far less than endpoints. Nation-state and sophisticated attackers specifically
+      target network devices precisely because they are powerful, persistent (firmware implants survive reboots
+      and reinstalls of other systems), and poorly watched, so a SOC must treat infrastructure as part of its
+      protected and monitored estate, not as plumbing that takes care of itself.
+
+      **Hardening** network devices follows familiar principles applied to their specifics. Protect the
+      **management plane**: restrict management access to a dedicated, isolated network, use strong unique
+      credentials and centralised authentication, disable unused services and default accounts, and never expose
+      management interfaces to the internet. Keep firmware patched, because device vulnerabilities are exploited
+      like any other. Use secure management protocols (SSH not Telnet, SNMPv3 not older SNMP with default
+      community strings) so management traffic is not sniffable or trivially forged. Protect the **control plane**
+      (routing protocols) with authentication so an attacker cannot inject false routes. Back up configurations and
+      monitor them for unauthorised change. These steps reduce the chance that a device is taken over and limit
+      what an attacker can do if one is.
+
+      For the analyst, network devices are also a **visibility source** that is easy to overlook. Their logs record
+      configuration changes, logins to the management plane (a change or login nobody authorised is a strong
+      signal), interface and routing changes, and access-control-list hits, and their flow data (covered earlier)
+      is a core detection source. Monitoring device configurations for drift catches both attacker tampering and
+      risky mistakes. The recurring themes are that infrastructure devices are powerful, persistent and
+      under-watched targets, so they deserve real hardening (especially of the management and control planes,
+      secure protocols and patching), configuration backup and change monitoring, and inclusion in SOC visibility,
+      because an attacker who owns the network's own devices owns the network itself, and the logs and
+      configurations of those devices are both something to protect and a place to detect.
+    examples:
+      - title: Why infrastructure is a prime target
+        body: |
+          devices sit in the path of EVERYTHING -> reroute/intercept/block, pivot, hide; firmware implants survive reinstalls
+          often weak: old firmware, default/weak creds, exposed management, barely monitored
+          -> sophisticated attackers target them precisely because they are powerful, persistent and under-watched.
+      - title: Hardening the planes
+        body: |
+          management plane: isolated mgmt network, strong central auth, disable defaults, NEVER expose to internet
+          secure protocols: SSH not Telnet, SNMPv3 not old SNMP; patch firmware
+          control plane: authenticate routing protocols; back up configs + monitor for change (logins/config changes = signals).
+    exercise:
+      title: Harden and monitor network infrastructure
+      environment: A described network with its devices and sample device logs (or a scenario)
+      tools: [A scenario or sample device configs and logs, a document, a notes file]
+      steps:
+        - Explain why a compromised router or switch is so damaging and why devices are often under-secured.
+        - Describe how you would protect the management plane of the devices.
+        - Explain which secure protocols replace which insecure ones and why.
+        - Explain how control-plane (routing) protection prevents route injection.
+        - Identify a suspicious event in sample device logs (unauthorised login or config change).
+        - Explain how configuration backup and drift monitoring help security.
+      deliverable: An infrastructure-security plan covering why devices are targets, management- and control-plane hardening, secure protocols, and using device logs and configuration monitoring for detection.
+    expected_outcome: >
+      You can explain why network infrastructure is a high-value, persistent target, harden the management and
+      control planes with secure protocols and patching, and use device configurations and logs as a SOC source.
+    quiz:
+      - prompt: Network infrastructure devices are high-value targets mainly because
+        options:
+          - They are never connected to anything
+          - They sit in the traffic path and, if compromised, allow interception, rerouting, persistence and pivoting
+          - They contain no useful access
+          - They cannot run firmware
+        answer: 1
+        explanation: Controlling a device in the traffic path gives an attacker broad, persistent power over the network.
+      - prompt: A key management-plane hardening step is to
+        options:
+          - Expose management interfaces to the internet
+          - Restrict management access to an isolated network with strong central authentication and no default accounts
+          - Use Telnet everywhere
+          - Share one password across devices
+        answer: 1
+        explanation: Isolating and strongly authenticating management access protects the most sensitive control point.
+      - prompt: Which replacement improves management security?
+        options:
+          - Replacing SSH with Telnet
+          - Using SSH instead of Telnet and SNMPv3 instead of older SNMP with default community strings
+          - Removing all authentication
+          - Disabling logging
+        answer: 1
+        explanation: Secure protocols prevent management traffic from being sniffed or trivially forged.
+      - prompt: For a SOC, network device logs are valuable because they record
+        options:
+          - Nothing useful
+          - Management logins, configuration and routing changes and ACL hits, where unauthorised change is a strong signal
+          - Only device temperature
+          - Only marketing data
+        answer: 1
+        explanation: Device logs reveal tampering and unauthorised access to critical infrastructure.
+  - slug: net-routing-security
+    title: Routing and BGP Security
+    order: 20
+    difficulty: advanced
+    summary: Understand how routing decides the path traffic takes, why routing protocols such as BGP were built on trust, and how routing attacks like BGP hijacking and route leaks threaten availability and confidentiality.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:3.2", "secplus:1.4", "cysa:1.1"]
+    learning_objectives:
+      - Explain how routing directs traffic and why it is trust-based
+      - Describe routing attacks like BGP hijacking and route leaks
+      - Describe the controls that make routing more secure
+    theory: |
+      **Routing** is how networks decide the path a packet takes from source to destination, and on the internet
+      the protocol that glues the independent networks together is **BGP** (Border Gateway Protocol), which lets
+      networks (autonomous systems) advertise to each other which address ranges they can reach. The critical fact
+      is that BGP was designed on **trust**: historically a network simply announced the routes it claimed to serve,
+      and other networks believed it, with little built-in verification. That trust model works when everyone is
+      honest and careful, but it means a network that announces routes it should not, whether maliciously or by
+      mistake, can attract or disrupt traffic that was never meant for it, which is the root of routing security
+      problems.
+
+      The resulting attacks and incidents are serious. **BGP hijacking** is when a network announces address ranges
+      it does not own, causing other networks to send that traffic to the attacker, who can then black-hole it
+      (denial of service), intercept and inspect it (confidentiality), or man-in-the-middle it, high-profile
+      incidents have redirected large volumes of internet traffic this way. **Route leaks** are the often-accidental
+      propagation of routes that should not have been shared, which can overload or misdirect traffic and cause
+      outages. Because routing operates between organisations and across the global internet, the impact of these
+      events can be wide-reaching and hard for any single victim to prevent, and they can be difficult to
+      distinguish from legitimate routing changes, making detection a challenge. Within an organisation, internal
+      routing protocols face analogous risks if an attacker can inject false routes to reroute or intercept
+      internal traffic.
+
+      The **controls** add verification and hygiene to a trust-based system. **RPKI** (Resource Public Key
+      Infrastructure) lets networks cryptographically certify which autonomous system is authorised to announce
+      which address ranges, so others can reject invalid announcements, directly countering hijacks. **Route
+      filtering** and prefix limits let networks reject announcements that do not make sense (for example a peer
+      suddenly claiming routes it should not), and industry norms (such as MANRS) promote these good practices.
+      **Authenticating internal routing** protocols prevents route injection inside an organisation. Monitoring
+      routing, watching for unexpected changes to how your prefixes are announced and reached, provides detection,
+      and some organisations subscribe to services that alert on hijacks of their address space. For the analyst,
+      the lessons are that routing, especially BGP, underpins connectivity and was built on trust rather than
+      verification, that routing attacks like hijacking and route leaks can redirect, intercept or disrupt traffic
+      at large scale, and that the defences, RPKI, route filtering, authenticated internal routing and routing
+      monitoring, add the verification and vigilance that a trust-based system needs, which matters because when
+      routing is subverted, traffic goes where the attacker wants regardless of how well the endpoints are secured.
+    examples:
+      - title: Why routing is trust-based
+        body: |
+          BGP lets networks (autonomous systems) announce which address ranges they can reach -> others historically just BELIEVE it
+          little built-in verification -> a false announcement (malicious or mistaken) attracts or disrupts traffic
+          that is the root of routing security problems.
+      - title: Attacks and controls
+        body: |
+          BGP hijack: announce ranges you don't own -> black-hole (DoS), intercept, or MITM traffic; route leak: accidental bad propagation -> outages
+          RPKI: cryptographically certify who may announce what -> reject invalid announcements; route filtering/prefix limits; authenticate internal routing; monitor your prefixes.
+    exercise:
+      title: Assess and defend routing security
+      environment: A described network and its internet routing (or a scenario with sample routing events)
+      tools: [A scenario or sample routing changes, a document, a notes file]
+      steps:
+        - Explain how BGP lets networks advertise reachability and why it is trust-based.
+        - Describe BGP hijacking and the three things an attacker can do with redirected traffic.
+        - Explain what a route leak is and why it is often accidental.
+        - Explain how RPKI counters hijacking.
+        - Describe route filtering and authenticated internal routing as controls.
+        - Explain how monitoring your own prefixes provides detection.
+      deliverable: A routing-security plan covering the trust model, hijacking and route leaks, and the controls (RPKI, route filtering, authenticated internal routing, monitoring).
+    expected_outcome: >
+      You can explain how routing and BGP direct traffic on a trust model, describe hijacking and route leaks, and
+      describe the controls (RPKI, filtering, authentication, monitoring) that add verification to routing.
+    quiz:
+      - prompt: BGP routing security problems stem from the fact that BGP was
+        options:
+          - Designed with full cryptographic verification from the start
+          - Built on trust, so networks historically believed each other's route announcements with little verification
+          - Never used on the internet
+          - Immune to misconfiguration
+        answer: 1
+        explanation: BGP's trust model means a false announcement can attract or disrupt traffic, the root of hijacks and leaks.
+      - prompt: In a BGP hijack, an attacker who announces address ranges it does not own can
+        options:
+          - Only improve performance
+          - Black-hole, intercept, or man-in-the-middle the redirected traffic
+          - Nothing at all
+          - Only send email
+        answer: 1
+        explanation: Redirected traffic can be dropped (DoS), inspected, or man-in-the-middled.
+      - prompt: RPKI improves routing security by
+        options:
+          - Encrypting all packets
+          - Cryptographically certifying which autonomous system may announce which address ranges, so invalid announcements can be rejected
+          - Disabling routing
+          - Removing all filtering
+        answer: 1
+        explanation: RPKI lets networks validate route origin and reject unauthorised announcements.
+      - prompt: Subverted routing is dangerous even when endpoints are well secured because
+        options:
+          - Endpoints control routing
+          - Traffic goes where the attacker directs it regardless of endpoint security
+          - Routing has no effect on traffic
+          - It only affects wireless
+        answer: 1
+        explanation: If routing is hijacked, traffic is redirected before endpoint protections are relevant.
+  - slug: net-nsm-zeek
+    title: Network Security Monitoring with Zeek
+    order: 21
+    difficulty: advanced
+    summary: Learn how network security monitoring with a tool like Zeek turns raw traffic into rich, structured logs of what happened on the network, giving analysts protocol-level visibility that packet capture alone does not.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.4", "sc200:2", "cysa:1.1"]
+    learning_objectives:
+      - Explain network security monitoring and what Zeek produces
+      - Describe the protocol-level logs Zeek generates and their value
+      - Use Zeek-style logs for detection and investigation
+    theory: |
+      Earlier lessons covered packet capture (seeing raw bytes) and flow analysis (seeing connection summaries);
+      **network security monitoring (NSM)** with a tool like **Zeek** sits powerfully between them, turning raw
+      traffic into **rich, structured logs of what actually happened** at the protocol level. Rather than storing
+      every packet (huge and hard to search) or only coarse flow records, Zeek observes traffic and produces a set
+      of high-level logs, one for connections, one for DNS queries and answers, one for HTTP requests, one for TLS
+      sessions and certificates, one for files transferred, and many more, each a structured record of the
+      meaningful events it saw. This gives analysts the protocol-level story of network activity in a form that is
+      compact, searchable and detection-friendly, which is why Zeek-style NSM is a backbone of many network
+      detection programs.
+
+      The **value of these logs** is that they answer investigative and detection questions directly. The DNS log
+      shows every domain looked up (feeding the DNS-abuse detection met earlier); the HTTP log shows requested URLs,
+      methods, user agents and responses; the TLS log shows the certificates and server names of encrypted sessions
+      (the metadata analysis met earlier, produced automatically); the connection log ties it together with who
+      talked to whom, for how long, and how much data moved; the files log records files seen crossing the network,
+      with hashes. Because these are structured fields, not raw packets, an analyst can search for all connections
+      to a suspicious domain, all TLS sessions using a certificate tied to malware, all HTTP requests with a
+      malicious user agent, or all large outbound transfers, quickly and at scale. Zeek can also run scripts that
+      raise its own notices on suspicious patterns. In effect, NSM converts the firehose of traffic into the
+      evidence a SOC needs.
+
+      Using NSM data, these logs become a **primary detection and investigation source** feeding the SIEM. For
+      detection, they power rules and hunts for command-and-control, data exfiltration, suspicious DNS and HTTP,
+      and anomalous connections, much of the network-based hunting and detection met earlier assumes exactly this
+      kind of structured network telemetry. For investigation, when an incident occurs, the connection, DNS, HTTP,
+      TLS and files logs let a responder reconstruct what a host did on the network over time, even without full
+      packet capture, and when full packets are also kept, the NSM logs are the index that tells you which packets
+      to examine. The considerations are placement (NSM needs to see the traffic, at a network tap or span port),
+      the challenge of encrypted traffic (where metadata rather than content is what NSM provides), and the usual
+      volume and tuning. For the analyst, the lessons are that network security monitoring with a tool like Zeek
+      produces rich, structured protocol logs that sit between raw packets and flow summaries, that these logs,
+      DNS, HTTP, TLS, connections, files, give searchable, detection-ready visibility into what happened on the
+      network, and that NSM is a foundational source for both network detection and incident investigation,
+      turning overwhelming raw traffic into usable evidence.
+    examples:
+      - title: Between packets and flows
+        body: |
+          packet capture = every byte (huge, hard to search); flow = coarse summaries; Zeek/NSM = rich STRUCTURED logs of what happened
+          one log each for connections, DNS, HTTP, TLS/certs, files, and more -> compact, searchable, detection-friendly.
+      - title: The logs answer questions
+        body: |
+          DNS log (every domain), HTTP log (URLs/methods/user agents), TLS log (certs/server names = auto metadata), conn log (who/how long/how much), files log (hashes)
+          search for a suspicious domain, a malware cert, a bad user agent, a big outbound transfer -> fast, at scale; Zeek scripts raise notices.
+    exercise:
+      title: Use network security monitoring logs
+      environment: A described network with an NSM sensor and sample Zeek-style logs (or a scenario)
+      tools: [A scenario or sample NSM logs, a document, a notes file]
+      steps:
+        - Explain network security monitoring and how Zeek sits between packet capture and flow analysis.
+        - List several of the structured logs Zeek produces and what each records.
+        - Explain why structured protocol logs make detection and investigation easier than raw packets.
+        - Use a sample DNS or connection log to find a suspicious pattern.
+        - Describe how NSM logs feed SIEM detection and incident investigation.
+        - Note the considerations (sensor placement, encrypted traffic, volume).
+      deliverable: An NSM plan covering what Zeek produces, the value of its protocol logs, a detection finding from sample logs, and how NSM supports detection and investigation.
+    expected_outcome: >
+      You can explain network security monitoring and what Zeek produces, describe its protocol-level logs and
+      their value, and use Zeek-style logs as a primary source for network detection and incident investigation.
+    quiz:
+      - prompt: Network security monitoring with Zeek produces
+        options:
+          - Only raw packet bytes
+          - Rich, structured protocol logs (connections, DNS, HTTP, TLS, files) of what happened on the network
+          - Only CPU metrics
+          - Nothing searchable
+        answer: 1
+        explanation: Zeek turns traffic into structured, searchable logs that sit between raw packets and flow summaries.
+      - prompt: Zeek's structured logs make detection easier than raw packets because
+        options:
+          - They are larger and harder to search
+          - They are compact structured fields you can search at scale (for a domain, a certificate, a user agent, a big transfer)
+          - They contain no useful data
+          - They cannot be fed to a SIEM
+        answer: 1
+        explanation: Structured fields let analysts query meaningful events quickly, unlike a packet firehose.
+      - prompt: For incident investigation, NSM logs let a responder
+        options:
+          - Do nothing without full packet capture
+          - Reconstruct what a host did on the network over time, even without full packets, and index which packets to examine
+          - Only see CPU usage
+          - Only read email
+        answer: 1
+        explanation: The connection, DNS, HTTP, TLS and files logs reconstruct network activity and guide packet review.
+      - prompt: A consideration for NSM is that
+        options:
+          - It needs no access to traffic
+          - It must see the traffic (tap or span port) and provides metadata rather than content for encrypted sessions
+          - It decrypts everything automatically
+          - It replaces all logging
+        answer: 1
+        explanation: NSM requires traffic visibility and yields metadata for encrypted sessions, with volume to tune.
+  - slug: net-sdwan
+    title: SD-WAN and Modern WAN Security
+    order: 22
+    difficulty: intermediate
+    summary: Understand how software-defined WAN changes the way organisations connect sites and reach the cloud, and the security implications and controls that come with moving from private circuits to internet-based, software-controlled connectivity.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:3.2", "secplus:3.1", "cysa:1.1"]
+    learning_objectives:
+      - Explain what SD-WAN is and why organisations adopt it
+      - Describe the security implications of software-defined WAN
+      - Describe the controls that secure an SD-WAN deployment
+    theory: |
+      Traditionally, organisations connected their branch offices and data centers with expensive private circuits
+      (such as MPLS) and backhauled internet and cloud traffic through a central site for inspection.
+      **Software-defined WAN (SD-WAN)** changes this by using software to intelligently route traffic over multiple
+      transport types, including ordinary broadband internet, choosing the best path per application in real time
+      and managing the whole WAN centrally through software. Organisations adopt it for cost and performance: cheap
+      internet links replace or supplement costly circuits, and branches can reach cloud and SaaS applications
+      directly (local breakout) rather than backhauling everything, which is faster and cheaper in a cloud-centric
+      world. Understanding SD-WAN matters because it reshapes where traffic flows and therefore where security must
+      be applied.
+
+      That reshaping has real **security implications**. The biggest is that traffic which once rode private
+      circuits and was inspected at a central chokepoint now often travels over the **public internet** and breaks
+      out to the cloud directly from each branch, so the old model of inspecting everything at one central firewall
+      no longer sees it. This both exposes traffic (it must be protected in transit) and creates many distribution
+      points that each need security, rather than one. SD-WAN also introduces a **centralised controller and
+      management plane** that programs the whole WAN, which is powerful and therefore a high-value target: compromise
+      the SD-WAN controller and an attacker could reroute or intercept traffic across the entire organisation, so
+      it must be protected like the critical infrastructure it is (connecting to the network-device and
+      control-plane lessons). The shift to direct internet breakout is also exactly what drives the SASE/SSE model
+      met in the architecture module, delivering security in the cloud at the edge where the traffic now goes.
+
+      The **controls** follow from these implications. **Encrypt WAN traffic** (SD-WAN typically builds encrypted
+      tunnels between sites over whatever transport) so that using the public internet does not expose data.
+      **Secure the direct internet breakout** at each branch, since traffic no longer passes a central firewall,
+      security must travel with it, through integrated next-generation firewall and secure web gateway capabilities
+      at the edge or, increasingly, through a cloud-delivered SASE/SSE service that inspects the breakout traffic.
+      **Protect the controller and management plane** with strong authentication, isolation and monitoring, because
+      it commands the whole WAN. **Apply segmentation** within the SD-WAN so that different traffic types and
+      business units are separated. And **monitor** the SD-WAN as a security-relevant system, its logs show traffic
+      patterns and configuration changes. For the analyst and architect, the lessons are that SD-WAN moves WAN
+      traffic from inspected private circuits onto the public internet with direct cloud breakout, that this
+      dissolves the single central inspection point and makes the controller a critical target, and that securing
+      it means encrypting WAN traffic, delivering security to each breakout point (often via SASE/SSE), hardening
+      and monitoring the controller, and segmenting the WAN, so that the cost and performance benefits of
+      software-defined connectivity do not come at the price of lost visibility and control.
+    examples:
+      - title: What changes with SD-WAN
+        body: |
+          old: private circuits (MPLS) + backhaul all traffic to one central firewall for inspection
+          SD-WAN: software routes per-app over multiple transports incl. cheap internet; branches break out to cloud DIRECTLY
+          -> traffic now rides the PUBLIC INTERNET from many points; the single central inspection chokepoint is gone.
+      - title: Implications and controls
+        body: |
+          controller/management plane commands the whole WAN = high-value target (reroute/intercept everywhere) -> protect like critical infra
+          controls: encrypt WAN tunnels; secure each direct breakout (NGFW/SWG at edge or cloud SASE/SSE); harden + monitor the controller; segment the WAN
+          direct breakout is exactly what drives the SASE/SSE model.
+    exercise:
+      title: Secure an SD-WAN deployment
+      environment: A described organisation moving to SD-WAN with direct cloud breakout (or a scenario)
+      tools: [A scenario, an architecture notes file, a document]
+      steps:
+        - Explain what SD-WAN is and why organisations adopt it.
+        - Explain how SD-WAN changes where traffic flows and dissolves the central inspection point.
+        - Explain why the SD-WAN controller is a high-value target.
+        - Describe how you would secure the direct internet breakout at branches.
+        - Explain how encrypting WAN traffic and segmenting the WAN help.
+        - Describe how SD-WAN relates to the SASE/SSE model.
+      deliverable: An SD-WAN security plan covering the shift to internet-based direct breakout, protecting the controller, securing breakout traffic (NGFW/SWG or SASE/SSE), encryption, segmentation and monitoring.
+    expected_outcome: >
+      You can explain SD-WAN and why it is adopted, describe how it reshapes WAN traffic and its security
+      implications, and describe the controls (encryption, secured breakout, controller protection, segmentation) that secure it.
+    quiz:
+      - prompt: The biggest security implication of SD-WAN is that
+        options:
+          - All traffic stays on private circuits inspected centrally
+          - Traffic often rides the public internet and breaks out to the cloud directly, so the single central inspection point no longer sees it
+          - It removes the need for any security
+          - It only affects wireless
+        answer: 1
+        explanation: Direct internet breakout dissolves the central chokepoint, so security must move to where traffic now flows.
+      - prompt: The SD-WAN controller must be protected like critical infrastructure because
+        options:
+          - It does nothing important
+          - It programs the whole WAN, so its compromise could reroute or intercept traffic across the organisation
+          - It only stores wallpaper
+          - It cannot be attacked
+        answer: 1
+        explanation: The controller commands the entire WAN, making it a high-value target.
+      - prompt: Securing the direct internet breakout at each branch typically means
+        options:
+          - Removing all security
+          - Delivering NGFW/secure-web-gateway capability at the edge or via a cloud SASE/SSE service, since traffic no longer passes a central firewall
+          - Backhauling everything again
+          - Disabling encryption
+        answer: 1
+        explanation: Security must travel with the breakout traffic, at the edge or through cloud-delivered SASE/SSE.
+      - prompt: SD-WAN typically protects data on the public internet by
+        options:
+          - Sending it in clear text
+          - Building encrypted tunnels between sites over whatever transport is used
+          - Disabling routing
+          - Using only private circuits
+        answer: 1
+        explanation: Encrypted WAN tunnels protect traffic even when it rides ordinary internet links.

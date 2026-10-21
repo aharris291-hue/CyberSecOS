@@ -1333,3 +1333,964 @@ lessons:
           - No cryptography is used
         answer: 1
         explanation: HSMs protect high-value keys by keeping them inside the hardened device at all times.
+  - slug: arch-sase-sse
+    title: SASE and Secure Service Edge
+    order: 15
+    difficulty: intermediate
+    summary: Understand how SASE and SSE converge networking and security in the cloud to protect a distributed workforce, replacing the traditional model of backhauling traffic to a central perimeter.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:3.1", "sc900:4", "cysa:1.1"]
+    learning_objectives:
+      - Explain why the traditional perimeter model fails for a distributed workforce
+      - Describe the components of SASE and SSE
+      - Apply SASE concepts to connect and secure remote users and sites
+    theory: |
+      The traditional network security model put a strong perimeter around the office and routed, or
+      **backhauled**, all traffic through it for inspection. That model breaks when users, applications and data
+      are everywhere: remote workers, cloud applications and branch offices. Backhauling a remote user's cloud
+      traffic all the way to a central data centre just to inspect it and send it back out is slow, expensive and
+      increasingly pointless when the application is itself in the cloud. **Secure Access Service Edge (SASE)** is
+      the architectural answer: it converges networking and security into a single, cloud-delivered service
+      distributed across many points of presence, so inspection and policy happen close to the user wherever they
+      are, not at a distant headquarters.
+
+      SASE combines two halves. The **networking** half is largely **SD-WAN**, intelligently connecting sites and
+      users over any transport with good performance. The **security** half is what the industry calls **Security
+      Service Edge (SSE)**, a bundle of cloud-delivered security functions: a **secure web gateway** (filtering
+      and inspecting web traffic), a **cloud access security broker** (visibility and control over SaaS use),
+      **zero trust network access** (granting access to specific applications based on identity and posture rather
+      than putting users on the network), and often firewall-as-a-service and data-loss prevention. SSE is
+      essentially the security functions of SASE delivered independently of the networking, which is why many
+      organisations adopt SSE first. The common thread is that these controls live in the cloud and follow the
+      user, applying consistent policy whether someone is in an office, at home or on the road.
+
+      Architecturally, SASE and SSE express the same shift seen throughout modern security: from a **location-
+      centric** model (trusted inside, untrusted outside) to an **identity- and policy-centric** one where access
+      decisions are made per request based on who the user is, the health of their device, and the sensitivity of
+      what they are reaching. This aligns naturally with zero trust. The benefits are better performance (short
+      paths to cloud apps), consistent security for a distributed workforce, simplified management (one policy
+      framework instead of many appliances), and reduced reliance on the data centre as a chokepoint. For the
+      architect, the practical design questions are which functions to consolidate, how to route traffic to the
+      nearest point of presence, how identity and device posture feed access decisions, and how to migrate from
+      legacy VPN-and-backhaul gradually. For the analyst, SASE/SSE also centralises visibility, since web, SaaS
+      and access logs flow through one cloud service, making it a rich and consistent telemetry source for a
+      workforce that no longer sits behind one firewall.
+    examples:
+      - title: Why backhaul fails
+        body: |
+          old model: strong office perimeter, backhaul ALL traffic through it to inspect
+          users/apps/data now everywhere -> backhauling a remote user's cloud traffic to HQ and back is slow + pointless
+          SASE: converge networking + security in the cloud, inspect close to the user.
+      - title: SASE = SD-WAN + SSE
+        body: |
+          networking half: SD-WAN (connect sites/users over any transport)
+          security half (SSE): secure web gateway + CASB + zero trust network access (+ FWaaS, DLP)
+          cloud-delivered, follows the user -> consistent policy in office/home/road.
+    exercise:
+      title: Design a SASE/SSE approach for a distributed workforce
+      environment: A described organisation with remote workers, branches and cloud apps (or a scenario)
+      tools: [A scenario, an architecture notes file, a document]
+      steps:
+        - Explain why backhauling traffic to a central perimeter fails for a distributed workforce.
+        - Describe the networking and security halves of SASE and how SSE relates to it.
+        - Name three SSE security functions and what each does.
+        - Explain how SASE expresses the shift from a location-centric to an identity-centric model.
+        - Recommend how identity and device posture should feed access decisions.
+        - Describe one benefit for analysts in terms of centralised visibility.
+      deliverable: A SASE/SSE design covering why backhaul fails, the SD-WAN plus SSE structure, three SSE functions, the identity-centric shift, posture-based access, and the visibility benefit.
+    expected_outcome: >
+      You can explain why the perimeter model fails for distributed work, describe SASE and SSE and their
+      components, and apply them to secure and connect remote users with identity- and posture-based access.
+    quiz:
+      - prompt: SASE emerged mainly because the traditional model of
+        options:
+          - Encrypting disks failed
+          - Backhauling all traffic to a central perimeter is slow and pointless when users and apps are in the cloud
+          - Firewalls were too cheap
+          - Passwords were too long
+        answer: 1
+        explanation: With users and apps everywhere, routing everything through HQ no longer makes sense.
+      - prompt: Security Service Edge (SSE) is best described as
+        options:
+          - The networking half of SASE
+          - The cloud-delivered security functions of SASE (SWG, CASB, ZTNA, and more)
+          - A type of firewall appliance
+          - A password manager
+        answer: 1
+        explanation: SSE is the bundle of cloud security functions, delivered independently of the networking.
+      - prompt: Zero trust network access within SSE grants access based on
+        options:
+          - Putting the user on the internal network
+          - Identity and device posture, to specific applications rather than the whole network
+          - The user's location only
+          - A shared office password
+        answer: 1
+        explanation: ZTNA gives per-application access based on identity and posture, not network placement.
+      - prompt: A benefit of SASE/SSE for analysts is
+        options:
+          - Less logging
+          - Centralised visibility, since web, SaaS and access logs flow through one cloud service
+          - No need for identity
+          - Removing all controls
+        answer: 1
+        explanation: Converging controls in one cloud service centralises telemetry for a distributed workforce.
+  - slug: arch-ot-ics
+    title: OT and Industrial Control System Architecture
+    order: 16
+    difficulty: advanced
+    summary: Understand how to architect security for operational technology and industrial control systems, where safety and availability come first, using the Purdue model, strong IT/OT separation and specialised monitoring.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:3.1", "secplus:2.5", "cysa:1.1"]
+    learning_objectives:
+      - Explain how OT security priorities differ from IT
+      - Apply the Purdue model and zoning to OT architecture
+      - Design IT/OT separation and monitoring that respect safety and availability
+    theory: |
+      Securing operational technology, the systems that run physical processes in manufacturing, energy, water and
+      similar sectors, requires a different architectural mindset from IT, because the **priorities are inverted**.
+      In IT, confidentiality often leads; in OT, **safety and availability come first**, because a control system
+      that stops or misbehaves can injure people, damage equipment or disrupt critical services. A security measure
+      that is routine in IT, forcing a reboot to patch, dropping a connection that looks suspicious, can be
+      dangerous in OT if it halts a running process. So OT architecture is built to protect the process and its
+      safety while still defending against attack, and it accepts constraints (legacy devices that cannot be
+      patched or that run fragile protocols) that IT would not tolerate.
+
+      The classic organising framework is the **Purdue model**, which layers an industrial environment into levels
+      from the physical process and its controllers (the lowest levels, PLCs and sensors actually running the
+      plant) up through supervisory control and operations to the enterprise IT levels at the top, with a
+      **demilitarised zone** between OT and IT. The architectural goal is strong **segmentation between these
+      zones** so that the sensitive lower levels are tightly isolated and traffic between levels is minimal,
+      controlled and inspected. Above all, **IT and OT must be firmly separated**: the scenario defenders most fear
+      is an intrusion that starts in enterprise email reaching the control systems, so the IT/OT boundary (often
+      through a hardened DMZ with data diodes or tightly controlled brokers) is the single most important control,
+      ensuring that a compromise of the business network cannot cascade into the plant.
+
+      Because the OT devices themselves usually **cannot be hardened or patched** like IT endpoints, the
+      architecture leans on the controls around them. **Passive, protocol-aware monitoring** is favoured: watching
+      industrial protocols for anomalies without actively probing fragile devices, so detection does not risk
+      disruption. **Strict access control** governs who and what can reach OT, often with jump hosts and no direct
+      path from IT. **Redundancy and safety systems** are preserved and protected, and change is tightly managed
+      because unplanned changes threaten availability. For the architect, the key judgements are to respect the
+      safety-and-availability-first priority (never let a security control endanger the process), to make IT/OT
+      separation robust and provable, to zone the OT environment per the Purdue model, and to monitor passively
+      with protocol awareness. For the analyst, the lesson is that OT is a distinct world where the usual
+      aggressive IT tactics can cause harm, so detection and response are designed to be safe for the process
+      first, effective second.
+    examples:
+      - title: Priorities are inverted
+        body: |
+          IT: confidentiality often leads     OT: SAFETY + AVAILABILITY first
+          an IT-routine action (force reboot to patch, drop a suspicious connection) can be DANGEROUS in OT
+          -> protect the process; accept constraints IT would not tolerate.
+      - title: Purdue model + IT/OT separation
+        body: |
+          levels: physical process/PLCs (lowest) -> supervisory -> operations -> enterprise IT (top), DMZ between OT and IT
+          segment the zones; minimal, controlled, inspected traffic between levels
+          most important control: firm IT/OT separation (hardened DMZ/data diodes) so email-borne intrusion can't reach the plant.
+    exercise:
+      title: Architect security for an OT environment
+      environment: A described industrial environment with IT and OT networks (or a scenario)
+      tools: [A scenario, an architecture notes file, a document]
+      steps:
+        - Explain how OT security priorities differ from IT and give an example of an IT control that is risky in OT.
+        - Describe the Purdue model levels at a high level and the role of the OT/IT DMZ.
+        - Explain why firm IT/OT separation is the single most important control.
+        - Explain why passive, protocol-aware monitoring is preferred over active scanning in OT.
+        - Recommend an access-control approach for reaching OT from IT.
+        - Describe how you would ensure a security control never endangers the physical process.
+      deliverable: An OT security architecture covering the inverted priorities, Purdue-model zoning, IT/OT separation, passive monitoring, access control, and a safety-first guarantee for security controls.
+    expected_outcome: >
+      You can explain OT's safety-and-availability-first priorities, apply the Purdue model and zoning, design firm
+      IT/OT separation and passive protocol-aware monitoring, and ensure security controls never endanger the process.
+    quiz:
+      - prompt: Compared with IT, OT security prioritises
+        options:
+          - Confidentiality above all
+          - Safety and availability first, because a disrupted control system can harm people or processes
+          - Nothing in particular
+          - Only encryption
+        answer: 1
+        explanation: OT runs physical processes, so safety and availability lead over confidentiality.
+      - prompt: The single most important control in OT architecture is
+        options:
+          - Antivirus on every PLC
+          - Firm separation between IT and OT so a business-network intrusion cannot reach the plant
+          - Daily reboots of controllers
+          - Public internet access for OT
+        answer: 1
+        explanation: Robust IT/OT separation stops an email-borne compromise cascading into control systems.
+      - prompt: Passive, protocol-aware monitoring is preferred in OT because
+        options:
+          - It is cheaper only
+          - It detects anomalies without actively probing fragile devices that active scanning could disrupt
+          - It replaces segmentation
+          - It patches the devices
+        answer: 1
+        explanation: Passive monitoring avoids the disruption risk that active probing poses to fragile OT devices.
+      - prompt: A security control in OT must never
+        options:
+          - Detect anomalies
+          - Endanger the physical process or its safety, even to stop an attack
+          - Log activity
+          - Use segmentation
+        answer: 1
+        explanation: Safety comes first, so a control that could halt or endanger the process is unacceptable.
+  - slug: arch-microsegmentation
+    title: Microsegmentation
+    order: 17
+    difficulty: advanced
+    summary: Understand microsegmentation, dividing a network into fine-grained, individually controlled segments down to the workload, to contain breaches and limit lateral movement far beyond traditional VLANs.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:3.1", "sc900:4", "cysa:1.1"]
+    learning_objectives:
+      - Explain microsegmentation and how it differs from traditional segmentation
+      - Describe how it limits lateral movement and contains breaches
+      - Apply microsegmentation with a default-deny, workload-centric policy
+    theory: |
+      Traditional network segmentation divides a network into a handful of broad zones (such as a user network, a
+      server network and a DMZ) separated by firewalls. That helps, but within each zone everything can usually
+      talk to everything else, so an attacker who compromises one machine can often move freely to its neighbours.
+      **Microsegmentation** takes segmentation to a much finer grain, controlling traffic between individual
+      **workloads** or small groups, so that each server or application only communicates with the specific others
+      it genuinely needs to. The difference is one of resolution: where VLANs draw a few big boundaries,
+      microsegmentation draws many small ones, ideally wrapping a tight policy around each workload, which is why
+      it is a cornerstone of zero-trust networking.
+
+      The security value is **containing breaches and limiting lateral movement**, the stage of an attack where a
+      single compromised host becomes a foothold for reaching the rest of the environment. If a web server only
+      needs to talk to its specific application server and database on specific ports, microsegmentation enforces
+      exactly that and blocks everything else, so an attacker who lands on the web server cannot pivot to
+      unrelated systems, scan the internal network freely, or reach the domain controller, because the paths
+      simply are not permitted. This shrinks the blast radius of any single compromise dramatically and turns
+      lateral movement from easy into something that must defeat a policy at every hop, generating detectable
+      denied-connection signals along the way.
+
+      Implementing it well is a matter of **default-deny, workload-centric policy**, usually enforced in software
+      (host-based firewalls, hypervisor or cloud security groups, or a dedicated microsegmentation platform)
+      rather than by physically re-cabling. The hard part is not the enforcement but **knowing what should be
+      allowed**: you must map the legitimate communication each workload needs, often by observing traffic first,
+      then write least-privilege rules and move from monitoring to enforcement carefully so you do not break
+      applications. Policies are ideally expressed in terms of workload identity and labels (this application tier
+      may talk to that database tier) rather than fragile IP addresses, so they survive change and scale in
+      dynamic cloud environments. For the architect, microsegmentation is one of the most effective controls
+      against lateral movement and a natural fit with zero trust, with the main costs being the effort to discover
+      and maintain the policy and the discipline to keep it least-privilege. For the analyst, it is also a
+      detection boon, because in a well-segmented environment, denied connections and attempts to reach
+      unauthorised workloads are strong signals of an attacker probing for a way to move.
+    examples:
+      - title: Finer than VLANs
+        body: |
+          traditional: a few broad zones; within a zone everything talks to everything (free lateral movement)
+          microsegmentation: control traffic between individual WORKLOADS -> each talks only to what it truly needs
+          many small boundaries vs a few big ones -> a cornerstone of zero trust.
+      - title: Contain the breach
+        body: |
+          web server allowed only -> its app server + database on specific ports; everything else denied
+          attacker on the web server cannot pivot to unrelated systems or reach the domain controller
+          shrinks blast radius; lateral movement must defeat policy at every hop (and trips denied-connection alerts).
+    exercise:
+      title: Design a microsegmentation policy
+      environment: A described multi-tier application or environment (or a scenario)
+      tools: [A scenario, an architecture notes file, a document]
+      steps:
+        - Explain how microsegmentation differs from traditional VLAN-based segmentation.
+        - Explain how it limits lateral movement and shrinks the blast radius of a compromise.
+        - For a described multi-tier application, write the least-privilege flows each tier needs.
+        - Explain why default-deny and workload-identity-based policy are preferred over IP-based rules.
+        - Describe how you would discover the required flows and roll out enforcement without breaking apps.
+        - Explain how microsegmentation also improves detection.
+      deliverable: A microsegmentation design with least-privilege flows for a multi-tier application, a default-deny identity-based policy approach, a safe rollout plan, and the detection benefit.
+    expected_outcome: >
+      You can explain microsegmentation and how it differs from VLANs, design default-deny workload-centric policy
+      that limits lateral movement, and roll it out safely while gaining detection value from denied connections.
+    quiz:
+      - prompt: Microsegmentation differs from traditional segmentation by
+        options:
+          - Using fewer, broader zones
+          - Controlling traffic at the fine grain of individual workloads so each talks only to what it needs
+          - Removing all firewalls
+          - Encrypting the disks
+        answer: 1
+        explanation: It draws many small, workload-level boundaries rather than a few broad zones.
+      - prompt: The main security benefit of microsegmentation is
+        options:
+          - Faster networking
+          - Containing breaches and limiting lateral movement, shrinking the blast radius of a compromise
+          - Removing the need for identity
+          - Eliminating logging
+        answer: 1
+        explanation: Fine-grained allow-only policy stops a compromised host from pivoting freely.
+      - prompt: Microsegmentation policies are best expressed in terms of
+        options:
+          - Fragile fixed IP addresses
+          - Workload identity and labels, so they survive change and scale in dynamic environments
+          - Physical cable colours
+          - The time of day
+        answer: 1
+        explanation: Identity- and label-based policy is durable and scales where IP-based rules break.
+      - prompt: In a well-microsegmented environment, a denied connection attempt is
+        options:
+          - Always a misconfiguration to ignore
+          - A strong signal of an attacker probing for a way to move laterally
+          - Impossible
+          - A normal backup
+        answer: 1
+        explanation: Because flows are tightly allowed, denied attempts often indicate lateral-movement probing.
+  - slug: arch-waf-api-gateway
+    title: Web Application Firewall and API Gateway Design
+    order: 18
+    difficulty: intermediate
+    summary: Understand how web application firewalls and API gateways protect and manage application and API traffic at the edge, what each does, and how they fit into a layered application security architecture.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:3.1", "secplus:2.3", "cysa:1.1"]
+    learning_objectives:
+      - Explain what a web application firewall does and its limits
+      - Explain what an API gateway does for security and management
+      - Design edge protection for web applications and APIs
+    theory: |
+      Applications and APIs are primary targets, and two edge components, the **web application firewall (WAF)** and
+      the **API gateway**, provide protection and control in front of them, complementing (not replacing) secure
+      coding. A **WAF** inspects HTTP/HTTPS traffic to and from a web application and filters out malicious
+      requests, blocking common application-layer attacks such as SQL injection, cross-site scripting and path
+      traversal, and enforcing rules about what requests are acceptable. It works through signatures and rule sets
+      (often based on known attack patterns) and increasingly through anomaly detection, sitting inline, commonly
+      at a reverse proxy or CDN, so it sees and can block attacks before they reach the application. A WAF is a
+      valuable layer, especially as **virtual patching**, shielding a known vulnerability with a WAF rule while a
+      code fix is developed, but it has limits: it can be bypassed by novel or cleverly encoded attacks, can cause
+      false positives that block legitimate traffic, and must not be relied on as a substitute for fixing the
+      underlying code.
+
+      An **API gateway** is the front door for APIs, and while it overlaps with a WAF it is more about **management
+      and access** than pure attack filtering. It provides a single entry point that handles cross-cutting
+      concerns for many backend services: **authentication and authorization** (validating tokens and keys before
+      requests reach services), **rate limiting and throttling** (protecting APIs from abuse and overload),
+      request routing and transformation, and logging and monitoring of API traffic. By centralising these, the
+      gateway lets backend services focus on business logic while security and access control are enforced
+      consistently at the edge, which is especially important in microservice architectures with many APIs. Modern
+      API security also addresses API-specific risks (such as broken object-level authorization and excessive data
+      exposure) that a traditional WAF may not catch, so API gateways are increasingly paired with dedicated API
+      security tooling.
+
+      In a layered **application security architecture**, these components work together and with others. Traffic
+      arrives at the edge (often a CDN with DDoS protection), passes through a WAF that filters attacks and an API
+      gateway that authenticates and rate-limits, and only then reaches the application or services, which
+      themselves are built with secure coding and least privilege. TLS is terminated and inspected at this tier,
+      and everything is logged for detection. The design principle is defence in depth: the edge components reduce
+      the attack surface and absorb much malicious traffic, but the application must still be secure in its own
+      right, because the edge is a filter, not a guarantee. For the architect, the lessons are to place a WAF in
+      front of web applications (using it for virtual patching as well as general filtering), to front APIs with a
+      gateway that centralises authentication, authorization and rate limiting, to add API-specific security where
+      APIs carry sensitive operations, and to treat all of this as layers that complement secure development rather
+      than excuse its absence. For the analyst, these edge components are also rich log sources and control points
+      for detecting and blocking application-layer attacks.
+    examples:
+      - title: WAF vs API gateway
+        body: |
+          WAF: inspect HTTP(S), block app-layer attacks (SQLi/XSS/traversal) via rules/anomaly; inline at proxy/CDN
+               great for VIRTUAL PATCHING; but bypassable, false positives, NOT a substitute for fixing code.
+          API gateway: single API front door -> auth/authz, rate limiting, routing, logging for many services
+               centralises cross-cutting concerns; add API-specific security for API risks a WAF misses.
+      - title: Layered edge
+        body: |
+          CDN/DDoS -> WAF (filter attacks) -> API gateway (authenticate, rate-limit) -> app/services (secure code, least privilege)
+          TLS terminated + inspected here; everything logged
+          defence in depth: edge reduces attack surface, but the app must still be secure itself.
+    exercise:
+      title: Design edge protection for apps and APIs
+      environment: A described web application and API estate (or a scenario)
+      tools: [A scenario, an architecture notes file, a document]
+      steps:
+        - Explain what a WAF does and two attacks it filters.
+        - Explain virtual patching and when it is valuable.
+        - State two limits of a WAF and why it does not replace secure code.
+        - Explain what an API gateway centralises and why that helps, especially with microservices.
+        - Describe an API-specific risk a traditional WAF might miss.
+        - Lay out a layered edge architecture from CDN through to the application.
+      deliverable: An edge-protection design covering WAF filtering and virtual patching with its limits, an API gateway's centralised controls, an API-specific risk, and a layered architecture.
+    expected_outcome: >
+      You can explain WAFs and API gateways, their security roles and limits, and design layered edge protection
+      for web applications and APIs that complements, rather than replaces, secure development.
+    quiz:
+      - prompt: A web application firewall primarily
+        options:
+          - Fixes vulnerable code automatically
+          - Inspects HTTP(S) traffic and blocks application-layer attacks like SQL injection and XSS
+          - Encrypts the database
+          - Routes network packets
+        answer: 1
+        explanation: A WAF filters malicious web requests at the edge, blocking common app-layer attacks.
+      - prompt: Virtual patching with a WAF means
+        options:
+          - Permanently fixing the application code
+          - Shielding a known vulnerability with a WAF rule while a proper code fix is developed
+          - Disabling the application
+          - Encrypting traffic
+        answer: 1
+        explanation: Virtual patching buys time by blocking exploitation of a known flaw until code is fixed.
+      - prompt: An API gateway centralises
+        options:
+          - Only disk encryption
+          - Authentication, authorization, rate limiting, routing and logging for many backend services
+          - The database schema
+          - Physical security
+        answer: 1
+        explanation: The gateway handles cross-cutting API concerns at a single front door for many services.
+      - prompt: Edge components like a WAF and API gateway should be treated as
+        options:
+          - A complete substitute for secure coding
+          - Layers that complement secure development, since the application must still be secure itself
+          - Unnecessary if code is written
+          - The only control needed
+        answer: 1
+        explanation: The edge filters and reduces attack surface but does not replace a secure application.
+  - slug: arch-pam
+    title: Privileged Access Management Architecture
+    order: 19
+    difficulty: intermediate
+    summary: Understand how privileged access management protects the powerful administrative accounts attackers prize, through vaulting, just-in-time access, session control and monitoring, as a core architectural control.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.6", "sc900:3", "cysa:1.3"]
+    learning_objectives:
+      - Explain why privileged accounts need special protection
+      - Describe the components of a privileged access management solution
+      - Design privileged access management into an architecture
+    theory: |
+      **Privileged accounts**, administrators, root, domain admins, cloud owners, service accounts with broad
+      rights, are the keys to the kingdom, and they are precisely what attackers work to obtain, because with them
+      they can disable defences, access everything, and persist. **Privileged Access Management (PAM)** is the set
+      of controls and the architecture that protect these accounts specifically, recognising that ordinary
+      identity controls are not enough for accounts this powerful. The core idea is to stop privileged credentials
+      from being standing, widely held and loosely used, and instead make privileged access controlled,
+      time-bound, monitored and accountable. PAM is a high-value architectural investment because compromising a
+      privileged account is often the difference between a contained incident and total compromise, so hardening
+      how privilege is granted and used protects the most dangerous attack path.
+
+      A PAM solution typically combines several **components**. A **credential vault** stores privileged passwords
+      and keys securely, so admins check out credentials rather than knowing them, and the vault rotates them
+      automatically (so a password an admin once saw does not stay valid). **Just-in-time (JIT) access** grants
+      privilege only when needed and only for a limited time, rather than leaving accounts permanently privileged,
+      drastically shrinking the window an attacker can abuse, this is least privilege applied to time. **Session
+      management** proxies and records privileged sessions, so there is an audit trail (and often live monitoring
+      or the ability to terminate a session), making privileged activity accountable and reviewable. **Approval
+      workflows** can require that elevation be requested and authorised. **Strong authentication** (MFA) is
+      enforced for privileged access, and privileged accounts are often separated from everyday accounts so admins
+      do not browse the web or read email as an administrator.
+
+      Designed into an **architecture**, PAM anchors the protection of the most sensitive tier. It pairs naturally
+      with tiered administration (keeping tier-zero assets like domain controllers and the identity provider
+      administered only from protected paths), with zero trust (every privileged action verified), and with the
+      monitoring architecture (privileged-session logs are high-value detection data, since misuse of privilege is
+      a top signal). The benefits are fewer standing privileged credentials to steal, a limited time window for any
+      that are, strong accountability through session recording, and automatic rotation that limits the value of a
+      captured credential. The considerations are that PAM must be deployed carefully so it does not block
+      legitimate urgent work (break-glass procedures exist for emergencies) and that the PAM system itself becomes
+      a high-value target to protect. For the architect, the lessons are that privileged accounts demand controls
+      beyond ordinary identity management because they are the attacker's prize, that PAM delivers this through
+      vaulting, just-in-time access, session recording, approvals and strong authentication, and that building PAM
+      into the architecture, alongside tiering, zero trust and monitoring, protects the single most dangerous path
+      to total compromise.
+    examples:
+      - title: Why privileged accounts are special
+        body: |
+          admins/root/domain admins/cloud owners = keys to the kingdom; compromising one = often total compromise
+          ordinary identity controls aren't enough -> stop privilege being standing, widely held and loosely used
+          make it controlled, time-bound, monitored, accountable.
+      - title: PAM components
+        body: |
+          vault (check out creds, auto-rotate -> admins don't keep passwords); JUST-IN-TIME access (privilege only when needed, time-limited = least privilege over time)
+          session management (proxy + record privileged sessions -> audit trail, live control); approval workflows; MFA; separate admin accounts
+          design with tiering + zero trust + monitoring (privileged-session logs = high-value detection); keep break-glass; protect the PAM system itself.
+    exercise:
+      title: Design privileged access management
+      environment: A described organisation with many privileged accounts (or a scenario)
+      tools: [A scenario, an architecture notes file, a document]
+      steps:
+        - Explain why privileged accounts need protection beyond ordinary identity controls.
+        - Describe how a credential vault and automatic rotation change how admins use privilege.
+        - Explain just-in-time access and how it shrinks the attacker's window.
+        - Explain how session management makes privileged activity accountable.
+        - Describe how PAM pairs with tiered administration, zero trust and monitoring.
+        - Note the considerations (break-glass, protecting the PAM system itself).
+      deliverable: A PAM design covering why privileged accounts are special, the vault, just-in-time access, session management, approvals and MFA, and how PAM fits with tiering, zero trust and monitoring.
+    expected_outcome: >
+      You can explain why privileged accounts need special protection, describe the components of a PAM solution,
+      and design privileged access management into an architecture alongside tiering, zero trust and monitoring.
+    quiz:
+      - prompt: Privileged accounts need special protection because
+        options:
+          - They are rarely used
+          - They are the keys to the kingdom that attackers seek, and compromising one often means total compromise
+          - They have no permissions
+          - Ordinary controls are always enough
+        answer: 1
+        explanation: Privileged accounts grant the power to disable defences and access everything, so attackers target them.
+      - prompt: Just-in-time (JIT) privileged access works by
+        options:
+          - Leaving accounts permanently privileged
+          - Granting privilege only when needed and only for a limited time, shrinking the attacker's window
+          - Removing authentication
+          - Sharing admin passwords widely
+        answer: 1
+        explanation: JIT applies least privilege to time, so there is rarely standing privilege to abuse.
+      - prompt: A credential vault improves security because
+        options:
+          - Admins memorise all passwords permanently
+          - Admins check out credentials that are stored securely and rotated automatically, so a seen password does not stay valid
+          - It publishes passwords
+          - It disables rotation
+        answer: 1
+        explanation: Vaulting with rotation means admins do not hold standing, reusable privileged credentials.
+      - prompt: Privileged session recording is valuable because it
+        options:
+          - Hides privileged activity
+          - Provides an audit trail and monitoring of privileged actions, since misuse of privilege is a top signal
+          - Slows down the vault
+          - Removes accountability
+        answer: 1
+        explanation: Recorded sessions make privileged activity accountable and feed high-value detection.
+  - slug: arch-pki-certificate
+    title: PKI and Certificate Management Architecture
+    order: 20
+    difficulty: intermediate
+    summary: Understand how an enterprise public key infrastructure issues and manages the digital certificates that underpin trust, and why operational certificate management (lifecycle, revocation, inventory) is a security discipline in its own right.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:1.4", "secplus:4.5", "sc900:3"]
+    learning_objectives:
+      - Explain the role of an enterprise PKI and certificate trust
+      - Describe the certificate lifecycle and revocation
+      - Design certificate management to avoid outages and trust failures
+    theory: |
+      Digital certificates underpin trust across an organisation, they secure web and internal TLS, authenticate
+      servers, users and devices, sign code and documents, and enable encryption, and the system that issues and
+      manages them is a **public key infrastructure (PKI)**. While the cryptography behind certificates was met in
+      the foundations module, running a PKI at enterprise scale is an architectural and operational discipline:
+      deciding the **trust hierarchy**, how certificates are issued and to whom, and, crucially, how the thousands
+      of certificates in a large environment are tracked and renewed. A PKI centres on **certificate authorities
+      (CAs)**: a protected, usually offline, root CA anchors trust and signs one or more issuing (intermediate)
+      CAs that actually issue certificates, so that the root, whose compromise would be catastrophic, is kept
+      isolated while day-to-day issuance happens through intermediates that can be replaced if compromised. This
+      hierarchy, and the protection of the CA private keys (often in hardware security modules), is the foundation
+      of the PKI's trustworthiness.
+
+      The heart of the discipline is the **certificate lifecycle**. Certificates are issued with an identity and a
+      validity period, used, and then must be **renewed before they expire or revoked if compromised**. Two
+      recurring operational failures make lifecycle management a security concern. The first is **expiry-driven
+      outages**: a certificate that quietly expires can take down a website, service or internal system, and
+      expired certificates are a notoriously common cause of outages, so tracking and renewing certificates before
+      they lapse is essential. The second is **revocation**: when a certificate's private key is compromised or it
+      must otherwise be invalidated before its natural expiry, relying parties need to know not to trust it, which
+      is handled through revocation mechanisms (certificate revocation lists and OCSP), though revocation is
+      imperfect and partly why certificate validity periods have shortened over time. Short-lived certificates and
+      automated renewal (for example via the ACME protocol) increasingly address both problems by removing the
+      reliance on humans remembering to renew.
+
+      The architectural lessons center on **visibility, automation and protection**. You cannot manage
+      certificates you do not know about, so maintaining a **certificate inventory** (what certificates exist,
+      where, when they expire, who owns them) is foundational, and sprawl of untracked certificates is a real risk,
+      both for outages and because a forgotten certificate can be a weak point. **Automation** of issuance and
+      renewal prevents expiry outages and reduces human error. **Protecting the CAs and keys** (offline root,
+      HSM-stored keys, strict issuance controls) preserves the trust the whole system rests on, because a
+      compromised CA can issue fraudulent certificates that defeat the trust certificates are supposed to provide.
+      Certificate events and anomalies (unexpected issuance, a certificate from an unexpected CA) are also a
+      detection source. For the architect, the lessons are that an enterprise PKI anchors trust through a protected
+      CA hierarchy, that certificate management is an operational security discipline where expiry causes outages
+      and compromised certificates must be revocable, and that visibility (inventory), automation (renewal), and
+      protection of the CAs are what keep the certificates an organisation depends on both reliable and
+      trustworthy.
+    examples:
+      - title: The CA hierarchy
+        body: |
+          protected (usually offline) ROOT CA -> signs issuing/intermediate CAs -> those issue the actual certificates
+          keep the catastrophic-if-compromised root isolated; intermediates can be replaced; protect CA keys in HSMs
+          = the foundation of the PKI's trustworthiness.
+      - title: Lifecycle, expiry and revocation
+        body: |
+          issue -> use -> RENEW before expiry (expired certs = a top cause of outages) OR REVOKE if compromised (CRL/OCSP, imperfect)
+          short-lived certs + automated renewal (ACME) remove reliance on humans remembering
+          -> keep a certificate INVENTORY (sprawl of untracked certs = outages + weak points); protect the CAs (fraudulent certs defeat trust).
+    exercise:
+      title: Design enterprise certificate management
+      environment: A described organisation with many certificates and internal services (or a scenario)
+      tools: [A scenario, an architecture notes file, a document]
+      steps:
+        - Explain the role of an enterprise PKI and what certificates are used for.
+        - Describe the CA hierarchy and why the root is kept protected and offline.
+        - Describe the certificate lifecycle and why expiry causes outages.
+        - Explain revocation and why validity periods have shortened.
+        - Explain why a certificate inventory and automated renewal are foundational.
+        - Describe how protecting the CAs and watching certificate events preserve trust and aid detection.
+      deliverable: A certificate-management design covering the CA hierarchy, the lifecycle with expiry and revocation, certificate inventory and automated renewal, and protection of the CAs.
+    expected_outcome: >
+      You can explain an enterprise PKI and certificate trust, describe the certificate lifecycle and revocation,
+      and design certificate management with inventory, automation and CA protection to avoid outages and trust failures.
+    quiz:
+      - prompt: An enterprise PKI keeps the root CA protected and usually offline because
+        options:
+          - Roots are used constantly for issuance
+          - Root compromise would be catastrophic, so it is isolated while intermediates handle day-to-day issuance
+          - It improves website speed
+          - Roots cannot sign anything
+        answer: 1
+        explanation: Isolating the root protects the anchor of trust; replaceable intermediates do routine issuing.
+      - prompt: Expired certificates are a security and reliability concern because
+        options:
+          - They improve performance
+          - A quietly expired certificate can take down a website or service, a common cause of outages
+          - They never affect anything
+          - They cannot be renewed
+        answer: 1
+        explanation: Unrenewed certificates lapse and break services, so lifecycle tracking is essential.
+      - prompt: Revocation (CRL/OCSP) exists to
+        options:
+          - Issue new certificates
+          - Tell relying parties not to trust a certificate that must be invalidated before its natural expiry
+          - Encrypt the root key
+          - Speed up renewal
+        answer: 1
+        explanation: Revocation signals that a compromised or invalid certificate should no longer be trusted.
+      - prompt: A certificate inventory is foundational because
+        options:
+          - Certificates manage themselves
+          - You cannot manage, renew or secure certificates you do not know exist, and sprawl causes outages and weak points
+          - It replaces the CAs
+          - Inventories slow down TLS
+        answer: 1
+        explanation: Visibility into all certificates is the basis for renewal, security and avoiding outages.
+  - slug: arch-high-availability
+    title: High Availability and Resilience Architecture
+    order: 21
+    difficulty: intermediate
+    summary: Understand how to architect systems that keep running despite failures and attacks, through redundancy, failover and resilience design, and why availability is a security property targeted by denial-of-service and ransomware.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:3.4", "secplus:3.1", "cysa:1.1"]
+    learning_objectives:
+      - Explain availability as a security property and how it is attacked
+      - Describe redundancy, failover and resilience design techniques
+      - Design for availability using recovery objectives
+    theory: |
+      Availability, the A of the CIA triad, is a genuine security property, and architecting systems to **keep
+      running despite failures and attacks** is a core part of security architecture, not just an operational
+      concern. Attacks directly target availability: denial-of-service floods (met in networking) aim to make
+      services unreachable, ransomware destroys availability by encrypting data and systems, and destructive
+      attacks seek to take operations down, so designing for resilience is designing against a whole class of
+      threats. Beyond attacks, systems fail, hardware dies, software crashes, data centers lose power, networks
+      partition, and a well-architected system treats failure as expected and continues to serve, because to the
+      business and its customers an outage is an outage whether its cause is an attacker or a failed disk.
+      Resilience architecture is this discipline: building systems that withstand and recover from disruption.
+
+      The techniques center on **removing single points of failure through redundancy and failover**. A single
+      point of failure is any component whose loss takes down the whole system, and resilience means identifying
+      and eliminating them by providing **redundancy**, more than one of a critical component so that if one fails
+      another carries the load. **Failover** is the mechanism by which traffic or work shifts to the redundant
+      component when the primary fails, ideally automatically and quickly. Redundancy is applied at many levels:
+      multiple servers behind a load balancer (clustering), redundant network paths and power, replicated
+      databases, and, for the highest resilience, spreading across multiple availability zones or geographic
+      regions so that the loss of an entire data center or region does not take the service down. Related ideas
+      include graceful degradation (continuing with reduced function rather than failing completely) and designing
+      so that a failure in one part does not cascade into others. The backup and recovery met in the data-resilience
+      lesson is the complement for data, here the focus is keeping the service itself available.
+
+      Designing for availability is driven by **recovery objectives and honest trade-offs**. Two key measures frame
+      the goals: the **Recovery Time Objective (RTO)**, how quickly a service must be restored after a disruption,
+      and the **Recovery Point Objective (RPO)**, how much data loss (measured in time) is acceptable. These, set
+      by the business based on how critical the service is, determine how much redundancy and how fast a failover
+      the architecture needs, and they connect to business continuity planning. The trade-off is cost: higher
+      availability (more redundancy, multi-region, faster automatic failover, near-zero RPO) costs more, so the
+      architecture matches resilience to the criticality of each service rather than gold-plating everything.
+      Resilience must also be tested, failover that has never been exercised often fails when needed, so regular
+      testing (and the chaos-style practice of deliberately injecting failures) validates that the design actually
+      works. For the architect, the lessons are that availability is a security property attacked by
+      denial-of-service and ransomware as well as threatened by ordinary failure, that resilience is achieved by
+      eliminating single points of failure through redundancy and fast failover across servers, sites and regions,
+      and that availability is designed to meet business-set recovery objectives (RTO/RPO) with cost-appropriate
+      trade-offs and tested failover, so that systems keep serving through both the failures and the attacks that
+      are certain to come.
+    examples:
+      - title: Availability is attacked
+        body: |
+          DoS floods (unreachable), ransomware (encrypts), destructive attacks (take ops down) -> resilience = defence vs a class of threats
+          plus ordinary failure (hardware/software/power/network) -> to users an outage is an outage whatever the cause.
+      - title: Redundancy, failover, objectives
+        body: |
+          remove SINGLE POINTS OF FAILURE: redundancy (more than one of a critical component) + FAILOVER (shift to the spare, auto + fast)
+          levels: clustered servers behind a load balancer, redundant paths/power, replicated DBs, multi-AZ/multi-region; graceful degradation; no cascading failure
+          drive by RTO (how fast to restore) + RPO (how much data loss ok); match cost to criticality; TEST failover.
+    exercise:
+      title: Design for high availability and resilience
+      environment: A described service with availability requirements (or a scenario)
+      tools: [A scenario, an architecture notes file, a document]
+      steps:
+        - Explain why availability is a security property and how attacks target it.
+        - Identify single points of failure in the described service.
+        - Describe how redundancy and failover remove those single points of failure.
+        - Explain redundancy at different levels (servers, paths, replication, multi-region).
+        - Use RTO and RPO to set the availability goals and match cost to criticality.
+        - Explain why failover must be tested regularly.
+      deliverable: A resilience design covering availability as a security property, single points of failure, redundancy and failover at multiple levels, RTO/RPO-driven goals with cost trade-offs, and failover testing.
+    expected_outcome: >
+      You can explain availability as an attacked security property, describe redundancy, failover and resilience
+      techniques, and design for availability using recovery objectives with cost-appropriate, tested failover.
+    quiz:
+      - prompt: Availability is a security property because
+        options:
+          - It has nothing to do with security
+          - Attacks like denial-of-service and ransomware directly target availability, alongside ordinary failures
+          - Only confidentiality matters
+          - Outages never affect the business
+        answer: 1
+        explanation: DoS, ransomware and destructive attacks attack availability, so resilience defends against them.
+      - prompt: Resilience is achieved primarily by
+        options:
+          - Adding more single points of failure
+          - Eliminating single points of failure through redundancy and fast failover
+          - Removing all servers
+          - Disabling backups
+        answer: 1
+        explanation: Redundancy plus failover ensures another component carries the load when one fails.
+      - prompt: RTO and RPO respectively define
+        options:
+          - Password length and complexity
+          - How quickly a service must be restored, and how much data loss (in time) is acceptable
+          - Network speed and latency
+          - CPU and memory limits
+        answer: 1
+        explanation: RTO sets the restore-time goal and RPO the acceptable data-loss window, driving the design.
+      - prompt: Failover should be tested regularly because
+        options:
+          - Testing is unnecessary
+          - Untested failover often fails when actually needed
+          - It reduces redundancy
+          - It increases single points of failure
+        answer: 1
+        explanation: Failover that is never exercised frequently does not work in a real disruption.
+  - slug: arch-container-orchestration
+    title: Container and Orchestration Security Architecture
+    order: 22
+    difficulty: advanced
+    summary: Understand how to architect security for containerised workloads and the orchestration platforms that run them, across the build, registry, deployment and runtime stages, as a layered design rather than a single control.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:3.1", "sc200:4", "cysa:1.1"]
+    learning_objectives:
+      - Explain the security concerns across the container lifecycle
+      - Describe how orchestration platforms are secured architecturally
+      - Design layered container and orchestration security
+    theory: |
+      Containers and the orchestration platforms that run them (such as Kubernetes) are now how a great deal of
+      software is built and deployed, and securing them is an architectural discipline that spans the whole
+      **container lifecycle**, build, registry, deployment and runtime, rather than any single control. The Linux
+      container-security and cloud Kubernetes lessons covered the mechanisms; here the focus is designing security
+      across the stages as a coherent, layered architecture, because a weakness at any stage, a vulnerable image, a
+      compromised registry, an over-privileged deployment, an unmonitored runtime, can undermine the rest. The
+      guiding idea is to apply controls at each stage so that security is built in from image creation through to
+      running workloads, and so that the orchestration platform itself, which has broad control over everything it
+      runs, is protected as critical infrastructure.
+
+      The **lifecycle stages** each have their controls. At **build**, images are built from trusted, minimal base
+      images, scanned for vulnerabilities and secrets (connecting to image scanning met earlier), and built through
+      a secure pipeline; minimal images reduce attack surface. At the **registry**, images are stored in a trusted
+      registry with access control, and **image signing and verification** ensure only approved, unmodified images
+      are deployed (admission control can enforce that only signed images from the trusted registry run), countering
+      supply-chain tampering. At **deployment**, the orchestration platform enforces policy: run containers with
+      **least privilege** (non-root, dropped capabilities, read-only filesystems where possible), apply **resource
+      limits**, use **network policies** to segment which workloads can talk to each other (microsegmentation
+      applied to containers), manage **secrets** properly (not baked into images), and use **admission controllers**
+      to reject non-compliant workloads. At **runtime**, workloads are monitored for suspicious behaviour and
+      container escapes (the workload-protection and eBPF approaches met earlier), and the platform detects and
+      responds to threats. Each stage's controls reinforce the others.
+
+      Securing the **orchestration platform itself** is the other half, because the control plane (for example the
+      Kubernetes API server and its datastore) governs the entire cluster, so its compromise is cluster-wide
+      compromise. Architecturally this means hardening and access-controlling the control plane (strong
+      authentication and fine-grained authorization such as role-based access control, so identities get only the
+      cluster permissions they need, tying to least privilege and the attack-path thinking met earlier), protecting
+      the cluster datastore, isolating workloads (namespaces, network policies, and stronger isolation for
+      multi-tenant or sensitive workloads), and monitoring the platform's own audit logs as a high-value detection
+      source. The design principle throughout is defence in depth across the lifecycle plus protection of the
+      orchestrator, with least privilege and segmentation as recurring themes. The considerations are complexity
+      (orchestration platforms are powerful and easy to misconfigure, so secure defaults and policy enforcement
+      matter) and the need to cover every stage rather than just one. For the architect, the lessons are that
+      container security is a lifecycle concern, from trusted minimal images and signed registry artifacts through
+      least-privilege, segmented, admission-controlled deployment to monitored runtime, that the orchestration
+      platform's control plane must be hardened and tightly access-controlled because it governs everything, and
+      that the result is a layered architecture in which no single stage is relied on alone to secure containerised
+      workloads.
+    examples:
+      - title: Security across the lifecycle
+        body: |
+          build: trusted minimal base images, scan for vulns/secrets, secure pipeline
+          registry: trusted registry + access control + image SIGNING/verification (admission control runs only signed, approved images) -> counters supply-chain tampering
+          deploy: least privilege (non-root, dropped caps, read-only fs), resource limits, network policies (segmentation), proper secrets, admission controllers
+          runtime: monitor behaviour + container escapes (workload protection/eBPF).
+      - title: Protect the orchestrator
+        body: |
+          the control plane (API server + datastore) governs the whole cluster -> its compromise = cluster-wide compromise
+          harden + access-control it (strong auth, fine-grained RBAC = least privilege), protect the datastore, isolate workloads (namespaces/network policies), monitor its audit logs
+          principle: defence in depth across the lifecycle + protect the orchestrator; least privilege + segmentation throughout.
+    exercise:
+      title: Design container and orchestration security
+      environment: A described containerised, orchestrated environment (or a scenario)
+      tools: [A scenario, an architecture notes file, a document]
+      steps:
+        - Explain why container security spans the whole lifecycle rather than a single control.
+        - Describe the build-stage controls (trusted minimal images, scanning).
+        - Describe the registry-stage controls (trusted registry, image signing and verification).
+        - Describe the deployment-stage controls (least privilege, network policies, admission control, secrets).
+        - Describe runtime monitoring for suspicious behaviour and escapes.
+        - Explain why the orchestration control plane must be hardened and access-controlled.
+      deliverable: A container and orchestration security design covering controls at build, registry, deployment and runtime, plus hardening and access control of the orchestration control plane, as a layered architecture.
+    expected_outcome: >
+      You can explain the security concerns across the container lifecycle, describe how orchestration platforms are
+      secured architecturally, and design layered container and orchestration security with least privilege and segmentation.
+    quiz:
+      - prompt: Container security is best treated as
+        options:
+          - A single runtime control
+          - A lifecycle concern spanning build, registry, deployment and runtime, since a weakness at any stage undermines the rest
+          - Only an image-scanning task
+          - Unnecessary
+        answer: 1
+        explanation: Controls are needed at every stage because a gap anywhere can compromise containerised workloads.
+      - prompt: Image signing and verification at the registry stage primarily
+        options:
+          - Speed up builds
+          - Ensure only approved, unmodified images are deployed, countering supply-chain tampering
+          - Remove access control
+          - Disable scanning
+        answer: 1
+        explanation: Signing plus admission verification ensures only trusted, unaltered images run.
+      - prompt: The orchestration control plane must be hardened and tightly access-controlled because
+        options:
+          - It does nothing
+          - It governs the entire cluster, so its compromise is cluster-wide compromise
+          - It only runs one container
+          - It cannot be attacked
+        answer: 1
+        explanation: The control plane commands everything the cluster runs, making it critical to protect.
+      - prompt: A recurring theme across container and orchestration security design is
+        options:
+          - Maximum privilege for every workload
+          - Least privilege and segmentation, applied across the lifecycle and the platform
+          - Avoiding all monitoring
+          - Trusting unsigned images
+        answer: 1
+        explanation: Least privilege and segmentation recur at deployment, in RBAC, and in workload isolation.
+  - slug: arch-remote-access
+    title: Secure Remote Access Architecture
+    order: 23
+    difficulty: intermediate
+    summary: Understand how to architect secure access for a remote and hybrid workforce, from traditional VPNs to zero-trust network access and virtual desktops, and the trade-offs that shape a modern remote-access design.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:3.1", "secplus:4.6", "cysa:1.1"]
+    learning_objectives:
+      - Explain the security goals of remote access architecture
+      - Compare VPN, zero-trust network access and virtual desktop approaches
+      - Design secure remote access for a modern workforce
+    theory: |
+      With remote and hybrid work now normal, **how people securely reach internal applications and data from
+      anywhere** is a core architectural problem, because remote access extends the organisation's trust boundary
+      to untrusted networks and personal environments. The security goals are to ensure that only authorised,
+      authenticated users and acceptably healthy devices can reach resources, that access is limited to what each
+      user needs, that the connection is protected in transit, and that remote access is monitored, all without
+      making legitimate work so cumbersome that people route around it. The architectural choices have shifted
+      significantly as the traditional model strained under remote work and as zero trust (met earlier) reshaped
+      thinking, so understanding the options and their trade-offs is key to a sound design.
+
+      Three broad **approaches** illustrate the evolution. The traditional **VPN** extends the corporate network to
+      the remote device, the user authenticates and then has network-level access as if on the internal network.
+      VPNs are well understood and still widely used, but the classic model has drawbacks: it often grants broad
+      network access (so a compromised remote device or stolen credential reaches much of the internal network,
+      the flat-access problem), it backhauls traffic, and the VPN gateway is a high-value target. **Zero Trust
+      Network Access (ZTNA)** addresses these by shifting from network-level access to **per-application,
+      identity- and context-aware access**: instead of putting the user on the network, ZTNA grants access to
+      specific applications only, after verifying identity, device posture and context for each, and hides
+      everything else, which dramatically limits what a compromised device or credential can reach (least privilege
+      and zero trust applied to remote access). **Virtual desktops and application streaming (VDI/DaaS)** take a
+      different tack: the user connects to a desktop or application running in the data center or cloud, so
+      sensitive data and processing stay centralised and never reside on the remote device, useful for high-
+      security needs, untrusted or personal devices, and third parties, at the cost of infrastructure and user
+      experience considerations.
+
+      Designing remote access combines these with the **surrounding controls**. Whatever the access method, enforce
+      **strong authentication (MFA)** because remote access is exposed to the internet and a prime target for
+      credential attacks, consider **device posture** (is the device managed, patched, healthy) as a condition of
+      access, apply **least privilege** so users reach only what they need (which ZTNA does natively and VPNs must
+      be segmented to approximate), protect the connection with encryption, and **monitor** remote access as a
+      high-value detection source (unusual remote logins, impossible travel, met earlier). The modern direction is
+      toward zero-trust, identity- and context-driven access (often delivered through SASE/SSE, met earlier) rather
+      than broad network-level VPN access, though VPNs remain common and appropriate in many cases. The trade-offs
+      are security versus usability and cost, broad VPN access is simple but risky, ZTNA is more secure but more
+      involved to implement, VDI is very controlled but heavier, so the design matches the approach to the
+      sensitivity of the resources and the nature of the users and devices. For the architect, the lessons are that
+      remote access extends trust to untrusted environments and must ensure authenticated, least-privilege,
+      monitored access without crippling usability, that the approaches range from traditional network-level VPNs
+      through per-application ZTNA to centralised virtual desktops, each with distinct trade-offs, and that modern
+      design leans toward zero-trust, identity- and context-aware access with strong authentication and device
+      posture, so that a workforce can reach what it needs from anywhere without extending broad, risky access into
+      the organisation.
+    examples:
+      - title: The problem and goals
+        body: |
+          remote/hybrid work extends the trust boundary to untrusted networks + personal devices
+          goals: only authorised/authenticated users + healthy devices reach resources, least privilege, protected in transit, monitored -- without crippling usability.
+      - title: Three approaches
+        body: |
+          VPN: extends the network to the device -> broad network-level access (compromised device/cred reaches much of the network = flat-access risk); gateway is a target
+          ZTNA: per-application, identity + context + device-posture access; hides everything else -> limits blast radius (zero trust for remote access)
+          VDI/DaaS: connect to a desktop/app in the data center/cloud -> data stays centralised, never on the remote device; good for untrusted devices/third parties.
+    exercise:
+      title: Design secure remote access
+      environment: A described organisation enabling remote and hybrid work (or a scenario)
+      tools: [A scenario, an architecture notes file, a document]
+      steps:
+        - Explain the security goals of remote access and why usability matters.
+        - Describe the traditional VPN approach and the flat-access risk of broad network-level access.
+        - Explain how ZTNA provides per-application, identity- and context-aware access and limits blast radius.
+        - Explain when virtual desktops (VDI/DaaS) are the right choice.
+        - Describe the surrounding controls (MFA, device posture, least privilege, monitoring).
+        - Explain the security-versus-usability trade-offs and how to match approach to sensitivity.
+      deliverable: A remote-access design comparing VPN, ZTNA and VDI with their trade-offs, plus the surrounding controls (MFA, device posture, least privilege, monitoring), matched to the resources and users.
+    expected_outcome: >
+      You can explain the goals of remote access architecture, compare VPN, ZTNA and virtual-desktop approaches and
+      their trade-offs, and design secure remote access with strong authentication, least privilege and monitoring.
+    quiz:
+      - prompt: A drawback of the traditional VPN model is that it often
+        options:
+          - Grants access to a single application only
+          - Grants broad network-level access, so a compromised device or credential can reach much of the internal network
+          - Requires no authentication ever
+          - Keeps all data in the data center
+        answer: 1
+        explanation: Classic VPNs put the user on the network, creating a flat-access risk if a device or credential is compromised.
+      - prompt: Zero Trust Network Access (ZTNA) improves on VPNs by
+        options:
+          - Granting even broader network access
+          - Granting per-application access after verifying identity, device posture and context, hiding everything else
+          - Removing authentication
+          - Backhauling all traffic
+        answer: 1
+        explanation: ZTNA limits access to specific applications with per-request verification, shrinking blast radius.
+      - prompt: Virtual desktops (VDI/DaaS) are especially useful when
+        options:
+          - Data should live on every remote device
+          - Sensitive data and processing must stay centralised and never reside on untrusted or personal remote devices
+          - No security is needed
+          - Users have no devices
+        answer: 1
+        explanation: VDI keeps data and compute centralised, so nothing sensitive sits on the remote endpoint.
+      - prompt: Whatever the remote-access method, a baseline control is
+        options:
+          - No authentication
+          - Strong authentication (MFA), since remote access is internet-exposed and a prime credential-attack target
+          - Broad access for everyone
+          - Disabling monitoring
+        answer: 1
+        explanation: Internet-exposed remote access demands MFA to resist credential attacks.

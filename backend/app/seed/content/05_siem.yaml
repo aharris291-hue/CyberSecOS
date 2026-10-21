@@ -1330,3 +1330,612 @@ lessons:
           - Disable health monitoring
         answer: 1
         explanation: Validation confirms the source is complete and correct so detections can be trusted.
+  - slug: siem-cloud-saas-logging
+    title: Integrating Cloud and SaaS Logs into the SIEM
+    order: 15
+    difficulty: intermediate
+    summary: Learn how cloud and SaaS logs differ from on-premises sources, how to collect them reliably, and what cloud-specific activity the SIEM should watch.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.4", "sc200:1", "cysa:4.1"]
+    learning_objectives:
+      - Explain how cloud and SaaS logs differ from traditional on-premises logs
+      - Collect cloud and SaaS logs reliably into a SIEM
+      - Identify the cloud-specific activity a SIEM should monitor
+    theory: |
+      As organisations move to the cloud and to SaaS applications, much of the activity worth watching no longer
+      happens on servers the SOC controls, so a modern SIEM must ingest **cloud and SaaS logs** well. These
+      sources differ from on-premises logs in important ways. They are usually pulled from a **provider API** or
+      an event stream rather than collected by an agent, they arrive as structured records (often JSON) describing
+      control-plane actions (who called which API on which resource), and the organisation does not own the
+      underlying system, so the log is the only visibility there is. Examples include cloud audit logs (AWS
+      CloudTrail, Azure Activity and sign-in logs, Google Cloud audit logs) and SaaS audit logs (Microsoft 365,
+      identity providers, collaboration tools).
+
+      Collecting them reliably has its own engineering. Access is granted through a least-privilege API
+      credential or role, which must be protected and rotated; the integration must handle the provider's
+      pagination, rate limits and occasional gaps; and, as with any source, the data must be parsed, normalised
+      to the common schema, and validated so it is usable alongside on-premises events. Volume and cost matter
+      because cloud logs can be enormous, so teams choose which log categories to ingest, often prioritising audit
+      and identity logs over high-volume data-plane logs. Time handling (everything to UTC) and completeness
+      checks apply exactly as they do for any onboarded source, and health monitoring must catch a cloud
+      integration silently breaking after a provider change.
+
+      What to **watch for** is cloud-shaped. Because identity is the cloud perimeter, sign-in and identity events
+      are top priority: impossible-travel logins, sign-ins from new countries or anonymising services, MFA
+      failures and fatigue, and new or changed credentials. Control-plane actions matter enormously: creation of
+      new privileged roles or access keys, changes that make resources public, disabling of logging or security
+      services, and mass data access or export. Because a single API call can change or expose a lot, the SIEM
+      should correlate these with each other and with the identity behind them, for example a new access key
+      created and then immediately used from an unfamiliar location. For the analyst, the shift is conceptual as
+      much as technical: in the cloud there is no packet to capture and no host agent to consult, so the
+      provider's audit log *is* the ground truth, and getting it into the SIEM completely and watching the right
+      control-plane and identity events is how cloud attacks become visible at all.
+    examples:
+      - title: How cloud/SaaS logs differ
+        body: |
+          pulled from provider API / event stream (not an agent); structured (JSON) control-plane records
+          you do not own the system -> the LOG is the only visibility
+          e.g. CloudTrail, Azure Activity + sign-in logs, M365 audit, IdP logs.
+      - title: What to watch (cloud-shaped)
+        body: |
+          identity (the cloud perimeter): impossible travel, new-country sign-in, MFA fatigue, new credentials
+          control plane: new privileged role/access key, resource made public, logging disabled, mass export
+          correlate: new access key -> immediately used from an unfamiliar location.
+    exercise:
+      title: Integrate a cloud log source and define what to watch
+      environment: A described cloud or SaaS environment and its audit logs (or a scenario)
+      tools: [A scenario or sample cloud audit events, a document, a notes file]
+      steps:
+        - Explain two ways cloud and SaaS logs differ from on-premises logs.
+        - Describe how you would collect a provider's audit log reliably (credential, pagination, rate limits).
+        - Explain why audit and identity logs are usually prioritised over high-volume data-plane logs.
+        - Identify three cloud-specific activities the SIEM should alert on and why.
+        - Describe one correlation across identity and control-plane events that would raise confidence.
+        - State one health check that would catch the cloud integration silently breaking.
+      deliverable: A cloud-logging integration plan covering collection, prioritised log categories, three cloud-specific alerts, a correlation example, and a health check.
+    expected_outcome: >
+      You can explain how cloud and SaaS logs differ from on-premises sources, collect them reliably into a SIEM,
+      and identify the identity and control-plane activity that cloud attacks produce.
+    quiz:
+      - prompt: Cloud and SaaS logs are usually collected by
+        options:
+          - Installing an agent on the provider's servers
+          - Pulling structured records from the provider's API or event stream
+          - Reading the physical disks
+          - Capturing network packets in the data centre
+        answer: 1
+        explanation: The customer cannot run agents on the provider's systems, so logs come via API or stream.
+      - prompt: In the cloud, the provider's audit log is especially important because
+        options:
+          - It is optional
+          - You do not own the underlying system, so the log is the only visibility you have
+          - It replaces identity
+          - It is always small
+        answer: 1
+        explanation: Without access to the host, the audit log is the ground truth for what happened.
+      - prompt: A high-priority cloud control-plane event to alert on is
+        options:
+          - A user reading a document
+          - Creation of a new privileged role or access key, or a resource being made public
+          - A normal scheduled report
+          - A successful routine login
+        answer: 1
+        explanation: Privilege creation and public-exposure changes are high-impact control-plane actions.
+      - prompt: Teams often prioritise which cloud logs to ingest because
+        options:
+          - All logs are tiny
+          - Cloud logs can be enormous and costly, so audit and identity logs are favoured over high-volume data-plane logs
+          - The SIEM rejects JSON
+          - Cloud logs are never useful
+        answer: 1
+        explanation: Volume and cost force prioritising the highest-value audit and identity categories.
+  - slug: siem-case-management
+    title: Case Management and the SOC Workflow
+    order: 16
+    difficulty: beginner
+    summary: Learn how alerts become cases and move through the SOC workflow, how case management and ticketing structure investigation, and how metrics like MTTD and MTTR measure and improve the process.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.8", "sc200:4", "cysa:3.1"]
+    learning_objectives:
+      - Describe how an alert becomes a case and moves through the SOC workflow
+      - Explain the role of case management and ticketing
+      - Use SOC metrics such as MTTD and MTTR to measure and improve
+    theory: |
+      A SIEM raises alerts, but alerts are not the end product; the SOC's real work is a **workflow** that turns an
+      alert into a decision and, when needed, a response. Understanding that workflow is as important as any
+      detection skill. An alert is first **triaged**, quickly assessed for whether it is worth deeper work, then
+      promising ones are escalated into a **case** (or incident) that is investigated, enriched with context,
+      documented, and either closed as a false positive, resolved, or escalated to incident response. Tiered SOCs
+      often route this as Tier 1 triage, Tier 2 investigation and Tier 3 deep expertise, though the stages matter
+      more than the labels. The point is that every alert has a defined path and a defined set of possible
+      outcomes, so nothing is silently dropped or endlessly left open.
+
+      **Case management** (often a dedicated platform or the case features of a SOAR or ticketing system) is what
+      makes this workflow reliable and auditable. It gives each case an owner, a status, a severity, a timeline of
+      what was done, the evidence gathered, and the final disposition. This matters for several reasons: it
+      prevents work being lost or duplicated, it provides a record for later review and for compliance, it lets
+      work be handed cleanly between analysts and shifts, and it enables learning because closed cases become a
+      searchable history. Good case hygiene, consistent severity, clear notes, linked evidence, accurate closure
+      reasons, is unglamorous but is what lets a SOC function as a team rather than as individuals reacting to a
+      stream of alerts.
+
+      Because the workflow is structured, it can be **measured and improved**. Key metrics include **mean time to
+      detect (MTTD)**, how long from an attacker's action to the SOC noticing, and **mean time to respond or
+      remediate (MTTR)**, how long from detection to containment or resolution; both are watched over time because
+      shrinking them directly reduces an attacker's dwell time and damage. Other measures include alert volume and
+      the false-positive rate (high values signal tuning is needed), the proportion of alerts handled at Tier 1
+      versus escalated, and backlog age. Used well, these metrics point at concrete improvements, a noisy rule to
+      tune, a slow step to automate, a coverage gap to fill, rather than merely scoring the team. For the analyst,
+      the lessons are practical: work cases, not just alerts; keep clean records so the case stands on its own; and
+      understand that the metrics exist to improve the process, so a spike in MTTR or false positives is a signal
+      to fix something, not just a number on a dashboard.
+    examples:
+      - title: Alert to case workflow
+        body: |
+          alert -> triage (worth deeper work?) -> case (owner, status, severity, timeline, evidence)
+          -> false positive / resolved / escalate to IR
+          tiers: T1 triage, T2 investigate, T3 deep expertise (stages matter more than labels).
+      - title: Metrics that drive improvement
+        body: |
+          MTTD = action -> noticed; MTTR = detection -> contained/resolved (shrink both = less dwell time)
+          + alert volume, false-positive rate, T1-vs-escalated ratio, backlog age
+          a spike points at a fix (tune a rule, automate a step, fill a gap), not just a score.
+    exercise:
+      title: Run an alert through the SOC workflow
+      environment: A described SOC with a sample alert and some metrics (or a scenario)
+      tools: [A scenario or sample alert and metrics, a case template, a document, a notes file]
+      steps:
+        - Describe the path from alert to triage to case to disposition.
+        - Explain what information a case record should hold and why each part matters.
+        - Take a sample alert and decide triage outcome and whether to open a case, with reasoning.
+        - Explain MTTD and MTTR and what shrinking each achieves.
+        - Interpret a sample metric (for example a rising false-positive rate) and name the concrete fix it points to.
+        - Explain why good case hygiene lets a SOC work as a team across shifts.
+      deliverable: A worked example taking an alert through triage to a documented case with a disposition, plus an interpretation of SOC metrics pointing to a concrete improvement.
+    expected_outcome: >
+      You can describe how alerts become cases and move through the SOC workflow, explain the role of case
+      management, and use metrics like MTTD and MTTR to drive concrete process improvements.
+    quiz:
+      - prompt: The purpose of a case management system in a SOC is to
+        options:
+          - Generate more alerts
+          - Give each investigation an owner, status, timeline, evidence and disposition so work is reliable and auditable
+          - Replace the SIEM
+          - Encrypt the alerts
+        answer: 1
+        explanation: Case management structures and records investigations so nothing is lost and work is auditable.
+      - prompt: Mean time to detect (MTTD) measures
+        options:
+          - How long an analyst takes lunch
+          - How long from an attacker's action to the SOC noticing it
+          - The number of alerts per day
+          - The size of the SIEM
+        answer: 1
+        explanation: MTTD captures detection latency; shrinking it reduces attacker dwell time.
+      - prompt: A rising false-positive rate on the SOC dashboard should be read as
+        options:
+          - A reason to ignore the metric
+          - A signal that a rule needs tuning or a step needs improvement
+          - Proof the SOC is perfect
+          - A hardware fault
+        answer: 1
+        explanation: Metrics exist to point at concrete fixes; a false-positive spike indicates tuning is needed.
+      - prompt: Working cases rather than just alerts matters because it
+        options:
+          - Slows everyone down for no reason
+          - Ensures every alert has a defined path and outcome, with a record that supports handoffs and learning
+          - Removes the need for detection
+          - Hides evidence
+        answer: 1
+        explanation: A case workflow gives alerts defined outcomes and records that enable teamwork and review.
+  - slug: siem-search-query-languages
+    title: Search and Query Languages Beyond KQL
+    order: 17
+    difficulty: intermediate
+    summary: Broaden from one query language to the shared concepts behind SIEM search, filtering, aggregation, joins and time windows, so you can investigate and build detections in any SIEM.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.4", "sc200:1", "cysa:4.1"]
+    learning_objectives:
+      - Identify the common concepts shared across SIEM query languages
+      - Translate an investigative question into filtering, aggregation and joins
+      - Reason about time windows and performance in queries
+    theory: |
+      Different SIEMs use different query languages, KQL in Microsoft Sentinel, SPL in Splunk, Lucene and its kin
+      in Elastic, and vendor-specific languages elsewhere, but the **underlying concepts are the same**, and
+      learning those concepts rather than one syntax is what lets an analyst work in any environment. Every SIEM
+      query is fundamentally about taking a large stream of events and progressively narrowing and summarising it
+      to answer a question. The building blocks recur: **filtering** (selecting events that match conditions on
+      fields), **field selection and projection** (choosing what to show), **aggregation** (grouping and counting
+      or summarising, which is how you turn millions of events into a ranked list), **sorting and limiting**, and
+      **time scoping** (every SIEM query runs over a time range). Recognising these as the shared grammar means a
+      KQL user can read SPL and vice versa, because both express the same operations.
+
+      The real skill is **translating an investigative question into these operations**. A question like which
+      hosts made the most failed logins in the last hour becomes: filter to failed-logon events, restrict to the
+      last hour, group by host, count, sort descending. A hunt for rare parent-child process pairs becomes: filter
+      to process-creation events, group by the parent-child combination, count, and look at the low-count tail.
+      More complex investigations need **joins or lookups**, correlating two datasets (for example matching sign-
+      in events to a list of risky IPs, or linking a process event to the network connection it made), and
+      **enrichment** against reference data like asset inventories or threat intelligence. The same question maps
+      to the same logical steps regardless of which language expresses them, so thinking in terms of the steps,
+      not the syntax, is portable.
+
+      Two cross-cutting concerns shape every query in practice. **Time windows** are fundamental: a query is only
+      as meaningful as its range, too narrow and you miss the activity, too wide and you drown in volume or time
+      out, and correlation across events depends on aligned, correct timestamps (the reason normalising time to
+      UTC matters so much). **Performance** matters because SIEM data is huge: filtering early and on indexed
+      fields, restricting the time range, and aggregating rather than returning raw events keep queries fast and
+      affordable, and a poorly written query can be slow, expensive, or simply fail to return. For the analyst,
+      the practical path is to master the concepts, filter, aggregate, join, time-scope, in one language well,
+      then map them onto any other, so that moving between SIEMs is a matter of looking up syntax rather than
+      relearning how to investigate. The investigative thinking is the durable skill; the specific language is
+      just how you type it.
+    examples:
+      - title: The shared grammar
+        body: |
+          every SIEM query: narrow + summarise a stream of events
+          building blocks: filter, project fields, aggregate (group + count/summarise), sort/limit, time-scope
+          KQL / SPL / Lucene differ in SYNTAX, not in these concepts.
+      - title: Question -> operations
+        body: |
+          "top hosts by failed logins last hour" -> filter failed-logon + last 1h -> group by host -> count -> sort desc
+          "rare parent-child processes" -> filter process-creation -> group parent+child -> count -> low-count tail
+          complex -> join/lookup two datasets + enrich against inventory/threat intel.
+    exercise:
+      title: Translate investigations into query logic
+      environment: A described SIEM with sample event types (or a scenario)
+      tools: [A scenario or sample events, a document, a notes file]
+      steps:
+        - List the building blocks common to SIEM query languages.
+        - Translate a plain-language question into filter, group, count, sort and time-scope steps.
+        - Describe when you would need a join or lookup across two datasets and give an example.
+        - Explain how enrichment against reference data strengthens an investigation.
+        - Explain how the time window affects whether a query is meaningful.
+        - Give two ways to keep a query fast and affordable over large data.
+      deliverable: A query-logic exercise translating at least two investigative questions into the shared operations, including a join example, with time-window and performance considerations.
+    expected_outcome: >
+      You can identify the concepts shared across SIEM query languages, translate investigative questions into
+      filtering, aggregation and joins, and reason about time windows and performance so you can work in any SIEM.
+    quiz:
+      - prompt: The most portable SIEM query skill is
+        options:
+          - Memorising one vendor's exact syntax
+          - Understanding the shared concepts (filter, aggregate, join, time-scope) that every query language expresses
+          - Avoiding aggregation
+          - Never using time ranges
+        answer: 1
+        explanation: The logical operations are the same across languages, so concepts transfer where syntax does not.
+      - prompt: Turning millions of events into a ranked list of, say, top hosts by failed logins relies on
+        options:
+          - Returning every raw event
+          - Aggregation, grouping and counting the events
+          - Disabling the time range
+          - Encrypting the query
+        answer: 1
+        explanation: Grouping and counting (aggregation) summarises large volumes into a ranked result.
+      - prompt: A join or lookup in a SIEM query is used to
+        options:
+          - Delete events
+          - Correlate two datasets, such as matching sign-ins to a list of risky IPs
+          - Encrypt a field
+          - Shorten the time range
+        answer: 1
+        explanation: Joins/lookups relate separate datasets to answer correlation questions.
+      - prompt: To keep a large SIEM query fast and affordable you should
+        options:
+          - Widen the time range as much as possible
+          - Filter early on indexed fields, restrict the time range, and aggregate rather than return raw events
+          - Return every raw event unsorted
+          - Avoid filtering
+        answer: 1
+        explanation: Early filtering, tight time ranges and aggregation keep queries performant over huge data.
+  - slug: siem-threat-intel-platforms
+    title: Threat Intelligence Platforms and Feed Management
+    order: 18
+    difficulty: intermediate
+    summary: Learn how a threat intelligence platform collects, normalises, scores and operationalises intelligence feeds, and how to manage intel so it strengthens detection without drowning the SIEM in noise.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.4", "sc200:2", "cysa:1.4"]
+    learning_objectives:
+      - Explain the role of a threat intelligence platform
+      - Describe how feeds are collected, normalised, scored and deduplicated
+      - Operationalise intelligence into detection without overwhelming the SIEM
+    theory: |
+      Threat intelligence, information about adversaries, their infrastructure and their indicators, is only
+      valuable if it is **managed and operationalised**, and a **threat intelligence platform (TIP)** is the
+      system that does this. Organisations consume many intelligence feeds (commercial, open-source, government,
+      industry-sharing, and internally generated), and without a platform these are a chaotic flood of overlapping,
+      inconsistent, perishable data. A TIP ingests feeds, normalises them into a common format (often using
+      standards like STIX/TAXII), deduplicates overlapping indicators, enriches and scores them, and provides a
+      single managed store from which intelligence can be pushed to tools like the SIEM, firewalls and endpoint
+      detection. In short, the TIP turns many raw feeds into curated, actionable intelligence.
+
+      The management steps matter because raw feeds are noisy and perishable. **Normalisation and deduplication**
+      prevent the same indicator from arriving in five formats and firing five times. **Scoring and confidence**
+      are crucial: not all indicators are equal, some are high-confidence and current, others are stale,
+      low-confidence, or even risky to block (a shared hosting IP, a legitimate domain that was briefly abused), so
+      a TIP assigns confidence and context so consumers can decide how to act. **Aging and expiry** matter because
+      indicators go stale, an IP that was malicious last month may now be a legitimate service, so intelligence
+      must expire or be re-evaluated rather than blocking forever. **Context** (what campaign or actor an indicator
+      relates to, what it means) is what elevates a bare indicator into something an analyst can reason with.
+
+      Operationalising intelligence into the SIEM is where it pays off, but it must be done **carefully to avoid
+      noise**. Feeding high-confidence, well-scored indicators into SIEM correlation lets the SIEM automatically
+      flag when internal activity matches known-bad infrastructure, a powerful detection multiplier, and
+      intelligence also enriches alerts with context (this IP is tied to a known ransomware campaign). But naively
+      matching every indicator from every feed generates floods of low-value alerts and false positives, blocks
+      legitimate services, and erodes trust, so teams filter by confidence, prioritise relevant threats, use
+      aging, and treat low-confidence matches as enrichment rather than alerts. For the analyst, the lessons are
+      that intelligence is only useful when curated and scored, that a TIP is what makes many feeds manageable and
+      actionable, that operationalising intel into SIEM detection is high-value but must be tuned by confidence and
+      relevance, and that an indicator is a lead with a shelf life and a confidence level, not an automatic verdict,
+      so context and scoring, not raw volume of feeds, determine whether threat intelligence strengthens detection
+      or just adds noise.
+    examples:
+      - title: What a TIP does
+        body: |
+          many feeds (commercial/OSINT/gov/sharing/internal) = chaotic, overlapping, perishable flood
+          TIP: ingest -> normalise (STIX/TAXII) -> dedupe -> enrich + SCORE -> single store -> push to SIEM/firewall/EDR
+          turns raw feeds into curated, actionable intelligence.
+      - title: Why scoring and aging matter
+        body: |
+          not all indicators equal: high-confidence/current vs stale/low-confidence/risky-to-block
+          aging/expiry: last month's bad IP may be a legit service now -> don't block forever
+          operationalise HIGH-confidence into SIEM correlation; low-confidence = enrichment, not an alert.
+    exercise:
+      title: Manage and operationalise threat intelligence
+      environment: A described organisation with several intel feeds and a SIEM (or a scenario)
+      tools: [A scenario or sample indicators, a document, a notes file]
+      steps:
+        - Explain the role of a threat intelligence platform and the problem it solves.
+        - Describe how feeds are normalised and deduplicated and why that matters.
+        - Explain why scoring, confidence and aging are essential for indicators.
+        - Describe how high-confidence intelligence is operationalised into SIEM detection.
+        - Explain how naively matching all indicators creates noise and false positives.
+        - Describe how you would use a low-confidence indicator differently from a high-confidence one.
+      deliverable: A threat-intelligence management plan covering the TIP's role, normalisation and scoring, SIEM operationalisation, and how confidence and aging prevent noise.
+    expected_outcome: >
+      You can explain the role of a threat intelligence platform, how feeds are normalised, scored and aged, and
+      how to operationalise intelligence into SIEM detection by confidence and relevance without creating noise.
+    quiz:
+      - prompt: A threat intelligence platform primarily
+        options:
+          - Replaces the SIEM
+          - Ingests many feeds and normalises, deduplicates, scores and operationalises them into curated intelligence
+          - Blocks all traffic
+          - Writes detection rules automatically with no tuning
+        answer: 1
+        explanation: A TIP turns chaotic overlapping feeds into managed, scored, actionable intelligence.
+      - prompt: Indicator aging and expiry matter because
+        options:
+          - Indicators never change
+          - A once-malicious IP or domain may later be a legitimate service, so blocking forever causes harm
+          - Feeds are always current
+          - Old indicators are the most valuable
+        answer: 1
+        explanation: Indicators are perishable, so stale ones must expire or be re-evaluated to avoid false positives.
+      - prompt: Naively matching every indicator from every feed in the SIEM tends to
+        options:
+          - Perfectly detect all threats
+          - Generate floods of low-value alerts and false positives and erode trust
+          - Reduce all noise
+          - Improve confidence automatically
+        answer: 1
+        explanation: Unfiltered matching on low-confidence or stale indicators produces noise and false positives.
+      - prompt: A bare indicator should be treated as
+        options:
+          - An automatic verdict requiring no judgement
+          - A lead with a confidence level and shelf life, acted on by context and scoring
+          - Always safe to block permanently
+          - Irrelevant to detection
+        answer: 1
+        explanation: Indicators are leads whose confidence, context and age determine how to act on them.
+  - slug: siem-parsing-data-models
+    title: Parsing, Field Extraction and Data Models
+    order: 19
+    difficulty: intermediate
+    summary: Learn how a SIEM turns raw log text into structured, searchable fields, why consistent field naming through a data model is essential, and how good parsing makes detection and investigation possible.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.4", "sc200:2", "cysa:1.4"]
+    learning_objectives:
+      - Explain how parsing turns raw logs into structured fields
+      - Explain why a common data model and consistent field naming matter
+      - Recognise how parsing quality affects detection and investigation
+    theory: |
+      A SIEM ingests oceans of raw log text in countless formats, and before any of it is useful for detection or
+      investigation it must be **parsed**, broken down from a line of text into structured **fields** such as
+      source IP, user, action, and result. Parsing and **field extraction** are what let an analyst search for
+      all events where the user is a specific account, or correlate across sources, instead of grepping raw
+      strings. Some logs arrive already structured (JSON, key-value), which is ideal; others are free-form text
+      that must be parsed with patterns (often regular expressions) to pull the fields out. Good parsing at
+      ingestion, or reliably at search time, is the unglamorous foundation on which every detection and
+      investigation stands, because a field the SIEM never extracted is a field no rule can match and no analyst
+      can pivot on.
+
+      The deeper problem is **consistency across sources**. Different products call the same thing by different
+      names, one firewall logs src_ip, another source-address, a cloud service clientIP, and unless these are
+      **normalised to a common field name**, a single search or correlation rule cannot span them. This is why
+      SIEMs use a **data model** (also called a common information model or schema): a standard set of field names
+      and event categories that all sources are mapped to, so that regardless of the original vendor format, a
+      network connection always has the same field for source address, an authentication event always has the same
+      field for the account, and so on. With a good data model, one detection rule written against the model works
+      across every source mapped to it, and an analyst learns one vocabulary rather than dozens. This normalisation
+      is the same idea met in log onboarding, seen here from the field and schema angle.
+
+      The practical consequence is that **parsing and data-model quality directly determine detection and
+      investigation capability**. If a source is poorly parsed, with fields missing or mislabelled, detections
+      against it silently fail (the rule never matches because the field is not there), and investigations stall
+      because the analyst cannot find or correlate the data, a dangerous failure because it is invisible, the SIEM
+      looks like it is working. So onboarding a source properly means verifying that its important fields are
+      extracted correctly and mapped to the data model, and detection engineers write rules against the normalised
+      model rather than against one vendor's raw format, which makes rules portable and durable. For the analyst,
+      the lessons are that raw logs are useless until parsed into fields, that a common data model and consistent
+      field naming are what let detections and searches span many sources, and that parsing quality is a silent but
+      decisive factor, well-parsed, well-modelled data makes detection and investigation possible, while poor
+      parsing quietly blinds the SIEM.
+    examples:
+      - title: Parsing into fields
+        body: |
+          raw log text -> structured fields (source IP, user, action, result) via parsing/field extraction
+          structured (JSON/key-value) = ideal; free-form text parsed with patterns (regex)
+          a field never extracted = a field no rule can match and no analyst can pivot on.
+      - title: Common data model
+        body: |
+          different products name the same thing differently (src_ip vs source-address vs clientIP)
+          normalise to a COMMON data model/schema -> one rule + one vocabulary spans every mapped source
+          poor parsing/mapping = detections SILENTLY fail (field absent) and investigations stall -> invisible danger.
+    exercise:
+      title: Parse a source and map it to a data model
+      environment: A described raw log sample and a target SIEM data model (or a scenario)
+      tools: [A scenario or sample raw logs, a document, a notes file]
+      steps:
+        - Explain why raw logs must be parsed into fields before they are useful.
+        - Identify the key fields to extract from the sample log.
+        - Explain why different sources naming the same thing differently is a problem.
+        - Describe how a common data model solves that and lets one rule span sources.
+        - Explain how poorly parsed data causes detections to fail silently.
+        - Describe how you would verify a newly onboarded source is parsed and mapped correctly.
+      deliverable: A parsing and data-model plan showing the fields extracted from the sample, their mapping to a common model, and how you would verify correct parsing so detections do not fail silently.
+    expected_outcome: >
+      You can explain how parsing turns raw logs into searchable fields, why a common data model and consistent
+      naming let detections span sources, and how parsing quality silently determines detection and investigation capability.
+    quiz:
+      - prompt: Parsing a log means
+        options:
+          - Deleting it
+          - Breaking raw text into structured fields such as source IP, user, action and result
+          - Encrypting it
+          - Printing it
+        answer: 1
+        explanation: Parsing and field extraction turn raw text into searchable, correlatable fields.
+      - prompt: A common data model is needed because
+        options:
+          - All products already use identical field names
+          - Different sources name the same thing differently, so normalising to one schema lets a single rule span them
+          - It slows down the SIEM
+          - Field names do not matter
+        answer: 1
+        explanation: Normalising varied vendor fields to a common model makes detections and searches portable across sources.
+      - prompt: Poor parsing is especially dangerous because
+        options:
+          - It is always obvious
+          - Detections fail silently when a field is missing, so the SIEM looks like it is working while it is blind
+          - It improves detection
+          - It only affects dashboards
+        answer: 1
+        explanation: A missing or mislabelled field makes rules silently never match, an invisible failure.
+      - prompt: Detection engineers should write rules against
+        options:
+          - Each vendor's raw format separately
+          - The normalised data model, so rules are portable across every source mapped to it
+          - No fields at all
+          - Only dashboard colours
+        answer: 1
+        explanation: Writing against the model makes detections span sources and survive format changes.
+  - slug: siem-health-monitoring
+    title: SIEM Health and Log-Source Monitoring
+    order: 20
+    difficulty: intermediate
+    summary: Learn why a SIEM is only as good as the data flowing into it, how log sources silently stop sending data, and how monitoring SIEM and log-source health prevents dangerous blind spots.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.4", "sc200:2", "cysa:1.4"]
+    learning_objectives:
+      - Explain why log-source and SIEM health monitoring is critical
+      - Recognise the ways log sources silently fail
+      - Monitor collection health to prevent detection blind spots
+    theory: |
+      A SIEM and all its detections are only as good as the data flowing into it, and one of the most dangerous and
+      overlooked failure modes in a SOC is a **log source that silently stops sending data**. If a critical source,
+      a firewall, a domain controller, an EDR, cloud audit logs, stops reaching the SIEM, every detection that
+      depends on it quietly goes blind, yet nothing obviously breaks: there are simply no alerts from that source,
+      which can look exactly like a quiet, healthy period. This is why **log-source and SIEM health monitoring**,
+      continuously checking that the expected data is actually arriving, is a critical operational discipline:
+      without it, a SOC can believe it is watching something it stopped watching weeks ago, and discover the gap
+      only during an incident when the needed logs are not there.
+
+      Log sources fail in many quiet ways. A **source can stop sending** because an agent crashed, a service was
+      disabled (sometimes by an attacker), a configuration changed, credentials expired, a device was
+      decommissioned or moved, or a network path broke. The volume can **drop or spike** abnormally, a sudden fall
+      in a source's event rate often means partial loss, while a spike can overwhelm the pipeline and cause
+      dropped events. **Parsing can break** so events arrive but are no longer usable (the data-model problem met
+      earlier). The **pipeline itself** can lag or drop data under load. Each of these creates a blind spot that is
+      invisible unless you are specifically watching for it, and attackers may deliberately disable logging to
+      create exactly such a gap, so a source going silent is not only an operational issue but a potential attack
+      signal.
+
+      **Monitoring collection health** addresses this by watching the data about the data. Practically, a SOC tracks
+      which sources are expected and alerts when one stops sending or its volume deviates from the normal baseline
+      (a source that always sends thousands of events an hour suddenly sending none is an alert), monitors pipeline
+      and ingestion health (queues, latency, dropped events), and watches for parsing failures so broken fields are
+      caught. Building these health checks and reviewing a coverage inventory regularly ensures that the sources
+      the SOC believes it has are actually live and usable. Crucially, a source going unexpectedly silent is
+      treated as a potential security event (did an attacker disable it?) as well as an operational one. For the
+      analyst, the lessons are that a SIEM is only as good as the data reaching it, that log sources fail silently
+      in ways that create invisible blind spots and that an unexpectedly silent source may be an attack, and that
+      continuously monitoring log-source and pipeline health, alerting on missing or abnormal data, is what keeps
+      a SOC actually seeing what it thinks it sees, because the most dangerous detection gap is the one you do not
+      know you have.
+    examples:
+      - title: The silent blind spot
+        body: |
+          a critical source stops reaching the SIEM -> every detection on it quietly goes blind, but NOTHING obviously breaks
+          no alerts from a dead source looks exactly like a quiet, healthy period -> you discover the gap during an incident, too late.
+      - title: How sources fail and how to watch
+        body: |
+          fail: agent crash, service disabled (maybe by an attacker), config/credential change, decommission, broken path; volume drop/spike; parsing breaks; pipeline lag/drop
+          watch: expected-source list + alert on silence or volume deviation from baseline; monitor pipeline/ingestion health; catch parsing failures
+          -> treat an unexpectedly silent source as a POTENTIAL ATTACK, not just an ops issue.
+    exercise:
+      title: Monitor SIEM and log-source health
+      environment: A described SIEM with many log sources (or a scenario with source volume data)
+      tools: [A scenario or sample source-volume data, a document, a notes file]
+      steps:
+        - Explain why a silently failing log source is such a dangerous blind spot.
+        - List several ways a log source can stop sending or become unusable.
+        - Explain why a sudden drop in a source's event volume is a warning sign.
+        - Describe how you would alert when an expected source stops sending or deviates from baseline.
+        - Explain why parsing and pipeline health must also be monitored.
+        - Explain why an unexpectedly silent source should be treated as a potential attack.
+      deliverable: A collection-health monitoring plan covering expected-source tracking, volume-deviation and silence alerting, pipeline and parsing health, and treating silent sources as potential security events.
+    expected_outcome: >
+      You can explain why log-source and SIEM health monitoring is critical, recognise the ways sources silently
+      fail, and monitor collection health to prevent invisible detection blind spots and catch attacker log tampering.
+    quiz:
+      - prompt: A log source that silently stops sending data is dangerous because
+        options:
+          - It triggers an obvious error
+          - Detections on it quietly go blind while the absence of alerts looks like a healthy quiet period
+          - It improves detection
+          - It can never happen
+        answer: 1
+        explanation: Silence from a dead source is invisible and mimics calm, so the blind spot goes unnoticed.
+      - prompt: A sudden drop in a source's event volume most likely indicates
+        options:
+          - Improved security
+          - Partial or total loss of that source's data, a warning sign to investigate
+          - A faster network
+          - Nothing worth noticing
+        answer: 1
+        explanation: Abnormal volume drops signal collection problems that create blind spots.
+      - prompt: Collection-health monitoring works by
+        options:
+          - Ignoring which sources are expected
+          - Tracking expected sources and alerting on silence or volume deviation from baseline, plus pipeline and parsing health
+          - Only counting total events once a year
+          - Disabling sources
+        answer: 1
+        explanation: Watching the data about the data (presence, volume, pipeline, parsing) catches silent failures.
+      - prompt: An unexpectedly silent critical source should be treated as
+        options:
+          - Always just a minor ops issue
+          - A potential security event, since an attacker may have disabled logging, as well as an operational problem
+          - Proof of good security
+          - Something to ignore
+        answer: 1
+        explanation: Disabling logging is an attack technique, so a silent source may indicate compromise.

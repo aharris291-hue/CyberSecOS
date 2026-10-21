@@ -1306,3 +1306,415 @@ lessons:
           - Only works on small logs
         answer: 1
         explanation: Mathematical techniques make huge datasets tractable and reveal footholds signatures miss.
+  - slug: hunt-insider-threat
+    title: Hunting for Insider Threats
+    order: 15
+    difficulty: advanced
+    summary: Learn to hunt proactively for insider threats, malicious or negligent, where the actor already has legitimate access, so the signals are behavioural and contextual rather than malware-based.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.4", "sc200:2", "cysa:1.4"]
+    learning_objectives:
+      - Explain why insider threats require a different hunting approach
+      - Identify behavioural and contextual signals of insider risk
+      - Hunt for insider activity while respecting privacy and due process
+    theory: |
+      Insider threats are different from external attacks in a way that reshapes how you hunt for them: the actor
+      already has **legitimate access**. There is no exploit, no malware delivery, no breaking in to detect;
+      instead a trusted user does something harmful, whether maliciously (stealing data before leaving,
+      sabotaging systems, selling access) or negligently (mishandling data, falling for social engineering,
+      bypassing controls for convenience). Because the actions often use authorised credentials on authorised
+      systems, signature and malware-based detection is largely blind, and hunting must lean on **behaviour and
+      context**: not *can* this person do this, but *should* they be doing it, now, in this way.
+
+      The signals are therefore behavioural and relational. **Volume and pattern anomalies** stand out: a user
+      accessing or downloading far more data than their role normally does, touching systems or records unrelated
+      to their job, or acting at unusual hours. **Context and timing** are powerful amplifiers, especially around
+      a **departure**: a resigning employee suddenly accessing and copying large volumes of files, or someone
+      whose role is changing reaching into areas they are about to lose access to, is a classic pattern. **Policy
+      and control evasion**, disabling monitoring, using personal cloud storage or USB devices, forwarding
+      internal mail externally, or repeated after-the-fact access requests, suggests intent to move data out.
+      User and entity behaviour analytics (UEBA) helps by baselining each user and flagging deviations, but the
+      human hunter adds the context a model lacks, such as that a user was just denied a promotion.
+
+      Hunting insiders carries a responsibility that external hunting does not: it involves **employees and their
+      privacy**, so it must be done with care, proportionality and proper authorisation, typically in partnership
+      with HR and legal, not as freelance surveillance. The goal is to detect genuine risk, data theft, sabotage,
+      serious negligence, using the minimum necessary visibility, with findings handled through due process rather
+      than as accusations. Good programmes focus on protecting the organisation's crown-jewel data and watching
+      the high-risk moments (departures, role changes, privileged users) rather than monitoring everyone equally.
+      For the analyst, the discipline is to combine behavioural analytics with real-world context, to treat an
+      anomaly as a question rather than a verdict (legitimate work spikes too), and to follow the organisation's
+      insider-threat process so that a real finding leads to a fair, defensible outcome.
+    examples:
+      - title: Why insiders are different
+        body: |
+          actor already has LEGITIMATE access -> no exploit/malware to catch
+          malware-based detection is blind -> hunt on behaviour + context
+          question shifts: not CAN they do this, but SHOULD they, now, in this way.
+      - title: High-signal insider patterns
+        body: |
+          volume/pattern: far more data than the role needs; systems unrelated to the job; odd hours
+          context: departing/role-changing employee suddenly copying large volumes
+          evasion: personal cloud/USB, external mail forwarding, disabling monitoring
+          UEBA baselines users; the hunter adds context (e.g. just denied a promotion) + privacy/due process.
+    exercise:
+      title: Hunt for insider-threat indicators responsibly
+      environment: A described organisation with access, data-movement and HR-context signals (or a scenario)
+      tools: [A scenario or sample activity data, a document, a notes file]
+      steps:
+        - Explain why insider threats need a behavioural and contextual approach rather than malware detection.
+        - Identify three behavioural signals of insider risk and why each matters.
+        - Explain why the period around an employee departure is especially high-risk.
+        - Describe how UEBA helps and what context a human hunter must add.
+        - Treat a sample anomaly as a question and outline how you would check it before concluding.
+        - State the privacy and due-process safeguards (HR, legal, proportionality) the hunt must follow.
+      deliverable: An insider-threat hunt covering the behavioural approach, high-signal patterns, the departure window, UEBA plus human context, a triaged anomaly, and the privacy and due-process safeguards.
+    expected_outcome: >
+      You can explain why insider threats need behavioural hunting, identify the volume, context and evasion
+      signals that reveal them, use UEBA with human context, and hunt within privacy and due-process safeguards.
+    quiz:
+      - prompt: Insider threats are hard to catch with malware-based detection because
+        options:
+          - Insiders always use malware
+          - The actor already has legitimate access, so there is no exploit or malware to detect
+          - They never touch data
+          - They work only off-network
+        answer: 1
+        explanation: Authorised credentials on authorised systems leave no malware signature, so behaviour matters.
+      - prompt: A classic high-risk window for insider data theft is
+        options:
+          - A normal Tuesday with no changes
+          - Around an employee's departure or role change, when they may copy data before losing access
+          - During a public holiday only
+          - After retirement
+        answer: 1
+        explanation: Departures and role changes are when insiders commonly exfiltrate before access is removed.
+      - prompt: UEBA assists insider hunting by
+        options:
+          - Blocking all users
+          - Baselining each user's normal behaviour and flagging deviations for a human to add context to
+          - Replacing HR and legal
+          - Encrypting user files
+        answer: 1
+        explanation: UEBA surfaces deviations from per-user baselines; the hunter supplies the real-world context.
+      - prompt: A responsibility unique to hunting insiders is that it
+        options:
+          - Requires no authorisation
+          - Involves employees and their privacy, so it must be proportionate and done with HR and legal
+          - Can ignore due process
+          - Should monitor everyone equally at all times
+        answer: 1
+        explanation: Because it touches employees' privacy, it must follow proportionality and due process.
+  - slug: hunt-encrypted-covert
+    title: Hunting in Encrypted and Covert Channels
+    order: 16
+    difficulty: advanced
+    summary: Learn to hunt for malicious activity hidden in encrypted traffic and covert channels, where you cannot read the content, using metadata, behaviour and protocol-abuse patterns instead.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.4", "sc200:2", "cysa:1.4"]
+    learning_objectives:
+      - Explain why encryption and covert channels challenge content-based detection
+      - Use metadata and behavioural signals to hunt without reading content
+      - Recognise protocol-abuse and tunnelling patterns
+    theory: |
+      Most network traffic is now encrypted, and attackers rely on that to hide their command-and-control and data
+      theft inside TLS, so a hunter frequently cannot read the content and must find malice another way. The key
+      shift is from **content to metadata and behaviour**. Even when a session's payload is opaque, a great deal is
+      still observable: who talked to whom, when, how often, for how long, how much data flowed in each direction,
+      and the characteristics of the TLS handshake itself. These are the raw material of hunting in the dark, and
+      the central idea is that malicious communication, however well encrypted, still has a **shape** that often
+      differs from legitimate traffic.
+
+      Several patterns are hunt-able without decryption. **Beaconing** shows up as regular, periodic connections to
+      a destination (a callback every so often, often with jitter), visible purely from connection timing
+      regardless of content. **Data exfiltration** shows up as unusual outbound volume or a reversed ratio (a
+      client uploading far more than it downloads). **TLS fingerprinting** (such as JA3/JA3S) characterises the
+      handshake, so a client whose TLS fingerprint matches known malware tooling, or simply does not match any
+      normal application on the host, is suspicious even though the session is encrypted. **Certificate anomalies**,
+      self-signed certificates, brand-new or oddly named domains, or free-certificate churn, add signal.
+      **Covert channels and tunnelling** are a related target: attackers hide traffic inside protocols meant for
+      other things, such as DNS tunnelling (data smuggled in query names) or traffic tunnelled over ICMP or HTTPS,
+      which show up as abnormal protocol use, oversized or high-frequency DNS, or a protocol carrying far more data
+      than its normal use.
+
+      Hunting here therefore leans on **baselining and anomaly** applied to metadata. The hunter asks what normal
+      looks like for this host or this protocol and looks for deviations: a workstation beaconing to a never-before-
+      seen domain on a fixed interval, a server uploading gigabytes to the internet at night, DNS queries that are
+      long and high-volume to a single domain, or a TLS fingerprint that belongs to no installed application. None
+      of this requires breaking encryption, which is why it works even where TLS inspection is impossible or
+      undesirable. The discipline is the same analytics-driven approach used elsewhere, frequency, long-tail and
+      outlier analysis, pointed at connection and protocol metadata. For the analyst, the lesson is that encryption
+      hides content but not behaviour, so the question becomes not what is being said but who is talking to whom, in
+      what rhythm, in what volume, and using what protocol in what way, and strong findings there become detections
+      built on the same metadata.
+    examples:
+      - title: Content is hidden, behaviour is not
+        body: |
+          can't read TLS payload -> use metadata: who/when/how often/how long/volume/direction + TLS handshake traits
+          malicious comms still have a SHAPE that differs from normal.
+      - title: Hunt-able patterns without decryption
+        body: |
+          beaconing: regular periodic callbacks (timing alone, +jitter)
+          exfil: unusual outbound volume / reversed upload:download ratio
+          TLS fingerprint (JA3) matching malware or no installed app; cert anomalies (self-signed, brand-new domain)
+          covert/tunnel: DNS tunnelling (data in query names), ICMP/HTTPS tunnels -> abnormal protocol use.
+    exercise:
+      title: Hunt for malice in encrypted and covert traffic
+      environment: A described environment with connection and DNS metadata (or a scenario)
+      tools: [A scenario or sample flow/DNS/TLS metadata, a document, a notes file]
+      steps:
+        - Explain why content-based detection fails on encrypted traffic and what you use instead.
+        - Describe how beaconing is detectable from connection timing alone.
+        - Describe how data exfiltration shows up in volume and direction metadata.
+        - Explain how TLS fingerprinting and certificate anomalies add signal without decryption.
+        - Identify a covert-channel or tunnelling pattern (for example DNS tunnelling) and its tell-tales.
+        - Convert one confirmed pattern into a metadata-based detection.
+      deliverable: An encrypted-traffic hunt using metadata to find beaconing, exfiltration, a suspicious TLS fingerprint and a tunnelling pattern, plus one metadata-based detection derived from a finding.
+    expected_outcome: >
+      You can hunt for malicious activity in encrypted and covert channels using metadata and behaviour (timing,
+      volume, TLS fingerprints, protocol abuse) without reading content, and turn findings into detections.
+    quiz:
+      - prompt: When traffic is encrypted, a hunter shifts focus from content to
+        options:
+          - Guessing the password
+          - Metadata and behaviour such as timing, volume, direction and TLS handshake characteristics
+          - The disk contents
+          - The screen brightness
+        answer: 1
+        explanation: Encryption hides payload but not the observable shape of the communication.
+      - prompt: Beaconing is detectable without decryption because it appears as
+        options:
+          - Random one-off requests
+          - Regular, periodic connections to a destination, visible from timing alone
+          - Encrypted disk writes
+          - A single login
+        answer: 1
+        explanation: Periodic callbacks have a timing signature regardless of their encrypted content.
+      - prompt: TLS fingerprinting (such as JA3) helps a hunter by
+        options:
+          - Decrypting the session
+          - Characterising the handshake so a fingerprint matching malware or no installed app stands out
+          - Blocking all TLS
+          - Reading the certificate's private key
+        answer: 1
+        explanation: The handshake fingerprint is visible and can flag tooling even when content is encrypted.
+      - prompt: DNS tunnelling is a covert channel that shows up as
+        options:
+          - Normal, low-volume DNS to many domains
+          - Abnormal DNS, such as long query names and high volume to a single domain, smuggling data
+          - Encrypted disk access
+          - A reboot event
+        answer: 1
+        explanation: Smuggling data in DNS produces oversized, high-frequency queries to one domain.
+  - slug: hunt-process-injection
+    title: Hunting Process Injection and Fileless Malware
+    order: 17
+    difficulty: advanced
+    summary: Learn to hunt for process injection and fileless techniques, where malicious code runs inside legitimate processes or in memory, leaving little on disk and demanding memory- and behaviour-based hunting.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.4", "sc200:2", "cysa:1.4"]
+    learning_objectives:
+      - Explain process injection and fileless techniques and why they evade detection
+      - Identify the behavioural and memory signals they produce
+      - Hunt for injected and in-memory malicious code
+    theory: |
+      Sophisticated attackers increasingly avoid writing malware to disk, instead running their code inside the
+      memory of **legitimate processes** through **process injection**, or living entirely in memory as **fileless
+      malware**. The goal is evasion: antivirus and simple detections that scan files find nothing, and the
+      malicious activity appears to come from a trusted process like a browser, `explorer.exe`, or a system
+      service. Process injection covers a family of techniques, classic DLL injection, process hollowing (starting
+      a legitimate process suspended and replacing its contents with malicious code), injecting shellcode into
+      another process's memory, and abusing legitimate mechanisms to run code in a process that should not be
+      running it. Fileless malware more broadly uses memory, scripting (PowerShell), and built-in tools so that
+      little or nothing persists on disk. Because the code hides inside trust, hunting must look past the file and
+      at **behaviour and memory**.
+
+      The signals are about **processes doing things they should not**. Memory anomalies are central: a region of
+      a process's memory that is both writable and executable (a common footprint of injected code), executable
+      memory that does not correspond to any file on disk (unbacked or floating code), or a process whose in-memory
+      image does not match the file it was supposedly loaded from (a sign of hollowing). Behavioural tells
+      complement these: a process making network connections or spawning children that are out of character for
+      what it normally does (a document viewer suddenly talking to the internet, a system process spawning a
+      shell), unusual use of the APIs associated with injection, and threads starting in surprising places. Modern
+      endpoint detection and response (EDR) tools surface much of this, and the hunter's job is to query for these
+      patterns, a trusted process with suspicious memory or out-of-character behaviour, rather than for a malicious
+      file that will not be found.
+
+      Hunting this well combines **EDR telemetry, memory analysis and baselining**. The hunter asks which
+      processes exhibit writable-executable or unbacked memory, which legitimate processes are behaving unusually,
+      and which show the API or thread patterns of injection, then investigates the suspicious ones, potentially
+      capturing and analysing their memory. Baselining normal behaviour per process is essential, because the
+      whole technique relies on hiding in the normal, so knowing that a given process never normally makes network
+      connections or spawns children is what makes its doing so a strong lead. The limitation is that this hunting
+      depends heavily on good endpoint telemetry (an EDR or detailed process and memory logging); without it,
+      fileless activity is nearly invisible, which is itself an argument for deploying such telemetry. For the
+      analyst, the lesson is that the absence of a malicious file is not the absence of malware, and that catching
+      modern intrusions means hunting for the behavioural and memory fingerprints of code hiding inside legitimate
+      processes, then confirming with memory analysis, rather than relying on file-based detection that these
+      techniques are specifically designed to defeat.
+    examples:
+      - title: Hiding in trust
+        body: |
+          run code inside legitimate processes (injection) or purely in memory (fileless) -> file scanners find nothing
+          techniques: DLL injection, process hollowing (suspended process replaced), shellcode into another process
+          -> hunt behaviour + MEMORY, not the file.
+      - title: The signals
+        body: |
+          memory: writable+executable regions, executable memory not backed by any file, in-memory image != on-disk file
+          behaviour: process making network/children out of character (doc viewer -> internet; system proc -> shell)
+          baseline per process -> the technique relies on hiding in normal, so out-of-character = a strong lead.
+    exercise:
+      title: Hunt for injected and fileless code
+      environment: A described environment with EDR or detailed endpoint telemetry (or a scenario)
+      tools: [A scenario or sample EDR/process/memory data, the ATT&CK reference, a document, a notes file]
+      steps:
+        - Explain process injection and fileless malware and why they evade file-based detection.
+        - Describe process hollowing and what memory signal it produces.
+        - List memory anomalies that suggest injected code (writable-executable, unbacked memory).
+        - Describe behavioural tells of a legitimate process running injected code.
+        - Explain why per-process baselining is essential to this hunt.
+        - State what telemetry this hunting depends on and why its absence is itself a risk.
+      deliverable: A hunt plan for injection and fileless malware covering the evasion, memory anomalies, behavioural tells, baselining, and the telemetry it depends on.
+    expected_outcome: >
+      You can explain process injection and fileless techniques, identify their memory and behavioural signals,
+      and hunt for malicious code hiding in legitimate processes using EDR telemetry, memory analysis and baselining.
+    quiz:
+      - prompt: Process injection and fileless malware evade detection mainly by
+        options:
+          - Writing large files to disk
+          - Running inside legitimate processes or in memory, so file-based scanners find nothing
+          - Sending email
+          - Using strong passwords
+        answer: 1
+        explanation: Hiding in trusted processes or memory defeats detection that looks for malicious files.
+      - prompt: A classic memory signal of injected code is
+        options:
+          - A read-only data file
+          - A region of a process's memory that is both writable and executable, or executable memory not backed by any file
+          - A normal registry key
+          - A scheduled backup
+        answer: 1
+        explanation: Writable-executable or unbacked executable memory is a common footprint of injection.
+      - prompt: Process hollowing is detectable because
+        options:
+          - It writes a visible log
+          - A process's in-memory image does not match the file it was supposedly loaded from
+          - It uses no memory
+          - It always crashes the system
+        answer: 1
+        explanation: Hollowing replaces a process's contents, so its memory image diverges from its on-disk file.
+      - prompt: Hunting fileless activity depends heavily on
+        options:
+          - Antivirus file scans alone
+          - Good endpoint telemetry (EDR or detailed process and memory logging), without which it is nearly invisible
+          - Disabling logging
+          - Network diagrams only
+        answer: 1
+        explanation: Behaviour and memory visibility require EDR-grade telemetry; without it fileless activity hides.
+  - slug: hunt-collection-staging
+    title: Hunting for Data Collection and Staging
+    order: 18
+    difficulty: advanced
+    summary: Learn to hunt for the collection and staging phase, where an attacker gathers and consolidates data before exfiltration, catching data theft at the step just before it leaves.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.4", "sc200:2", "cysa:1.4"]
+    learning_objectives:
+      - Explain the collection and staging phase and why hunting it is valuable
+      - Identify the signals of data gathering and consolidation
+      - Hunt for staging activity before data leaves the environment
+    theory: |
+      Before an attacker steals data, they usually have to **gather and consolidate** it, and this **collection
+      and staging** phase is a valuable, often overlooked place to hunt, because catching it stops data theft at
+      the step just before the data leaves. In a typical data-theft operation, having gained access and found the
+      valuable data, the attacker collects it from various locations (file shares, databases, mailboxes, cloud
+      storage), often **stages** it by copying it to a single location on a compromised host, and frequently
+      **compresses and encrypts** it into an archive to make exfiltration efficient and to evade content
+      inspection. Each of these steps happens inside the environment, where defenders have visibility, before the
+      more commonly watched exfiltration step, so hunting collection and staging can catch an attack earlier and
+      even before any data is lost.
+
+      The signals are about **unusual data gathering and consolidation**. Watch for a host or account suddenly
+      **accessing large volumes of data** across many file shares or systems it does not normally touch,
+      especially reading many files quickly in a pattern unlike normal user behaviour, a strong indicator that
+      someone is collecting. Watch for **staging**: large amounts of data appearing in an unusual location (a temp
+      directory, a user profile, a rarely used share), particularly the creation of large **archive files** (zip,
+      rar, 7z, tar) in odd places, which is a classic staging tell. The use of compression or encryption utilities
+      on large data sets, especially by unusual processes or accounts, is another signal. Because attackers often
+      stage on one host before exfiltrating, a growing archive on a server that no one should be archiving on is a
+      high-value lead.
+
+      Hunting this phase uses the familiar combination of **baselining and anomaly** applied to data access and
+      file creation. The hunter asks what normal data access looks like for a user or host and looks for
+      deviations, mass file access, access to data unrelated to a role, bulk reads across shares, and looks for the
+      staging artifacts, large archives in unusual places, compression of large datasets, consolidation of data
+      onto one host. Correlating collection with what came before (how the attacker got there) and what might come
+      next (exfiltration) strengthens the case, and finding staging is especially valuable because it is the last
+      clear chance to intervene before data loss. The limitation is distinguishing malicious collection from
+      legitimate bulk operations (backups, migrations, a user legitimately working with lots of data), so context
+      and correlation are essential, as always. For the analyst, the lesson is that data theft is not a single
+      event but a sequence, and that the collection and staging steps, data being gathered and archived inside the
+      environment, are a detectable, high-value window to catch an attacker red-handed just before the data would
+      otherwise leave.
+    examples:
+      - title: The phase and why it matters
+        body: |
+          data-theft sequence: access -> find data -> COLLECT from many sources -> STAGE on one host -> compress/encrypt -> exfiltrate
+          collection + staging happen INSIDE (you have visibility), BEFORE the commonly watched exfil step
+          -> catch it earlier, even before any data leaves.
+      - title: The signals
+        body: |
+          mass data access across shares/systems a host/account doesn't normally touch; many files read fast
+          staging: large data in an odd location; large ARCHIVES (zip/rar/7z/tar) created in unusual places
+          compression/encryption of large datasets by unusual processes/accounts -> high-value lead.
+    exercise:
+      title: Hunt for collection and staging
+      environment: A described environment with file-access and file-creation telemetry (or a scenario)
+      tools: [A scenario or sample access/file events, the ATT&CK reference, a document, a notes file]
+      steps:
+        - Explain the collection and staging phase and why hunting it catches theft before data leaves.
+        - Describe the signals of unusual data collection across shares or systems.
+        - Describe the staging signals, especially large archives created in unusual locations.
+        - Write a hunt idea based on baselining data access and spotting bulk reads.
+        - Explain how correlating with earlier access and potential exfiltration strengthens the case.
+        - Explain how you would distinguish malicious collection from legitimate bulk operations.
+      deliverable: A collection-and-staging hunt covering the phase, the data-gathering and archiving signals, a baselining-based hunt idea, correlation, and separating malice from legitimate bulk activity.
+    expected_outcome: >
+      You can explain the collection and staging phase, identify the signals of data gathering and archiving, and
+      hunt for staging activity to catch data theft inside the environment before the data is exfiltrated.
+    quiz:
+      - prompt: Hunting the collection and staging phase is valuable because it
+        options:
+          - Happens after data has left
+          - Occurs inside the environment, before exfiltration, so it can catch theft even before data leaves
+          - Produces no signals
+          - Only matters for malware
+        answer: 1
+        explanation: Collection and staging happen where defenders have visibility, before the data is exfiltrated.
+      - prompt: A classic staging signal is
+        options:
+          - A normal login
+          - A large archive file (zip, rar, 7z, tar) created in an unusual location
+          - A DNS lookup
+          - A software update
+        answer: 1
+        explanation: Attackers often compress collected data into archives in odd places before exfiltration.
+      - prompt: A strong collection signal is
+        options:
+          - A user reading one expected file
+          - A host or account suddenly accessing large volumes of data across shares it does not normally touch
+          - A scheduled reboot
+          - A normal email
+        answer: 1
+        explanation: Mass access to data outside normal behaviour indicates an attacker gathering data.
+      - prompt: Distinguishing malicious collection from legitimate bulk operations requires
+        options:
+          - Blocking all file access
+          - Context and correlation, since backups and migrations also move lots of data
+          - Ignoring the activity
+          - Only looking at one event
+        answer: 1
+        explanation: Legitimate bulk operations exist, so context and correlation separate them from theft.
