@@ -1,5 +1,11 @@
 # Changelog
 
+## Phase 2 - Fourteenth lesson per course (toward 300 hours)
+
+### Catalog to 168 lessons (~184 hours)
+- Added a fourteenth lesson to every course (156 → 168 lessons, ~184 hours), each a distinct topic checked against the existing catalog. New lessons: DHCP, ARP and Layer 2 attacks (Networking); mobile device and BYOD security (Security Foundations); NTLM and relay attacks (Windows); Linux kernel hardening and capabilities (Linux); onboarding and validating log sources (SIEM); application security testing with SAST, DAST and SCA (Vulnerability Management); analytics-driven hunting techniques (Threat Hunting); tabletop exercises and response readiness (Incident Response); detecting privilege escalation (Detection Engineering); hardware root of trust with TPM, HSM and secure boot (Security Architecture); securing infrastructure as code (Cloud); and PCI DSS and payment card security (Governance, Risk and Compliance).
+- Continues the build-out on a deliberate per-course hour split (weighted by certification-objective coverage and distinct material) toward the 300-hour total. All keep the six education-standard sections and the ~18/82 theory/lab split; content-standard, seeding, lab and full backend suites pass.
+
 ## Phase 2 - Thirteenth lesson per course (toward 300 hours)
 
 ### Catalog to 156 lessons (~171 hours)

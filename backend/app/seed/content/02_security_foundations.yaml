@@ -1176,3 +1176,100 @@ lessons:
           - Longer hashes
         answer: 2
         explanation: Data in use is protected by techniques like confidential computing; disk encryption and TLS cover rest and transit.
+  - slug: sec-mobile-byod
+    title: Mobile Device and BYOD Security
+    order: 14
+    difficulty: beginner
+    summary: Understand the security challenges of mobile devices and bring-your-own-device programmes, the deployment models, and how mobile device management enforces policy without owning the device.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:3.1", "secplus:4.1", "sc900:3"]
+    learning_objectives:
+      - Explain the security risks specific to mobile devices
+      - Compare BYOD, corporate-owned and other deployment models
+      - Describe how MDM and containerisation enforce policy and protect data
+    theory: |
+      Mobile devices are now primary work tools, and they break the assumptions of traditional endpoint security:
+      they leave the office, join untrusted networks, mix personal and work data, and are easily lost or stolen.
+      The core risks follow from this. **Loss and theft** put data at physical risk, so encryption and remote wipe
+      matter. **Untrusted networks and apps** expose devices to interception and malicious software. **Mixing
+      personal and work data** on one device creates privacy and data-leakage tension, especially when the device
+      belongs to the employee. And mobile platforms have their own threats, from malicious apps to
+      jailbreaking/rooting that removes built-in protections.
+
+      Organisations choose a **deployment model** that trades control against convenience and cost. **BYOD** (bring
+      your own device) lets employees use personal devices, which is cheap and popular but gives the organisation
+      the least control and the most privacy tension. **COPE** (corporate-owned, personally enabled) gives staff a
+      company device they may also use personally, balancing control with usability. **COBO** (corporate-owned,
+      business only) maximises control for sensitive roles. **CYOD** (choose your own device) lets staff pick from
+      an approved, managed list. The right model depends on the sensitivity of the data and the organisation's
+      risk tolerance, and the choice drives everything else about how the devices are secured.
+
+      The enforcement technology is **mobile device management (MDM)**, now often part of broader unified endpoint
+      management. MDM lets the organisation push policy to enrolled devices: require a passcode and encryption,
+      restrict risky settings, deploy and update managed apps, and remotely lock or wipe a lost device. For BYOD,
+      the key technique is **containerisation**, keeping work data in a managed, encrypted container separate from
+      personal data, so the organisation can wipe only the work container without touching the employee's photos
+      and messages, resolving much of the privacy tension. For the analyst and architect, the goal is to enforce
+      the security baseline (encryption, authentication, patch level, no jailbreak) and protect corporate data
+      regardless of who owns the hardware, while respecting the personal boundary that BYOD inevitably creates.
+    examples:
+      - title: Deployment models
+        body: |
+          BYOD  -> personal device, least org control, most privacy tension (cheap, popular)
+          COPE  -> company device, personal use allowed (balanced)
+          COBO  -> company device, business only (max control, sensitive roles)
+          CYOD  -> pick from an approved managed list
+      - title: MDM + containerisation
+        body: |
+          MDM: push policy (passcode, encryption, managed apps, remote lock/wipe)
+          BYOD container: work data in a managed encrypted container, separate from personal
+          -> wipe only the work container; employee's personal data untouched.
+    exercise:
+      title: Design a mobile security approach
+      environment: A described organisation with roles of differing data sensitivity (or a scenario)
+      tools: [A scenario, a mobile-policy template, a document, a notes file]
+      steps:
+        - List the security risks that make mobile devices different from fixed endpoints.
+        - Recommend a deployment model for a general workforce and justify the control-versus-privacy trade-off.
+        - Recommend a different model for a role handling highly sensitive data and say why.
+        - Describe the baseline policy MDM should enforce (passcode, encryption, patch level, no jailbreak).
+        - Explain how containerisation resolves the privacy tension in a BYOD programme.
+        - State what should happen to corporate data when a BYOD device is lost or the employee leaves.
+      deliverable: A mobile security approach with deployment-model choices for two role types, an MDM baseline policy, and a BYOD data-protection and offboarding plan.
+    expected_outcome: >
+      You can explain mobile-specific risks, compare BYOD, COPE, COBO and CYOD, and describe how MDM and
+      containerisation enforce a security baseline and protect corporate data while respecting personal privacy.
+    quiz:
+      - prompt: Compared with corporate-owned models, BYOD gives the organisation
+        options:
+          - More control over the device
+          - The least control and the most privacy tension, since the device is the employee's
+          - No security options at all
+          - Full ownership of personal data
+        answer: 1
+        explanation: BYOD trades control and privacy for cost and convenience; the device belongs to the employee.
+      - prompt: Containerisation on a BYOD device lets the organisation
+        options:
+          - Read the employee's personal photos
+          - Keep work data in a managed, encrypted container that can be wiped without touching personal data
+          - Prevent all personal use
+          - Avoid any policy
+        answer: 1
+        explanation: A separate work container can be wiped alone, protecting corporate data and personal privacy.
+      - prompt: A primary mobile risk that drives encryption and remote wipe is
+        options:
+          - Devices never leave the office
+          - Loss or theft, which puts data at physical risk
+          - They cannot run apps
+          - They have no network
+        answer: 1
+        explanation: Mobile devices are easily lost or stolen, so encryption and remote wipe protect the data.
+      - prompt: Mobile device management (MDM) primarily lets an organisation
+        options:
+          - Replace the device hardware
+          - Push and enforce policy (passcode, encryption, managed apps, remote lock/wipe) on enrolled devices
+          - Choose the employee's personal apps
+          - Disable the cellular network
+        answer: 1
+        explanation: MDM enforces the security baseline and can lock or wipe enrolled devices remotely.

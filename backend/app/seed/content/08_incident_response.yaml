@@ -1225,3 +1225,103 @@ lessons:
           - Avoid documentation
         answer: 1
         explanation: Post-incident activity closes the loop by strengthening preparation for future incidents.
+  - slug: ir-tabletop-exercises
+    title: Tabletop Exercises and Response Readiness
+    order: 14
+    difficulty: beginner
+    summary: Learn how tabletop exercises test and improve incident response before a real incident, how to run one, and how to turn its findings into concrete readiness improvements.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.8", "sc200:4", "cysa:3.2"]
+    learning_objectives:
+      - Explain the purpose and value of a tabletop exercise
+      - Describe how to run an effective tabletop
+      - Convert exercise findings into concrete readiness improvements
+    theory: |
+      The worst time to discover that an incident response plan has gaps is during a real incident, and a
+      **tabletop exercise** is the cheap, safe way to find them first. A tabletop is a discussion-based exercise
+      where the response team is walked through a realistic scenario, a ransomware outbreak, a compromised
+      executive account, a data-exfiltration discovery, and talks through exactly what they would do at each step.
+      Nothing is actually attacked or taken down; the value is in surfacing the questions that only come up under
+      pressure: who declares an incident, who can authorise taking a critical system offline, where the contact
+      list is, whether legal and communications are involved early enough, and whether the team even agrees on the
+      first few moves. These are precisely the things that go wrong in real incidents, and a tabletop reveals them
+      for the cost of a meeting.
+
+      Running one well takes structure. A facilitator presents the scenario and then **injects** developments,
+      "the backups are also encrypted," "a journalist has called," to push the team past the easy early steps into
+      the hard decisions. The right people must be in the room, not just the SOC but the decision-makers:
+      management, legal, communications, and relevant system owners, because many failures are about authority and
+      coordination, not technical skill. The facilitator keeps the discussion honest ("you say you would restore
+      from backup, show me where that procedure is documented") and, crucially, someone records every gap, delay
+      and open question as it surfaces. The exercise is judged not by how smoothly it went but by how many real
+      weaknesses it exposed.
+
+      The payoff is entirely in the **follow-through**. Each finding becomes a concrete action: a missing
+      procedure gets written, an unclear decision right gets assigned, a stale contact list gets updated, a
+      playbook gets corrected, a needed tool or access gets provisioned. These improvements flow back into the
+      preparation phase of the incident response lifecycle, measurably raising readiness, and the next exercise
+      tests whether they stuck. Done regularly and with scenarios tuned to the organisation's real threats,
+      tabletops build the muscle memory and the coordination that make a real incident go calmly instead of
+      chaotically. For the analyst, participating in tabletops is also how you learn the plan before you need it,
+      so that in a real incident you know your role, your escalation path and where the procedures live.
+    examples:
+      - title: What a tabletop reveals
+        body: |
+          discussion-based, no real takedown; walk a realistic scenario step by step
+          surfaces: who declares an incident, who authorises taking a system down, where the contacts are,
+                    is legal/comms involved early, do we agree on the first moves
+          -> the exact things that go wrong for real, found for the cost of a meeting.
+      - title: Running it and following through
+        body: |
+          facilitator injects developments (backups encrypted; press calling) -> push to hard decisions
+          right people in the room: SOC + management + legal + comms + system owners
+          record every gap -> each becomes a concrete action -> feeds preparation -> next exercise retests.
+    exercise:
+      title: Design and debrief a tabletop exercise
+      environment: A described organisation and a chosen incident scenario (or a scenario)
+      tools: [A scenario, a tabletop facilitation template, a document, a notes file]
+      steps:
+        - Explain the purpose of a tabletop and why it is done before a real incident.
+        - Choose a realistic scenario for the organisation and justify it against the organisation's threats.
+        - List who should be in the room beyond the SOC and why their presence matters.
+        - Write two injects that would push the team from easy early steps into hard decisions.
+        - Describe how you would capture gaps during the exercise.
+        - Turn two example gaps into concrete readiness improvements that feed back into preparation.
+      deliverable: A tabletop design with a justified scenario, participant list, two injects, a gap-capture method, and two example gaps converted into concrete preparation improvements.
+    expected_outcome: >
+      You can explain why tabletop exercises matter, run one with the right people and injects, capture the gaps
+      they expose, and convert those gaps into concrete readiness improvements that raise response preparedness.
+    quiz:
+      - prompt: The main value of a tabletop exercise is that it
+        options:
+          - Takes real systems offline to test them
+          - Surfaces plan gaps and coordination failures safely, before a real incident, for the cost of a meeting
+          - Replaces the incident response plan
+          - Is only for the SOC
+        answer: 1
+        explanation: A tabletop reveals the authority and coordination gaps that real incidents expose, safely.
+      - prompt: Beyond the SOC, a tabletop should include
+        options:
+          - Only external consultants
+          - Decision-makers such as management, legal, communications and system owners
+          - No one else
+          - Only the help desk
+        answer: 1
+        explanation: Many failures are about authority and coordination, so decision-makers must participate.
+      - prompt: A facilitator uses injects during a tabletop to
+        options:
+          - End the exercise early
+          - Introduce developments that push the team past easy steps into hard decisions
+          - Assign blame
+          - Avoid any discussion
+        answer: 1
+        explanation: Injects escalate the scenario so the team confronts the difficult, revealing decisions.
+      - prompt: A tabletop exercise delivers value mainly through
+        options:
+          - How smoothly it appeared to go
+          - The follow-through, turning each exposed gap into a concrete preparation improvement
+          - Never being repeated
+          - Keeping findings undocumented
+        answer: 1
+        explanation: The payoff is converting exposed weaknesses into actions that raise real readiness.

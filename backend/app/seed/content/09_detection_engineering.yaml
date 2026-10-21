@@ -1217,3 +1217,104 @@ lessons:
           - Endpoints have no logs
         answer: 1
         explanation: The domain is high-volume and benign-heavy, so false-positive control is central.
+  - slug: de-privilege-escalation-detection
+    title: Detecting Privilege Escalation
+    order: 14
+    difficulty: advanced
+    summary: Engineer detections for the privilege-escalation tactic across Windows and Linux, covering token and UAC abuse, sudo and SUID abuse, service and scheduled-task abuse, and exploitation of misconfigurations.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.4", "sc200:2", "cysa:1.3"]
+    learning_objectives:
+      - Identify common privilege-escalation techniques on Windows and Linux
+      - Engineer behaviour-based detections for them
+      - Reduce false positives by distinguishing legitimate administration
+    theory: |
+      **Privilege escalation** is the tactic by which an attacker turns a low-privileged foothold into
+      administrative or root control, and detecting it well is high value because it sits between initial access
+      and the serious damage that elevated rights enable. Escalation comes in two broad flavours. **Vertical**
+      escalation gains higher privilege (a standard user becoming administrator or root); **horizontal** movement
+      takes over another account at the same level. The techniques differ by platform but share a shape: abuse a
+      legitimate mechanism or exploit a misconfiguration to run code with more authority than you were granted.
+
+      On **Windows**, common techniques include **token manipulation** (stealing or impersonating the access token
+      of a privileged process), **UAC bypass** (tricking the elevation mechanism into granting admin without a
+      prompt), abusing **service** configurations (a service whose binary or path a low-privileged user can modify
+      runs as SYSTEM), and **scheduled tasks** or startup items that run with higher rights. On **Linux**, the
+      classic paths are **sudo misconfigurations** (a user allowed to run a specific command that can be abused to
+      spawn a root shell), **SUID/SGID binaries** (programs that run as their owner, exploitable if they can be
+      made to execute arbitrary code), writable files in privileged contexts, and kernel exploits. The detections
+      that catch these watch for the **behavioural signature** of elevation: a process whose integrity or
+      privilege level jumps, a child process running as a more privileged user than its parent, modification of a
+      service binary or a sudoers file, execution of a known-abusable SUID binary in an unusual way, or a UAC
+      auto-elevation from an unexpected process.
+
+      The engineering challenge, as always, is **separating attack from administration**, because legitimate admins
+      also elevate privilege all day. Effective detections are therefore scoped and enriched: elevation from an
+      interactive admin session during business hours is normal, while elevation spawned by a document process, a
+      web server, or an unexpected service account is not. Correlating the escalation with what came before (a
+      suspicious initial access, an unusual parent process) and after (new persistence, credential access) raises
+      confidence greatly, since escalation rarely happens in isolation during an attack. Coverage is measured
+      against the privilege-escalation techniques in ATT&CK, and gaps are prioritised by what current intelligence
+      shows in use. For the analyst, the key is to detect the mechanism of elevation and then lean hard on context,
+      because the raw event "a process gained admin rights" is common and only becomes an alert when its origin and
+      surroundings do not fit normal administration.
+    examples:
+      - title: Techniques by platform
+        body: |
+          Windows: token theft/impersonation, UAC bypass, modifiable service binary -> runs as SYSTEM, scheduled task
+          Linux:   sudo misconfig -> root shell, abusable SUID/SGID binary, writable privileged file, kernel exploit
+          shared shape: abuse a legit mechanism or misconfig to run with more authority.
+      - title: Detect the mechanism, lean on context
+        body: |
+          signal: child runs as MORE privileged user than parent; service binary or sudoers modified; UAC auto-elevate from odd process
+          normal: interactive admin elevating in business hours
+          suspicious: elevation spawned by a document/web-server/odd service account; correlate with before+after.
+    exercise:
+      title: Engineer privilege-escalation detections
+      environment: A described environment with Windows and Linux endpoint telemetry (or a scenario)
+      tools: [A scenario or sample events, the ATT&CK reference, a document, a notes file]
+      steps:
+        - Explain the difference between vertical and horizontal privilege escalation.
+        - Describe two Windows escalation techniques and the behavioural signal each produces.
+        - Describe two Linux escalation techniques and the behavioural signal each produces.
+        - Write a detection idea for one technique that targets the mechanism rather than a specific tool.
+        - Explain how you would distinguish the detection from legitimate administrative elevation.
+        - Describe how correlating with preceding and following activity raises confidence.
+      deliverable: A set of privilege-escalation detection ideas across Windows and Linux, each with its behavioural signal, plus a false-positive-reduction and correlation approach.
+    expected_outcome: >
+      You can identify Windows and Linux privilege-escalation techniques, engineer behaviour-based detections for
+      them, and use context and correlation to separate real escalation from legitimate administration.
+    quiz:
+      - prompt: A strong behavioural signal of privilege escalation is
+        options:
+          - A user reading email
+          - A child process running as a more privileged user than its parent, or a service binary being modified
+          - A normal scheduled backup
+          - A DNS lookup
+        answer: 1
+        explanation: Elevation shows up as privilege jumps and modification of mechanisms that run with high rights.
+      - prompt: On Linux, an abusable SUID binary can escalate privilege because it
+        options:
+          - Encrypts the disk
+          - Runs as its owner (often root), so coercing it to execute arbitrary code yields that owner's rights
+          - Disables logging
+          - Is always malicious
+        answer: 1
+        explanation: SUID programs run with the owner's privileges, so exploiting one grants those privileges.
+      - prompt: The main challenge in detecting privilege escalation is
+        options:
+          - There is no telemetry
+          - Legitimate administrators elevate privilege constantly, so attack must be separated from normal admin
+          - It never happens in real attacks
+          - Elevation cannot be logged
+        answer: 1
+        explanation: Elevation is routine for admins, so detections must use context to flag only the abnormal.
+      - prompt: Confidence in a privilege-escalation detection rises most when you
+        options:
+          - Ignore surrounding events
+          - Correlate it with suspicious activity before (odd parent, initial access) and after (persistence, credential access)
+          - Only look at the single event
+          - Disable the rule
+        answer: 1
+        explanation: Escalation rarely stands alone in an attack, so surrounding context strongly raises confidence.

@@ -1162,3 +1162,100 @@ lessons:
           - Removing systemd entirely
         answer: 1
         explanation: Limiting who can schedule and watching the directories for changes constrains and surfaces abuse.
+  - slug: linux-kernel-hardening
+    title: Linux Kernel Hardening and Capabilities
+    order: 14
+    difficulty: advanced
+    summary: Go below the file system to the kernel, covering Linux capabilities, seccomp, namespaces and kernel parameters, and how they reduce the privilege and attack surface of processes.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:3.2", "secplus:2.5", "cysa:1.2"]
+    learning_objectives:
+      - Explain Linux capabilities as a finer-grained alternative to full root
+      - Describe how seccomp and namespaces restrict what a process can do
+      - Apply kernel-level hardening to reduce a process's attack surface
+    theory: |
+      Traditional Unix privilege is all-or-nothing: a process runs as an ordinary user or as all-powerful root.
+      Modern Linux breaks root's power into **capabilities**, dozens of discrete privileges that can be granted
+      individually. A program that only needs to bind to a low-numbered port needs `CAP_NET_BIND_SERVICE`, not
+      full root, and a program that needs to change file ownership needs `CAP_CHOWN`. Granting only the required
+      capabilities (and dropping the rest) means that if the process is compromised, the attacker inherits a thin
+      slice of privilege rather than the keys to the machine. This is least privilege applied at the kernel level,
+      and it is foundational to how containers and hardened services run.
+
+      Two further mechanisms narrow what a process can do. **seccomp** (secure computing mode) filters the
+      **system calls** a process may make: since every interaction with the kernel goes through syscalls, a
+      seccomp profile that allows only the handful a program actually uses drastically shrinks its attack surface,
+      so a bug that would let an attacker call a dangerous syscall simply cannot reach it. **Namespaces** give a
+      process an isolated view of system resources, its own process tree, network, mount points and user ids, and
+      are the building block of container isolation: a process in its own namespaces cannot see or affect what is
+      outside them. Together, capabilities, seccomp and namespaces are the kernel features that make a modern
+      container a reasonably contained unit rather than just a packaged process.
+
+      Finally, the kernel itself is hardened through **parameters and modules**. `sysctl` settings control
+      behaviour such as restricting access to kernel logs and pointers, enabling address-space layout
+      randomisation, and tightening network stack behaviour; unneeded kernel modules and filesystems can be
+      blacklisted to remove attack surface; and mandatory access control (SELinux or AppArmor) adds a policy layer
+      above discretionary permissions. For the analyst and engineer, the value of understanding these is twofold:
+      you can harden a service by giving it only the capabilities and syscalls it needs, and you can reason about
+      the blast radius of a compromise, because a process stripped of capabilities, confined by seccomp and boxed
+      in namespaces is far less useful to an attacker than one running as unconfined root.
+    examples:
+      - title: Capabilities instead of full root
+        body: |
+          need to bind port 80 -> CAP_NET_BIND_SERVICE only (not root)
+          need to change ownership -> CAP_CHOWN only
+          drop the rest -> compromise inherits a thin slice, not the whole machine.
+      - title: seccomp + namespaces
+        body: |
+          seccomp: allow only the syscalls the program uses -> dangerous syscalls unreachable
+          namespaces: own process tree / network / mounts / user ids -> can't see outside the box
+          together = the basis of container isolation.
+    exercise:
+      title: Harden a service at the kernel level
+      environment: A described Linux service and its actual needs (or a scenario)
+      tools: [A Linux host or scenario, a terminal or notes file, a document]
+      steps:
+        - Explain how capabilities differ from running a process as full root.
+        - For a described service, identify the minimum capabilities it genuinely needs and which to drop.
+        - Explain how a seccomp profile reduces a process's attack surface.
+        - Explain how namespaces isolate a process and why that limits a compromise.
+        - Name two sysctl or module-level hardening steps and the risk each reduces.
+        - Describe how you would reason about the blast radius if the hardened service were compromised.
+      deliverable: A kernel-level hardening plan for one service, covering the minimum capability set, a seccomp rationale, namespace isolation, two kernel-parameter or module steps, and a blast-radius assessment.
+    expected_outcome: >
+      You can explain Linux capabilities, seccomp and namespaces, apply them to give a service least privilege at
+      the kernel level, and reason about how kernel hardening limits the blast radius of a compromise.
+    quiz:
+      - prompt: Linux capabilities improve on traditional root by
+        options:
+          - Making every process root
+          - Splitting root's power into discrete privileges that can be granted individually
+          - Removing all privileges
+          - Encrypting the kernel
+        answer: 1
+        explanation: Capabilities let a process hold only the specific privileges it needs rather than all of root.
+      - prompt: A seccomp profile reduces attack surface by
+        options:
+          - Encrypting the disk
+          - Restricting which system calls a process may make to only those it needs
+          - Adding more users
+          - Disabling the network
+        answer: 1
+        explanation: Limiting allowed syscalls means dangerous ones cannot be reached even via a bug.
+      - prompt: Namespaces contribute to container isolation by giving a process
+        options:
+          - A faster CPU
+          - An isolated view of resources (its own process tree, network, mounts, user ids)
+          - Root on the host
+          - Unlimited memory
+        answer: 1
+        explanation: Namespaces box a process into its own view of system resources, isolating it from the host.
+      - prompt: Dropping unneeded capabilities from a service mainly
+        options:
+          - Speeds up the CPU
+          - Limits what an attacker gains if the service is compromised, applying least privilege
+          - Encrypts network traffic
+          - Disables logging
+        answer: 1
+        explanation: With fewer capabilities, a compromised process grants the attacker far less power.

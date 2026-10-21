@@ -1233,3 +1233,103 @@ lessons:
           - Nothing
         answer: 1
         explanation: The provider secures the cloud; the customer secures their configuration, identity and data in it.
+  - slug: arch-hardware-root-of-trust
+    title: Hardware Root of Trust with TPM, HSM and Secure Boot
+    order: 14
+    difficulty: intermediate
+    summary: Understand how hardware anchors security, covering the TPM, hardware security modules, secure boot and measured boot, and why trust that starts in hardware is harder to subvert than software alone.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:3.3", "secplus:1.4", "sc900:3"]
+    learning_objectives:
+      - Explain what a root of trust is and why hardware provides a stronger one
+      - Describe the roles of the TPM, HSM, secure boot and measured boot
+      - Apply hardware-anchored trust to protect keys and boot integrity
+    theory: |
+      Security ultimately has to **start somewhere trusted**, and if every layer trusts the layer below it, the
+      question is what the very bottom layer trusts. A **root of trust** is that anchor, and anchoring it in
+      **hardware** makes it far harder to subvert than software, because malware that can rewrite files and
+      processes cannot as easily rewrite a dedicated chip. Hardware roots of trust underpin modern platform
+      security: they store keys where software cannot read them, verify that the system booted the software it was
+      supposed to, and provide a tamper-resistant place to perform sensitive operations.
+
+      Several components provide this. A **Trusted Platform Module (TPM)** is a chip on most modern machines that
+      securely stores keys and measurements and can perform cryptographic operations without exposing the keys to
+      the operating system; it underpins disk encryption (releasing the key only if the platform is in a known
+      good state) and device identity. A **hardware security module (HSM)** is a hardened, often network-attached
+      device for generating, storing and using cryptographic keys at scale, used where key compromise would be
+      catastrophic (certificate authorities, payment systems); keys generated in an HSM never leave it in the
+      clear. **Secure boot** uses signatures to ensure that only trusted, signed code runs at each stage of start-
+      up, so a tampered bootloader or early driver is rejected, while **measured boot** records a cryptographic
+      measurement of each boot component into the TPM so the platform's integrity can later be **attested**,
+      proved to a remote party, rather than merely assumed.
+
+      The architectural value is a **chain of trust** rooted in hardware: the hardware verifies the firmware, which
+      verifies the bootloader, which verifies the operating system, each link checked before control passes on, so
+      that by the time the system is running there is cryptographic assurance it was not tampered with below the
+      level defenders can see. This matters because some of the most dangerous attacks live beneath the operating
+      system (bootkits, firmware implants) where ordinary security tools are blind. For the architect, the
+      practical applications are concrete: bind disk-encryption keys to the TPM so a stolen disk is useless,
+      require secure boot on managed devices, use remote attestation to admit only healthy devices to sensitive
+      resources, and keep high-value keys in an HSM. The theme is that trust is strongest when it is anchored in
+      hardware and verified upward, not assumed from software that an attacker may already control.
+    examples:
+      - title: The components
+        body: |
+          TPM -> on-board chip: stores keys/measurements, crypto without exposing keys (disk encryption, device identity)
+          HSM -> hardened key device at scale: keys never leave in clear (CAs, payments)
+          secure boot -> only signed, trusted code runs at each boot stage
+          measured boot -> record each component's measurement into TPM -> attest integrity.
+      - title: Chain of trust rooted in hardware
+        body: |
+          hardware -> verifies firmware -> verifies bootloader -> verifies OS (each link checked)
+          catches attacks BELOW the OS (bootkits, firmware implants) where normal tools are blind
+          apply: bind disk key to TPM, require secure boot, attest device health, HSM for high-value keys.
+    exercise:
+      title: Apply hardware-anchored trust to a platform
+      environment: A described device fleet or system with sensitive keys (or a scenario)
+      tools: [A scenario, an architecture notes file, a document]
+      steps:
+        - Explain what a root of trust is and why anchoring it in hardware is stronger than software alone.
+        - Describe the role of the TPM and one concrete protection it enables.
+        - Describe the role of an HSM and when you would require one.
+        - Explain the difference between secure boot and measured boot.
+        - Describe how a hardware-rooted chain of trust catches attacks below the operating system.
+        - Recommend three concrete hardware-anchored controls for the described platform.
+      deliverable: A hardware-trust design explaining the root of trust, the roles of TPM, HSM, secure and measured boot, and three concrete controls for the platform.
+    expected_outcome: >
+      You can explain a hardware root of trust and the roles of the TPM, HSM, secure boot and measured boot, and
+      apply hardware-anchored controls to protect keys and prove boot integrity against below-the-OS attacks.
+    quiz:
+      - prompt: Anchoring a root of trust in hardware is stronger than software because
+        options:
+          - Hardware is cheaper
+          - Malware that rewrites files and processes cannot as easily rewrite a dedicated tamper-resistant chip
+          - Software is always secure
+          - It needs no keys
+        answer: 1
+        explanation: A hardware anchor resists the file and process tampering that compromises software trust.
+      - prompt: A TPM is commonly used to
+        options:
+          - Replace the CPU
+          - Securely store keys and release a disk-encryption key only if the platform is in a known good state
+          - Encrypt the network
+          - Run applications faster
+        answer: 1
+        explanation: The TPM protects keys and ties disk-encryption key release to platform integrity.
+      - prompt: Secure boot and measured boot differ in that secure boot
+        options:
+          - Records measurements for later attestation
+          - Enforces that only trusted, signed code runs at each boot stage, rejecting tampered components
+          - Encrypts the disk
+          - Is only for servers
+        answer: 1
+        explanation: Secure boot blocks untrusted code at boot; measured boot records measurements for attestation.
+      - prompt: An HSM is chosen where
+        options:
+          - Keys are unimportant
+          - Key compromise would be catastrophic, because keys generated in it never leave in the clear
+          - Speed is the only concern
+          - No cryptography is used
+        answer: 1
+        explanation: HSMs protect high-value keys by keeping them inside the hardened device at all times.

@@ -1157,3 +1157,102 @@ lessons:
           - Shortening ticket lifetimes only
         answer: 1
         explanation: Strong, rotated service-account passwords and disabling RC4 make offline cracking infeasible.
+  - slug: win-ntlm-relay
+    title: NTLM and Relay Attacks
+    order: 14
+    difficulty: advanced
+    summary: Understand NTLM authentication, why it is weaker than Kerberos, and how relay and pass-the-hash attacks abuse it, plus the defences that reduce NTLM exposure.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.1", "sc200:2", "cysa:1.2"]
+    learning_objectives:
+      - Explain how NTLM authentication works and how it differs from Kerberos
+      - Describe NTLM relay and pass-the-hash attacks
+      - Recommend defences that reduce NTLM abuse
+    theory: |
+      **NTLM** is the older Windows authentication protocol, still present for backward compatibility, and its
+      design weaknesses make it a favourite attacker target. NTLM is a challenge-response scheme: the server sends
+      a challenge, the client proves it knows the password hash by responding, and crucially the **password hash
+      itself functions as the credential**. Unlike Kerberos, NTLM does not use a trusted third party to issue
+      time-limited tickets, has no mutual authentication by default, and the client's response can be captured and
+      misused. Understanding that NTLM authenticates with the hash, not a fresh secret, is the key to seeing why
+      its attacks work.
+
+      Two attacks dominate. **Pass-the-hash** uses a stolen NTLM hash directly: because the hash is the
+      credential, an attacker who dumps hashes from one machine can authenticate to others as that user without
+      ever knowing the plaintext password, which is why hashes must be protected as carefully as passwords.
+      **NTLM relay** is more subtle and does not even require cracking: the attacker positions between a client and
+      a server (often by coercing a victim to authenticate, for example via a malicious link or by poisoning
+      name-resolution protocols like LLMNR/NBT-NS), then **relays** the victim's authentication to a different
+      server, authenticating as the victim there. If the relayed account is privileged and the target lacks
+      signing, the attacker gains access with the victim's rights. These attacks underpin much of the lateral
+      movement seen in Windows intrusions.
+
+      The defences aim to **reduce and protect NTLM**. The strongest is to disable NTLM where possible and prefer
+      Kerberos, and to turn off legacy name-resolution protocols (LLMNR, NBT-NS) that attackers abuse to coerce
+      authentication. Where NTLM must remain, enforcing **SMB signing** and **LDAP channel binding/signing**
+      prevents relayed authentication from being accepted, and the Protected Users group, credential isolation
+      (Credential Guard) and least privilege limit hash theft and reuse. For the analyst, signals include
+      authentication from unexpected hosts, NTLM use where Kerberos is expected, and LLMNR/NBT-NS traffic, so
+      monitoring authentication patterns and the presence of legacy protocols is how these quiet attacks become
+      visible. The recurring theme is that a captured credential, whether a hash or a relayed response, is as good
+      as a password unless signing and protocol hardening break the chain.
+    examples:
+      - title: Why NTLM is abusable
+        body: |
+          challenge-response; the password HASH is the credential (no fresh secret, no TTL tickets)
+          no mutual auth by default; responses can be captured
+          contrast Kerberos: trusted KDC issues time-limited tickets.
+      - title: The two attacks
+        body: |
+          pass-the-hash -> use a stolen hash directly to authenticate elsewhere (no plaintext needed)
+          NTLM relay    -> coerce victim auth (LLMNR/NBT-NS, malicious link) -> relay it to another server as the victim
+          defence: disable NTLM/LLMNR, enforce SMB signing + LDAP channel binding.
+    exercise:
+      title: Analyse NTLM abuse and plan defences
+      environment: A described Windows environment with sample authentication evidence (or a scenario)
+      tools: [A scenario or sample auth logs, a document, a notes file]
+      steps:
+        - Explain how NTLM authenticates and why the hash functioning as the credential is a weakness.
+        - Contrast NTLM with Kerberos on third-party trust, ticket lifetime and mutual authentication.
+        - Describe pass-the-hash and why stolen hashes must be protected like passwords.
+        - Describe an NTLM relay attack, including how the victim is coerced to authenticate.
+        - Recommend at least three defences (disable NTLM/LLMNR, SMB signing, LDAP channel binding, Credential Guard).
+        - State one log signal that would suggest NTLM relay or pass-the-hash activity.
+      deliverable: An NTLM-abuse analysis with a pass-the-hash and a relay explanation, a prioritised defence list, and one detection signal.
+    expected_outcome: >
+      You can explain NTLM authentication and its weaknesses versus Kerberos, describe pass-the-hash and NTLM
+      relay attacks, and recommend the signing and protocol-hardening defences that break them.
+    quiz:
+      - prompt: Pass-the-hash works because in NTLM
+        options:
+          - The password is sent in clear text
+          - The password hash itself functions as the credential, so a stolen hash authenticates without the plaintext
+          - A trusted third party issues tickets
+          - Authentication is mutual by default
+        answer: 1
+        explanation: NTLM authenticates with the hash, so a captured hash can be reused directly.
+      - prompt: An NTLM relay attack succeeds by
+        options:
+          - Cracking AES encryption
+          - Relaying a coerced victim's authentication to a different server to act as that victim
+          - Guessing the password 1000 times
+          - Disabling the network card
+        answer: 1
+        explanation: The attacker forwards the victim's authentication to another server, authenticating as them.
+      - prompt: A strong structural defence against NTLM relay is
+        options:
+          - Longer passwords only
+          - Enforcing SMB signing and LDAP channel binding so relayed authentication is rejected
+          - Turning off logging
+          - Giving all accounts admin rights
+        answer: 1
+        explanation: Signing and channel binding cause relayed authentication to be refused by the target.
+      - prompt: Attackers often coerce NTLM authentication by abusing
+        options:
+          - HTTPS certificates
+          - Legacy name-resolution protocols such as LLMNR and NBT-NS
+          - Disk encryption
+          - The Windows firewall logs
+        answer: 1
+        explanation: Poisoning LLMNR/NBT-NS tricks victims into authenticating to the attacker, enabling relay.

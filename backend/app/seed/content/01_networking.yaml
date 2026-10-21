@@ -1116,3 +1116,100 @@ lessons:
           - Inbound scans
         answer: 2
         explanation: Purely internal lateral movement never reaches the perimeter, so a perimeter sensor misses it.
+  - slug: net-dhcp-arp-attacks
+    title: DHCP, ARP and Layer 2 Attacks
+    order: 14
+    difficulty: intermediate
+    summary: Understand how DHCP and ARP work on a local network, the Layer 2 attacks that abuse them (ARP spoofing, rogue DHCP, DHCP starvation), and the switch features that defend against them.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:3.2", "secplus:4.4", "cysa:1.1"]
+    learning_objectives:
+      - Explain how DHCP assigns addresses and how ARP resolves them on a LAN
+      - Describe ARP spoofing, rogue DHCP and DHCP starvation attacks
+      - Identify switch defences such as DHCP snooping and dynamic ARP inspection
+    theory: |
+      Many attacks happen not at the perimeter but on the **local network**, at Layer 2, where two protocols that
+      assume a trusted LAN become weapons. **DHCP** hands out IP configuration: a client broadcasts a request and
+      a DHCP server replies with an address, gateway and DNS servers. **ARP** resolves an IP address to the MAC
+      address of the machine that holds it, again by broadcast, and hosts simply cache whatever answer they hear.
+      Both were designed for a cooperative local network and have no authentication, which is exactly the weakness
+      attackers exploit once they have a foothold on the LAN.
+
+      The classic attacks follow directly. **ARP spoofing** (or poisoning) is an attacker answering ARP requests
+      with its own MAC, so victims send traffic meant for the gateway or a peer to the attacker instead, enabling
+      a man-in-the-middle position to read or alter traffic. **Rogue DHCP** is an attacker running an
+      unauthorised DHCP server that answers faster than the real one, handing victims a malicious gateway or DNS
+      so their traffic is steered through the attacker. **DHCP starvation** floods the real server with requests
+      to exhaust its address pool, often as a setup for a rogue server to take over. None of these needs to defeat
+      encryption; they exploit the trust built into Layer 2, and because they are local and quiet they are easy to
+      miss without the right controls.
+
+      The defences live on the **switch**. **DHCP snooping** lets the switch learn which ports are allowed to send
+      DHCP server replies (the trusted uplink to the real server) and drop server replies from any other port,
+      killing rogue DHCP. **Dynamic ARP inspection** builds on the snooping table to validate ARP messages and
+      drop spoofed ones. **Port security** limits how many MAC addresses a port may learn, blunting starvation and
+      MAC flooding. For the analyst, the signals of these attacks are duplicate-IP or changed-MAC warnings,
+      gateway MAC addresses that suddenly change, and DHCP offers from unexpected sources, so understanding the
+      normal Layer 2 behaviour of a segment is what makes an attack on it visible. The broader lesson is that a
+      secure network hardens the access layer, not just the edge.
+    examples:
+      - title: The Layer 2 attacks
+        body: |
+          ARP spoofing   -> attacker answers ARP with its MAC -> MITM (victims send via attacker)
+          rogue DHCP     -> attacker's DHCP answers first -> malicious gateway/DNS
+          DHCP starvation-> flood requests, exhaust pool -> sets up rogue takeover
+          all exploit unauthenticated, trusting Layer 2.
+      - title: Switch defences
+        body: |
+          DHCP snooping          -> only trusted port may send DHCP server replies -> kills rogue DHCP
+          dynamic ARP inspection -> validate ARP against snooping table -> drops spoofed ARP
+          port security          -> limit MACs per port -> blunts starvation/flooding.
+    exercise:
+      title: Analyse and defend a Layer 2 segment
+      environment: A described LAN segment with sample symptoms or a packet summary (or a scenario)
+      tools: [A scenario or sample ARP/DHCP evidence, a document, a notes file]
+      steps:
+        - Explain how DHCP assigns configuration and how ARP resolves IP to MAC on a LAN.
+        - Describe ARP spoofing and how it puts an attacker in the middle of traffic.
+        - Describe rogue DHCP and DHCP starvation and how they work together.
+        - Given sample symptoms (changed gateway MAC, DHCP offer from an odd source), identify the likely attack.
+        - Recommend the switch defences that stop each attack and say what each one does.
+        - State one observable signal an analyst could monitor to catch these attacks early.
+      deliverable: A Layer 2 analysis identifying the likely attack from sample symptoms, a mapping of each attack to its switch defence, and one monitoring signal.
+    expected_outcome: >
+      You can explain DHCP and ARP on a LAN, describe ARP spoofing, rogue DHCP and DHCP starvation, and recommend
+      the switch defences (DHCP snooping, dynamic ARP inspection, port security) and signals that counter them.
+    quiz:
+      - prompt: ARP spoofing lets an attacker intercept traffic because
+        options:
+          - It breaks TLS encryption
+          - Hosts cache whatever ARP reply they hear, so a forged reply redirects traffic to the attacker
+          - It requires physical access to the server
+          - It only affects wireless
+        answer: 1
+        explanation: ARP has no authentication; hosts trust forged replies and send traffic to the attacker.
+      - prompt: A rogue DHCP server harms victims mainly by
+        options:
+          - Speeding up their connection
+          - Handing them a malicious gateway or DNS so their traffic is steered through the attacker
+          - Encrypting their disks
+          - Blocking all DHCP
+        answer: 1
+        explanation: A rogue DHCP server supplies attacker-controlled gateway and DNS settings.
+      - prompt: DHCP snooping defends a network by
+        options:
+          - Encrypting DHCP
+          - Allowing DHCP server replies only from trusted ports and dropping them from others
+          - Disabling ARP
+          - Assigning static IPs only
+        answer: 1
+        explanation: Snooping permits server replies only from the trusted uplink, stopping rogue DHCP servers.
+      - prompt: Dynamic ARP inspection relies on
+        options:
+          - A longer password
+          - The DHCP snooping binding table to validate ARP messages and drop spoofed ones
+          - Turning off the switch
+          - Encrypting ARP
+        answer: 1
+        explanation: Dynamic ARP inspection checks ARP against the snooping table and discards forged entries.

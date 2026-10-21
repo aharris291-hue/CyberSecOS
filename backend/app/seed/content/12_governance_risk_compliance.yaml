@@ -1212,3 +1212,103 @@ lessons:
           - Removing all controls
         answer: 1
         explanation: ISO 27001 certification provides externally recognised evidence of a managed programme.
+  - slug: grc-pci-dss
+    title: PCI DSS and Payment Card Security
+    order: 14
+    difficulty: beginner
+    summary: Understand the PCI DSS standard for protecting payment card data, who it applies to, its core requirements, and how scoping and network segmentation reduce the compliance burden.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:5.1", "secplus:5.4", "sc900:4"]
+    learning_objectives:
+      - Explain what PCI DSS is, who it applies to and why it exists
+      - Describe the core goals and requirements of the standard
+      - Explain how scoping and segmentation reduce the compliance burden
+    theory: |
+      **PCI DSS** (the Payment Card Industry Data Security Standard) is a security standard created by the major
+      card brands to protect **cardholder data**, and unlike a law it is a contractual requirement: any
+      organisation that stores, processes or transmits payment card data must comply as a condition of handling
+      cards. This makes it one of the most widely encountered compliance regimes, reaching far beyond banks to any
+      merchant or service provider that touches card numbers. It exists because payment card data is directly
+      monetisable and was, historically, routinely stolen from poorly secured merchants, so the standard sets a
+      concrete baseline of controls specifically around that data.
+
+      The standard is organised around a set of **goals and requirements** that read as a sensible security
+      programme focused on cardholder data: build and maintain a secure network (firewalls, no vendor default
+      passwords), protect stored cardholder data (encryption, and not storing what you do not need, especially
+      never the full magnetic-stripe or the security code after authorisation), maintain a vulnerability-management
+      programme (anti-malware, secure development), implement strong access control (least privilege, unique ids,
+      physical access limits), regularly monitor and test networks (logging, vulnerability scans, penetration
+      tests), and maintain an information security policy. The recurring themes, encrypt the sensitive data, limit
+      who can reach it, log and test, map onto everything else in security, applied with particular rigour to the
+      card data environment.
+
+      The most important practical concept for reducing effort is **scope**. PCI DSS applies to the **cardholder
+      data environment**, the systems that store, process or transmit card data plus anything connected to them,
+      and the burden grows with how large that environment is. **Network segmentation** is therefore the key
+      lever: by isolating the systems that handle card data from the rest of the network, an organisation keeps the
+      in-scope environment small, so far fewer systems must meet the full requirements. Reducing what is stored
+      (for example by using a payment processor or tokenisation so raw card numbers never touch internal systems)
+      shrinks scope further. Validation ranges from a self-assessment questionnaire for small merchants to a formal
+      audit by a Qualified Security Assessor for large ones. For the analyst, PCI DSS is both a common driver of
+      concrete controls (segmentation, logging, scanning, access control) and a reminder that compliance effort is
+      managed largely by controlling scope.
+    examples:
+      - title: What PCI DSS is
+        body: |
+          card-brand contractual standard (not a law) protecting cardholder data
+          applies to ANY org that stores/processes/transmits card data (merchants + service providers)
+          exists because card data is directly monetisable and was routinely stolen.
+      - title: Scope is the lever
+        body: |
+          applies to the cardholder data environment (CDE) + anything connected to it
+          segment the CDE from the rest -> fewer systems in scope -> far less to secure and prove
+          store less (processor/tokenisation so raw card numbers never touch internal systems) -> smaller scope.
+    exercise:
+      title: Plan PCI DSS compliance for a merchant
+      environment: A described merchant that handles payment cards (or a scenario)
+      tools: [A scenario, a PCI scoping notes file, a document]
+      steps:
+        - Explain what PCI DSS is, who must comply, and why it is contractual rather than legal.
+        - Summarise the core goals of the standard in plain language.
+        - Identify which systems would fall into the cardholder data environment for the described merchant.
+        - Explain how network segmentation reduces the number of in-scope systems.
+        - Recommend one way to reduce what card data is stored and how it shrinks scope.
+        - State how validation would differ between a small merchant and a large one.
+      deliverable: A PCI DSS plan defining the cardholder data environment, a segmentation approach to reduce scope, a data-minimisation measure, and the appropriate validation path.
+    expected_outcome: >
+      You can explain what PCI DSS is and who it applies to, summarise its core requirements, and show how scoping,
+      segmentation and data minimisation reduce the compliance burden for a merchant.
+    quiz:
+      - prompt: PCI DSS is best described as
+        options:
+          - A government law applying to all companies
+          - A card-brand contractual standard that applies to any organisation handling payment card data
+          - An optional guideline no one follows
+          - A networking protocol
+        answer: 1
+        explanation: PCI DSS is a contractual requirement from the card brands for anyone handling card data.
+      - prompt: The single most effective way to reduce PCI DSS scope is
+        options:
+          - Buying more servers
+          - Segmenting the cardholder data environment from the rest of the network so fewer systems are in scope
+          - Storing more card data
+          - Turning off logging
+        answer: 1
+        explanation: Segmentation keeps the in-scope environment small, reducing what must meet the full requirements.
+      - prompt: A core PCI DSS requirement around stored data is to
+        options:
+          - Store full card details forever
+          - Protect stored cardholder data and not store what is not needed, never the security code after authorisation
+          - Share card numbers freely
+          - Disable encryption
+        answer: 1
+        explanation: The standard requires protecting stored data and minimising what is retained.
+      - prompt: Using a payment processor or tokenisation helps compliance by
+        options:
+          - Increasing the amount of card data stored
+          - Keeping raw card numbers off internal systems, shrinking the cardholder data environment
+          - Removing the need for any security
+          - Making the network slower
+        answer: 1
+        explanation: If raw card data never touches internal systems, the in-scope environment shrinks.

@@ -1203,3 +1203,102 @@ lessons:
           - Maintaining the physical network backbone
         answer: 1
         explanation: Identity, data protection and configuration are always the customer's, whatever the model.
+  - slug: cloud-iac-security
+    title: Securing Infrastructure as Code
+    order: 14
+    difficulty: intermediate
+    summary: Understand how cloud infrastructure defined as code (Terraform, CloudFormation) changes the security model, and how scanning, policy as code and pipeline controls catch misconfigurations before deployment.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:3.1", "sc900:4", "cysa:1.1"]
+    learning_objectives:
+      - Explain how infrastructure as code changes where cloud security is enforced
+      - Describe scanning IaC templates for misconfigurations
+      - Apply policy as code and pipeline controls to prevent insecure deployments
+    theory: |
+      Modern cloud environments are rarely clicked together by hand; they are defined as **infrastructure as code
+      (IaC)** using tools like Terraform, CloudFormation or Bicep, where templates describe the desired resources
+      and a pipeline provisions them. This changes the security model profoundly and mostly for the better: the
+      exact configuration of every resource is written down, version-controlled, reviewed and repeatable, so there
+      is a single source of truth for how the environment should look. It also shifts the point where security
+      must be enforced: a misconfiguration like a public storage bucket or an over-permissive security group now
+      originates in a template, which means it can be **caught before it is ever deployed**, rather than
+      discovered live after an attacker finds it.
+
+      The first control is **IaC scanning**: tools statically analyse templates for insecure settings against a
+      library of rules, flagging public exposure, missing encryption, over-broad IAM permissions, disabled logging
+      and similar issues at the pull-request stage. Because the template is just text, this is fast and happens
+      before any resource exists, making it the cheapest possible place to fix a cloud misconfiguration. The second
+      control is **policy as code**: expressing organisational rules (for example "no resource may be public,"
+      "all storage must be encrypted," "only these regions") as machine-enforced policies that evaluate planned
+      changes and block non-compliant ones. This turns security requirements from documents people might read into
+      gates the pipeline enforces automatically on every change.
+
+      These fit into a secured **pipeline**. IaC should flow through version control with mandatory review, scanning
+      and policy checks as required pipeline stages, and least-privilege credentials for the deployment process
+      itself (the pipeline's own access is a prime target). Drift detection catches resources changed outside the
+      code, re-asserting the template as the source of truth. The payoff is that security moves left into the same
+      workflow developers already use and is enforced consistently at scale, instead of relying on post-deployment
+      posture scanning to find mistakes after the fact, though posture management still backs it up for what slips
+      through or is created outside IaC. For the analyst and engineer, the lesson is that in an IaC world the
+      highest-leverage place to secure the cloud is the template and the pipeline: fixing a rule there prevents a
+      class of misconfiguration across every future deployment, which no amount of after-the-fact scanning can
+      match.
+    examples:
+      - title: Security shifts to the template
+        body: |
+          IaC (Terraform/CloudFormation): resources defined as versioned, reviewed, repeatable code
+          a public bucket now originates in a TEMPLATE -> catch it before deploy, not after an attacker finds it.
+      - title: Scan + policy as code in the pipeline
+        body: |
+          IaC scanning: static analysis of templates for public exposure, missing encryption, broad IAM (at PR time)
+          policy as code: "no public resource", "must encrypt", "only these regions" -> pipeline BLOCKS non-compliant
+          plus: least-privilege deploy credentials, drift detection; posture mgmt backs up what slips through.
+    exercise:
+      title: Secure an infrastructure-as-code workflow
+      environment: A described cloud team using IaC and a sample template (or a scenario)
+      tools: [A scenario or sample IaC template, a document, a notes file]
+      steps:
+        - Explain how defining infrastructure as code changes where a cloud misconfiguration can be caught.
+        - Review a sample template and identify at least one insecure setting (public exposure, missing encryption, broad IAM).
+        - Explain how IaC scanning at pull-request time catches such issues cheaply.
+        - Write one policy-as-code rule the pipeline should enforce and the risk it removes.
+        - Describe the pipeline controls that protect the deployment process itself.
+        - Explain the role of drift detection and why posture management still matters alongside IaC security.
+      deliverable: A secured IaC workflow identifying an insecure template setting, a scanning stage, one policy-as-code rule, pipeline-credential controls, and the role of drift detection and posture management.
+    expected_outcome: >
+      You can explain how infrastructure as code shifts cloud security to the template and pipeline, scan templates
+      for misconfigurations, and apply policy as code and pipeline controls to prevent insecure deployments.
+    quiz:
+      - prompt: Infrastructure as code improves cloud security mainly because
+        options:
+          - It removes the need for any review
+          - A misconfiguration now originates in a versioned template, so it can be caught before deployment
+          - It encrypts all traffic
+          - It deletes logs
+        answer: 1
+        explanation: Defining resources as code lets misconfigurations be found and fixed before anything is deployed.
+      - prompt: Policy as code enforces security by
+        options:
+          - Writing rules in a document people might read
+          - Expressing rules as machine-enforced policies that evaluate planned changes and block non-compliant ones
+          - Scanning hosts after deployment only
+          - Disabling the pipeline
+        answer: 1
+        explanation: Policy as code turns requirements into automatic pipeline gates on every change.
+      - prompt: IaC scanning is the cheapest place to fix a cloud misconfiguration because it
+        options:
+          - Runs only in production
+          - Statically analyses the template before any resource exists
+          - Requires an attacker to find the issue first
+          - Needs the resource deployed
+        answer: 1
+        explanation: Scanning text templates pre-deployment fixes issues before resources are ever created.
+      - prompt: Drift detection in an IaC workflow
+        options:
+          - Encrypts the state file
+          - Catches resources changed outside the code, re-asserting the template as the source of truth
+          - Replaces policy as code
+          - Disables scanning
+        answer: 1
+        explanation: Drift detection flags out-of-band changes so the code remains the authoritative definition.

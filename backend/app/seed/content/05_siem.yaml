@@ -1232,3 +1232,101 @@ lessons:
           - Analysts work too efficiently
         answer: 1
         explanation: Without a coverage view, detections pile up on easy techniques and leave blind spots.
+  - slug: siem-log-source-onboarding
+    title: Onboarding and Validating Log Sources
+    order: 14
+    difficulty: intermediate
+    summary: Learn the engineering of getting a new log source into the SIEM correctly, covering collection, parsing, normalisation, timestamps and time zones, and validating that the data is complete and usable.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.4", "sc200:1", "cysa:4.1"]
+    learning_objectives:
+      - Describe the steps to onboard a new log source into a SIEM
+      - Explain why parsing, normalisation and correct timestamps matter
+      - Validate that an onboarded source is complete and usable for detection
+    theory: |
+      A SIEM is only as good as the data in it, and getting a new **log source** in correctly is unglamorous
+      engineering that determines whether later detection works at all. Onboarding starts with **collection**:
+      deciding how the data gets in (an agent, syslog, an API pull, a cloud event stream), ensuring the transport
+      is reliable and secure, and confirming the source is actually sending everything it should. A source that is
+      half-configured, dropping events under load, or sending only a subset of event types will quietly create
+      blind spots that no detection rule can overcome, so verifying completeness at the source is the first job.
+
+      Next comes making the data **usable**. Raw logs arrive in many formats, so **parsing** extracts the fields
+      (user, host, source IP, action) from each event, and **normalisation** maps them to a common schema so a
+      field means the same thing across sources, letting one rule or search work over many log types. Getting
+      **timestamps and time zones** right is critical and often botched: if a source logs in local time or with a
+      wrong clock, its events will sort incorrectly against others and wreck timeline analysis, so every source
+      should be normalised to a single reference (usually UTC) and its clock kept in sync. Enrichment, adding
+      context like geolocation or asset criticality, can be layered on once the basics are right. Each of these
+      steps is where silent data-quality problems creep in.
+
+      Finally, the source must be **validated** before anyone trusts it. Validation means generating known
+      activity and confirming it appears in the SIEM parsed correctly, checking that expected fields are populated
+      and not landing in a catch-all, confirming event volume matches expectations (neither suspiciously low nor
+      duplicated), and confirming timestamps line up with reality. Only after validation should detections be
+      built on the source, and ongoing **health monitoring** should alert if the source stops sending or its
+      format changes after a vendor update, which is a common cause of detections silently going dark. For the
+      analyst, the practical lesson is to never assume a log source is complete and correct: a surprising gap in
+      an investigation is often not an attacker being clever but a source that was never fully onboarded or quietly
+      broke, so knowing the state and coverage of your sources is part of reading their data.
+    examples:
+      - title: The onboarding steps
+        body: |
+          collect (agent/syslog/API/stream, reliable + complete)
+          -> parse (extract fields) -> normalise (common schema) -> fix timestamps/time zones (UTC)
+          -> enrich (geo, asset criticality) -> VALIDATE -> then build detections.
+      - title: Where it silently breaks
+        body: |
+          source drops events under load -> blind spot no rule can fix
+          wrong time zone -> events misorder -> timeline analysis wrecked
+          vendor format change -> parsing fails -> detections go dark
+          -> validate on onboarding AND monitor source health continuously.
+    exercise:
+      title: Onboard and validate a new log source
+      environment: A described new log source to bring into a SIEM (or a scenario with sample raw events)
+      tools: [A scenario or sample raw logs, a document, a notes file]
+      steps:
+        - Choose a collection method for the described source and say why it is reliable and secure.
+        - Parse a sample raw event into its key fields (user, host, source IP, action).
+        - Map those fields to a common normalised schema and explain the benefit.
+        - Identify a timestamp or time-zone issue in the sample and state how you would normalise it.
+        - Describe how you would validate the source (generate known activity, check fields, volume and times).
+        - Propose a health-monitoring check that would catch the source going dark or changing format.
+      deliverable: An onboarding plan for one source, covering collection method, a parsed and normalised sample event, a timestamp fix, a validation procedure, and a health-monitoring check.
+    expected_outcome: >
+      You can onboard a log source into a SIEM through collection, parsing, normalisation and timestamp handling,
+      validate that it is complete and correct, and monitor its health so detections do not silently go dark.
+    quiz:
+      - prompt: Normalising parsed fields to a common schema is valuable because it
+        options:
+          - Deletes old logs
+          - Makes a field mean the same thing across sources, so one rule or search works over many log types
+          - Encrypts the data
+          - Slows down the SIEM
+        answer: 1
+        explanation: A common schema lets detections and searches span many source types consistently.
+      - prompt: Getting time zones wrong on a log source mainly harms
+        options:
+          - Disk space
+          - Timeline analysis, because events sort incorrectly against other sources
+          - The network speed
+          - Password strength
+        answer: 1
+        explanation: Misaligned clocks or zones misorder events and break cross-source timelines.
+      - prompt: A source that drops events under load creates
+        options:
+          - Faster detection
+          - A silent blind spot that no detection rule can overcome
+          - Better compression
+          - Stronger encryption
+        answer: 1
+        explanation: Missing events are invisible gaps that detections built on the source cannot see past.
+      - prompt: Before building detections on a newly onboarded source you should
+        options:
+          - Assume it is correct
+          - Validate it by generating known activity and confirming it is parsed, complete and correctly timed
+          - Delete the raw logs
+          - Disable health monitoring
+        answer: 1
+        explanation: Validation confirms the source is complete and correct so detections can be trusted.
