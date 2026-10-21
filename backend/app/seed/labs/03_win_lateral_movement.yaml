@@ -1,0 +1,123 @@
+slug: lab-win-lateral-movement
+lesson: win-lateral-movement
+title: Trace lateral movement through Windows Security logs
+pass_mark: 80
+scenario: |
+  On a quiet morning the EDR flagged a remote service install on the database server **SQL-02**.
+  You have a CSV export of the relevant Security and System events from the servers and
+  workstations involved: 4624 (successful logon), 4625 (failed logon), 4634 (logoff) and 7045
+  (a service was installed).
+
+  Find the account and machine the intruder worked from, every server they reached, and the
+  tool they used. One service install in the export is routine patching; rule it out rather
+  than report it.
+artifacts:
+- name: security_events.csv
+  kind: csv
+  description: Windows Security (4624/4625/4634) and System (7045) events, UTC.
+  content: |
+    TimeCreated,Computer,EventID,Account,LogonType,SourceIp,ServiceName,ImagePath
+    2026-04-02T07:57:21Z,FS-01,4624,a.berg,3,10.20.1.38,-,-
+    2026-04-02T08:00:50Z,FS-01,4624,a.berg,3,10.20.1.38,-,-
+    2026-04-02T08:06:07Z,FS-01,4624,m.khan,3,10.20.1.10,-,-
+    2026-04-02T08:10:27Z,FS-01,4624,p.wong,3,10.20.1.24,-,-
+    2026-04-02T08:12:25Z,FS-01,4624,r.singh,3,10.20.1.31,-,-
+    2026-04-02T08:17:26Z,FS-01,4624,r.singh,3,10.20.1.31,-,-
+    2026-04-02T08:19:03Z,FS-01,4624,l.ortiz,3,10.20.1.17,-,-
+    2026-04-02T08:23:50Z,FS-01,4624,r.singh,3,10.20.1.31,-,-
+    2026-04-02T08:29:53Z,WKS-010,4624,m.khan,2,-,-,-
+    2026-04-02T08:35:15Z,WKS-010,4624,m.khan,2,-,-,-
+    2026-04-02T08:35:50Z,FS-01,4624,p.wong,3,10.20.1.24,-,-
+    2026-04-02T08:42:18Z,FS-01,4624,r.singh,3,10.20.1.31,-,-
+    2026-04-02T08:46:16Z,FS-01,4624,r.singh,3,10.20.1.31,-,-
+    2026-04-02T08:51:31Z,FS-01,4634,r.singh,3,-,-,-
+    2026-04-02T08:52:59Z,WKS-024,4624,p.wong,2,-,-,-
+    2026-04-02T08:54:28Z,WKS-031,4624,r.singh,2,-,-,-
+    2026-04-02T08:57:00Z,FS-01,7045,LocalSystem,-,-,UpdateOrchestratorHelper,C:\Program Files\Contoso Patch\uoh.exe
+    2026-04-02T09:00:32Z,FS-01,4624,r.singh,3,10.20.1.31,-,-
+    2026-04-02T09:03:26Z,FS-01,4624,r.singh,3,10.20.1.31,-,-
+    2026-04-02T09:07:03Z,FS-01,4624,a.berg,3,10.20.1.38,-,-
+    2026-04-02T09:12:22Z,FS-01,4624,r.singh,3,10.20.1.31,-,-
+    2026-04-02T09:15:34Z,WKS-010,4625,m.khan,2,-,-,-
+    2026-04-02T09:21:04Z,FS-01,4624,l.ortiz,3,10.20.1.17,-,-
+    2026-04-02T09:24:11Z,FS-01,4634,a.berg,3,-,-,-
+    2026-04-02T09:29:22Z,FS-01,4624,m.khan,3,10.20.1.10,-,-
+    2026-04-02T09:31:30Z,WKS-038,4624,a.berg,2,-,-,-
+    2026-04-02T09:32:53Z,FS-01,4624,m.khan,3,10.20.1.10,-,-
+    2026-04-02T10:08:45Z,DC-01,4625,svc_backup,3,10.20.1.42,-,-
+    2026-04-02T10:09:20Z,DC-01,4625,svc_backup,3,10.20.1.42,-,-
+    2026-04-02T10:09:30Z,DC-01,4625,svc_backup,3,10.20.1.42,-,-
+    2026-04-02T10:09:57Z,FS-01,4624,svc_backup,3,10.20.1.42,-,-
+    2026-04-02T10:10:06Z,FS-01,7045,LocalSystem,-,-,PSEXESVC,%SystemRoot%\PSEXESVC.exe
+    2026-04-02T10:10:37Z,SQL-02,4625,svc_backup,3,10.20.1.42,-,-
+    2026-04-02T10:10:51Z,SQL-02,4624,svc_backup,3,10.20.1.42,-,-
+    2026-04-02T10:10:57Z,SQL-02,7045,LocalSystem,-,-,PSEXESVC,%SystemRoot%\PSEXESVC.exe
+    2026-04-02T10:11:20Z,DC-01,4624,svc_backup,3,10.20.1.42,-,-
+    2026-04-02T10:11:52Z,DC-01,7045,LocalSystem,-,-,PSEXESVC,%SystemRoot%\PSEXESVC.exe
+tasks:
+- prompt: Which account did the intruder use to log on to the servers?
+  type: text
+  accepted:
+  - svc_backup
+  hint: Look at the network (type 3) logons that land on each server seconds before a suspicious 7045.
+  explanation: svc_backup, a service account, made network logons to three servers from a workstation, which a backup
+    service account should never do. Its password needs resetting and its use reviewing.
+  verify:
+    artifact: security_events.csv
+    op: set
+    pattern: ',4624,([^,]+),3,10\.20\.1\.42,'
+- prompt: From which IP address did the lateral movement come?
+  type: text
+  accepted:
+  - 10.20.1.42
+  hint: The SourceIp column of those svc_backup network logons.
+  explanation: Every svc_backup logon came from 10.20.1.42, which belongs to none of the regular users' workstations.
+    That machine is the likely first foothold and should be isolated.
+  verify:
+    artifact: security_events.csv
+    op: set
+    pattern: ',4624,svc_backup,3,([^,]+),'
+- prompt: Which computers had the attacker's remote service installed? List them separated by commas.
+  type: set
+  accepted:
+  - FS-01, SQL-02, DC-01
+  hint: Filter EventID 7045 and leave out the install that belongs to the patching tool.
+  explanation: PSEXESVC was installed on FS-01, SQL-02 and DC-01, each right after a svc_backup network logon. Reaching
+    the domain controller makes this a high-severity incident.
+  verify:
+    artifact: security_events.csv
+    op: set
+    pattern: ^[^,]+,([^,]+),7045,[^,]*,[^,]*,[^,]*,PSEXESVC,
+- prompt: What is the name of the service the attacker installed?
+  type: text
+  accepted:
+  - PSEXESVC
+  hint: The ServiceName column of the suspicious 7045 events.
+  explanation: PSEXESVC is the service that Sysinternals PsExec (and tools copying it) drops on the target to run
+    commands remotely. Admins use it too, so the account and source make the difference.
+  verify:
+    artifact: security_events.csv
+    op: top
+    pattern: ',7045,[^,]*,[^,]*,[^,]*,([^,]+),'
+- prompt: How many failed logons (4625) came from the attacker's IP address?
+  type: number
+  accepted:
+  - '4'
+  hint: Count the 4625 rows whose SourceIp is the attacker's address.
+  explanation: The attacker failed three times against DC-01 before moving on and once on SQL-02. A handful of failures
+    from one source across several servers, then success, is typical of an intruder trying a stolen password.
+  verify:
+    artifact: security_events.csv
+    op: count
+    pattern: ',4625,[^,]*,3,10\.20\.1\.42,'
+- prompt: What does logon type 3 tell you about these logons?
+  type: choice
+  options:
+  - Someone sat at the server's keyboard
+  - The logon came over the network, for example to a file share or a remote service
+  - The logon used Remote Desktop
+  - A scheduled task ran as the account
+  answer: 1
+  hint: Type 2 is interactive, type 10 is Remote Desktop.
+  explanation: 'Type 3 is a network logon: SMB, a remote service such as PsExec, or other network authentication.
+    It is why this pattern is the classic lateral-movement footprint.'

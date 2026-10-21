@@ -1,0 +1,94 @@
+slug: lab-vm-prioritisation
+lesson: vm-prioritisation-reporting
+title: Prioritise a scan export with CVSS, EPSS and KEV
+pass_mark: 80
+scenario: |
+  This week's scan export has 17 findings and the patching team can only take a few today. The
+  CISO's policy is written down, so apply it exactly:
+
+  - **P1 (fix within 48 hours):** in CISA's Known Exploited Vulnerabilities catalog (`kev = yes`)
+    **and** on an internet-facing host.
+  - **P2 (fix within 7 days):** in KEV on an internal host, **or** EPSS of 0.50 or higher.
+  - **P3 (next patch cycle):** everything else, whatever its CVSS score.
+
+  The CSV has one row per finding. A spreadsheet or `awk -F,` both work.
+artifacts:
+- name: findings.csv
+  kind: csv
+  description: Scan findings with CVSS, EPSS and KEV enrichment.
+  content: |
+    host,exposure,cve,cvss,epss,kev,asset_criticality
+    web-01,internet,CVE-2024-3400,10.0,0.96,yes,high
+    web-01,internet,CVE-2023-44487,7.5,0.82,yes,high
+    web-01,internet,CVE-2024-6387,8.1,0.38,no,high
+    web-02,internet,CVE-2023-44487,7.5,0.82,yes,high
+    web-02,internet,CVE-2024-6387,8.1,0.38,no,high
+    vpn-gw,internet,CVE-2024-21762,9.8,0.94,yes,critical
+    app-01,internal,CVE-2024-6387,8.1,0.38,no,high
+    app-01,internal,CVE-2023-38545,9.8,0.02,no,medium
+    app-02,internal,CVE-2024-6387,8.1,0.38,no,medium
+    app-02,internal,CVE-2022-22965,9.8,0.97,yes,medium
+    db-01,internal,CVE-2023-38545,9.8,0.02,no,critical
+    db-01,internal,CVE-2024-6387,8.1,0.38,no,critical
+    hr-ws-14,internal,CVE-2023-4863,8.8,0.45,yes,low
+    hr-ws-14,internal,CVE-2024-6387,8.1,0.38,no,low
+    print-01,internal,CVE-2021-34527,8.8,0.94,yes,low
+    dev-07,internal,CVE-2023-38545,9.8,0.02,no,low
+    dev-07,internal,CVE-2024-6387,8.1,0.38,no,low
+tasks:
+- prompt: How many findings are in the KEV catalog?
+  type: number
+  accepted:
+  - '7'
+  hint: Count rows where the kev column is yes.
+  explanation: Seven findings are known to be exploited in the wild. KEV is the strongest single signal that a vulnerability
+    matters right now.
+  verify:
+    artifact: findings.csv
+    op: count
+    pattern: ',yes,[^,]+$'
+- prompt: How many findings are P1 under the policy?
+  type: number
+  accepted:
+  - '4'
+  hint: 'Both conditions must hold: kev is yes and exposure is internet.'
+  explanation: 'Four: CVE-2024-3400 and CVE-2023-44487 on web-01, CVE-2023-44487 on web-02, and CVE-2024-21762 on
+    vpn-gw.'
+  verify:
+    artifact: findings.csv
+    op: count
+    pattern: ^[^,]+,internet,[^,]+,[^,]+,[^,]+,yes,
+- prompt: Which hosts have at least one P1 finding? List them separated by commas.
+  type: set
+  accepted:
+  - web-01, web-02, vpn-gw
+  hint: The host column of the P1 rows.
+  explanation: 'web-01, web-02 and vpn-gw are the internet-facing hosts with known-exploited flaws. The VPN gateway
+    is the most urgent of all: critical asset, CVSS 9.8, EPSS 0.94.'
+  verify:
+    artifact: findings.csv
+    op: set
+    pattern: ^([^,]+),internet,[^,]+,[^,]+,[^,]+,yes,
+- prompt: One patch would clear the most findings. Which CVE appears on the most hosts?
+  type: text
+  accepted:
+  - CVE-2024-6387
+  hint: Count rows per CVE.
+  explanation: CVE-2024-6387 (the OpenSSH 'regreSSHion' flaw) is on seven hosts. It is not P1, but one OpenSSH update
+    across the estate removes the largest number of findings, which is useful for planning.
+  verify:
+    artifact: findings.csv
+    op: top
+    pattern: ^[^,]+,[^,]+,([^,]+),
+- prompt: 'db-01 has CVE-2023-38545 with CVSS 9.8 on a critical asset. Under the policy it is:'
+  type: choice
+  options:
+  - P1, because CVSS 9.8 is critical
+  - P2, because the asset is critical
+  - P3, because it is not in KEV and its EPSS is far below 0.50
+  - Excluded, because internal hosts are not prioritised
+  answer: 2
+  hint: The policy does not mention CVSS or asset criticality at all.
+  explanation: 'It is P3: not known exploited and an EPSS of 0.02 means exploitation in the next 30 days is unlikely.
+    A high CVSS score describes severity if exploited, not likelihood, which is exactly why risk-based programmes
+    add EPSS and KEV.'

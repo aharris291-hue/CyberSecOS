@@ -132,6 +132,8 @@ class LessonDetail(LessonSummary):
     progress: LessonProgressOut
     previous_lesson_id: int | None = None
     next_lesson_id: int | None = None
+    # True when the lab is a graded lab (GET /api/lessons/{id}/lab) instead of a self-marked one.
+    has_graded_lab: bool = False
 
 
 class CourseSummary(BaseModel):
@@ -170,6 +172,77 @@ class QuizResultOut(BaseModel):
     pass_mark: int
     results: list[QuestionResultOut]
     lesson_status: str
+
+
+# --- Graded labs -----------------------------------------------------------
+
+
+class LabArtifactOut(BaseModel):
+    name: str
+    kind: str
+    description: str
+    content: str
+
+
+class LabTaskOut(BaseModel):
+    """A lab task as shown to the learner, without its answer key."""
+
+    index: int
+    prompt: str
+    type: str
+    options: list[str]
+
+
+class LabStatusOut(BaseModel):
+    attempts: int = 0
+    best_score: int | None = None
+    passed: bool = False
+
+
+class LabOut(BaseModel):
+    id: int
+    slug: str
+    title: str
+    lesson_id: int
+    scenario: str
+    pass_mark: int
+    artifacts: list[LabArtifactOut]
+    tasks: list[LabTaskOut]
+    status: LabStatusOut
+
+
+class LabSubmission(BaseModel):
+    answers: list[str | None] = Field(max_length=50)
+
+
+class LabTaskResultOut(BaseModel):
+    index: int
+    is_correct: bool
+    feedback: str
+
+
+class LabResultOut(BaseModel):
+    score: int
+    correct: int
+    total: int
+    passed: bool
+    pass_mark: int
+    results: list[LabTaskResultOut]
+    lab_completed: bool
+    lesson_status: str
+
+
+class LabSummaryOut(BaseModel):
+    id: int
+    slug: str
+    title: str
+    lesson_id: int
+    lesson_title: str
+    course_slug: str
+    course_title: str
+    task_count: int
+    pass_mark: int
+    status: LabStatusOut
 
 
 # --- Progress --------------------------------------------------------------

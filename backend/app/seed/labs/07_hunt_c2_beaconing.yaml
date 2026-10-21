@@ -1,0 +1,135 @@
+slug: lab-hunt-c2-beaconing
+lesson: hunt-c2-beaconing
+title: Hunt for command-and-control beaconing
+pass_mark: 80
+scenario: |
+  Hypothesis: an implant on the user subnet is calling home on a timer. You have 95 minutes of
+  Zeek-style connection metadata for five workstations (tab-separated; `ts` is Unix epoch
+  seconds). Browsing is bursty and irregular; malware check-ins are regular and the same size
+  each time.
+
+  Find the beacon, measure it, and describe why it stands out. Tools such as
+  `awk -F'\t'`, `sort` and `uniq -c` or a spreadsheet are all you need.
+artifacts:
+- name: conn.log
+  kind: log
+  description: Outbound TLS connection metadata (Zeek conn/ssl fields), tab-separated.
+  content: "#fields\tts\tid.orig_h\tserver_name\tid.resp_h\tid.resp_p\torig_bytes\tresp_bytes\n1782896401\t10.1.4.18\t\
+    cdn.jsdelivr.net\t151.101.1.229\t443\t35767\t108393\n1782896437\t10.1.4.23\tcdn-metrics.example\t203.0.113.150\t\
+    443\t313\t226\n1782896734\t10.1.4.23\tcdn-metrics.example\t203.0.113.150\t443\t314\t230\n1782896882\t10.1.4.23\t\
+    login.microsoftonline.com\t20.190.151.7\t443\t9076\t776230\n1782896914\t10.1.4.11\tcdn.jsdelivr.net\t151.101.1.229\t\
+    443\t14097\t522528\n1782897036\t10.1.4.23\tcdn-metrics.example\t203.0.113.150\t443\t308\t225\n1782897059\t10.1.4.11\t\
+    login.microsoftonline.com\t20.190.151.7\t443\t15466\t494914\n1782897079\t10.1.4.18\tlogin.microsoftonline.com\t\
+    20.190.151.7\t443\t15801\t692504\n1782897103\t10.1.4.11\tlogin.microsoftonline.com\t20.190.151.7\t443\t23054\t\
+    778314\n1782897145\t10.1.4.23\tteams.microsoft.com\t52.113.194.132\t443\t34573\t386512\n1782897269\t10.1.4.11\t\
+    cdn.jsdelivr.net\t151.101.1.229\t443\t16885\t202599\n1782897300\t10.1.4.52\tnews.example\t198.51.100.33\t443\t\
+    4045\t109352\n1782897336\t10.1.4.23\tcdn-metrics.example\t203.0.113.150\t443\t316\t225\n1782897385\t10.1.4.11\t\
+    cdn.jsdelivr.net\t151.101.1.229\t443\t21963\t717476\n1782897428\t10.1.4.52\tteams.microsoft.com\t52.113.194.132\t\
+    443\t4138\t480825\n1782897440\t10.1.4.18\twww.contoso.example\t192.0.2.10\t443\t39319\t489958\n1782897473\t\
+    10.1.4.11\twww.contoso.example\t192.0.2.10\t443\t7335\t554160\n1782897473\t10.1.4.23\twww.contoso.example\t\
+    192.0.2.10\t443\t30626\t696655\n1782897521\t10.1.4.52\tupdates.vendor.example\t198.51.100.90\t443\t18846\t742710\n\
+    1782897540\t10.1.4.18\tupdates.vendor.example\t198.51.100.90\t443\t14430\t31353\n1782897627\t10.1.4.18\tlogin.microsoftonline.com\t\
+    20.190.151.7\t443\t31630\t651174\n1782897635\t10.1.4.23\tcdn-metrics.example\t203.0.113.150\t443\t313\t229\n\
+    1782897762\t10.1.4.40\tupdates.vendor.example\t198.51.100.90\t443\t36608\t293335\n1782897768\t10.1.4.18\tnews.example\t\
+    198.51.100.33\t443\t35503\t569874\n1782897872\t10.1.4.18\tteams.microsoft.com\t52.113.194.132\t443\t5964\t604326\n\
+    1782897938\t10.1.4.23\tcdn-metrics.example\t203.0.113.150\t443\t308\t229\n1782897961\t10.1.4.18\twww.contoso.example\t\
+    192.0.2.10\t443\t29476\t172187\n1782898011\t10.1.4.18\tnews.example\t198.51.100.33\t443\t32231\t656381\n1782898032\t\
+    10.1.4.18\tupdates.vendor.example\t198.51.100.90\t443\t29037\t829468\n1782898081\t10.1.4.23\tcdn.jsdelivr.net\t\
+    151.101.1.229\t443\t10207\t725588\n1782898239\t10.1.4.23\tcdn-metrics.example\t203.0.113.150\t443\t311\t225\n\
+    1782898311\t10.1.4.40\twww.contoso.example\t192.0.2.10\t443\t39208\t193200\n1782898361\t10.1.4.18\tupdates.vendor.example\t\
+    198.51.100.90\t443\t13701\t544783\n1782898428\t10.1.4.40\tupdates.vendor.example\t198.51.100.90\t443\t33139\t\
+    86495\n1782898463\t10.1.4.23\tlogin.microsoftonline.com\t20.190.151.7\t443\t33444\t254223\n1782898537\t10.1.4.23\t\
+    cdn-metrics.example\t203.0.113.150\t443\t309\t228\n1782898552\t10.1.4.11\tnews.example\t198.51.100.33\t443\t\
+    10147\t441297\n1782898568\t10.1.4.18\tupdates.vendor.example\t198.51.100.90\t443\t34438\t26217\n1782898688\t\
+    10.1.4.23\tupdates.vendor.example\t198.51.100.90\t443\t13290\t728161\n1782898837\t10.1.4.23\tcdn-metrics.example\t\
+    203.0.113.150\t443\t314\t225\n1782898859\t10.1.4.40\tcdn.jsdelivr.net\t151.101.1.229\t443\t23110\t766878\n1782899139\t\
+    10.1.4.23\tcdn-metrics.example\t203.0.113.150\t443\t311\t225\n1782899268\t10.1.4.40\tcdn.jsdelivr.net\t151.101.1.229\t\
+    443\t38604\t837601\n1782899311\t10.1.4.52\tlogin.microsoftonline.com\t20.190.151.7\t443\t8273\t519674\n1782899378\t\
+    10.1.4.11\tcdn.jsdelivr.net\t151.101.1.229\t443\t5208\t220054\n1782899436\t10.1.4.23\tcdn-metrics.example\t\
+    203.0.113.150\t443\t316\t228\n1782899560\t10.1.4.23\tteams.microsoft.com\t52.113.194.132\t443\t2078\t486122\n\
+    1782899628\t10.1.4.40\twww.contoso.example\t192.0.2.10\t443\t26843\t67271\n1782899688\t10.1.4.11\tteams.microsoft.com\t\
+    52.113.194.132\t443\t11010\t180261\n1782899737\t10.1.4.23\tcdn-metrics.example\t203.0.113.150\t443\t308\t231\n\
+    1782899802\t10.1.4.40\tnews.example\t198.51.100.33\t443\t15722\t160252\n1782900005\t10.1.4.52\tlogin.microsoftonline.com\t\
+    20.190.151.7\t443\t857\t815735\n1782900036\t10.1.4.23\tcdn-metrics.example\t203.0.113.150\t443\t309\t226\n1782900076\t\
+    10.1.4.52\tnews.example\t198.51.100.33\t443\t5397\t125800\n1782900137\t10.1.4.11\twww.contoso.example\t192.0.2.10\t\
+    443\t18290\t499128\n1782900336\t10.1.4.23\tcdn-metrics.example\t203.0.113.150\t443\t308\t229\n1782900398\t10.1.4.40\t\
+    updates.vendor.example\t198.51.100.90\t443\t32308\t329000\n1782900405\t10.1.4.11\tupdates.vendor.example\t198.51.100.90\t\
+    443\t5686\t803710\n1782900436\t10.1.4.11\tnews.example\t198.51.100.33\t443\t2430\t830494\n1782900518\t10.1.4.18\t\
+    news.example\t198.51.100.33\t443\t13389\t847234\n1782900593\t10.1.4.18\tupdates.vendor.example\t198.51.100.90\t\
+    443\t23016\t161367\n1782900639\t10.1.4.23\tcdn-metrics.example\t203.0.113.150\t443\t314\t225\n1782900646\t10.1.4.52\t\
+    cdn.jsdelivr.net\t151.101.1.229\t443\t32220\t824369\n1782900756\t10.1.4.52\tlogin.microsoftonline.com\t20.190.151.7\t\
+    443\t34059\t21613\n1782900779\t10.1.4.52\tnews.example\t198.51.100.33\t443\t37715\t336088\n1782900829\t10.1.4.52\t\
+    www.contoso.example\t192.0.2.10\t443\t20816\t589472\n1782900849\t10.1.4.52\twww.contoso.example\t192.0.2.10\t\
+    443\t20135\t676147\n1782900937\t10.1.4.23\tcdn-metrics.example\t203.0.113.150\t443\t311\t225\n1782900971\t10.1.4.23\t\
+    cdn.jsdelivr.net\t151.101.1.229\t443\t22890\t731070\n1782901134\t10.1.4.40\tteams.microsoft.com\t52.113.194.132\t\
+    443\t19251\t753438\n1782901178\t10.1.4.40\tcdn.jsdelivr.net\t151.101.1.229\t443\t33476\t139115\n1782901196\t\
+    10.1.4.23\tupdates.vendor.example\t198.51.100.90\t443\t20245\t262494\n1782901204\t10.1.4.23\tnews.example\t\
+    198.51.100.33\t443\t36274\t441366\n1782901237\t10.1.4.23\tcdn-metrics.example\t203.0.113.150\t443\t316\t231\n\
+    1782901333\t10.1.4.40\tnews.example\t198.51.100.33\t443\t8650\t122956\n1782901357\t10.1.4.40\tnews.example\t\
+    198.51.100.33\t443\t23506\t384348\n1782901399\t10.1.4.40\twww.contoso.example\t192.0.2.10\t443\t23144\t840487\n\
+    1782901430\t10.1.4.18\tupdates.vendor.example\t198.51.100.90\t443\t17131\t366264\n1782901538\t10.1.4.23\tcdn-metrics.example\t\
+    203.0.113.150\t443\t310\t227\n1782901608\t10.1.4.11\tnews.example\t198.51.100.33\t443\t26541\t487659\n1782901633\t\
+    10.1.4.23\tlogin.microsoftonline.com\t20.190.151.7\t443\t6985\t576351\n1782901668\t10.1.4.11\twww.contoso.example\t\
+    192.0.2.10\t443\t26063\t822304\n1782901772\t10.1.4.52\tlogin.microsoftonline.com\t20.190.151.7\t443\t39650\t\
+    499399\n1782901784\t10.1.4.18\tnews.example\t198.51.100.33\t443\t36556\t576919\n1782901837\t10.1.4.23\tcdn-metrics.example\t\
+    203.0.113.150\t443\t314\t226\n1782901840\t10.1.4.11\twww.contoso.example\t192.0.2.10\t443\t20890\t680563\n1782901973\t\
+    10.1.4.40\tcdn.jsdelivr.net\t151.101.1.229\t443\t21187\t490218\n1782901975\t10.1.4.40\tcdn.jsdelivr.net\t151.101.1.229\t\
+    443\t26687\t420359\n1782901986\t10.1.4.11\tlogin.microsoftonline.com\t20.190.151.7\t443\t38715\t600951\n"
+tasks:
+- prompt: Which destination server name is being beaconed to?
+  type: text
+  accepted:
+  - cdn-metrics.example
+  hint: Group by server_name and look for one contacted at a steady rate by a single host with near-identical byte
+    counts.
+  explanation: cdn-metrics.example is contacted every five minutes by one host with ~312 bytes out and ~228 back
+    each time, while every other site is visited irregularly by several hosts.
+  verify:
+    artifact: conn.log
+    op: top
+    pattern: ^\d+\t\S+\t(\S+)\t
+- prompt: Which internal host is beaconing?
+  type: text
+  accepted:
+  - 10.1.4.23
+  hint: Which id.orig_h talks to that server name?
+  explanation: 'Only 10.1.4.23 talks to cdn-metrics.example. It also browses normally, which is typical: the implant
+    runs alongside the user.'
+  verify:
+    artifact: conn.log
+    op: set
+    pattern: ^\d+\t(\S+)\tcdn-metrics\.example\t
+- prompt: What is the beacon interval, in seconds?
+  type: number
+  accepted:
+  - '300'
+  tolerance: 5
+  hint: Subtract consecutive ts values for that host and destination and take the typical gap.
+  explanation: The gaps cluster tightly around 300 seconds with a few seconds of jitter. Jitter is added by C2 frameworks
+    to dodge naive fixed-interval detections, but the spread is still tiny compared with human browsing.
+  verify:
+    artifact: conn.log
+    op: median_interval
+    pattern: ^(\d+)\t\S+\tcdn-metrics\.example\t
+- prompt: How many beacon connections are in the log?
+  type: number
+  accepted:
+  - '19'
+  hint: Count rows to that server name.
+  explanation: 19 connections across the window, one every five minutes, without a pause, even when the user was
+    idle.
+  verify:
+    artifact: conn.log
+    op: count
+    pattern: \tcdn-metrics\.example\t
+- prompt: Which pair of traits most strongly marks this traffic as a beacon rather than browsing?
+  type: choice
+  options:
+  - It uses port 443 and TLS
+  - Regular timing and near-constant request and response sizes
+  - The destination is a CDN-style name
+  - The host also visits Microsoft services
+  answer: 1
+  hint: Most normal traffic is also TLS on 443.
+  explanation: Machine-like regularity in both time and size is the beacon signature. Port 443 and plausible names
+    are what the attacker uses to blend in, so on their own they prove nothing.

@@ -14,6 +14,8 @@ every pull request and on pushes to `main`.
 | `test_users.py` | Profile read/update and password change, including that a change invalidates older tokens and returns a working fresh one |
 | `test_content_standards.py` | Every lesson has the six required sections, valid quizzes, certification mapping, 20/80 split, every focus domain and certification covered |
 | `test_seed.py` | Seeding and idempotent re-seeding that keeps progress |
+| `test_lab_content.py` | Every course has a graded lab; each lab is well formed (scenario, artifacts, at least five tasks, hints that do not give the answer away); every `verify` block derives its answer from the lab data and the key accepts it; lab-specific checks for the Sigma rule, risk scores, the shadowed firewall rule and the encoded PowerShell |
+| `test_labs.py` | Answer normalisation for text, number (with tolerance), set and choice; scoring and hint-versus-explanation feedback; lab seeding and idempotent re-seeding; lab detail never exposing the key; artifact download; auth; failed vs passed attempts and how a pass completes the lab and lesson once; graded labs refusing self-marking; validation; the lab list and per-learner status |
 | `test_quiz_grading.py` | Scoring, rounding, pass mark, unanswered questions |
 | `test_courses_api.py` | Catalog, lesson detail without answers, quiz submission |
 | `test_progress.py` | Theory/lab/quiz state machine, summary, streaks, week, time zones, readiness |
@@ -39,6 +41,7 @@ View models and the API client are tested without WPF:
 - `ExamsViewModelTests`: certification selection, length capping, timer, answering, grading, focus areas, the setup/taking/results flow, and target-date set/clear with countdown.
 - `PlannerViewModelTests`: plan load, on-track / behind / complete headlines, per-certification pace phrasing, week summaries, and navigation to a lesson or the exam dates.
 - `InsightsViewModelTests`: analytics load into the trend and weekday charts and the weak-area lists, the recent-pace headline, the stalled-learner nudge, the velocity finish projection, the quiz average/trend phrasing, the empty-quiz and peak-time wording, the default eight-week request, and API-error surfacing.
+- `GradedLabTests`: the lesson page loading a graded lab with its files and tasks, replacing self-marking with "pass the graded lab", skipping the lab call for ordinary lessons, the answer-everything check, submitting trimmed answers and the choice index, pass and fail feedback with status text, API errors, and the API client's lab endpoints.
 - `MarkdownTextTests`: lesson-theory parsing into paragraphs with bold and inline-code runs, including unmatched markers and wrapped lines.
 
 `Fakes/FakeApi` is an in-memory `ICyberSecApi`; `Fakes/StubHttpHandler` fakes HTTP.

@@ -48,12 +48,26 @@ Security rules:
 | GET | `/api/lessons/{id}` | Full lesson (all six standard sections), quiz questions without answers, mapped certification objectives, the learner's progress and previous/next lesson ids |
 | POST | `/api/lessons/{id}/quiz` | `{answers: [index or null, ...]}` in question order → score, `passed`, and per-question `correct_index` and `explanation`. 422 if the answer count is wrong |
 
+## Graded labs
+
+| Method | Path | Description |
+|---|---|---|
+| GET | `/api/labs` | Every graded lab in course and lesson order, with its lesson and course, task count, pass mark and the learner's `status` (`attempts`, `best_score`, `passed`) |
+| GET | `/api/lessons/{id}/lab` | The lesson's graded lab: scenario, pass mark, `artifacts` (name, kind, description, content), `tasks` (index, prompt, `type` of `text`/`number`/`choice`/`set`, options for choices) and the learner's `status`. No answers, hints or explanations. 404 if the lesson has no graded lab |
+| GET | `/api/lessons/{id}/lab/artifacts/{name}` | One lab file as a `text/plain` attachment, to work on with grep, awk, jq or a spreadsheet. 404 for an unknown name |
+| POST | `/api/lessons/{id}/lab/attempts` | `{answers: [string or null, ...]}` in task order (a choice is the option index as text) → `score`, `correct`, `total`, `passed`, `pass_mark`, per-task `is_correct` and `feedback`, `lab_completed` and `lesson_status`. Feedback is the explanation for a right answer and the hint for a wrong one; once the lab is passed every task gets its explanation, so answers are never handed out on a failed attempt. A first pass completes the lesson's lab and logs its lab minutes once. 422 for the wrong answer count or an answer over 2000 characters |
+
+Answers are normalised before marking: case, surrounding spaces, quotes and a
+trailing full stop are ignored; numbers accept thousands separators and an optional
+per-task tolerance; set answers are unordered and split on commas, semicolons,
+spaces or new lines, and must contain every item and nothing extra.
+
 ## Progress tracking
 
 | Method | Path | Description |
 |---|---|---|
 | POST | `/api/lessons/{id}/theory` | Optional `{minutes}`; marks theory read and logs theory time once |
-| POST | `/api/lessons/{id}/lab` | `{notes?, minutes?}` (minutes 1-600, default the lesson's estimate); marks the lab done and logs lab time once. Calling again only updates notes |
+| POST | `/api/lessons/{id}/lab` | `{notes?, minutes?}` (minutes 1-600, default the lesson's estimate); marks the lab done and logs lab time once. Calling again only updates notes. 409 for a lesson with a graded lab that has not been passed yet (pass it instead); once passed, this still saves notes |
 | DELETE | `/api/lessons/{id}/lab` | Reopens a lab marked done by mistake (logged time is kept) |
 | GET | `/api/progress` | Totals, this week vs goal, per-course progress, certification readiness, recent activity and the recommended next lesson |
 | GET | `/api/progress/activity?days=30` | Daily theory/lab/quiz minutes for the last N days (1-365) |
@@ -64,7 +78,7 @@ Security rules:
 desktop client sends it automatically.
 
 Definitions:
-- **Completed lesson:** lab done and quiz passed (70%+).
+- **Completed lesson:** lab done and quiz passed (70%+). A graded lab counts as done once passed.
 - **Streak:** consecutive days with any logged study time; today counts once studied, and the streak survives until the end of today.
 - **Week:** Monday 00:00 to now, in the learner's time zone; goal is `weekly_goal_hours` from the profile.
 - **Hands-on percent:** lab minutes / all logged minutes; the target is 80%.

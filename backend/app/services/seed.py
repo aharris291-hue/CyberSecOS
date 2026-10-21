@@ -12,7 +12,8 @@ from typing import Any
 import yaml
 from sqlalchemy.orm import Session
 
-from ..models import CertObjective, Certification, Course, Lesson, QuizQuestion
+from ..models import CertObjective, Certification, Course, Lab, Lesson, QuizQuestion
+from .lab import DEFAULT_PASS_MARK, TASK_TYPES
 
 SEED_DIR = Path(__file__).resolve().parent.parent / "seed"
 
@@ -30,11 +31,18 @@ def load_course_files(seed_dir: Path = SEED_DIR) -> list[dict]:
     return [load_yaml(path) for path in sorted((seed_dir / "content").glob("*.yaml"))]
 
 
+def load_lab_files(seed_dir: Path = SEED_DIR) -> list[dict]:
+    return [load_yaml(path) for path in sorted((seed_dir / "labs").glob("*.yaml"))]
+
+
 def seed_database(session: Session, seed_dir: Path = SEED_DIR) -> None:
     _seed_certifications(session, load_yaml(seed_dir / "certifications.yaml"))
     session.flush()
     for course_data in load_course_files(seed_dir):
         _seed_course(session, course_data)
+    session.flush()
+    for lab_data in load_lab_files(seed_dir):
+        _seed_lab(session, lab_data)
     session.commit()
 
 
@@ -104,3 +112,69 @@ def _seed_lesson(session: Session, course: Course, data: dict) -> None:
             )
         )
     session.add(lesson)
+
+
+def lab_tasks(data: dict) -> list[dict]:
+    """Validate a lab's tasks and return them in the stored shape (answer key as strings)."""
+    slug = data["slug"]
+    tasks = []
+    for index, task in enumerate(data["tasks"], start=1):
+        kind = task.get("type", "text")
+        if kind not in TASK_TYPES:
+            raise ContentError(f"Lab {slug} task {index} has unknown type {kind!r}")
+        options = [str(option) for option in task.get("options", [])]
+        if kind == "choice":
+            if not 0 <= task.get("answer", -1) < len(options):
+                raise ContentError(f"Lab {slug} task {index} has an answer outside its options")
+            accepted = [str(task["answer"])]
+        else:
+            if options:
+                raise ContentError(f"Lab {slug} task {index} has options but is not a choice task")
+            accepted = [str(value) for value in task.get("accepted", [])]
+        if task.get("tolerance") is not None and kind != "number":
+            raise ContentError(f"Lab {slug} task {index} has a tolerance but is not a number task")
+        if not accepted:
+            raise ContentError(f"Lab {slug} task {index} has no accepted answer")
+        if not (task.get("hint") or "").strip() or not (task.get("explanation") or "").strip():
+            raise ContentError(f"Lab {slug} task {index} needs a hint and an explanation")
+        tasks.append(
+            {
+                "prompt": task["prompt"].strip(),
+                "type": kind,
+                "options": options,
+                "accepted": accepted,
+                "tolerance": float(task.get("tolerance", 0)),
+                "hint": task["hint"].strip(),
+                "explanation": task["explanation"].strip(),
+            }
+        )
+    return tasks
+
+
+def _seed_lab(session: Session, data: dict) -> None:
+    slug = data["slug"]
+    lesson = session.query(Lesson).filter_by(slug=data["lesson"]).one_or_none()
+    if lesson is None:
+        raise ContentError(f"Lab {slug} references unknown lesson {data['lesson']}")
+    names = [artifact["name"] for artifact in data["artifacts"]]
+    if not names or len(names) != len(set(names)):
+        raise ContentError(f"Lab {slug} needs at least one artifact and unique artifact names")
+
+    lab = session.query(Lab).filter_by(slug=slug).one_or_none() or Lab(slug=slug)
+    if lesson.lab is not None and lesson.lab is not lab:
+        raise ContentError(f"Lesson {lesson.slug} already has lab {lesson.lab.slug}")
+    lab.lesson = lesson
+    lab.title = data["title"]
+    lab.scenario = data["scenario"].strip()
+    lab.pass_mark = data.get("pass_mark", DEFAULT_PASS_MARK)
+    lab.artifacts = [
+        {
+            "name": artifact["name"],
+            "kind": artifact.get("kind", "text"),
+            "description": artifact.get("description", "").strip(),
+            "content": artifact["content"],
+        }
+        for artifact in data["artifacts"]
+    ]
+    lab.tasks = lab_tasks(data)
+    session.add(lab)

@@ -124,6 +124,7 @@ def read_lesson(lesson_id: int, db: Session = Depends(get_db), user: User = Depe
         progress=progress_out(progress),
         previous_lesson_id=siblings[index - 1].id if index > 0 else None,
         next_lesson_id=siblings[index + 1].id if index + 1 < len(siblings) else None,
+        has_graded_lab=lesson.lab is not None,
     )
 
 

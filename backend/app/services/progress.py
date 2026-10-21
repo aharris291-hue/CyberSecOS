@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from ..database import utcnow
 from ..models import ActivityKind, ActivityLog, Lesson, LessonProgress, LessonStatus, User
+from .lab import LabResult
 from .quiz import QuizResult
 
 
@@ -67,6 +68,16 @@ def complete_lab(db: Session, user: User, lesson: Lesson, notes: str | None, min
     if progress.lab_completed_at is None:
         progress.lab_completed_at = utcnow()
         log_activity(db, user, ActivityKind.LAB, minutes or lesson.lab_minutes, lesson)
+    _refresh_status(progress)
+    return progress
+
+
+def record_lab_result(db: Session, user: User, lesson: Lesson, result: LabResult) -> LessonProgress:
+    """A passed graded lab completes the lesson's lab; a failed one only starts the lesson."""
+    progress = get_or_create_progress(db, user, lesson)
+    if result.passed and progress.lab_completed_at is None:
+        progress.lab_completed_at = utcnow()
+        log_activity(db, user, ActivityKind.LAB, lesson.lab_minutes, lesson)
     _refresh_status(progress)
     return progress
 

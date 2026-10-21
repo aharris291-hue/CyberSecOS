@@ -1,0 +1,109 @@
+slug: lab-ir-ransomware-timeline
+lesson: ir-ransomware-response
+title: Reconstruct a ransomware attack timeline
+pass_mark: 80
+scenario: |
+  Saturday morning the help desk reports that Finance files will not open and a
+  `RESTORE_FILES.txt` note has appeared on the file shares. The EDR, Windows and backup logs for
+  the previous day have been merged into one timeline for you.
+
+  Before the incident commander decides on containment and recovery, they need the facts: where
+  it started, when encryption began, how far it spread, and what the attacker did to stop you
+  recovering.
+artifacts:
+- name: timeline.csv
+  kind: csv
+  description: Merged EDR, Windows and backup events, UTC.
+  content: |
+    timestamp,host,user,event,detail
+    2026-03-13T16:02:11Z,ACC-PC-22,r.patel,attachment_opened,outlook.exe opened Invoice_4471.iso
+    2026-03-13T16:02:30Z,ACC-PC-22,r.patel,process_start,"explorer.exe -> invoice.lnk -> rundll32.exe C:\Users\r.patel\AppData\Local\Temp\upd.dll,Start"
+    2026-03-13T16:05:48Z,ACC-PC-22,r.patel,network_connect,rundll32.exe -> 198.51.100.200:443
+    2026-03-13T22:41:09Z,ACC-PC-22,r.patel,process_start,rundll32.exe -> nltest.exe /domain_trusts
+    2026-03-13T22:43:51Z,ACC-PC-22,r.patel,process_start,rundll32.exe -> net.exe group "Domain Admins" /domain
+    2026-03-14T01:12:37Z,FS-02,admin.tmp,logon,type 10 (RDP) from ACC-PC-22
+    2026-03-14T01:30:02Z,BKP-01,admin.tmp,logon,type 3 from FS-02
+    2026-03-14T01:31:15Z,BKP-01,admin.tmp,service_stopped,Veeam Backup Service
+    2026-03-14T02:10:44Z,FS-02,admin.tmp,process_start,cmd.exe -> vssadmin.exe delete shadows /all /quiet
+    2026-03-14T02:11:03Z,FS-02,admin.tmp,process_start,cmd.exe -> wbadmin.exe delete catalog -quiet
+    2026-03-14T02:17:09Z,FS-02,admin.tmp,file_rename,D:\Shares\Finance\Q1_forecast.xlsx -> Q1_forecast.xlsx.locked
+    2026-03-14T02:17:09Z,FS-02,admin.tmp,file_create,D:\Shares\Finance\RESTORE_FILES.txt
+    2026-03-14T02:17:12Z,FS-02,admin.tmp,file_rename,D:\Shares\HR\payroll_march.csv -> payroll_march.csv.locked
+    2026-03-14T02:19:40Z,APP-03,admin.tmp,file_rename,E:\Data\orders.mdf -> orders.mdf.locked
+    2026-03-14T02:20:05Z,ACC-PC-22,r.patel,file_rename,C:\Users\r.patel\Documents\budget.docx -> budget.docx.locked
+    2026-03-14T02:21:30Z,APP-03,admin.tmp,file_create,E:\Data\RESTORE_FILES.txt
+    2026-03-14T07:58:12Z,HD-PC-04,helpdesk,ticket,User reports Finance share files will not open
+tasks:
+- prompt: Which host was patient zero (the first one compromised)?
+  type: text
+  accepted:
+  - ACC-PC-22
+  hint: Find the earliest suspicious event, not the first encrypted file.
+  explanation: ACC-PC-22 opened a malicious ISO attachment ten hours before encryption, ran a DLL with rundll32
+    and started calling out. Everything later traces back to it.
+  verify:
+    artifact: timeline.csv
+    op: first
+    pattern: ^[^,]+,([^,]+),[^,]*,attachment_opened,
+- prompt: At what time (UTC, as written in the timeline) was the first file encrypted?
+  type: text
+  accepted:
+  - '2026-03-14T02:17:09Z'
+  - '2026-03-14 02:17:09'
+  - 02:17:09
+  hint: Look for the first file_rename to the ransomware extension.
+  explanation: Encryption started on FS-02 at 02:17:09 UTC on 14 March. This anchors the incident and tells recovery
+    which backups predate it.
+  verify:
+    artifact: timeline.csv
+    op: first
+    pattern: ^([^,]+),[^,]+,[^,]*,file_rename,
+- prompt: What file extension does the ransomware add to encrypted files?
+  type: text
+  accepted:
+  - .locked
+  - locked
+  hint: Compare the file names before and after the arrow in the file_rename events.
+  explanation: Encrypted files gain .locked. The extension and the ransom note name help identify the family and
+    search for affected files.
+  verify:
+    artifact: timeline.csv
+    op: set
+    pattern: file_rename,.*\.(\w+)$
+- prompt: How many hosts had files encrypted?
+  type: number
+  accepted:
+  - '3'
+  hint: Count the distinct hosts with file_rename events.
+  explanation: FS-02, APP-03 and ACC-PC-22 had files encrypted. BKP-01 was not encrypted but its backup service
+    was stopped, so it is also in scope.
+  verify:
+    artifact: timeline.csv
+    op: distinct_count
+    pattern: ^[^,]+,([^,]+),[^,]*,file_rename,
+- prompt: Which command did the attacker run to delete Volume Shadow Copies?
+  type: text
+  accepted:
+  - vssadmin.exe delete shadows /all /quiet
+  - vssadmin delete shadows /all /quiet
+  hint: Look at process_start events shortly before encryption.
+  explanation: vssadmin delete shadows /all /quiet removes local restore points; together with wbadmin delete catalog
+    and stopping the backup service it is the attacker sabotaging recovery. It is also a high-fidelity detection
+    opportunity.
+  verify:
+    artifact: timeline.csv
+    op: first
+    pattern: process_start,cmd\.exe -> (vssadmin[^,]*)$
+- prompt: What should containment do first?
+  type: choice
+  options:
+  - Power off every server to stop the encryption
+  - Isolate the affected hosts from the network (EDR isolation or switch port), disable admin.tmp and block 198.51.100.200,
+    keeping machines powered on
+  - Restore the file shares from backup straight away
+  - Pay the ransom to get the key quickly
+  answer: 1
+  hint: You want to stop spread and keep evidence, and the attacker may still be inside.
+  explanation: Network isolation stops spread while preserving memory for forensics; disabling the attacker's account
+    and blocking the C2 address cuts their access. Restoring before the intruder is evicted risks re-encryption,
+    and powering off destroys volatile evidence.

