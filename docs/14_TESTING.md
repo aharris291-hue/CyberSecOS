@@ -21,6 +21,7 @@ every pull request and on pushes to `main`.
 | `test_exams.py` | Exam sampling across objectives, 80% grading, per-objective breakdown, submission validation and attempt history |
 | `test_exam_targets.py` | Set/get/clear a per-certification target date, countdown maths, and its surfacing in dashboard readiness |
 | `test_planner.py` | Study plan: remaining-work schedule packing, weekly-target limits, pace verdicts (on track / behind / overdue / no date), soonest-exam ordering, and the low-goal bound |
+| `test_analytics.py` | Advanced analytics: weekly trend bucketing and rolling average, weekday/part-of-day patterns, velocity projection from recent completions, quiz trend and weakest-area ranking, the empty-account payload and the `weeks` bound |
 | `test_learner_journey.py` | End-to-end: sign up, study a lesson, see it on the dashboard |
 
 Each test gets a fresh SQLite database in a temp directory. bcrypt uses a low
