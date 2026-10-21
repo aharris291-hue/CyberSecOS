@@ -51,6 +51,29 @@ dotnet run --project src/CyberSecOS.Desktop
 The client talks to `http://127.0.0.1:8000/` by default. Override it in
 `src/CyberSecOS.Desktop/appsettings.json` or with `CYBERSECOS_API_URL`.
 
+## Packaging the Windows installer
+
+The Windows CI job builds the installer; to do the same by hand on Windows
+(Python 3.12, the .NET 9 SDK and Inno Setup 6 installed):
+
+```powershell
+cd backend
+python -m pip install -r requirements.txt pyinstaller
+pyinstaller --noconfirm cybersecos-server.spec        # -> backend/dist/cybersecos-server/
+cd ../frontend
+dotnet publish src/CyberSecOS.Desktop/CyberSecOS.Desktop.csproj -c Release -r win-x64 --self-contained true `
+  -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=none -o ../dist/CyberSecOS
+Copy-Item -Recurse ../backend/dist/cybersecos-server ../dist/CyberSecOS/server
+& "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" ../installer/CyberSecOS.iss   # -> dist/CyberSecOS-Setup-0.1.0.exe
+```
+
+At launch the desktop app looks for `server\cybersecos-server.exe` next to
+itself (`LocalBackend` in Core). If a server already answers on the configured
+address it uses that one, so `dotnet run` against a hand-started API is
+unchanged. Otherwise it starts the bundled server with its data in
+`%LOCALAPPDATA%\CyberSecOS\data` (log in `server.log` there), on port 8000 or a
+free port if 8000 is taken, and stops it on exit.
+
 ## Tests
 
 ```bash

@@ -1,5 +1,14 @@
 # Changelog
 
+## Phase 2 - One-step Windows installer
+
+### Install and run with no Python and no launcher script
+- New `CyberSecOS-Setup-<version>.exe` installer (Inno Setup, `installer/CyberSecOS.iss`), built by the Windows CI job. It installs per user without an administrator prompt, adds Start menu and optional desktop shortcuts, and can launch the app at the end. Learner data moves to `%LOCALAPPDATA%\CyberSecOS\data` and survives upgrades and uninstalls.
+- The API is bundled as a standalone `cybersecos-server.exe` (PyInstaller, `backend/cybersecos-server.spec`, entry point `backend/server.py`), so learners no longer need Python.
+- The desktop app starts the bundled server itself (`LocalBackend` in Core) behind a short "Starting CyberSecOS..." window, uses a free port if 8000 is taken, writes the server log to `server.log` in the data folder, and stops the server on exit. A server that already answers is reused, so running the API by hand for development is unchanged. The server also exits if the desktop app is killed.
+- CI smoke-tests the bundled server's `/api/health` before packaging, and uploads both the installer and a portable folder build. `Start CyberSecOS.bat` is retired.
+- Tests: 957 backend (new `test_server.py`), 7 new `LocalBackendTests`.
+
 ## Phase 2 - A fourth graded lab per course
 
 ### Twelve more labs the app can mark
