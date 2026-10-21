@@ -1,0 +1,104 @@
+slug: lab-ms-defender-xdr-incident
+lesson: ms-defender-xdr-portal
+title: Triage a multi-workload Defender XDR incident
+pass_mark: 80
+scenario: 'Microsoft Defender XDR correlated several alerts into one incident and you exported them as
+
+  JSON, one alert per line in time order. Each alert has a Timestamp, the Defender Workload
+
+  that raised it, a Title, a Severity, the Device and User entities, and the mapped MITRE
+
+  ATT&CK Technique. Reconstruct the attack: where it started, how far it spread, what
+
+  techniques were used, and what you would contain. Tools such as jq make the JSON easy to read.'
+artifacts:
+- name: incident_alerts.jsonl
+  kind: json
+  description: The incident's correlated alerts, one JSON object per line in time order.
+  content: '{"Timestamp": "2026-09-05T08:00:00Z", "Workload": "Defender for Office 365", "Title": "Phishing email with malicious
+    link delivered", "Severity": "Medium", "Device": "-", "User": "jmorgan@contoso.example", "Technique": "T1566"}
+
+    {"Timestamp": "2026-09-05T08:15:00Z", "Workload": "Defender for Endpoint", "Title": "Malicious file executed", "Severity":
+    "High", "Device": "FIN-LT-07", "User": "jmorgan@contoso.example", "Technique": "T1204"}
+
+    {"Timestamp": "2026-09-05T08:20:00Z", "Workload": "Defender for Endpoint", "Title": "Credential theft from LSASS", "Severity":
+    "High", "Device": "FIN-LT-07", "User": "jmorgan@contoso.example", "Technique": "T1003"}
+
+    {"Timestamp": "2026-09-05T08:35:00Z", "Workload": "Defender for Identity", "Title": "Suspected pass-the-hash attack",
+    "Severity": "High", "Device": "FIN-LT-07", "User": "jmorgan@contoso.example", "Technique": "T1550"}
+
+    {"Timestamp": "2026-09-05T08:50:00Z", "Workload": "Defender for Endpoint", "Title": "Lateral movement detected", "Severity":
+    "High", "Device": "FIN-LT-12", "User": "svc-admin@contoso.example", "Technique": "T1021"}
+
+    {"Timestamp": "2026-09-05T09:10:00Z", "Workload": "Defender for Cloud Apps", "Title": "Mass download from SharePoint",
+    "Severity": "Medium", "Device": "-", "User": "jmorgan@contoso.example", "Technique": "T1530"}
+
+    '
+tasks:
+- prompt: How many alerts make up the incident?
+  type: number
+  hint: Count the alert objects, one per line.
+  explanation: The incident correlates six alerts into one attack story.
+  verify:
+    artifact: incident_alerts.jsonl
+    op: count
+    pattern: '"Workload":'
+  accepted:
+  - '6'
+- prompt: Across how many Defender workloads did the incident raise alerts?
+  type: number
+  hint: Count the distinct values of the workload field.
+  explanation: Four workloads fired (Office 365, Endpoint, Identity, Cloud Apps); correlating them is exactly what XDR does.
+  verify:
+    artifact: incident_alerts.jsonl
+    op: distinct_count
+    pattern: '"Workload": "([^"]+)"'
+  accepted:
+  - '4'
+- prompt: Which device appears in the most alerts?
+  type: text
+  hint: Tally the named hosts and take the one that recurs.
+  explanation: This host is where the file ran, credentials were stolen and the hash was reused, so it is the focus for forensics.
+  verify:
+    artifact: incident_alerts.jsonl
+    op: top
+    pattern: '"Device": "(FIN-[^"]+)"'
+  accepted:
+  - FIN-LT-07
+- prompt: Which MITRE ATT&CK technique IDs are mapped in the incident?
+  type: set
+  hint: Collect every technique identifier that appears.
+  explanation: The techniques trace phishing, execution, credential theft, pass-the-hash, lateral movement and collection.
+  verify:
+    artifact: incident_alerts.jsonl
+    op: set
+    pattern: '"Technique": "(T[0-9]+)"'
+  accepted:
+  - T1003, T1021, T1204, T1530, T1550, T1566
+- prompt: What is the title of the first alert in the incident (patient zero)?
+  type: text
+  hint: Take the earliest alert by timestamp and read its title.
+  explanation: The earliest alert is the phishing email delivery, the initial access that began the chain.
+  verify:
+    artifact: incident_alerts.jsonl
+    op: first
+    pattern: '"Title": "([^"]+)"'
+  accepted:
+  - Phishing email with malicious link delivered
+- prompt: Which identity is patient zero (the first compromised user)?
+  type: text
+  accepted:
+  - jmorgan@contoso.example
+  hint: Read the user on the earliest alerts of the chain.
+  explanation: jmorgan@contoso.example received the phish and ran the file, so this account is where the compromise began.
+- prompt: What is the right containment action for the most-involved laptop?
+  type: choice
+  options:
+  - Apply a sensitivity label
+  - Isolate the device
+  - Create a Conditional Access policy
+  - Rotate an AWS access key
+  answer: 1
+  hint: You want to cut the host off the network while keeping it reachable for investigation.
+  explanation: Device isolation in Defender for Endpoint contains the laptop while leaving it reachable for forensics; the
+    other actions do not contain an endpoint.

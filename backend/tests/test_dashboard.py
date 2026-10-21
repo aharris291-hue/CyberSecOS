@@ -1,4 +1,5 @@
 from app.models import Lesson
+from app.services.seed import load_course_files
 
 
 def test_dashboard_requires_login(client):
@@ -10,7 +11,7 @@ def test_new_learner_dashboard(client, auth_headers):
     assert body["display_name"] == "Adam" and body["target_role"] == "SOC Analyst"
     assert body["totals"]["completed_lessons"] == 0
     assert len(body["daily_activity"]) == 14
-    assert len(body["courses"]) == 12
+    assert len(body["courses"]) == len(load_course_files())
     assert [c["exam_code"] for c in body["certifications"]] == ["SY0-701", "SC-900", "SC-200", "CS0-003"]
     assert body["next_lesson"]["course_title"] == "Networking Foundations for SOC Analysts"
     assert body["recent_activity"] == []

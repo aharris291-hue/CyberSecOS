@@ -144,10 +144,20 @@ needs supplementary Microsoft-product study on top of this catalog. This is the
 most consequential gap for those two certifications and the clearest honest
 limit of a vendor-neutral catalog.
 
+**Update (addressed):** a dedicated course 13, *Microsoft Security Operations
+(SC-900 and SC-200)*, has since been added to close this gap — six
+product-specific lessons (the Microsoft stack, Entra ID identity and governance,
+Defender XDR, Microsoft Sentinel, Microsoft Purview) with four graded labs on
+Entra sign-in/Conditional Access data, a Defender XDR incident, Sentinel rule
+tuning and Purview DLP alerts. The vendor-neutral courses still teach the
+underlying concepts; this track names the Microsoft product surface the exams
+test.
+
 ## Summary of gaps to close (prioritised)
 
-1. **SC-900 / SC-200 Microsoft-product specificity** — biggest gap; add a
-   Microsoft track or document the supplementary-study requirement.
+1. **SC-900 / SC-200 Microsoft-product specificity** — biggest gap; **addressed**
+   by the new course 13, a Microsoft-specific track (Entra, Defender XDR,
+   Sentinel, Purview) with four graded labs.
 2. **Security+ 4.7 (automation and orchestration)** — add or re-tag to give it
    more than one lesson.
 3. **Security+ 4.2 (asset management)** and **5.3 (third-party risk)** — one

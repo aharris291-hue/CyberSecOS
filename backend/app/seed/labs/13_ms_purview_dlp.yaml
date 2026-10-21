@@ -1,0 +1,97 @@
+slug: lab-ms-purview-dlp
+lesson: ms-purview-compliance
+title: Investigate Microsoft Purview DLP alerts
+pass_mark: 80
+scenario: 'Microsoft Purview Data Loss Prevention raised a batch of alerts and you exported them as CSV
+
+  (AlertId, Time, User, Policy, Workload, SensitiveInfoType, MatchCount, Action, Recipient).
+
+  One employee may be trying to exfiltrate card data to a personal address. Work out which
+
+  policy and user generated the most alerts, how much went to external recipients, and who
+
+  looks like an insider-risk case worth escalating to the compliance team.'
+artifacts:
+- name: dlp_alerts.csv
+  kind: csv
+  description: A batch of Purview DLP alerts exported as CSV.
+  content: 'AlertId,Time,User,Policy,Workload,SensitiveInfoType,MatchCount,Action,Recipient
+
+    A-001,2026-09-07T09:05:00Z,kdavis@contoso.example,PCI-DSS Credit Card,Exchange,Credit Card Number,40,Blocked,kdavis.personal@gmail.example
+
+    A-002,2026-09-07T09:40:00Z,kdavis@contoso.example,PCI-DSS Credit Card,Exchange,Credit Card Number,38,Blocked,kdavis.personal@gmail.example
+
+    A-003,2026-09-07T10:12:00Z,kdavis@contoso.example,PCI-DSS Credit Card,Endpoint,Credit Card Number,40,Blocked,-
+
+    A-004,2026-09-07T11:00:00Z,rpatel@contoso.example,GDPR PII,SharePoint,EU National ID,6,Audited,partner@vendor.example
+
+    A-005,2026-09-07T11:30:00Z,rpatel@contoso.example,PCI-DSS Credit Card,Teams,Credit Card Number,3,Audited,-
+
+    A-006,2026-09-07T12:15:00Z,lchen@contoso.example,Financial Records,Exchange,Bank Account Number,5,Allowed,auditor@partner.example
+
+    A-007,2026-09-07T13:05:00Z,mgomez@contoso.example,PCI-DSS Credit Card,Exchange,Credit Card Number,2,Audited,colleague@contoso.example
+
+    A-008,2026-09-07T14:20:00Z,kdavis@contoso.example,PCI-DSS Credit Card,Exchange,Credit Card Number,36,Blocked,kdavis.personal@gmail.example
+
+    A-009,2026-09-07T15:00:00Z,rpatel@contoso.example,GDPR PII,SharePoint,EU National ID,8,Audited,-
+
+    '
+tasks:
+- prompt: How many DLP alerts fired?
+  type: number
+  hint: Count the alert rows in the export.
+  explanation: Nine alerts fired across the batch.
+  verify:
+    artifact: dlp_alerts.csv
+    op: count
+    pattern: ^A-[0-9]+,
+  accepted:
+  - '9'
+- prompt: Which DLP policy fired the most alerts?
+  type: text
+  hint: Tally the policy column and take the most frequent one.
+  explanation: The card-data policy fired most, driven largely by one user's repeated attempts.
+  verify:
+    artifact: dlp_alerts.csv
+    op: top
+    pattern: ^A-[0-9]+,[^,]+,[^,]+,([^,]+),
+  accepted:
+  - PCI-DSS Credit Card
+- prompt: Which user triggered the most alerts?
+  type: text
+  hint: Tally the user column and take the most frequent.
+  explanation: This user repeatedly tried to move large batches of card numbers, which is the insider-risk signal.
+  verify:
+    artifact: dlp_alerts.csv
+    op: top
+    pattern: ^A-[0-9]+,[^,]+,([^,]+),
+  accepted:
+  - kdavis@contoso.example
+- prompt: How many alerts involved data sent to an external personal address?
+  type: number
+  hint: Count the rows whose recipient is an outside personal mailbox.
+  explanation: These are the exfiltration attempts to a personal mailbox, the most serious events in the batch.
+  verify:
+    artifact: dlp_alerts.csv
+    op: count
+    pattern: ',[^,]+@gmail\.example'
+  accepted:
+  - '3'
+- prompt: Which user is the clearest insider-risk case to escalate?
+  type: text
+  accepted:
+  - kdavis@contoso.example
+  hint: Find who was repeatedly blocked moving large batches of card data to a personal mailbox.
+  explanation: kdavis@contoso.example was blocked three times sending tens of card numbers to a personal address, a textbook
+    insider-risk escalation.
+- prompt: Which Purview capability proves who accessed a file during the investigation?
+  type: choice
+  options:
+  - The audit log
+  - A sensitivity label
+  - Conditional Access
+  - Fusion analytics
+  answer: 0
+  hint: You need the record of user and admin activity across Microsoft 365.
+  explanation: The Purview audit log records user and admin activity, including file and mailbox access; labels, Conditional
+    Access and Fusion do not answer 'who accessed this'.

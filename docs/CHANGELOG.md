@@ -1,5 +1,13 @@
 # Changelog
 
+## Phase 2 - Microsoft certification track (SC-900 and SC-200)
+
+### Course 13: Microsoft Security Operations
+- Added a focused, product-specific track for the two Microsoft exams, prompted by the certification gap audit (`docs/14_CERTIFICATION_GAP_AUDIT.md`), which found SC-900 and SC-200 need Microsoft-product depth a vendor-neutral catalog cannot give. The existing courses still teach the underlying concepts; this track names the Microsoft product surface the exams test.
+- Six lessons: the Microsoft security stack for SC-900; Entra ID identities and authentication; Conditional Access, PIM and Identity Protection; Microsoft Defender XDR (the unified SOC portal); Microsoft Sentinel (connectors, analytics rules and SOAR); and Microsoft Purview (information protection and compliance). Each maps to the relevant SC-900, SC-200, Security+ and CySA+ objectives.
+- Four graded labs on safe, synthetic exported data: auditing Entra sign-ins against a Conditional Access baseline, triaging a multi-workload Defender XDR incident, tuning a noisy Microsoft Sentinel analytics rule, and investigating Microsoft Purview DLP alerts.
+- Catalog is now 264 lessons (~290 hours) across 13 courses, with 52 graded labs (four per course). Two tests that hardcoded a 12-course count (dashboard, labs) now derive the count from the seed. Content-standard, seeding, graded-lab, exam and full backend suites pass.
+
 ## Phase 2 - Catalog to 258 lessons (~283 hours) on a deliberate per-course split
 
 ### Lessons 15 through 23 per course
