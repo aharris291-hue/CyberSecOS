@@ -1,5 +1,13 @@
 # Changelog
 
+## Phase 2 - A fourth graded lab per course
+
+### Twelve more labs the app can mark
+- Every course now has four graded labs (48 in total). The new labs: spotting a malicious session from TLS handshake metadata (SNI, JA3, a self-signed certificate); classifying ransomware, a worm and a RAT from sandbox behaviour; reconstructing a break-in from the Windows Security log; triaging a live Linux server with a process running from a deleted binary; calculating SOC response metrics and SLA breaches; prioritising patches with known-exploited and EPSS data; catching ransomware precursors before encryption; scoping a phishing campaign from delivery, proxy and sign-in logs; correlating and enriching alerts into one incident; finding broken object-level authorization in an API; reviewing Kubernetes pods for container-escape risks; and checking backups against the business impact analysis.
+- Each one is checked: fact-finding answers are derived from the lab data by `verify` blocks, and the reasoning answers (median and SLA figures, patch order, foreign invoices, the correlated incident, backup gaps) have dedicated checks in `test_lab_content.py`. The suite now fails if any course has fewer than four labs.
+- Removed a stale duplicate graded-labs row from the backlog.
+- Tests: 954 backend.
+
 ## Phase 2 - A third graded lab per course
 
 ### Twelve more labs the app can mark

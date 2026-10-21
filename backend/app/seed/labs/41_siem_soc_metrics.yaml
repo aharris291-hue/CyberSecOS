@@ -1,0 +1,84 @@
+slug: lab-siem-soc-metrics
+lesson: siem-dashboards-metrics
+title: Calculate SOC response metrics from incident tickets
+pass_mark: 80
+scenario: |
+  The SOC manager is building September's report for leadership and needs the numbers from the
+  incident queue export. The service level says high and critical incidents must be
+  acknowledged within **15 minutes**.
+
+  Time to acknowledge is acknowledged minus created; time to resolve is resolved minus created.
+  Use the **median**, not the mean, for typical response times.
+artifacts:
+- name: incidents.csv
+  kind: csv
+  description: September's incidents (UTC).
+  content: |
+    incident,severity,created,acknowledged,resolved
+    INC-3100,high,2026-09-01T14:00:00Z,2026-09-01T14:04:00Z,2026-09-01T15:35:00Z
+    INC-3101,medium,2026-09-03T13:00:00Z,2026-09-03T13:07:00Z,2026-09-03T17:00:00Z
+    INC-3102,low,2026-09-05T11:00:00Z,2026-09-05T11:12:00Z,2026-09-05T12:00:00Z
+    INC-3103,high,2026-09-07T10:00:00Z,2026-09-07T10:09:00Z,2026-09-07T13:00:00Z
+    INC-3104,high,2026-09-09T14:00:00Z,2026-09-09T14:22:00Z,2026-09-09T21:00:00Z
+    INC-3105,medium,2026-09-11T17:00:00Z,2026-09-11T17:06:00Z,2026-09-11T19:00:00Z
+    INC-3106,critical,2026-09-13T12:00:00Z,2026-09-13T12:31:00Z,2026-09-14T12:00:00Z
+    INC-3107,low,2026-09-15T16:00:00Z,2026-09-15T16:05:00Z,2026-09-15T16:45:00Z
+    INC-3108,medium,2026-09-17T12:00:00Z,2026-09-17T12:11:00Z,2026-09-17T15:20:00Z
+    INC-3109,high,2026-09-19T14:00:00Z,2026-09-19T14:08:00Z,2026-09-19T16:40:00Z
+    INC-3110,critical,2026-09-21T17:00:00Z,2026-09-21T17:14:00Z,2026-09-22T03:00:00Z
+    INC-3111,medium,2026-09-23T08:00:00Z,2026-09-23T08:03:00Z,2026-09-23T09:30:00Z
+    INC-3112,high,2026-09-25T11:00:00Z,2026-09-25T11:19:00Z,2026-09-25T16:00:00Z
+    INC-3113,low,2026-09-27T08:00:00Z,2026-09-27T08:10:00Z,2026-09-27T08:30:00Z
+    INC-3114,medium,2026-09-29T15:00:00Z,2026-09-29T15:06:00Z,2026-09-29T17:30:00Z
+tasks:
+- prompt: How many incidents were critical?
+  type: number
+  accepted:
+  - '2'
+  hint: Count the severity column.
+  explanation: Two critical incidents this month.
+  verify:
+    artifact: incidents.csv
+    op: count
+    pattern: ',critical,'
+- prompt: What was the median time to acknowledge, in minutes, across all incidents?
+  type: number
+  accepted:
+  - '9'
+  hint: Work out each incident's minutes from created to acknowledged, sort them, and take the middle value of the
+    fifteen.
+  explanation: 9 minutes. The mean is higher because a few slow acknowledgements pull it up, which is why the median
+    describes a typical incident better.
+- prompt: Which high or critical incidents breached the 15-minute acknowledgement SLA? List them separated by commas.
+  type: set
+  accepted:
+  - INC-3104, INC-3106, INC-3112
+  hint: Only high and critical count. Compare each one's time to acknowledge with 15 minutes.
+  explanation: INC-3104 (22 min), INC-3106 (31 min, critical) and INC-3112 (19 min). Report the breaches with their
+    causes, not just the count.
+- prompt: Which incident took longest to resolve?
+  type: text
+  accepted:
+  - INC-3106
+  hint: Compare resolved minus created.
+  explanation: INC-3106, a full day. A single long incident dominates any mean, so show it separately in the report.
+- prompt: What share of high and critical incidents met the SLA, as a whole percentage?
+  type: number
+  accepted:
+  - '57'
+  tolerance: 1
+  hint: Count the high and critical incidents, then those acknowledged within 15 minutes.
+  explanation: 4 of 7, about 57%. That is the headline the manager should take to leadership, together with what
+    will change.
+- prompt: Why use the median rather than the mean for these times?
+  type: choice
+  options:
+  - The median is always smaller
+  - Response times are skewed by a few very long incidents; the median shows the typical case and the outliers can
+    be reported separately
+  - Leadership prefers medians
+  - The mean cannot be calculated for times
+  answer: 1
+  hint: Look at INC-3106.
+  explanation: One 24-hour incident drags the mean far from what most incidents experience. Report the median plus
+    the outliers with their story.

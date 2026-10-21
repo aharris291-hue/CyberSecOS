@@ -1,0 +1,176 @@
+slug: lab-arch-api-authorization
+lesson: arch-secure-applications-apis
+title: Find broken object-level authorization in an API
+pass_mark: 80
+scenario: |
+  The customer portal's API returns an invoice at `GET /api/v1/invoices/{id}`. The gateway
+  checks that the caller has a valid token, but the architecture review asks whether anything
+  checks that the invoice **belongs** to the caller.
+
+  You have the API gateway log (one JSON object per line, `token_sub` is the authenticated
+  customer) and the database's invoice ownership table.
+artifacts:
+- name: api_gateway.log
+  kind: json
+  description: API gateway requests (UTC).
+  content: |
+    {"time": "2026-10-12T10:00:04Z", "token_sub": "cust-4120", "method": "GET", "path": "/api/v1/invoices/7014", "status": 200}
+    {"time": "2026-10-12T10:01:34Z", "token_sub": "cust-4120", "method": "GET", "path": "/api/v1/invoices/7039", "status": 200}
+    {"time": "2026-10-12T10:05:10Z", "token_sub": "cust-2211", "method": "GET", "path": "/api/v1/invoices/7011", "status": 200}
+    {"time": "2026-10-12T10:07:26Z", "token_sub": "cust-2211", "method": "GET", "path": "/api/v1/invoices/7001", "status": 200}
+    {"time": "2026-10-12T10:07:50Z", "token_sub": "cust-2211", "method": "GET", "path": "/api/v1/invoices/7024", "status": 200}
+    {"time": "2026-10-12T10:08:15Z", "token_sub": "cust-2211", "method": "GET", "path": "/api/v1/invoices/7011", "status": 200}
+    {"time": "2026-10-12T10:09:00Z", "token_sub": "cust-3380", "method": "GET", "path": "/api/v1/invoices/7030", "status": 200}
+    {"time": "2026-10-12T10:16:01Z", "token_sub": "cust-2211", "method": "GET", "path": "/api/v1/invoices/7010", "status": 200}
+    {"time": "2026-10-12T10:18:54Z", "token_sub": "cust-3380", "method": "GET", "path": "/api/v1/invoices/7037", "status": 200}
+    {"time": "2026-10-12T10:19:22Z", "token_sub": "cust-2211", "method": "GET", "path": "/api/v1/invoices/7003", "status": 200}
+    {"time": "2026-10-12T10:20:01Z", "token_sub": "cust-1043", "method": "GET", "path": "/api/v1/invoices/7001", "status": 200}
+    {"time": "2026-10-12T10:20:02Z", "token_sub": "cust-1043", "method": "GET", "path": "/api/v1/invoices/7002", "status": 200}
+    {"time": "2026-10-12T10:20:03Z", "token_sub": "cust-1043", "method": "GET", "path": "/api/v1/invoices/7003", "status": 200}
+    {"time": "2026-10-12T10:20:04Z", "token_sub": "cust-1043", "method": "GET", "path": "/api/v1/invoices/7004", "status": 200}
+    {"time": "2026-10-12T10:20:05Z", "token_sub": "cust-1043", "method": "GET", "path": "/api/v1/invoices/7005", "status": 200}
+    {"time": "2026-10-12T10:20:06Z", "token_sub": "cust-1043", "method": "GET", "path": "/api/v1/invoices/7006", "status": 200}
+    {"time": "2026-10-12T10:20:07Z", "token_sub": "cust-1043", "method": "GET", "path": "/api/v1/invoices/7007", "status": 200}
+    {"time": "2026-10-12T10:20:08Z", "token_sub": "cust-1043", "method": "GET", "path": "/api/v1/invoices/7008", "status": 200}
+    {"time": "2026-10-12T10:20:09Z", "token_sub": "cust-1043", "method": "GET", "path": "/api/v1/invoices/7009", "status": 200}
+    {"time": "2026-10-12T10:20:10Z", "token_sub": "cust-1043", "method": "GET", "path": "/api/v1/invoices/7010", "status": 200}
+    {"time": "2026-10-12T10:20:11Z", "token_sub": "cust-1043", "method": "GET", "path": "/api/v1/invoices/7011", "status": 200}
+    {"time": "2026-10-12T10:20:12Z", "token_sub": "cust-1043", "method": "GET", "path": "/api/v1/invoices/7012", "status": 200}
+    {"time": "2026-10-12T10:20:13Z", "token_sub": "cust-1043", "method": "GET", "path": "/api/v1/invoices/7013", "status": 200}
+    {"time": "2026-10-12T10:20:14Z", "token_sub": "cust-1043", "method": "GET", "path": "/api/v1/invoices/7014", "status": 200}
+    {"time": "2026-10-12T10:20:15Z", "token_sub": "cust-1043", "method": "GET", "path": "/api/v1/invoices/7015", "status": 200}
+    {"time": "2026-10-12T10:20:16Z", "token_sub": "cust-1043", "method": "GET", "path": "/api/v1/invoices/7016", "status": 200}
+    {"time": "2026-10-12T10:20:17Z", "token_sub": "cust-1043", "method": "GET", "path": "/api/v1/invoices/7017", "status": 200}
+    {"time": "2026-10-12T10:20:18Z", "token_sub": "cust-1043", "method": "GET", "path": "/api/v1/invoices/7018", "status": 200}
+    {"time": "2026-10-12T10:20:19Z", "token_sub": "cust-1043", "method": "GET", "path": "/api/v1/invoices/7019", "status": 200}
+    {"time": "2026-10-12T10:20:20Z", "token_sub": "cust-1043", "method": "GET", "path": "/api/v1/invoices/7020", "status": 200}
+    {"time": "2026-10-12T10:20:21Z", "token_sub": "cust-1043", "method": "GET", "path": "/api/v1/invoices/7021", "status": 200}
+    {"time": "2026-10-12T10:20:22Z", "token_sub": "cust-1043", "method": "GET", "path": "/api/v1/invoices/7022", "status": 200}
+    {"time": "2026-10-12T10:20:23Z", "token_sub": "cust-1043", "method": "GET", "path": "/api/v1/invoices/7023", "status": 200}
+    {"time": "2026-10-12T10:20:24Z", "token_sub": "cust-1043", "method": "GET", "path": "/api/v1/invoices/7024", "status": 200}
+    {"time": "2026-10-12T10:20:25Z", "token_sub": "cust-1043", "method": "GET", "path": "/api/v1/invoices/7025", "status": 200}
+    {"time": "2026-10-12T10:20:26Z", "token_sub": "cust-1043", "method": "GET", "path": "/api/v1/invoices/7026", "status": 200}
+    {"time": "2026-10-12T10:20:27Z", "token_sub": "cust-1043", "method": "GET", "path": "/api/v1/invoices/7027", "status": 200}
+    {"time": "2026-10-12T10:20:28Z", "token_sub": "cust-1043", "method": "GET", "path": "/api/v1/invoices/7028", "status": 200}
+    {"time": "2026-10-12T10:20:29Z", "token_sub": "cust-1043", "method": "GET", "path": "/api/v1/invoices/7029", "status": 200}
+    {"time": "2026-10-12T10:20:30Z", "token_sub": "cust-1043", "method": "GET", "path": "/api/v1/invoices/7030", "status": 200}
+    {"time": "2026-10-12T10:20:31Z", "token_sub": "cust-1043", "method": "GET", "path": "/api/v1/invoices/7031", "status": 200}
+    {"time": "2026-10-12T10:20:32Z", "token_sub": "cust-1043", "method": "GET", "path": "/api/v1/invoices/7032", "status": 200}
+    {"time": "2026-10-12T10:20:33Z", "token_sub": "cust-1043", "method": "GET", "path": "/api/v1/invoices/7033", "status": 200}
+    {"time": "2026-10-12T10:20:34Z", "token_sub": "cust-1043", "method": "GET", "path": "/api/v1/invoices/7034", "status": 200}
+    {"time": "2026-10-12T10:20:35Z", "token_sub": "cust-1043", "method": "GET", "path": "/api/v1/invoices/7035", "status": 200}
+    {"time": "2026-10-12T10:20:36Z", "token_sub": "cust-1043", "method": "GET", "path": "/api/v1/invoices/7036", "status": 200}
+    {"time": "2026-10-12T10:20:37Z", "token_sub": "cust-1043", "method": "GET", "path": "/api/v1/invoices/7037", "status": 200}
+    {"time": "2026-10-12T10:20:38Z", "token_sub": "cust-1043", "method": "GET", "path": "/api/v1/invoices/7038", "status": 200}
+    {"time": "2026-10-12T10:20:39Z", "token_sub": "cust-1043", "method": "GET", "path": "/api/v1/invoices/7039", "status": 200}
+    {"time": "2026-10-12T10:20:40Z", "token_sub": "cust-1043", "method": "GET", "path": "/api/v1/invoices/7040", "status": 200}
+    {"time": "2026-10-12T10:23:01Z", "token_sub": "cust-4120", "method": "GET", "path": "/api/v1/invoices/7014", "status": 200}
+    {"time": "2026-10-12T10:26:00Z", "token_sub": "cust-2211", "method": "GET", "path": "/api/v1/invoices/7022", "status": 200}
+    {"time": "2026-10-12T10:26:55Z", "token_sub": "cust-2211", "method": "GET", "path": "/api/v1/invoices/7003", "status": 200}
+    {"time": "2026-10-12T10:27:35Z", "token_sub": "cust-3380", "method": "GET", "path": "/api/v1/invoices/7037", "status": 200}
+    {"time": "2026-10-12T10:36:10Z", "token_sub": "cust-3380", "method": "GET", "path": "/api/v1/invoices/7037", "status": 200}
+    {"time": "2026-10-12T10:37:02Z", "token_sub": "cust-4120", "method": "GET", "path": "/api/v1/invoices/7018", "status": 200}
+    {"time": "2026-10-12T10:38:14Z", "token_sub": "cust-3380", "method": "GET", "path": "/api/v1/invoices/7019", "status": 200}
+    {"time": "2026-10-12T10:39:45Z", "token_sub": "cust-4120", "method": "GET", "path": "/api/v1/invoices/7014", "status": 200}
+    {"time": "2026-10-12T10:41:39Z", "token_sub": "cust-2211", "method": "GET", "path": "/api/v1/invoices/7033", "status": 200}
+    {"time": "2026-10-12T10:44:24Z", "token_sub": "cust-3380", "method": "GET", "path": "/api/v1/invoices/7019", "status": 200}
+    {"time": "2026-10-12T10:44:55Z", "token_sub": "cust-3380", "method": "GET", "path": "/api/v1/invoices/7026", "status": 200}
+    {"time": "2026-10-12T10:48:07Z", "token_sub": "cust-3380", "method": "GET", "path": "/api/v1/invoices/7019", "status": 200}
+    {"time": "2026-10-12T10:48:08Z", "token_sub": "cust-4120", "method": "GET", "path": "/api/v1/invoices/7029", "status": 200}
+    {"time": "2026-10-12T10:49:41Z", "token_sub": "cust-3380", "method": "GET", "path": "/api/v1/invoices/7030", "status": 200}
+    {"time": "2026-10-12T10:49:44Z", "token_sub": "cust-4120", "method": "GET", "path": "/api/v1/invoices/7009", "status": 200}
+- name: invoice_owners.csv
+  kind: csv
+  description: Which customer owns each invoice.
+  content: |
+    invoice,owner
+    7001,cust-2211
+    7002,cust-5098
+    7003,cust-2211
+    7004,cust-3380
+    7005,cust-1043
+    7006,cust-2211
+    7007,cust-2211
+    7008,cust-2211
+    7009,cust-4120
+    7010,cust-2211
+    7011,cust-2211
+    7012,cust-1043
+    7013,cust-4120
+    7014,cust-4120
+    7015,cust-2211
+    7016,cust-5098
+    7017,cust-5098
+    7018,cust-4120
+    7019,cust-3380
+    7020,cust-5098
+    7021,cust-5098
+    7022,cust-2211
+    7023,cust-5098
+    7024,cust-2211
+    7025,cust-5098
+    7026,cust-3380
+    7027,cust-4120
+    7028,cust-5098
+    7029,cust-4120
+    7030,cust-3380
+    7031,cust-2211
+    7032,cust-4120
+    7033,cust-2211
+    7034,cust-4120
+    7035,cust-5098
+    7036,cust-5098
+    7037,cust-3380
+    7038,cust-5098
+    7039,cust-4120
+    7040,cust-4120
+tasks:
+- prompt: Which customer account was enumerating invoices?
+  type: text
+  accepted:
+  - cust-1043
+  hint: Look for one caller requesting invoice IDs one after another, a second apart.
+  explanation: 'cust-1043 requested every invoice from 7001 to 7040 in forty seconds: a script walking the ID space.'
+  verify:
+    artifact: api_gateway.log
+    op: top
+    pattern: '"token_sub": "([^"]+)"'
+- prompt: How many distinct invoices did that account request?
+  type: number
+  accepted:
+  - '40'
+  hint: Distinct invoice IDs in its requests.
+  explanation: Forty, every invoice in the system.
+  verify:
+    artifact: api_gateway.log
+    op: distinct_count
+    pattern: '"token_sub": "cust-1043", "method": "GET", "path": "/api/v1/invoices/(\d+)"'
+- prompt: How many of those invoices belonged to other customers?
+  type: number
+  accepted:
+  - '38'
+  hint: Use invoice_owners.csv to remove the account's own invoices.
+  explanation: '38 of 40 belong to someone else and every request returned 200: a data breach of other customers''
+    invoices.'
+- prompt: What is this vulnerability called?
+  type: choice
+  options:
+  - SQL injection
+  - Broken object-level authorization (BOLA, also called IDOR), the top risk in the OWASP API Security Top 10
+  - Cross-site scripting
+  - Broken TLS
+  answer: 1
+  hint: The caller is authenticated but can reach objects that are not theirs.
+  explanation: Authentication works; per-object authorization is missing. The API trusts the ID in the URL.
+- prompt: What is the correct architectural fix?
+  type: choice
+  options:
+  - Make invoice IDs random so they are hard to guess
+  - Check on every request, in the service, that the invoice's owner matches the token's subject, and return 404
+    otherwise; add rate limits and alerting on enumeration as extra layers
+  - Add a WAF rule blocking sequential IDs
+  - Require customers to sign in again more often
+  answer: 1
+  hint: Fix the missing check where the data is fetched.
+  explanation: Only an ownership check fixes BOLA. Random IDs, WAF rules and rate limits slow attackers down but
+    leave every invoice readable by anyone who obtains an ID.

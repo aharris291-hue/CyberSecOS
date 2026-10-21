@@ -181,9 +181,9 @@ def test_siem_lab_encoded_command_decodes_to_the_answer():
     assert is_correct(_task(lab, "Decode the PowerShell"), domain)
 
 
-def test_every_course_has_at_least_three_graded_labs():
+def test_every_course_has_at_least_four_graded_labs():
     per_course = Counter(LESSONS[lab["lesson"]][0]["slug"] for lab in LABS)
-    assert min(per_course.values()) >= 3, per_course
+    assert min(per_course.values()) >= 4, per_course
 
 
 def _csv(lab: dict, name: str, sep: str = ",") -> list[dict]:
@@ -333,3 +333,65 @@ def test_persistence_lab_counts_each_mechanism_once():
     lab = _lab("lab-linux-persistence-hunt")
     keys = {m.group(1) for m in re.finditer(r'key="(\w+)"', _artifact(lab, "audit.log"))}
     assert is_correct(_task(lab, "How many separate persistence"), str(len(keys)))
+
+
+def test_metrics_lab_numbers_follow_the_tickets():
+    from datetime import datetime
+
+    lab = _lab("lab-siem-soc-metrics")
+    rows = _csv(lab, "incidents.csv")
+
+    def minutes(row, end):
+        return (datetime.fromisoformat(row[end].replace("Z", "+00:00")) - datetime.fromisoformat(row["created"].replace("Z", "+00:00"))).total_seconds() / 60
+
+    ack = [minutes(r, "acknowledged") for r in rows]
+    assert is_correct(_task(lab, "What was the median time to acknowledge"), str(round(statistics.median(ack))))
+    urgent = [r for r in rows if r["severity"] in {"high", "critical"}]
+    breaches = [r["incident"] for r in urgent if minutes(r, "acknowledged") > 15]
+    assert is_correct(_task(lab, "Which high or critical incidents breached"), ", ".join(breaches))
+    assert is_correct(_task(lab, "What share of high and critical"), str(round(100 * (len(urgent) - len(breaches)) / len(urgent))))
+    slowest = max(rows, key=lambda r: minutes(r, "resolved"))["incident"]
+    assert is_correct(_task(lab, "Which incident took longest"), slowest)
+
+
+def test_prioritisation_lab_order_follows_the_standard():
+    lab = _lab("lab-vm-exploit-prioritisation")
+    rows = _csv(lab, "findings.csv")
+    ordered = sorted(
+        rows,
+        key=lambda r: (r["known_exploited"] != "yes" or r["exposure"] != "internet", r["known_exploited"] != "yes", -float(r["epss"]), -float(r["cvss"])),
+    )
+    assert is_correct(_task(lab, "Which finding is the third priority"), ordered[2]["cve"])
+
+
+def test_api_lab_foreign_invoices_follow_the_owner_table():
+    lab = _lab("lab-arch-api-authorization")
+    owners = {r["invoice"]: r["owner"] for r in _csv(lab, "invoice_owners.csv")}
+    requests = [json.loads(line) for line in _artifact(lab, "api_gateway.log").splitlines()]
+    read = {r["path"].rsplit("/", 1)[1] for r in requests if r["token_sub"] == "cust-1043" and r["status"] == 200}
+    foreign = [i for i in read if owners[i] != "cust-1043"]
+    assert is_correct(_task(lab, "How many of those invoices belonged"), str(len(foreign)))
+    others = [r for r in requests if r["token_sub"] != "cust-1043"]
+    assert all(owners[r["path"].rsplit("/", 1)[1]] == r["token_sub"] for r in others), "only the attacker reads foreign invoices"
+
+
+def test_correlation_lab_incident_follows_the_correlation_key():
+    lab = _lab("lab-de-alert-correlation")
+    alerts = [r for r in _csv(lab, "alerts.csv", sep="|") if r["user"] == "m.ruiz"]
+    assets = {r["host"]: r["criticality"] for r in _csv(lab, "assets.csv", sep="|")}
+    hosts = {r["host"] for r in alerts}
+    assert is_correct(_task(lab, "How many distinct hosts"), str(len(hosts)))
+    assert is_correct(_task(lab, "Which host in the incident is critical"), ", ".join(h for h in hosts if assets[h] == "critical"))
+
+
+def test_bia_lab_gaps_follow_the_targets():
+    lab = _lab("lab-grc-bia-backup-gaps")
+    rpo = {r["service"]: float(r["rpo_hours"]) for r in _csv(lab, "bia.csv")}
+    tier = {r["service"]: r["tier"] for r in _csv(lab, "bia.csv")}
+    backups = {r["service"]: r for r in _csv(lab, "backups.csv", sep="|")}
+    misses = [s for s, b in backups.items() if float(b["interval_hours"]) > rpo[s]]
+    assert is_correct(_task(lab, "Which services' backups run less often"), ", ".join(misses))
+    proven = [s for s, b in backups.items() if b["result"] == "pass" and b["last_restore_test"] >= "2026-04-21"]
+    assert is_correct(_task(lab, "How many services have a backup that is proven"), str(len(proven)))
+    worst = [s for s in misses if tier[s] == "critical" and s not in proven]
+    assert is_correct(_task(lab, "Which critical service is the biggest"), ", ".join(worst))

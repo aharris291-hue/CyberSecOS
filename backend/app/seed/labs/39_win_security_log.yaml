@@ -1,0 +1,115 @@
+slug: lab-win-security-log
+lesson: win-event-logs
+title: Reconstruct a break-in from the Windows Security log
+pass_mark: 80
+scenario: |
+  Server **SRV-APP-01** stopped forwarding events to the SIEM at 22:00 on 22 September. A copy
+  of its Security log, collected earlier by a scheduled task, survived. You have the relevant
+  events in a simplified form: event ID, the account that did it (subject), the account it was
+  done to (target) and a description.
+
+  Event IDs to know: 4624 logon, 4625 failed logon, 4672 admin-level logon, 4720 user created,
+  4732 member added to a local group, 1102 audit log cleared.
+artifacts:
+- name: security_events.txt
+  kind: csv
+  description: Security log events from SRV-APP-01 (pipe-separated, UTC).
+  content: |
+    time|event_id|subject_account|target_account|detail
+    2026-09-22T21:14:44Z|4624|SRV-APP-01$|-|Logon type 3
+    2026-09-22T21:26:37Z|4624|b.cole|-|Logon type 3
+    2026-09-22T21:28:39Z|4624|h.ito|-|Logon type 3
+    2026-09-22T21:35:09Z|4624|h.ito|-|Logon type 3
+    2026-09-22T21:36:27Z|4624|a.berg|-|Logon type 3
+    2026-09-22T21:40:06Z|4625|j.parker|-|Logon type 10, bad password, from 203.0.113.140
+    2026-09-22T21:40:08Z|4624|a.berg|-|Logon type 3
+    2026-09-22T21:40:12Z|4625|j.parker|-|Logon type 10, bad password, from 203.0.113.140
+    2026-09-22T21:40:17Z|4625|j.parker|-|Logon type 10, bad password, from 203.0.113.140
+    2026-09-22T21:40:23Z|4625|j.parker|-|Logon type 10, bad password, from 203.0.113.140
+    2026-09-22T21:40:28Z|4625|j.parker|-|Logon type 10, bad password, from 203.0.113.140
+    2026-09-22T21:40:32Z|4625|j.parker|-|Logon type 10, bad password, from 203.0.113.140
+    2026-09-22T21:40:52Z|4624|j.parker|-|Logon type 10 from 203.0.113.140
+    2026-09-22T21:40:53Z|4672|j.parker|-|Special privileges assigned to new logon
+    2026-09-22T21:43:52Z|4720|j.parker|svc_update2|A user account was created
+    2026-09-22T21:44:12Z|4732|j.parker|svc_update2|Member added to security-enabled local group Administrators
+    2026-09-22T21:47:29Z|4624|SRV-APP-01$|-|Logon type 3
+    2026-09-22T21:49:52Z|1102|j.parker|-|The audit log was cleared
+    2026-09-22T21:50:00Z|4624|a.berg|-|Logon type 3
+    2026-09-22T21:52:37Z|4624|a.berg|-|Logon type 3
+    2026-09-22T21:53:28Z|4624|h.ito|-|Logon type 3
+    2026-09-22T21:54:00Z|4624|a.berg|-|Logon type 3
+    2026-09-22T22:02:49Z|4624|SRV-APP-01$|-|Logon type 3
+    2026-09-22T22:17:11Z|4624|a.berg|-|Logon type 3
+    2026-09-22T22:28:10Z|4624|h.ito|-|Logon type 3
+    2026-09-22T22:28:59Z|4624|b.cole|-|Logon type 3
+    2026-09-22T22:32:23Z|4624|h.ito|-|Logon type 3
+    2026-09-22T22:36:59Z|4624|b.cole|-|Logon type 3
+    2026-09-22T22:38:55Z|4624|a.berg|-|Logon type 3
+    2026-09-22T22:47:52Z|4624|a.berg|-|Logon type 3
+    2026-09-22T22:51:13Z|4624|a.berg|-|Logon type 3
+tasks:
+- prompt: Which account did the attacker log on with?
+  type: text
+  accepted:
+  - j.parker
+  hint: Find failed remote logons followed by a success from the same external address.
+  explanation: 'j.parker: six bad passwords over Remote Desktop (logon type 10) from 203.0.113.140, then a success.
+    A guessed or sprayed password on an internet-exposed RDP service.'
+  verify:
+    artifact: security_events.txt
+    op: set
+    pattern: \|4625\|([^|]+)\|
+- prompt: How many failed logons came before the successful one?
+  type: number
+  accepted:
+  - '6'
+  hint: Count event 4625.
+  explanation: Six. A lockout threshold of five would have stopped this attempt.
+  verify:
+    artifact: security_events.txt
+    op: count
+    pattern: \|4625\|
+- prompt: What account did the attacker create?
+  type: text
+  accepted:
+  - svc_update2
+  hint: Event 4720's target account.
+  explanation: svc_update2, named to look like a service account so that nobody questions it. It is the attacker's
+    way back in.
+  verify:
+    artifact: security_events.txt
+    op: set
+    pattern: \|4720\|[^|]+\|([^|]+)\|
+- prompt: Which local group was the new account added to?
+  type: text
+  accepted:
+  - Administrators
+  hint: Read the 4732 event.
+  explanation: Administrators, giving the backdoor account full control of the server.
+  verify:
+    artifact: security_events.txt
+    op: set
+    pattern: \|4732\|.*local group (\w+)$
+- prompt: Which event ID shows the attacker covering their tracks?
+  type: number
+  accepted:
+  - '1102'
+  hint: Look for the event about the log itself.
+  explanation: 1102, the audit log was cleared. It almost never happens legitimately on a server and should alert
+    on its own; it is also why forwarding logs off the host matters.
+  verify:
+    artifact: security_events.txt
+    op: set
+    pattern: \|(\d+)\|[^|]+\|[^|]+\|The audit log was cleared
+- prompt: What should happen first?
+  type: choice
+  options:
+  - Re-enable log forwarding and wait for more events
+  - Disable svc_update2, reset j.parker's password and revoke its sessions, block 203.0.113.140 and close RDP to
+    the internet, then scope what else was touched
+  - Delete the Security log copy to save space
+  - Rename svc_update2
+  answer: 1
+  hint: Remove the attacker's access, then the entry point.
+  explanation: Cut off both accounts the attacker controls, remove the exposed RDP entry point, and only then investigate
+    the rest. Clearing the log suggests other actions you cannot see.

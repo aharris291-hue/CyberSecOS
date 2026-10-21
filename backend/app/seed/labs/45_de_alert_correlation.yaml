@@ -1,0 +1,91 @@
+slug: lab-de-alert-correlation
+lesson: de-alert-enrichment-correlation
+title: Correlate and enrich alerts into one incident
+pass_mark: 80
+scenario: |
+  Seven alerts landed in the queue in one afternoon, each from a different detection. Triaged
+  one by one, most look medium or low. The detection team wants a correlation rule that groups
+  alerts sharing a **user** within an hour into one incident, and enriches each with the asset
+  inventory so a critical server raises the incident's priority.
+
+  Do by hand what the rule would do.
+artifacts:
+- name: alerts.csv
+  kind: csv
+  description: The afternoon's alerts (pipe-separated, UTC).
+  content: |
+    id|time|host|user|rule|severity
+    AL-501|2026-10-09T14:02:00Z|WS-310|m.ruiz|Suspicious Office child process|medium
+    AL-502|2026-10-09T14:03:10Z|WS-310|m.ruiz|Encoded PowerShell|medium
+    AL-503|2026-10-09T14:09:45Z|WS-310|m.ruiz|LSASS access with full rights|high
+    AL-504|2026-10-09T14:21:30Z|SRV-DB-02|m.ruiz|Remote service creation|high
+    AL-505|2026-10-09T14:40:00Z|WS-118|t.nash|Impossible travel|low
+    AL-506|2026-10-09T15:10:20Z|WS-402|p.long|Malware detected and quarantined|low
+    AL-507|2026-10-09T14:23:05Z|SRV-DB-02|m.ruiz|New local administrator|high
+- name: assets.csv
+  kind: csv
+  description: Asset inventory (pipe-separated).
+  content: |
+    host|criticality|role
+    WS-310|standard|Marketing laptop
+    SRV-DB-02|critical|Customer database
+    WS-118|standard|Sales laptop
+    WS-402|standard|HR laptop
+tasks:
+- prompt: Which user links the most alerts?
+  type: text
+  accepted:
+  - m.ruiz
+  hint: Count alerts per user.
+  explanation: m.ruiz appears in five of the seven alerts, across two hosts.
+  verify:
+    artifact: alerts.csv
+    op: top
+    pattern: ^[^|]+\|[^|]+\|[^|]+\|([^|]+)\|
+- prompt: Which alerts belong in the correlated incident? List the IDs separated by commas.
+  type: set
+  accepted:
+  - AL-501, AL-502, AL-503, AL-504, AL-507
+  hint: Same user, all within an hour of the first.
+  explanation: 'AL-501 to AL-504 and AL-507 tell one story: a malicious document, PowerShell, credential theft,
+    then lateral movement to the database server and a new admin there.'
+  verify:
+    artifact: alerts.csv
+    op: set
+    pattern: ^(AL-\d+)\|[^|]+\|[^|]+\|m\.ruiz\|
+- prompt: Which host in the incident is critical according to the asset inventory?
+  type: text
+  accepted:
+  - SRV-DB-02
+  hint: Join the incident's hosts with assets.csv.
+  explanation: SRV-DB-02, the customer database. The attacker has reached the crown jewels, which is what should
+    set the incident's priority.
+- prompt: How many distinct hosts does the incident span?
+  type: number
+  accepted:
+  - '2'
+  hint: Hosts of the correlated alerts.
+  explanation: 'Two: the laptop where it started and the server it moved to.'
+- prompt: What severity should the correlated incident have?
+  type: choice
+  options:
+  - Medium, the most common severity among its alerts
+  - 'Critical: a full attack chain from initial access to admin rights on a critical asset, which no single alert
+    shows'
+  - Low, because one alert was quarantined
+  - High, the highest single alert
+  answer: 1
+  hint: Think about what the alerts mean together, plus the asset enrichment.
+  explanation: 'Correlation turns several medium alerts into a clear intrusion, and enrichment shows its target
+    is critical. That is the value of the rule: one critical incident instead of five unrelated tickets.'
+- prompt: 'AL-505, AL-506: what happens to them?'
+  type: choice
+  options:
+  - Merge them into the incident because they happened the same afternoon
+  - Keep them as separate alerts and triage them on their own; they share no user or host with the incident
+  - Close them automatically
+  - Raise them to critical
+  answer: 1
+  hint: Apply the correlation key.
+  explanation: Different users and hosts, so they stay separate. Over-correlating hides real incidents as much as
+    under-correlating.
