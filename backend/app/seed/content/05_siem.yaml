@@ -755,96 +755,384 @@ lessons:
         options: [Perfect accuracy, Normal activity to look anomalous because the baseline is incomplete, No alerts ever, Faster networks]
         answer: 1
         explanation: An incomplete baseline misjudges normal behaviour, so the window length must be accounted for in triage.
-  - slug: siem-parsing-normalisation-enrichment
-    title: Log Parsing, Normalisation and Enrichment
+  - slug: siem-correlation-rules
+    title: Writing and Managing Correlation Rules
     order: 9
     difficulty: intermediate
-    summary: Turn raw, messy logs into searchable, correlatable events through parsing, normalisation to a common schema, and enrichment, the unglamorous work that makes a SIEM useful.
+    summary: Build correlation rules that combine events across time and sources into meaningful alerts, and manage them so they stay precise, documented and trustworthy.
     theory_minutes: 12
     lab_minutes: 54
-    objectives: ["sc200:1", "secplus:4.4", "cysa:1.2"]
+    objectives: ["sc200:2", "secplus:4.4", "cysa:1.3"]
     learning_objectives:
-      - Explain why raw logs must be parsed and normalised before use
-      - Describe normalisation to a common schema and field mapping
-      - Enrich events so analysts have context without pivoting away
+      - Explain what correlation rules add beyond single-event alerts
+      - Write a correlation rule combining events across time and sources
+      - Manage rules with documentation, severity and lifecycle discipline
     theory: |
-      A SIEM is only as good as the data going into it, and raw logs arrive as a mess: every device speaks a
-      different format, a firewall, a Windows host, a cloud service and a web server describe the same idea,
-      "a source address", in four different field names and layouts. Before any detection or search can work
-      across them, the logs must be **parsed** (broken from a raw line into structured fields) and
-      **normalised** (those fields mapped onto a common schema so `src_ip`, `source.ip` and `ClientAddress`
-      all become one agreed field). This unglamorous pipeline work is what lets an analyst search "this IP"
-      once and hit every log source, instead of writing a different query per device.
+      A single log event rarely means much on its own; the signal is often in the **combination**. One failed
+      login is noise; fifty failed logins followed by a success from the same source is a brute-force
+      compromise. A **correlation rule** is how a SIEM expresses that: it watches for a pattern of events
+      across time, and across different log sources, and raises one meaningful alert when the pattern matches,
+      instead of flooding analysts with the individual events. This is the step up from simple matching that
+      turns a pile of logs into detections.
 
-      **Normalisation** means choosing a common schema (many teams adopt a published one) and writing the
-      field mappings that each log source needs. Done well, a correlation rule can say "a failed logon
-      followed by a success from the same source" and have it work whether the events came from Windows, a
-      VPN or a cloud identity provider, because they all populate the same normalised fields. Done badly, or
-      not at all, each source is an island and cross-source detection is impossible. Parsing also assigns an
-      **event category** and timestamp consistently, which matters because correlating events across sources
-      depends on their times agreeing.
+      Writing a correlation rule means being precise about the pattern. The building blocks are the **events**
+      to match, the **grouping key** that ties them together (the same user, host or source IP), the **time
+      window** in which they must occur, and the **threshold** or **sequence** that triggers. "A failed logon
+      followed by a success from the same source within five minutes" needs a sequence and a grouping key;
+      "more than 100 denied connections from one host in a minute" needs a threshold. The craft is choosing
+      these so the rule fires on the attack and not on the benign version, which depends heavily on the logs
+      being normalised so the grouping key means the same thing across sources, the reason normalisation and
+      correlation go hand in hand.
 
-      **Enrichment** adds context at ingest so the analyst does not have to go hunting for it. A raw event
-      has an IP; an enriched event also carries the geolocation, the asset's owner and criticality, the
-      user's department, and whether the IP appears on a threat-intel list. That context is what turns "a
-      login from 203.0.113.5" into "a login from a known-malicious IP to your finance database server",
-      which an analyst can triage in seconds instead of minutes. The SOC lesson is that detection quality
-      rests on data quality: most failed or noisy detections trace back to logs that were never properly
-      parsed, normalised or enriched, so this plumbing is where a lot of real SIEM value is won or lost.
+      Rules are not written once and forgotten; they are **managed** like code. Each rule needs a clear name
+      and description of what it detects and why, a severity that reflects real impact, a mapping to a
+      technique (ATT&CK) so coverage is visible, and a documented response so an analyst who gets the alert
+      knows what to do. Over time rules are reviewed, tuned when they get noisy, and retired when they no
+      longer earn their place. A SIEM full of undocumented, unmaintained rules is as much a liability as too
+      few rules, so the discipline of rule management, versioning, testing changes, measuring each rule's
+      output, is what keeps the detection set trustworthy rather than a source of fatigue.
     examples:
-      - title: Normalising to a common field
+      - title: Correlation versus single events
         body: |
-          Firewall:  src=10.0.0.5
-          Windows:   IpAddress: 10.0.0.5
-          Cloud:     "ClientIP":"10.0.0.5"
-          -> all map to normalised  source.ip = 10.0.0.5  -> one query hits all
-      - title: Enrichment turning data into context
+          single:  "failed logon" (noise, thousands a day)
+          correlation: 50 failed logons THEN a success, same source, 5 min window
+          -> one meaningful brute-force alert instead of 51 raw events
+      - title: The building blocks of a rule
         body: |
-          Raw:      login from 203.0.113.5 to host SRV-FIN-01
-          Enriched: +geo=unexpected +asset=finance DB (critical) +intel=known-bad IP
-          The analyst triages in seconds, not minutes.
+          events:   denied connection
+          group by: source IP
+          window:   60 seconds
+          threshold: > 100  -> alert "possible scan/flood from <ip>"
     exercise:
-      title: Build a parse-normalise-enrich pipeline for a log source
-      environment: A SIEM or a notebook with raw sample logs from two or more different device types
-      tools: [A SIEM or notebook, raw sample logs from multiple sources, a common-schema reference, a notes file]
+      title: Write and document a correlation rule
+      environment: A SIEM or a notebook with sample multi-source logs containing a correlatable attack pattern
+      tools: [A SIEM or notebook, sample logs with an embedded pattern, a rule-documentation template, a notes file]
       steps:
-        - Take raw logs from two different sources and identify how each represents the same concept (for example the source address) differently.
-        - Parse one raw log line into structured fields and show the result.
-        - Map the fields from both sources onto a single common schema so the same concept lands in the same field.
-        - Write a simple cross-source query or rule that now works across both sources because of the normalisation.
-        - Add two enrichments (for example geolocation and asset criticality) to an event and show how they speed triage.
-        - Explain how poor parsing or normalisation would have made the cross-source detection impossible.
-      deliverable: A worked pipeline showing raw logs parsed and normalised to a common schema, one cross-source query that works because of it, two enrichments added, and the consequence of skipping the work.
+        - Identify an attack pattern in the sample data that no single event would reveal on its own.
+        - Specify the rule's building blocks, the events to match, the grouping key, the time window, and the threshold or sequence.
+        - Write the correlation rule (in the SIEM's language or pseudocode) and run it against the data to confirm it fires on the pattern.
+        - Explain how normalisation of the sources makes the grouping key reliable across them.
+        - Document the rule, name, description, severity, ATT&CK mapping and the response an analyst should take.
+        - Describe how you would test a change to this rule and measure its output so it stays trustworthy.
+      deliverable: A documented correlation rule with its building blocks, a run showing it fires on the pattern, the normalisation dependency, and the management details (severity, mapping, response, change-testing).
     expected_outcome: >
-      You can explain why raw logs must be parsed and normalised, map multiple sources onto a common schema
-      so cross-source detection works, and enrich events with context so analysts triage faster, recognising
-      that detection quality rests on this data plumbing.
+      You can explain what correlation adds over single-event alerts, write a rule that combines events across
+      time and sources into one meaningful alert, and manage rules with documentation, severity and lifecycle
+      discipline so the detection set stays precise and trustworthy.
     quiz:
-      - prompt: Why must raw logs be parsed and normalised before use in a SIEM?
+      - prompt: A correlation rule is valuable because it
         options:
-          - To save disk space only
-          - Because each source formats the same concept differently, so a common schema is needed to search and correlate across them
-          - To delete old logs
-          - They never need processing
+          - Deletes logs
+          - Combines a pattern of events across time and sources into one meaningful alert
+          - Stores more data
+          - Replaces the firewall
         answer: 1
-        explanation: Normalising disparate formats to one schema lets a single query and rule work across all sources.
-      - prompt: Normalisation to a common schema enables
+        explanation: Correlation surfaces the signal that lies in combinations of events rather than single ones.
+      - prompt: Which building block ties correlated events to the same entity?
+        options: [The time window, The grouping key (such as user, host or source IP), The severity, The description]
+        answer: 1
+        explanation: The grouping key links events belonging to the same user, host or source so the pattern is coherent.
+      - prompt: Correlation depends on normalisation because
         options:
-          - Slower searches
-          - Correlation rules that work regardless of which device produced the events
-          - Fewer log sources
-          - Encryption of logs
+          - Normalisation deletes events
+          - The grouping key must mean the same thing across different sources for the rule to work
+          - It is faster
+          - Rules cannot use time windows otherwise
         answer: 1
-        explanation: When sources populate the same fields, a rule correlates across all of them.
-      - prompt: Enrichment at ingest means an event carries
+        explanation: Only when sources share a normalised schema does a grouping key correlate events across them.
+      - prompt: Managing correlation rules like code means
         options:
-          - Only the raw IP
-          - Added context such as geolocation, asset criticality and threat-intel matches
-          - Less information
-          - Only a timestamp
+          - Writing them once and never touching them
+          - Documenting, versioning, testing changes and measuring each rule's output over its lifecycle
+          - Disabling logging
+          - Avoiding severities
         answer: 1
-        explanation: Enrichment attaches context so analysts triage without pivoting to other tools.
-      - prompt: Most failed or noisy SIEM detections can be traced back to
-        options: [Too many analysts, Logs that were never properly parsed, normalised or enriched, Fast networks, Strong passwords]
+        explanation: Rule lifecycle management keeps the detection set documented, tuned and trustworthy.
+  - slug: siem-use-case-development
+    title: SIEM Use-Case Development and the Detection Backlog
+    order: 10
+    difficulty: intermediate
+    summary: Turn threats and requirements into a prioritised set of SIEM detections through a use-case process, so the SIEM covers what matters instead of whatever was easy to write.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["sc200:2", "cysa:1.3", "secplus:4.4"]
+    learning_objectives:
+      - Explain what a detection use case is and why a structured process matters
+      - Develop a use case from threat and requirement through to a deployed detection
+      - Prioritise and manage a detection backlog against risk and coverage
+    theory: |
+      A SIEM full of detections that were easy to write, rather than the ones that matter, gives a false sense
+      of security. **Use-case development** is the structured process that fixes this: it starts from what you
+      need to detect, a threat, a compliance requirement, a risk to a specific asset, and works forward to a
+      deployed, tested detection, instead of starting from whatever log happened to be available. A **use case**
+      is that unit of work: a documented statement of what you want to detect, why it matters, what data it
+      needs, the logic, and the response. Thinking in use cases keeps the SIEM aligned with real risk.
+
+      Developing one follows a path. Begin with the **requirement**: what threat or scenario (often framed with
+      MITRE ATT&CK) and why it is worth detecting. Check the **data**: do you ingest the logs this needs, and
+      are they parsed and normalised, if not, onboarding that data is a prerequisite, which is why use-case
+      development often drives log onboarding rather than the reverse. Then design the **detection logic**, set
+      its **severity** and the **response** an analyst should take, **test** it against known-good and known-bad
+      activity, and deploy it with documentation. Each use case therefore ties a real threat to concrete
+      telemetry and a concrete response, with no orphan rules and no silent gaps.
+
+      Because you cannot build everything at once, use cases are managed as a prioritised **backlog**.
+      Prioritisation weighs the risk the use case addresses, the likelihood and impact of the threat, the value
+      of the assets involved, against the effort and data readiness to build it, so the SIEM grows toward the
+      highest-value coverage first. The backlog also makes **coverage** visible: mapping use cases to ATT&CK
+      shows what you can and cannot detect, turning gaps into planned work rather than blind spots. For the SOC,
+      this discipline is what separates a SIEM that reflects a deliberate detection strategy from one that is an
+      accidental pile of rules.
+    examples:
+      - title: A use case from requirement to detection
+        body: |
+          requirement: detect credential dumping (ATT&CK T1003), high risk
+          data: need LSASS-access telemetry -> onboard if missing
+          logic + severity + response -> test on known-good/bad -> deploy + document
+      - title: Prioritising the backlog
+        body: |
+          use case A: high-risk threat, data already onboarded -> build first
+          use case B: medium risk, needs new log source -> schedule onboarding
+          map all to ATT&CK -> gaps become planned work, not blind spots
+    exercise:
+      title: Develop a SIEM use case and prioritise a backlog
+      environment: A SIEM or a notebook, plus a short list of threats/requirements and the available log sources
+      tools: [A SIEM or notebook, a MITRE ATT&CK reference, a use-case template, a notes file]
+      steps:
+        - Pick a threat or requirement and write the use-case requirement, what to detect and why it matters.
+        - Check whether the data it needs is already ingested, parsed and normalised, and note any onboarding prerequisite.
+        - Design the detection logic, severity and the analyst response for the use case.
+        - Describe how you would test the detection against known-good and known-bad activity before deploying it.
+        - Build a small backlog of several use cases and prioritise them by risk versus effort and data readiness.
+        - Map the use cases to ATT&CK and identify one coverage gap that becomes planned work.
+      deliverable: One fully developed use case (requirement, data, logic, severity, response, test plan) plus a prioritised backlog mapped to ATT&CK with one identified coverage gap.
+    expected_outcome: >
+      You can develop a SIEM detection use case from threat and requirement through to a tested, documented
+      detection, and manage a prioritised backlog against risk and ATT&CK coverage so the SIEM reflects a
+      deliberate strategy.
+    quiz:
+      - prompt: Use-case development improves a SIEM by
+        options:
+          - Writing whatever detections are easiest
+          - Starting from what needs to be detected and working forward to a tested, deployed detection
+          - Deleting old logs
+          - Avoiding documentation
         answer: 1
-        explanation: Detection quality depends on data quality, so poor plumbing undermines the detections built on it.
+        explanation: Starting from requirements keeps detections aligned with real risk rather than data convenience.
+      - prompt: If a use case needs a log source that is not yet ingested, you should
+        options:
+          - Abandon the use case
+          - Treat onboarding that data as a prerequisite, so use-case development drives log onboarding
+          - Write the rule anyway
+          - Disable the SIEM
+        answer: 1
+        explanation: Requirements often drive which data to onboard, rather than the reverse.
+      - prompt: A detection backlog is prioritised by
+        options:
+          - Alphabetical order
+          - The risk the use case addresses weighed against the effort and data readiness to build it
+          - The length of the rule
+          - The time of day
+        answer: 1
+        explanation: Prioritising by risk versus effort grows coverage toward the highest value first.
+      - prompt: Mapping use cases to ATT&CK makes
+        options:
+          - The SIEM slower
+          - Detection coverage and gaps visible, turning blind spots into planned work
+          - Logs disappear
+          - Rules optional
+        answer: 1
+        explanation: ATT&CK mapping shows what you can and cannot detect, so gaps become deliberate backlog items.
+  - slug: siem-retention-storage
+    title: Log Retention, Storage Tiers and Compliance
+    order: 11
+    difficulty: beginner
+    summary: Decide how long to keep which logs and where, balancing detection needs, investigation and compliance against the real cost of storing high-volume data.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.4", "cysa:4.1", "sc200:1"]
+    learning_objectives:
+      - Explain why log retention is a deliberate decision, not an afterthought
+      - Balance detection, investigation and compliance needs against storage cost
+      - Use storage tiers and a retention policy to keep the right data affordably
+    theory: |
+      Logs are the raw material of detection and investigation, but they are also voluminous and expensive to
+      store and search, so **how long to keep which logs, and where** is a real decision with security
+      consequences. Keep too little and an investigation hits a wall, you discover a breach that began four
+      months ago but your logs only go back thirty days, so you cannot reconstruct it. Keep everything hot
+      forever and the cost becomes unsustainable and searches slow to a crawl. Retention is the deliberate
+      balancing of these pressures, and getting it wrong is a quiet but serious gap.
+
+      Three forces set the requirement. **Detection** needs recent data readily searchable, most alerting works
+      on a short window. **Investigation** needs a longer history because intrusions are often discovered long
+      after they begin; the industry's dwell-time reality (attackers present for weeks or months before
+      detection) means short retention can make a breach uninvestigable. **Compliance** often sets hard
+      minimums: regulations and standards may require that certain logs be retained for a year or more, turning
+      retention from a preference into an obligation. The right policy satisfies the longest of these for each
+      log type, and different logs warrant different periods, authentication and security events longer,
+      high-volume debug data shorter.
+
+      The way to make this affordable is **storage tiering**. Recent data sits in a **hot** tier, indexed and
+      instantly searchable for detection and active investigation; older data moves to **warm** and then
+      **cold** or archival storage, far cheaper but slower to query, kept to satisfy long investigations and
+      compliance. A good retention policy therefore specifies, per log source, how long it stays in each tier,
+      driven by its detection value, investigative usefulness and any compliance mandate. For the analyst, the
+      practical consequences are concrete: know what is searchable instantly versus what must be restored from
+      archive, ensure the logs that matter for incidents are retained long enough, and recognise that a
+      too-short or inconsistent retention policy is itself a risk that can make an incident impossible to fully
+      understand.
+    examples:
+      - title: The cost of too-short retention
+        body: |
+          breach began 4 months ago, logs only go back 30 days
+          -> cannot reconstruct the intrusion
+          dwell time is often weeks/months, so short retention blinds investigation.
+      - title: Storage tiers
+        body: |
+          hot    recent, indexed, instant search (detection + active IR)
+          warm   older, slower, cheaper
+          cold   archival, cheapest, slow to query (long IR + compliance)
+          policy sets how long each log source stays in each tier.
+    exercise:
+      title: Build a log-retention policy with storage tiers
+      environment: A list of log sources with volumes and sensitivities (or a described environment) and a document or spreadsheet
+      tools: [A list of log sources, a spreadsheet or document, a reference on common compliance retention minimums, a notes file]
+      steps:
+        - Explain the risk of keeping too little log history, using the idea of attacker dwell time.
+        - For several log sources, note each one's detection value, investigative usefulness and any compliance minimum.
+        - Decide a retention period for each source that satisfies the longest applicable need.
+        - Assign each source to hot, warm and cold tiers over its lifetime, balancing searchability against cost.
+        - Identify which data an analyst can search instantly versus what must be restored from archive during an incident.
+        - Explain why a too-short or inconsistent retention policy is itself a security risk.
+      deliverable: A retention policy specifying, per log source, the retention period and the hot/warm/cold tiering, justified by detection, investigation and compliance needs, with the restore implications for incidents noted.
+    expected_outcome: >
+      You can set log retention deliberately, balancing detection, investigation and compliance against
+      storage cost, and use hot, warm and cold tiers so the right data is available at the right speed without
+      unsustainable cost.
+    quiz:
+      - prompt: Why is log retention a security decision, not just an IT cost question?
+        options:
+          - It never matters
+          - Too-short retention can make a breach impossible to investigate, since intrusions are often found long after they begin
+          - Logs are free to store
+          - Only compliance cares
+        answer: 1
+        explanation: Dwell time means short retention can leave an investigation with no history of the intrusion.
+      - prompt: Compliance requirements affect retention by
+        options:
+          - Making it optional
+          - Often setting hard minimum periods certain logs must be kept
+          - Deleting logs faster
+          - Reducing storage cost
+        answer: 1
+        explanation: Regulations and standards may mandate retaining specific logs for a year or more.
+      - prompt: Storage tiering keeps retention affordable by
+        options:
+          - Deleting all old data
+          - Holding recent data hot and instantly searchable while moving older data to cheaper, slower warm/cold tiers
+          - Storing everything hot forever
+          - Avoiding all archival
+        answer: 1
+        explanation: Tiering balances instant searchability for recent data against cheaper long-term storage for the rest.
+      - prompt: During an incident, data in cold/archival storage is
+        options: [Instantly searchable, Cheaper but slower, often needing restoration before querying, Deleted, Unusable]
+        answer: 1
+        explanation: Cold storage is cost-effective for long retention but slower to query, sometimes requiring restore.
+  - slug: siem-architecture-pipeline
+    title: SIEM Architecture and the Data Pipeline
+    order: 12
+    difficulty: intermediate
+    summary: Understand how a SIEM is built, from collection and forwarding through parsing, indexing and storage, so you can reason about coverage, reliability and why data sometimes does not arrive.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["sc200:1", "secplus:4.4", "cysa:1.3"]
+    learning_objectives:
+      - Describe the stages of a SIEM data pipeline from source to search
+      - Explain collection methods and where data loss or delay occurs
+      - Reason about SIEM reliability, scaling and coverage gaps
+    theory: |
+      A SIEM is often treated as a magic box where logs go in and alerts come out, but understanding its
+      **architecture** is what lets an analyst reason about why a detection fired late, why some data is
+      missing, or whether a source is even being collected. The pipeline has recognisable stages:
+      **collection** from sources, **transport/forwarding** to the platform, **parsing and normalisation** into
+      a common schema, **indexing** for fast search, and **storage** across tiers. A failure or bottleneck at
+      any stage affects everything downstream, so detection quality depends on the whole pipeline working, not
+      just on the rules.
+
+      **Collection** happens in a few ways, and each has implications. **Agents** on endpoints collect and
+      forward richly but must be deployed and maintained. **Agentless** collection pulls from APIs or receives
+      syslog, simpler but sometimes less detailed or reliable. **Forwarders** and intermediate collectors
+      aggregate and buffer data on its way to the platform, which matters because buffering is what prevents log
+      loss during a spike or an outage. Understanding the collection method for each source tells you how timely
+      and complete that data is, and where it could silently stop. A source that was never onboarded, or an
+      agent that died, is a blind spot the rules can never compensate for.
+
+      Two architectural realities shape the analyst's expectations. **Scale**: SIEMs ingest enormous volumes,
+      so ingestion lag, index capacity and storage tiering all affect what is searchable and how fast, which is
+      why a query over months of data is slow and why very high-volume sources are sometimes sampled or
+      filtered. **Reliability**: because the pipeline can drop or delay data, monitoring the pipeline itself,
+      ingestion rates per source, sources that go quiet, forwarder health, is part of running a SIEM; a source
+      that stops sending is both an operational problem and a possible security signal (an attacker disabling
+      logging). For the analyst, knowing the architecture means knowing the limits of the data: what is
+      collected, how current it is, what might be missing, and therefore how much to trust an absence of alerts.
+      A detection is only as good as the pipeline feeding it.
+    examples:
+      - title: The pipeline stages
+        body: |
+          source -> collection (agent/agentless) -> forwarder (buffer)
+          -> parse/normalise -> index -> storage (hot/warm/cold)
+          a failure at any stage affects everything downstream.
+      - title: An absence that matters
+        body: |
+          a source stops sending events
+          -> operational problem (agent died?) AND possible security signal (logging disabled?)
+          monitoring ingestion per source catches both.
+    exercise:
+      title: Map a SIEM pipeline and find its weak points
+      environment: A described SIEM deployment with several log sources (or a lab), plus a diagram or document
+      tools: [A SIEM description or lab, a diagram or document, a notes file]
+      steps:
+        - Draw the pipeline stages from source to searchable data and explain what each stage does.
+        - For two sources, identify the collection method (agent or agentless) and what that implies for timeliness and completeness.
+        - Explain where buffering occurs and why it matters during an ingestion spike or outage.
+        - Identify how scale (ingestion lag, index capacity, storage tiers) affects what is searchable and how fast.
+        - Describe how you would monitor the pipeline itself and what a source going quiet could mean.
+        - Explain how understanding the architecture changes how much you trust an absence of alerts.
+      deliverable: A SIEM pipeline map with the collection methods, buffering and scale considerations, a pipeline-monitoring approach, and an explanation of how architecture bounds trust in the data.
+    expected_outcome: >
+      You can describe a SIEM's data pipeline from collection to search, explain where data is lost or delayed,
+      and reason about reliability, scale and coverage so you know the limits of the data and how much to trust
+      an absence of alerts.
+    quiz:
+      - prompt: The stages of a SIEM data pipeline include
+        options:
+          - Only alerting
+          - Collection, forwarding, parsing/normalisation, indexing and storage
+          - Only storage
+          - Only dashboards
+        answer: 1
+        explanation: Data flows through collection, transport, parsing, indexing and storage before it is searchable.
+      - prompt: Why do forwarders and collectors buffer data?
+        options:
+          - To delete it
+          - To prevent log loss during an ingestion spike or outage
+          - To encrypt the disk
+          - To slow it down
+        answer: 1
+        explanation: Buffering holds data when the platform is busy or briefly unavailable, preventing loss.
+      - prompt: A source that stops sending events to the SIEM is
+        options:
+          - Always fine
+          - Both an operational problem and a possible security signal (such as disabled logging)
+          - Proof of a fast network
+          - A storage upgrade
+        answer: 1
+        explanation: A quiet source may be a failed agent or an attacker disabling logging, so it warrants attention.
+      - prompt: Understanding SIEM architecture helps an analyst because it reveals
+        options:
+          - Nothing useful
+          - The limits of the data, what is collected, how current it is, and what might be missing
+          - Only the vendor's price
+          - The colour of dashboards
+        answer: 1
+        explanation: Knowing the pipeline tells you how complete and timely the data is, and how much to trust an absence of alerts.

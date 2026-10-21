@@ -843,3 +843,286 @@ lessons:
           - It cannot run files
         answer: 1
         explanation: Evasive malware may behave benignly in a sandbox, so novel samples may need deeper analysis.
+  - slug: ir-memory-forensics
+    title: Memory Forensics in Incident Response
+    order: 10
+    difficulty: advanced
+    summary: Capture and analyse a system's memory to find what disk forensics misses, running malware, injected code, decrypted secrets and network connections, during an incident.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["cysa:3.2", "cysa:1.4", "secplus:4.8"]
+    learning_objectives:
+      - Explain what volatile memory holds that disk forensics cannot provide
+      - Capture memory soundly and know the order-of-volatility trade-offs
+      - Analyse a memory image for the common signs of compromise
+    theory: |
+      Much of what matters during an active compromise exists only in **memory** and vanishes when the machine
+      powers off. Running processes, injected or fileless malware that never touched disk, network connections,
+      decrypted data and credentials, command history, these are in RAM, so memory forensics reaches evidence
+      that disk forensics simply cannot. As attackers increasingly operate **fileless**, living in memory to
+      avoid leaving files, the memory image has become one of the richest sources of truth in an incident, and
+      capturing it is often a priority before anything disturbs the running state.
+
+      This is governed by the **order of volatility**: the most ephemeral evidence is collected first because it
+      is the first to disappear. Memory is near the top, so a sound response often **captures RAM early**, with a
+      trusted acquisition tool, before shutting down or even extensively interacting with the host, since every
+      action changes memory. The capture itself must be handled like any evidence, documented, hashed, preserved,
+      and analysts weigh the trade-off that acquisition slightly perturbs the very memory it reads. The output is
+      a memory image: a frozen snapshot of the system's live state at the moment of capture.
+
+      Analysis of that image, with a framework built for the purpose, looks for well-known tells. **Process
+      analysis** finds hidden or unlinked processes, a process masquerading under a system name, or a legitimate
+      process hollowed out and replaced. **Injected code** shows as executable memory in a process that should
+      not have it. **Network artefacts** reveal connections and listening ports, including those a compromised OS
+      was hiding. Analysts also recover **command lines, loaded modules, and secrets** left in memory. Each of
+      these maps to an attacker technique, and because fileless and in-memory attacks leave little elsewhere,
+      memory analysis is frequently where the clearest evidence of a sophisticated compromise is found,
+      confirmed, as always, against what the system should normally be running.
+    examples:
+      - title: What lives only in memory
+        body: |
+          running processes, fileless malware, network connections,
+          decrypted secrets, command history
+          Power off and it is gone -> capture RAM before disturbing the host.
+      - title: A memory-analysis tell
+        body: |
+          process "svchost.exe" with executable, writable injected region
+          and an outbound connection to an unknown IP
+          -> code injection / hollowing, a strong compromise indicator.
+    exercise:
+      title: Analyse a memory image for compromise
+      environment: A provided memory image (or a lab capture) and a memory-forensics framework, used on an isolated analysis system
+      tools: [A memory image, a memory-forensics framework, a notes file]
+      steps:
+        - Explain what evidence memory holds that disk forensics cannot, and why it matters for fileless attacks.
+        - Describe the order of volatility and why memory is often captured early, including the trade-off that acquisition perturbs memory.
+        - Analyse the image's process list for hidden, unlinked or masquerading processes and note anything suspicious.
+        - Look for injected or executable memory regions in processes that should not have them.
+        - Examine network artefacts (connections, listening ports) for signs of C2 or hidden activity.
+        - Recover any command lines or secrets of interest, map your findings to attacker techniques, and state how you would confirm against the system's normal state.
+      deliverable: A memory-forensics write-up covering what memory adds over disk, the capture trade-offs, and the process, injection, network and artefact findings mapped to techniques with a confirmation approach.
+    expected_outcome: >
+      You can explain what volatile memory holds, capture it soundly with the order of volatility in mind, and
+      analyse a memory image for hidden processes, injected code, network artefacts and secrets, finding
+      evidence that disk forensics misses.
+    quiz:
+      - prompt: Memory forensics reaches evidence disk forensics cannot because memory holds
+        options:
+          - Only the operating system
+          - Running processes, fileless malware, network connections and decrypted secrets that vanish on power-off
+          - Nothing useful
+          - Just the clock
+        answer: 1
+        explanation: Volatile state like fileless malware and live connections exists only in RAM.
+      - prompt: The order of volatility means
+        options:
+          - Collect disk first
+          - Collect the most ephemeral evidence (like memory) first because it disappears soonest
+          - Never collect memory
+          - Order does not matter
+        answer: 1
+        explanation: The most volatile evidence is captured first, so memory is often acquired early.
+      - prompt: An attacker operating "fileless" is best caught by
+        options:
+          - Disk imaging only
+          - Memory analysis, since the malware lives in RAM and leaves little on disk
+          - Checking file hashes
+          - Reading the registry only
+        answer: 1
+        explanation: Fileless malware resides in memory, so a memory image is often the clearest evidence.
+      - prompt: Executable, injected memory in a process that should not have it indicates
+        options: [Normal operation, Code injection or process hollowing, a compromise indicator, A backup, A patch]
+        answer: 1
+        explanation: Unexpected injected executable regions are a classic sign of code injection or hollowing.
+  - slug: ir-disk-forensics
+    title: Disk and Filesystem Forensics
+    order: 11
+    difficulty: advanced
+    summary: Recover the story a disk tells during an incident, what ran, what was created or deleted, and when, using forensic imaging and filesystem artefacts to build a defensible timeline.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["cysa:3.2", "cysa:1.4", "secplus:4.8"]
+    learning_objectives:
+      - Explain sound forensic imaging and why integrity matters
+      - Identify the filesystem and OS artefacts that reveal attacker activity
+      - Build a defensible timeline from disk evidence
+    theory: |
+      When memory forensics captures the live state, **disk forensics** recovers the persistent story: what was
+      installed, created, executed and deleted on a system, and when. It is the backbone of after-the-fact
+      investigation, because much of an intrusion leaves lasting marks on disk even after the attacker is gone.
+      The discipline begins with sound acquisition: taking a **forensic image**, a bit-for-bit copy of the
+      storage, using a method that does not alter the original (a write blocker or a verified read-only
+      process), and **hashing** it so you can prove the evidence is unchanged. Analysis is done on the image,
+      never the original, and the whole chain is documented, because disk evidence may need to stand up to
+      scrutiny later.
+
+      The richness of disk forensics comes from the many **artefacts** an operating system leaves behind, often
+      without the user or attacker realising. Filesystem **metadata** records when files were created, modified
+      and accessed. Execution artefacts (on Windows, prefetch, shimcache and amcache; on Linux, logs and shell
+      histories) show what programs ran and when. Deleted files can often be **recovered** because deletion
+      usually just unlinks rather than erases data. Registry hives, browser history, scheduled tasks, and
+      user-activity records all add pieces. Each artefact answers a specific question, did this program run,
+      was this file here, who logged in, and together they corroborate or contradict a theory of what happened.
+
+      The output that matters is a **timeline**: ordering the artefacts by time to reconstruct the sequence of
+      events, the initial access, what the attacker did, what they took, and when. A timeline turns scattered
+      artefacts into a narrative that answers the incident's core questions and supports decisions about scope
+      and disclosure. The analyst's discipline is to corroborate across multiple artefacts rather than trust
+      one (especially since attackers tamper with timestamps, which is why cross-checking matters), to
+      distinguish normal system activity from attacker activity using knowledge of the baseline, and to keep
+      the analysis defensible. Disk forensics is slower and deeper than live triage, and it is where the
+      definitive account of an incident is usually built.
+    examples:
+      - title: Image first, analyse the copy
+        body: |
+          original disk -> write-blocked bit-for-bit image -> hash (prove unchanged)
+          analyse the IMAGE, never the original
+          document the chain -> evidence stands up to scrutiny.
+      - title: Artefacts corroborate a theory
+        body: |
+          prefetch/amcache: program X executed at 14:02
+          filesystem MFT:   malware.exe created at 14:00
+          recovered deleted file: the exfil archive
+          one artefact is a clue; several together are a timeline.
+    exercise:
+      title: Build a timeline from disk evidence
+      environment: A provided forensic disk image or artefact set (or a lab capture), analysed on an isolated workstation with forensic tooling
+      tools: [A disk image or artefact set, forensic analysis tools, a notes file]
+      steps:
+        - Describe how you would acquire the image soundly (write-blocking, hashing) and why analysis is done on the copy.
+        - Identify the execution artefacts available (such as prefetch/amcache or shell history) and what each tells you.
+        - Examine filesystem metadata to find files created or modified in the incident window.
+        - Recover or identify a deleted file of interest and explain why deletion often leaves data recoverable.
+        - Build a timeline ordering the artefacts to reconstruct the sequence of attacker activity.
+        - Corroborate the timeline across multiple artefacts and note how you would detect timestamp tampering.
+      deliverable: A disk-forensics write-up covering sound acquisition, the execution and filesystem artefacts found, a recovered deleted item, and a corroborated timeline of the incident with a note on timestamp integrity.
+    expected_outcome: >
+      You can acquire a disk image soundly, read the filesystem and OS artefacts that reveal attacker activity,
+      recover deleted evidence, and build a defensible, corroborated timeline of an incident from disk.
+    quiz:
+      - prompt: Why is a forensic image taken with a write blocker and then hashed?
+        options:
+          - To speed up analysis
+          - To avoid altering the original and to prove the evidence is unchanged
+          - To delete the data
+          - To compress the disk
+        answer: 1
+        explanation: Sound acquisition preserves the original and hashing proves integrity so the evidence is defensible.
+      - prompt: Execution artefacts such as Windows prefetch or amcache reveal
+        options:
+          - Network bandwidth
+          - What programs ran and when
+          - The user's password
+          - The disk temperature
+        answer: 1
+        explanation: These artefacts record program execution, a key part of reconstructing activity.
+      - prompt: Deleted files can often be recovered because
+        options:
+          - Deletion encrypts them
+          - Deletion usually just unlinks the file rather than erasing the underlying data
+          - They are backed up automatically
+          - The OS keeps copies in memory
+        answer: 1
+        explanation: Standard deletion removes the reference, leaving the data recoverable until overwritten.
+      - prompt: The main output of disk forensics in an incident is
+        options:
+          - A single artefact
+          - A corroborated timeline reconstructing the sequence of events
+          - A performance report
+          - A list of users
+        answer: 1
+        explanation: Ordering corroborated artefacts into a timeline answers what happened, when and how.
+  - slug: ir-network-forensics
+    title: Network Forensics and Packet Analysis
+    order: 12
+    difficulty: advanced
+    summary: Use captured network traffic and flow records to reconstruct what crossed the wire during an incident, what was communicated, exfiltrated or controlled, when endpoint evidence is missing or untrusted.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["cysa:3.2", "cysa:1.4", "secplus:4.8"]
+    learning_objectives:
+      - Explain what network evidence adds to an incident investigation
+      - Analyse packet captures and flow data to reconstruct activity
+      - Work with encrypted traffic using metadata when content is hidden
+    theory: |
+      When a host is compromised, its own logs may be deleted or untrustworthy, but what crossed the **network**
+      is a largely independent record, and network forensics uses it to reconstruct an incident. Two kinds of
+      evidence matter. **Full packet capture** (PCAP) records the actual traffic, letting an analyst see
+      connections, extract transferred files, read unencrypted protocols, and reconstruct sessions, the richest
+      but most storage-hungry source. **Flow data** (NetFlow and similar) records metadata about every
+      connection, who talked to whom, when, how much, without the content, which is far cheaper to keep and
+      often available for longer, making it invaluable for seeing the shape of an incident across time.
+
+      Network evidence answers questions endpoint evidence often cannot. From captures and flows you can
+      establish **what communicated with what** (did the compromised host reach a command-and-control server?),
+      **how much data left** (the volume and destination of exfiltration), **when** events happened (building a
+      timeline independent of the host's clock and logs), and often recover the actual **content or files**
+      transferred over unencrypted channels. Because this record sits outside the compromised host, it is
+      especially valuable when an attacker has tampered with endpoint logs, the network saw what the host tried
+      to hide.
+
+      The modern complication is **encryption**: much traffic is HTTPS, so the content is hidden even in a full
+      capture. Network forensics adapts by working with **metadata** that remains visible, the destinations,
+      timing, volumes, TLS handshake details (certificates, server names, JA3-style fingerprints), and
+      connection patterns like beaconing, which reveal a great deal without the plaintext. A regular, small,
+      encrypted connection to an unfamiliar host is a C2 beacon regardless of encryption; a large encrypted
+      upload to an unknown destination is likely exfiltration. The analyst's discipline is to combine PCAP where
+      available, flow data for breadth and history, and metadata analysis for encrypted traffic, corroborating
+      the network story with endpoint evidence where it can be trusted. Network forensics is often where the
+      independent, tamper-resistant account of what an intrusion actually did is built.
+    examples:
+      - title: Packet capture versus flow data
+        body: |
+          PCAP:  full content -> extract files, read unencrypted protocols (rich, heavy)
+          flow:  metadata only (who/when/how much) -> cheap, kept longer, shows the shape
+          use flow for breadth/history, PCAP for depth.
+      - title: Metadata reveals encrypted C2/exfil
+        body: |
+          content encrypted, but: regular small connection to an unfamiliar host -> beacon
+          large encrypted upload to an unknown destination -> likely exfiltration
+          destinations, timing, volumes and TLS details still tell the story.
+    exercise:
+      title: Reconstruct an incident from network evidence
+      environment: A sample packet capture and/or flow data from an incident (provided or lab-generated), analysed with network-analysis tools
+      tools: [A PCAP and/or flow dataset, packet/flow analysis tools, a notes file]
+      steps:
+        - Explain what network evidence adds to an investigation, especially when endpoint logs are untrusted.
+        - Distinguish full packet capture from flow data and when each is most useful.
+        - From the data, establish what the compromised host communicated with and build a timeline of the activity.
+        - Identify and quantify any data exfiltration (volume and destination) and any command-and-control pattern.
+        - For encrypted traffic, use metadata (destinations, timing, volumes, TLS details, beaconing) to draw conclusions without the content.
+        - Corroborate the network story with endpoint evidence where it can be trusted, and note what remains uncertain.
+      deliverable: A network-forensics write-up reconstructing the incident's communications and timeline, the exfiltration and C2 identified, the metadata-based analysis of encrypted traffic, and corroboration with endpoint evidence.
+    expected_outcome: >
+      You can use packet captures and flow data to reconstruct an incident's communications, exfiltration and
+      timeline independently of the compromised host, and analyse encrypted traffic through metadata when the
+      content is hidden.
+    quiz:
+      - prompt: Why is network evidence especially valuable when a host is compromised?
+        options:
+          - It is always encrypted
+          - It is a largely independent record outside the host, so it survives even if endpoint logs are tampered with
+          - It is cheaper than disks
+          - It shows nothing useful
+        answer: 1
+        explanation: The network record sits outside the compromised host, capturing what the attacker tried to hide locally.
+      - prompt: Flow data (such as NetFlow) records
+        options:
+          - Full packet content
+          - Connection metadata (who, when, how much) without the content
+          - Only passwords
+          - Disk activity
+        answer: 1
+        explanation: Flow data captures metadata about connections, cheap to keep and good for seeing the shape of activity over time.
+      - prompt: For encrypted traffic, network forensics relies on
+        options:
+          - Decrypting everything always
+          - Metadata such as destinations, timing, volumes and TLS details, plus patterns like beaconing
+          - Nothing, it is useless
+          - The host's logs only
+        answer: 1
+        explanation: Even without content, metadata and connection patterns reveal C2 and exfiltration.
+      - prompt: A regular, small encrypted connection to an unfamiliar host suggests
+        options: [Normal browsing, A command-and-control beacon despite the encryption, A backup, A software update]
+        answer: 1
+        explanation: Regular small connections to an unknown host indicate beaconing regardless of whether the content is encrypted.

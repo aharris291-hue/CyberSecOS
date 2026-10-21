@@ -737,97 +737,384 @@ lessons:
         options: [Disable it, Re-tune it with allow-lists and context rather than switch it off, Delete the logs, Lower all severities]
         answer: 1
         explanation: These detections are too valuable to drop, so they are tuned for precision instead of disabled.
-  - slug: de-detection-tuning
-    title: Reducing False Positives and Tuning Detections
+  - slug: de-lateral-movement-detection
+    title: Detecting Lateral Movement and Remote Execution
     order: 9
     difficulty: intermediate
-    summary: Make detections precise, tuning out false positives without silencing real threats, because an alert pipeline that cries wolf is as dangerous as having no detection at all.
+    summary: Engineer detections for how attackers move host-to-host, remote services, SMB, WMI, RDP and remote scheduled tasks, where the techniques ride the same channels administrators use every day.
     theory_minutes: 12
     lab_minutes: 54
-    objectives: ["cysa:1.3", "cysa:3.1", "sc200:2"]
+    objectives: ["cysa:1.4", "cysa:3.1", "sc200:2"]
     learning_objectives:
-      - Explain how alert fatigue from false positives harms security
-      - Apply tuning techniques that cut noise without losing true positives
-      - Measure a detection's quality and decide when to tune, not disable
+      - Describe the main lateral-movement and remote-execution techniques
+      - Engineer detections that separate attacker movement from admin activity
+      - Use correlation and asset context to make these detections precise
     theory: |
-      A detection that fires constantly on benign activity is not a minor annoyance; it is a security risk.
-      **Alert fatigue** is real: when analysts face hundreds of false positives a day, they start to
-      rubber-stamp or ignore alerts, and the one true positive in the pile gets closed with the rest. So the
-      quality of a detection is not just whether it catches the attack, but whether it does so without
-      drowning the team, and tuning, the deliberate reduction of false positives, is a core detection-engineering
-      skill that directly improves the SOC's ability to catch real threats.
+      Once an attacker has one host, they spread, and **lateral movement** is how a single compromise becomes
+      many. The techniques are a defined set: **remote service creation** and **WMI** to run code on another
+      machine, **SMB** to copy tools and access admin shares, **RDP** for interactive access, **remote
+      scheduled tasks**, and credential reuse (pass-the-hash) to authenticate as they go. These are prime
+      detection targets because they sit between initial access and the objective, catch them and you break the
+      attack before it reaches its goal, but they are hard because every one of these channels is also how
+      administrators legitimately manage machines.
 
-      The techniques are specific and preferred in roughly this order. First, **narrow the logic**: make the
-      rule more precise so it matches the attack and not its benign twin, requiring a suspicious parent
-      process, a specific argument, or a sequence rather than a single common event. Second, use
-      **allow-lists** for the known-good causes, the backup tool that legitimately touches the files, the
-      vulnerability scanner that trips the rule nightly, so those specific, verified cases are excluded by
-      identity rather than by weakening the detection for everyone. Third, add **context and thresholds**,
-      fire only when the behaviour exceeds a baseline, or raise severity with asset criticality, so routine
-      low-level occurrences do not page anyone. The order matters: tightening logic and allow-listing
-      specific causes keep the detection sharp, whereas crude broadening dulls it.
+      Engineering detections here means encoding the difference between the attacker and the admin. The signals
+      are in the pattern: remote execution spawned by an unexpected parent, a service created remotely with a
+      random name, one host suddenly authenticating to many others in a short window (the fan-out that admins
+      rarely produce), RDP from a workstation that never initiates RDP, or WMI invoking a command interpreter.
+      A naive "alert on any remote service creation" drowns the analyst in legitimate administration; a good
+      detection narrows by source (is this a known management host?), by the command run, and by volume and
+      timing, so it fires on the attacker's spread and stays quiet for the admin's routine.
 
-      Underpinning tuning is **measurement**. You cannot tune what you do not measure, so good teams track
-      each detection's volume and its true-positive rate, and treat a detection that is all noise as a bug to
-      fix, not a fact to live with. The crucial discipline, carried over from every detection lesson, is that
-      the answer to a noisy high-value detection is to **tune it, never to disable it**: disabling blinds you
-      to the attack it was built for. Equally, tuning must not quietly cut true positives, so each change is
-      validated against known attack samples to confirm the detection still fires on the real thing. Precise,
-      measured, continually tuned detections are what make an alert queue something analysts can actually
-      trust and work.
+      Two techniques make these detections precise. **Correlation** combines the weak individual signals, one
+      remote logon is nothing, but a remote logon plus a new service plus an outbound connection, same source,
+      short window, is movement, so a correlation rule across those events is far stronger than any single one.
+      **Asset context** sharpens severity: the same WMI execution is routine from the admin jump host and
+      alarming from a finance workstation, and movement toward a domain controller or critical server
+      outranks movement between desktops. As with every detection, these are tuned not disabled when noisy, and
+      validated by emulating the technique to confirm they fire on the attack. Lateral-movement detection is
+      where correlation and context earn their keep, because the raw events are ordinary and only their pattern
+      and placement reveal the intrusion.
     examples:
-      - title: Tune by narrowing, not broadening
+      - title: The admin twin problem
         body: |
-          Noisy:  alert on any use of PsExec
-          Tuned:  alert on PsExec from a non-admin host to many targets in a short window
-          Sharper logic keeps the attack, drops the routine admin use.
-      - title: Allow-list a specific known-good cause
+          remote service creation -> admin deploying software OR attacker running a tool
+          same channel, different intent
+          narrow by: source host, command, volume, timing -> keep the attacker, drop the admin
+      - title: Correlating weak signals into movement
         body: |
-          Rule trips nightly on the vuln scanner's traffic
-          Fix: exclude THAT scanner's identity/host -> noise gone
-          Wrong fix: disable the rule -> blind to the real attack it catches
+          remote logon (weak) + new service (weak) + outbound (weak)
+          same source host, 2-minute window -> strong "lateral movement" alert
+          asset context: target = domain controller -> raise severity
     exercise:
-      title: Tune a noisy detection without losing coverage
-      environment: A SIEM/EDR or sample alerts from a detection that is firing with many false positives, plus known attack samples or test events
-      tools: [A SIEM/EDR or sample alerts, known attack/benign samples, a notes file]
+      title: Engineer a lateral-movement detection with correlation and context
+      environment: A lab with endpoint/AD telemetry or sample logs containing lateral movement and benign admin activity, ideally with an emulation tool
+      tools: [A SIEM/EDR or sample logs, an emulation test or attack/benign samples, a MITRE ATT&CK reference, a notes file]
       steps:
-        - Take a noisy detection and review a sample of its alerts to identify the benign causes of the false positives.
-        - Explain how alert fatigue from this detection could cause a real threat to be missed.
-        - Tune it first by narrowing the logic so it better separates the attack from the benign twin.
-        - Add an allow-list for a specific verified known-good cause and explain why that is better than broadening the rule.
-        - Validate the tuned detection against a known attack sample to confirm it still fires on the real thing.
-        - Define the metrics (alert volume, true-positive rate) you would track, and state why you tune rather than disable.
-      deliverable: A tuning write-up identifying the false-positive causes, the narrowed logic and allow-list applied, a validation showing the attack is still caught, and the metrics plus the tune-not-disable rationale.
+        - List the main lateral-movement and remote-execution techniques and the telemetry each produces.
+        - Choose one technique and describe its legitimate administrative twin and why a naive rule would be noisy.
+        - Engineer a detection that narrows by source, command and volume or timing to separate attacker movement from admin activity.
+        - Strengthen it with a correlation rule combining several weak signals from the same source in a short window.
+        - Add asset context so the severity reflects the target (for example movement toward a domain controller).
+        - Emulate or replay the technique to confirm the detection fires on the attack and stays quiet on benign admin activity.
+      deliverable: A tuned lateral-movement detection with its narrowing logic, a correlation rule over weak signals, asset-context severity, and a validation showing it fires on the attack but not on routine administration.
     expected_outcome: >
-      You can reduce a detection's false positives by narrowing logic, allow-listing verified causes and
-      adding context, validate that it still catches the real attack, measure its quality, and always tune
-      rather than disable a noisy high-value detection.
+      You can engineer detections for lateral movement and remote execution, encode the difference between the
+      attacker and the administrator who uses the same channels, and use correlation and asset context to make
+      these detections precise.
     quiz:
-      - prompt: Why is a detection that fires constantly on benign activity a security risk?
+      - prompt: Why are lateral-movement techniques prime detection targets?
         options:
-          - It uses disk space
-          - Alert fatigue leads analysts to ignore or rubber-stamp alerts, so a real one gets missed
-          - It is always wrong
-          - It slows the network
+          - They are harmless
+          - They sit between initial access and the objective, so catching them breaks the attack before it reaches its goal
+          - They cannot be logged
+          - They only occur after encryption
         answer: 1
-        explanation: Flooding analysts with false positives causes the true positive to be closed with the noise.
-      - prompt: The preferred first tuning technique is to
+        explanation: Detecting movement interrupts the attack mid-chain, before it reaches critical systems.
+      - prompt: Lateral-movement detections are hard because the channels (SMB, WMI, RDP, remote services) are
         options:
-          - Disable the rule
-          - Narrow the logic so it matches the attack and not its benign twin
-          - Lower every severity
-          - Delete the logs
+          - Never used
+          - Also how administrators legitimately manage machines
+          - Always encrypted
+          - Only on domain controllers
         answer: 1
-        explanation: Tightening the logic keeps the detection sharp while removing benign matches.
-      - prompt: Allow-listing a known-good cause is better than broadening the rule because
+        explanation: The same channels serve legitimate administration, so detections must separate attacker from admin.
+      - prompt: Correlating a remote logon, a new service and an outbound connection from one source in a short window is stronger than any single event because
         options:
-          - It is faster to type
-          - It excludes a specific verified case by identity without weakening the detection for everyone
+          - It uses more storage
+          - Each signal is weak alone but together they form a reliable movement pattern
+          - It ignores context
           - It disables the rule
-          - It raises false positives
         answer: 1
-        explanation: Excluding a specific verified cause preserves detection strength, unlike crude broadening.
-      - prompt: When a high-value detection is noisy, the correct response is to
-        options: [Disable it, Tune it and validate it still fires on real attacks, Ignore all its alerts, Delete the detection]
+        explanation: Correlation combines weak signals into a high-confidence detection of movement.
+      - prompt: Asset context improves a lateral-movement detection by
+        options:
+          - Deleting events
+          - Raising severity when the target is critical, such as movement toward a domain controller
+          - Removing the baseline
+          - Slowing the SIEM
         answer: 1
-        explanation: Disabling blinds you to the attack; tuning with validation keeps coverage while cutting noise.
+        explanation: The same technique matters more against critical assets, so context sharpens severity.
+  - slug: de-exfil-c2-detection
+    title: Detecting Data Exfiltration and Command-and-Control
+    order: 10
+    difficulty: intermediate
+    summary: Engineer detections for how attackers talk to their infrastructure and steal data, beaconing, tunnelling and large or unusual outbound transfers, where the traffic hides among normal activity.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["cysa:1.4", "cysa:3.1", "sc200:2"]
+    learning_objectives:
+      - Describe command-and-control and exfiltration techniques and their signals
+      - Engineer detections for beaconing, tunnelling and anomalous transfers
+      - Use baselines and enrichment to separate malicious egress from normal traffic
+    theory: |
+      Two late-stage behaviours give an attacker away if you can see egress: **command-and-control** (C2), the
+      channel malware uses to receive instructions, and **exfiltration**, the theft of data out of the
+      environment. Both have to cross the boundary outbound, which is the defender's opportunity, but both also
+      try hard to blend into normal traffic, hiding in HTTPS, DNS, or ordinary-looking web requests. Engineering
+      detections for them means knowing their signatures and encoding them in a way that separates the malicious
+      flow from the enormous volume of legitimate outbound traffic.
+
+      C2 has characteristic patterns. **Beaconing** is the strongest: malware checks in on a regular interval, so
+      a host making connections to the same destination at suspiciously regular timing (even with jitter) stands
+      out from human-driven traffic. Other tells are connections to newly registered or low-reputation domains,
+      unusual user-agents, long-lived connections, and protocol mismatches (non-DNS data over port 53, non-web
+      traffic over 443). **Exfiltration** shows as volume and destination anomalies: a host uploading far more
+      than it ever has, large transfers to cloud storage or unfamiliar destinations, data moving at odd hours, or
+      slow **low-and-slow** trickles designed to stay under thresholds. DNS and encrypted channels are abused for
+      both, which is why egress visibility and decryption or metadata analysis matter.
+
+      Making these detections work relies on **baselines** and **enrichment**, because raw egress is huge and
+      mostly benign. A beaconing detection needs a baseline of normal connection timing; an exfiltration detection
+      needs a baseline of normal upload volume per host so "far more than usual" has meaning. Enriching flows with
+      domain reputation, newly-seen-domain flags, and destination categorisation turns a bare connection into
+      "this host beaconed to a domain registered yesterday" that an analyst can judge fast. As with every
+      detection, these are tuned not disabled when noisy (a backup job legitimately uploads a lot; a software
+      updater beacons regularly), validated against known patterns, and sharpened with asset context. Detecting
+      C2 and exfiltration is where egress monitoring pays off, catching the attacker at the two moments they must
+      reach outside.
+    examples:
+      - title: Beaconing stands out from human traffic
+        body: |
+          human browsing: irregular, bursty
+          beacon: connect to same host every ~60s (+/- jitter), tiny payloads
+          Regular timing to one destination is the signal.
+      - title: Exfiltration as a volume anomaly
+        body: |
+          host baseline upload: ~50 MB/day
+          today: 8 GB to an unfamiliar cloud bucket at 03:00
+          "far more than usual" only has meaning against the baseline.
+    exercise:
+      title: Engineer C2 and exfiltration detections
+      environment: A SIEM/EDR or sample network/proxy/DNS logs containing beaconing or exfiltration among benign traffic
+      tools: [A SIEM or notebook, sample egress logs, a domain-reputation or enrichment source, a MITRE ATT&CK reference, a notes file]
+      steps:
+        - Describe the signals of command-and-control (beaconing, low-reputation domains, protocol mismatch) and of exfiltration (volume and destination anomalies).
+        - Engineer a beaconing detection and explain the timing baseline it needs to separate malware check-ins from human traffic.
+        - Engineer an exfiltration detection and explain the per-host upload baseline it needs for "far more than usual" to mean something.
+        - Enrich the flows with domain reputation and newly-seen-domain flags and show how that speeds an analyst's judgement.
+        - Identify a legitimate cause that would make each detection noisy (backup job, software updater) and tune rather than disable it.
+        - Validate the detections against the known patterns in the data and map them to ATT&CK.
+      deliverable: Two tuned detections (beaconing and exfiltration) with the baselines and enrichment they rely on, the benign causes handled by tuning, and a validation mapped to ATT&CK.
+    expected_outcome: >
+      You can engineer detections for command-and-control and exfiltration, using timing and volume baselines
+      and egress enrichment to separate malicious beaconing and transfers from the large volume of legitimate
+      outbound traffic.
+    quiz:
+      - prompt: Why are C2 and exfiltration good detection opportunities?
+        options:
+          - They never cross the network boundary
+          - Both must cross the boundary outbound, giving the defender a chance to see them
+          - They only happen offline
+          - They cannot be logged
+        answer: 1
+        explanation: Both behaviours require outbound communication, which egress monitoring can observe.
+      - prompt: Beaconing is detectable mainly by
+        options:
+          - Its huge bandwidth
+          - Regular connection timing to the same destination, unlike bursty human traffic
+          - Its use of email
+          - The absence of any connection
+        answer: 1
+        explanation: Malware check-ins occur at regular intervals, which stands out from human-driven patterns.
+      - prompt: An exfiltration detection needs a per-host upload baseline because
+        options:
+          - Baselines are decorative
+          - A spike only has meaning relative to what that host normally uploads
+          - It disables logging
+          - All hosts upload the same amount
+        answer: 1
+        explanation: Volume anomalies require a baseline of normal per-host upload to be meaningful.
+      - prompt: A legitimate cause that can make a beaconing detection noisy is
+        options: [A firewall, A software updater that checks in on a regular interval, A disabled service, A printer]
+        answer: 1
+        explanation: Regular-interval updaters resemble beaconing, so the detection is tuned rather than disabled.
+  - slug: de-persistence-detection
+    title: Detecting Persistence Mechanisms
+    order: 11
+    difficulty: intermediate
+    summary: Engineer detections for how attackers survive a reboot, autostart entries, scheduled tasks, services, account creation and more, where the challenge is that the system is full of legitimate persistence.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["cysa:1.4", "cysa:3.1", "sc200:2"]
+    learning_objectives:
+      - Describe the main persistence mechanisms attackers use
+      - Engineer detections that separate malicious from legitimate persistence
+      - Use baselining and change detection to find new persistence
+    theory: |
+      An attacker who gains access wants to **keep** it across reboots and logoffs, and **persistence** is how
+      they do it. The mechanisms are a well-catalogued set: autostart locations (registry run keys, startup
+      folders), **scheduled tasks**, **services**, new or modified **accounts**, and more subtle methods like
+      hijacking how a legitimate program loads a library or handles an event. Detecting persistence is high
+      value because it catches an attacker establishing a foothold they intend to reuse, and because
+      persistence is often set up early, catching it can interrupt an intrusion before its objective.
+
+      The difficulty is that systems are **full of legitimate persistence**. Software installs services,
+      schedules update tasks, and adds autostart entries all the time, so an alert on "a new scheduled task"
+      or "a new service" drowns the analyst. The engineering problem is to separate the attacker's persistence
+      from the constant background of legitimate autostart activity. The signals that help: a persistence entry
+      pointing at an unusual location (a user temp directory, not a program-files path), created by an
+      unexpected process, with an obfuscated or script-based command, or appearing on a host where that
+      software is not installed. Enrichment with what is normal for the environment, which services and tasks
+      are expected on this class of machine, turns "a new task" into "a new task no other machine has".
+
+      Two approaches make these detections work. **Baselining and change detection** are especially powerful
+      for persistence: because the set of autostart entries on a given system is relatively stable, a tool that
+      snapshots the baseline and alerts on **new or changed** entries surfaces exactly the additions worth
+      examining, rather than every entry. And **behavioural context** sharpens it, a scheduled task created by
+      a Office document or a service whose binary lives in a temp folder is suspicious regardless of the rest.
+      As with every detection, these are tuned against known-good software behaviour and validated by emulating
+      the persistence techniques. Detecting persistence is a cornerstone of endpoint detection, because almost
+      every intrusion establishes some, and the defender who catches the foothold catches the attacker before
+      they can comfortably return.
+    examples:
+      - title: Legitimate persistence is everywhere
+        body: |
+          software installs services, schedules update tasks, adds run keys (constant, benign)
+          naive alert on "new service" -> floods
+          signal: new task pointing at a temp dir, odd parent, obfuscated command.
+      - title: Baseline and change detection
+        body: |
+          snapshot autostart entries (stable set) -> alert on NEW/changed only
+          "a new task no other machine of this class has" stands out
+          behavioural context: task created by WINWORD.EXE -> suspicious regardless.
+    exercise:
+      title: Engineer a persistence detection with baselining
+      environment: A lab with endpoint telemetry or sample logs/autostart snapshots containing malicious and benign persistence, ideally with an emulation tool
+      tools: [A SIEM/EDR or sample logs and autostart snapshots, an emulation test or samples, a MITRE ATT&CK reference, a notes file]
+      steps:
+        - List the main persistence mechanisms and the telemetry each produces.
+        - Choose one mechanism and explain why a naive "new entry" alert would be too noisy given legitimate persistence.
+        - Engineer a detection that narrows by location, creating process, command characteristics and environment baseline.
+        - Apply baselining or change detection so only new or changed autostart entries are surfaced.
+        - Add behavioural context (such as a task created by an Office document) to sharpen the detection.
+        - Emulate the persistence technique to confirm the detection fires on it and stays quiet on legitimate software, mapping to ATT&CK.
+      deliverable: A tuned persistence detection with its narrowing logic, a baselining/change-detection approach, behavioural context, and a validation showing it fires on the technique but not on normal software, mapped to ATT&CK.
+    expected_outcome: >
+      You can engineer detections for the common persistence mechanisms, separate malicious from the abundant
+      legitimate persistence using baselining and behavioural context, and validate the detections by
+      emulating the techniques.
+    quiz:
+      - prompt: Why is detecting persistence high value?
+        options:
+          - It is rare
+          - It catches an attacker establishing a foothold they intend to reuse, often early in the intrusion
+          - It only matters after encryption
+          - Persistence cannot be detected
+        answer: 1
+        explanation: Catching persistence interrupts the attacker's ability to return and often comes early in the attack.
+      - prompt: The main difficulty in detecting persistence is that
+        options:
+          - Persistence never happens
+          - Systems are full of legitimate persistence (software services, update tasks, autostart entries)
+          - Logs are unavailable
+          - It requires no tuning
+        answer: 1
+        explanation: Constant legitimate autostart activity means naive alerts drown the analyst.
+      - prompt: Baselining and change detection help with persistence because
+        options:
+          - They delete entries
+          - The set of autostart entries is relatively stable, so alerting on new or changed ones surfaces the additions worth examining
+          - They disable logging
+          - They ignore new entries
+        answer: 1
+        explanation: A stable baseline makes new or changed autostart entries stand out as the items to investigate.
+      - prompt: A scheduled task whose binary lives in a user temp folder, created by an Office document, is
+        options: [Routine, Suspicious regardless of the rest, worth detecting, A backup, A normal update]
+        answer: 1
+        explanation: Unusual location and parent process make such persistence suspicious on its own.
+  - slug: de-evasion-detection
+    title: Detecting Defense Evasion and Log Tampering
+    order: 12
+    difficulty: intermediate
+    summary: Engineer detections for the actions attackers take to hide, clearing logs, disabling security tools, tampering with agents, where the evasion itself, and the silence it creates, are the signals.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["cysa:1.4", "cysa:3.1", "sc200:2"]
+    learning_objectives:
+      - Describe the defense-evasion actions worth detecting
+      - Engineer detections for tampering and for suspicious absence of data
+      - Build "something stopped reporting" detections that catch silent evasion
+    theory: |
+      Attackers work to avoid detection, and those evasion actions are themselves highly detectable if you build
+      for them. Where threat hunting looks for evasion reactively, detection engineering builds the standing
+      detections that catch it automatically: clearing event logs, stopping or tampering with security agents
+      (EDR, antivirus), adding exclusions to security tools, disabling audit policy, and killing logging
+      services. These are high-value detections because few legitimate activities clear logs or disable the EDR,
+      so a well-built detection here has a strong signal-to-noise ratio and often catches an intrusion right at
+      the moment the attacker tries to go dark.
+
+      The direct detections target the tampering **events** themselves. Operating systems and security tools
+      emit telltale signals: the Windows event that records the log being cleared, EDR self-protection alerts
+      when its service or files are tampered with, events for audit-policy changes, and service-stop events for
+      security services. Engineering these is largely about knowing which events to watch and enriching them,
+      a log-clear or an EDR-disable is suspicious almost regardless of context, so these can be high-severity
+      with little tuning, though you still allow-list the rare legitimate cause (an authorised reimage,
+      maintenance by a known admin process).
+
+      The subtler and more powerful class detects the **absence** evasion creates. The hardest evasion to catch
+      with event-based rules is when the attacker succeeds in stopping the telemetry, there is no event because
+      the sensor is gone. The answer is detections built on expectation: a host that always reported and
+      suddenly stops, an EDR agent that misses its regular check-in, a log source whose volume drops to zero,
+      an endpoint that disappears from the fleet. These "something that should be here is not" detections turn
+      silence into signal, and they are essential because a capable attacker's whole aim is to produce that
+      silence. As with all detections, these are tuned against legitimate causes (a machine powered off, a
+      maintenance window) and validated by emulating the evasion. Detecting defense evasion, both the tampering
+      events and the suspicious silence, is a cornerstone of catching sophisticated attackers who assume that
+      going dark makes them safe.
+    examples:
+      - title: Direct tampering detections
+        body: |
+          event-log cleared / EDR service stopped / AV exclusion added / audit policy disabled
+          few legitimate causes -> high severity, little tuning
+          allow-list the rare authorised case (reimage, known admin process).
+      - title: Absence as the detection
+        body: |
+          host that always reported -> stops; EDR misses its check-in; log volume -> 0
+          no event, because the sensor is gone -> detect the SILENCE
+          "something that should be here is not" turns going-dark into a signal.
+    exercise:
+      title: Engineer tampering and absence detections
+      environment: A SIEM/EDR or sample logs with security-tool and logging telemetry, including tampering and a source going silent, ideally with an emulation tool
+      tools: [A SIEM/EDR or sample logs, an emulation test or samples, a MITRE ATT&CK reference, a notes file]
+      steps:
+        - List the defense-evasion actions worth detecting and the telltale event each produces.
+        - Engineer a direct detection for one tampering action (log clear, EDR disable, audit-policy change) and set an appropriate severity.
+        - Allow-list the rare legitimate cause for that action and explain why it needs little other tuning.
+        - Engineer an absence-based detection (a host or log source that stops reporting, an EDR missing its check-in) and explain why it catches what event rules cannot.
+        - Tune the absence detection against legitimate causes (powered-off machines, maintenance windows).
+        - Emulate the evasion to validate both detections fire, and map them to ATT&CK defense-evasion techniques.
+      deliverable: Two detections, one for a tampering event and one for suspicious absence, with severities, allow-lists and tuning, validated by emulation and mapped to ATT&CK.
+    expected_outcome: >
+      You can engineer detections for defense-evasion tampering events and, crucially, for the suspicious
+      absence of data that a successful evasion creates, turning an attacker's attempt to go dark into a
+      high-value signal.
+    quiz:
+      - prompt: Why are defense-evasion actions good detection targets?
+        options:
+          - They are very common and benign
+          - Few legitimate activities clear logs or disable the EDR, so detections here have a strong signal
+          - They cannot be detected
+          - They only occur offline
+        answer: 1
+        explanation: Because evasion actions are rarely legitimate, detections for them are high-signal and need little tuning.
+      - prompt: The hardest evasion to catch with event-based rules is when the attacker
+        options:
+          - Makes lots of noise
+          - Succeeds in stopping the telemetry, so there is no event to match
+          - Uses a known signature
+          - Sends an email
+        answer: 1
+        explanation: If the sensor is disabled there is no event, so you must detect the resulting absence.
+      - prompt: An "absence" detection works by
+        options:
+          - Matching a malicious signature
+          - Alerting when something that should be reporting (a host, an EDR agent, a log source) goes silent
+          - Deleting logs
+          - Ignoring quiet sources
+        answer: 1
+        explanation: Expectation-based detections turn the silence a successful evasion creates into a signal.
+      - prompt: A direct tampering detection such as "event log cleared" can be
+        options: [Low priority always, High severity with little tuning, since few legitimate activities clear logs, Disabled safely, Ignored]
+        answer: 1
+        explanation: Log-clearing is rarely legitimate, so it warrants a high-severity, low-tuning detection with a small allow-list.

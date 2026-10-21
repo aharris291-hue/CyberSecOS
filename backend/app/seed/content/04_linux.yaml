@@ -787,3 +787,280 @@ lessons:
         options: [Routine, A strong sign of malware or scanning to confirm against intended behaviour, A backup, A DNS update]
         answer: 1
         explanation: Many blocked egress attempts suggest a compromised host beaconing or scanning, worth investigating.
+  - slug: linux-container-security
+    title: Container Security on Linux
+    order: 10
+    difficulty: intermediate
+    summary: Understand how Linux containers are built and isolated, where that isolation is weaker than a VM, and how to run containers so a compromise stays contained.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:3.1", "secplus:4.1", "cysa:1.3"]
+    learning_objectives:
+      - Explain how Linux containers isolate workloads and how that differs from VMs
+      - Identify the common container misconfigurations that break isolation
+      - Harden container runtime so a compromise cannot escape to the host
+    theory: |
+      Containers package an application with its dependencies and run it isolated on a shared Linux kernel, and
+      understanding that last part is the key to securing them. Unlike a virtual machine, which has its own
+      kernel and a strong hardware-enforced boundary, containers are isolated by **kernel features**,
+      **namespaces** (which give each container its own view of processes, network and filesystem) and
+      **cgroups** (which limit its resources). This is lighter and faster than a VM but the boundary is softer:
+      every container shares the host kernel, so a kernel vulnerability or a misconfiguration can let a
+      container **escape** to the host, which is the central risk to reason about.
+
+      Most container compromises come from **misconfiguration**, not exotic kernel exploits. Running a container
+      as **root** (the default in many images) means a process that breaks out has host root; running with the
+      **privileged** flag or mounting the Docker socket or host filesystem hands the container the keys to the
+      host directly; and pulling untrusted or unscanned images brings in vulnerable or malicious code. Each of
+      these quietly dissolves the isolation that is the whole point of a container. The defensive mindset is to
+      treat the container boundary as real but thin, and to avoid the configurations that remove it.
+
+      Hardening follows directly. Run containers as a **non-root** user and drop unnecessary Linux
+      **capabilities**, so even a breakout has little power. Never run privileged or mount the host's sensitive
+      paths unless genuinely required. Use **read-only** filesystems and resource limits to constrain behaviour,
+      apply a **seccomp** or AppArmor/SELinux profile to restrict the system calls a container can make, and run
+      only **scanned, trusted images** from known registries. For the analyst, containers are also a monitoring
+      surface: a container spawning an unexpected shell, making outbound connections it never should, or
+      attempting to access the host filesystem or Docker socket are strong signals of compromise or an escape
+      attempt, confirmed against what that workload normally does.
+    examples:
+      - title: Container isolation versus a VM
+        body: |
+          VM:        own kernel, hardware-enforced boundary (strong)
+          Container: shared host kernel, namespaces + cgroups (lighter, softer)
+          A kernel bug or misconfig can let a container escape to the host.
+      - title: Misconfigurations that dissolve isolation
+        body: |
+          run as root + --privileged + mount /var/run/docker.sock
+          -> a breakout has host root and full control
+          Non-root + drop capabilities + no privileged = a real boundary.
+    exercise:
+      title: Harden a container and spot an escape attempt
+      environment: A Linux VM with a container runtime (or provided container configs and runtime logs)
+      tools: [A container runtime or sample configs, a seccomp/AppArmor reference, sample runtime logs, a notes file]
+      steps:
+        - Explain how namespaces and cgroups isolate a container and why that boundary is softer than a VM's.
+        - Review a container's run configuration and identify misconfigurations that break isolation (root, privileged, host mounts, untrusted image).
+        - Rewrite the configuration to run non-root, drop unnecessary capabilities and avoid privileged mode, explaining each change.
+        - Add a read-only filesystem, resource limits and a seccomp or MAC profile, and state what each constrains.
+        - Review sample runtime logs and identify one signal of a compromise or escape attempt (unexpected shell, host-socket access).
+        - State how you would confirm that signal against the workload's normal behaviour before acting.
+      deliverable: A container-hardening note explaining the isolation model, the misconfigurations found and fixed, the added runtime constraints, and one escape-attempt signal with its confirmation step.
+    expected_outcome: >
+      You can explain how Linux containers are isolated and why the boundary is softer than a VM's, find and
+      fix the misconfigurations that break isolation, and harden the runtime so a container compromise stays
+      contained.
+    quiz:
+      - prompt: Container isolation differs from a VM's because containers
+        options:
+          - Have their own kernel
+          - Share the host kernel and are isolated by namespaces and cgroups, a softer boundary
+          - Cannot be isolated at all
+          - Run on separate hardware
+        answer: 1
+        explanation: Containers share the host kernel, so a kernel bug or misconfiguration can break the boundary.
+      - prompt: Most container compromises come from
+        options:
+          - Exotic kernel exploits
+          - Misconfiguration such as running as root, privileged mode or mounting the host
+          - Slow networks
+          - Too many images
+        answer: 1
+        explanation: Dangerous run configurations dissolve isolation far more often than kernel exploits.
+      - prompt: Running a container as a non-root user with dropped capabilities helps because
+        options:
+          - It is faster
+          - Even a breakout then has little power on the host
+          - It disables logging
+          - It removes the kernel
+        answer: 1
+        explanation: Least privilege inside the container limits the impact of any escape.
+      - prompt: A container attempting to access the Docker socket or host filesystem is
+        options: [Routine, A strong signal of a compromise or escape attempt to confirm in context, A backup, A normal update]
+        answer: 1
+        explanation: Reaching for the host socket or filesystem is a classic escape move worth investigating.
+  - slug: linux-ssh-hardening
+    title: Securing SSH and Remote Access
+    order: 11
+    difficulty: intermediate
+    summary: Harden SSH, the front door to most Linux systems and a constant attack target, with key-based authentication, sensible configuration and monitoring of access attempts.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.1", "secplus:4.6", "cysa:1.3"]
+    learning_objectives:
+      - Explain why SSH is a prime target and how key-based auth hardens it
+      - Configure SSH securely (keys, root login, limits) and monitor access
+      - Recognise brute-force and credential attacks against SSH in logs
+    theory: |
+      SSH is how administrators reach most Linux systems, which makes it both essential and a constant target:
+      any internet-facing SSH service will see automated brute-force attempts within minutes. Hardening it is
+      one of the highest-value Linux tasks, and it starts with authentication. **Password authentication** is
+      the weak point, guessable, reused, brute-forceable, so the single biggest improvement is **key-based
+      authentication**: the server holds the user's public key and only a holder of the matching private key
+      can log in, which defeats password guessing entirely. Keys should themselves be protected with a
+      passphrase, and for the strongest assurance paired with MFA.
+
+      Good SSH configuration closes the common weaknesses. **Disable direct root login** so an attacker cannot
+      target the one account that exists everywhere, and require administrators to log in as themselves and
+      escalate. **Disable password authentication** once keys are in place. **Restrict who may connect**,
+      by user, group, and ideally source address, so SSH is not open to the whole internet, and run it behind
+      a bastion/jump host or VPN for sensitive systems rather than exposing it directly. Smaller settings
+      matter too: sensible idle timeouts, limiting authentication attempts, and keeping the SSH software
+      patched against protocol and implementation flaws.
+
+      Finally, SSH is a rich **monitoring** source because attacks against it are so visible. The auth logs
+      record every attempt, so a flood of failed logins from one address (brute force), failures across many
+      usernames (spraying), or a successful login from an unexpected country or at an odd hour are classic
+      leads. Tools like fail2ban can automatically block repeat offenders, but the analyst's job is to
+      distinguish the constant background noise of internet scanning from an attempt that actually succeeded or
+      that targets a real account, confirming against the user's normal access. The lesson is that SSH is the
+      front door, so locking it with keys, tightening its configuration, and watching who knocks is
+      fundamental Linux hardening.
+    examples:
+      - title: Keys beat passwords
+        body: |
+          password auth: brute-forceable, reused, guessable
+          key auth:      only the private-key holder logs in -> password guessing defeated
+          protect the key with a passphrase; add MFA for the strongest assurance.
+      - title: SSH attacks in the auth log
+        body: |
+          many failures from one IP            -> brute force
+          failures across many usernames       -> password spraying
+          success from an unexpected country    -> confirm against the user's normal access
+    exercise:
+      title: Harden an SSH service and read its logs
+      environment: A Linux VM running SSH (or a provided sshd_config and sample auth logs)
+      tools: [A Linux VM or sshd_config and logs, the auth log, a notes file]
+      steps:
+        - Explain why SSH is a prime target and why key-based authentication is the biggest single improvement.
+        - Review (or set) the SSH configuration, disable root login and password auth, and restrict who and where may connect.
+        - Explain the role of a bastion/jump host or VPN for reaching sensitive systems rather than exposing SSH directly.
+        - Review sample auth logs and distinguish background scanning noise from a brute force or spray against a real account.
+        - Identify a successful login worth investigating and how you would confirm it against the user's normal access.
+        - Describe how automated blocking (such as fail2ban) helps and what it does not solve.
+      deliverable: An SSH-hardening note covering key-based auth, the configuration changes, bastion/VPN placement, a log analysis distinguishing noise from a real attack, and the role and limits of automated blocking.
+    expected_outcome: >
+      You can harden SSH with key-based authentication and sound configuration, place it behind a bastion or
+      VPN for sensitive systems, and read its logs to tell background scanning from a real brute-force or
+      targeted attack.
+    quiz:
+      - prompt: The single biggest improvement to SSH security is usually
+        options:
+          - A longer banner
+          - Key-based authentication, which defeats password guessing
+          - A faster network
+          - Disabling logging
+        answer: 1
+        explanation: Keys mean only the private-key holder can log in, removing the password-guessing attack entirely.
+      - prompt: Disabling direct root login over SSH helps because
+        options:
+          - Root is unimportant
+          - An attacker cannot target the one account that exists on every system; admins log in as themselves and escalate
+          - It speeds up logins
+          - It encrypts the disk
+        answer: 1
+        explanation: Removing direct root login denies attackers the universal, high-value target account.
+      - prompt: Many SSH login failures across many different usernames indicates
+        options: [A backup, Password spraying, A DNS change, A patch]
+        answer: 1
+        explanation: Trying many usernames (often with common passwords) is the spraying pattern.
+      - prompt: A successful SSH login from an unexpected country should be
+        options: [Ignored, Confirmed against the user's normal access as a possible compromise, Deleted, Assumed safe]
+        answer: 1
+        explanation: An anomalous successful login is a lead to confirm against the user's travel and normal behaviour.
+  - slug: linux-file-integrity-monitoring
+    title: File Integrity Monitoring on Linux
+    order: 12
+    difficulty: intermediate
+    summary: Detect unauthorised changes to critical files by establishing a known-good baseline and alerting on deviations, catching the tampering, backdoors and persistence that attackers leave on disk.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:4.1", "cysa:3.1", "cysa:1.3"]
+    learning_objectives:
+      - Explain what file integrity monitoring detects and why it matters
+      - Build a baseline and alert on deviations for critical files
+      - Tune FIM so legitimate change does not drown real tampering
+    theory: |
+      Attackers who gain access to a Linux system frequently **change files**: replacing a system binary with a
+      trojaned version, adding a backdoor, editing a configuration to weaken security, or planting a persistence
+      script. **File integrity monitoring** (FIM) detects exactly this, by establishing a **baseline** of what
+      critical files should look like and alerting when they change unexpectedly. It is a detective control that
+      catches the on-disk footprint of compromise that other tools may miss, and it is required by several
+      compliance standards for precisely that reason.
+
+      FIM works by recording, for each monitored file, a **cryptographic hash** and metadata (permissions,
+      owner, size, timestamps) in a trusted baseline, then periodically re-checking the files against it and
+      reporting any deviation: a changed hash means the content was modified, a changed owner or permission may
+      mean tampering. Tools like AIDE and others build and verify these baselines. What to monitor is the key
+      design decision: system binaries, critical configuration (what is in /etc), authentication files, and
+      startup/persistence locations are high value, because unexpected change there is strongly suspicious,
+      whereas monitoring constantly-changing data (logs, temp, caches) just produces noise.
+
+      The central challenge is the same as any detection: **legitimate change**. Systems change all the time,
+      package updates replace binaries, administrators edit configs, so a naive FIM that alerts on every change
+      is quickly ignored. Good FIM is tuned: it expects and accounts for authorised change (correlating with
+      the patch and change-management process, so a binary that changed during a known update is not an alert,
+      but the same binary changing at 3am outside any change window is), and it focuses on the files where
+      unexpected change is meaningful. The baseline itself must be **protected and trusted**, stored where an
+      attacker cannot quietly alter it to match their changes, or the whole control is defeated. For the
+      analyst, a FIM alert, "a system binary changed outside any maintenance window", is a high-value lead:
+      it points directly at tampering, confirmed against the change process before escalation.
+    examples:
+      - title: How FIM detects tampering
+        body: |
+          baseline: /usr/bin/sshd hash=abc..., owner=root, perms=755
+          recheck:  hash=def... -> content changed!
+          outside any update/change window -> likely a trojaned binary.
+      - title: Tuning out legitimate change
+        body: |
+          binary changed DURING a known package update -> expected, not an alert
+          same binary changed at 3am, no change window  -> high-value lead
+          correlate with the change-management process.
+    exercise:
+      title: Set up and tune file integrity monitoring
+      environment: A Linux VM with a FIM tool (such as AIDE) or provided baseline and change data
+      tools: [A Linux VM with a FIM tool or sample baseline/change data, a notes file]
+      steps:
+        - Explain what file integrity monitoring detects and the kinds of attacker activity it catches.
+        - Choose which files and directories to monitor (system binaries, /etc, auth files, startup locations) and justify the selection.
+        - Build (or review) a baseline recording hashes and metadata, and explain why the baseline must be protected and trusted.
+        - Simulate or review a change and show how the deviation (changed hash or ownership) is detected.
+        - Distinguish a legitimate change (during a known update) from suspicious tampering and explain how you would correlate with the change process.
+        - State how you would confirm a FIM alert before escalating and why monitoring noisy data directories is counterproductive.
+      deliverable: A FIM setup with a justified monitoring scope, a protected baseline, a detected deviation, and a tuning approach that separates authorised change from tampering by correlating with the change process.
+    expected_outcome: >
+      You can explain and configure file integrity monitoring to catch on-disk tampering, build and protect a
+      baseline, and tune it against legitimate change so that a real deviation stands out as a high-value lead.
+    quiz:
+      - prompt: File integrity monitoring detects
+        options:
+          - Network bandwidth
+          - Unauthorised changes to critical files (trojaned binaries, backdoors, tampered configs)
+          - CPU temperature
+          - User passwords
+        answer: 1
+        explanation: FIM catches the on-disk footprint of compromise by detecting unexpected file changes.
+      - prompt: FIM works by comparing files against
+        options:
+          - A random value
+          - A trusted baseline of cryptographic hashes and metadata
+          - The network configuration
+          - The user list
+        answer: 1
+        explanation: FIM records hashes and metadata in a baseline and alerts when files deviate from it.
+      - prompt: The main challenge for FIM is
+        options:
+          - Files never change
+          - Legitimate change (updates, admin edits), so it must be tuned to avoid drowning real tampering in noise
+          - It cannot hash files
+          - It only works on Windows
+        answer: 1
+        explanation: Systems change constantly, so FIM must account for authorised change to keep real deviations visible.
+      - prompt: Why must the FIM baseline be protected and trusted?
+        options:
+          - To save space
+          - So an attacker cannot quietly alter it to match their changes and defeat the control
+          - To speed up checks
+          - It need not be protected
+        answer: 1
+        explanation: If an attacker can edit the baseline, they can hide their changes, defeating the monitoring.

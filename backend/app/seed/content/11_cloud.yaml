@@ -721,98 +721,386 @@ lessons:
         options: [Routine, A lead to confirm, possibly a destruction or ransomware action, A billing event, A success message]
         answer: 1
         explanation: Disabling or deleting keys can destroy data access, so such actions are investigated against normal usage.
-  - slug: cloud-posture-misconfiguration
-    title: Cloud Security Posture and Misconfiguration
+  - slug: cloud-api-management-plane
+    title: Securing Cloud APIs and the Management Plane
     order: 9
     difficulty: intermediate
-    summary: Find and fix the misconfigurations that cause most cloud breaches, using posture management to continuously check cloud resources against secure baselines.
+    summary: Protect the cloud control plane, the APIs and consoles that create, change and delete every resource, because whoever controls the management plane controls the whole environment.
     theory_minutes: 12
     lab_minutes: 54
-    objectives: ["secplus:3.1", "cysa:2.1", "sc900:2"]
+    objectives: ["secplus:3.1", "sc900:2", "cysa:1.1"]
     learning_objectives:
-      - Explain why misconfiguration is the leading cause of cloud breaches
-      - Describe cloud security posture management (CSPM) and what it checks
-      - Prioritise and remediate the misconfigurations that matter most
+      - Explain the cloud management plane and why it is the highest-value target
+      - Describe how cloud APIs are authenticated and abused
+      - Monitor control-plane activity for signs of compromise
     theory: |
-      Most cloud breaches are not clever exploits; they are **misconfigurations**, a storage bucket left
-      public, a database exposed to the internet, over-permissive access, logging switched off. The cloud's
-      speed and self-service are the cause: anyone can spin up resources in minutes, and a single wrong
-      setting exposes data at internet scale. So a central cloud-security discipline is continuously checking
-      that resources match a **secure baseline**, which is exactly what **cloud security posture management**
-      (CSPM) does.
+      A cloud environment is run through its **management plane**, the APIs, consoles and command-line tools
+      that create, modify and delete every resource. This is a fundamental difference from on-premises, where
+      an attacker needs to touch many systems: in the cloud, a single set of control-plane credentials can
+      spin up servers, open firewalls, read every storage bucket, or delete the whole environment through one
+      API. So the management plane is the highest-value target in the cloud, and securing it is the centre of
+      cloud security. Everything an attacker wants is reachable through those APIs if they can authenticate to
+      them.
 
-      CSPM tools connect to the cloud account through its API and continuously evaluate every resource
-      against a library of checks drawn from provider best practice and benchmarks like the CIS foundations:
-      are any storage buckets public, are databases reachable from the internet, is encryption enabled, is
-      logging and monitoring turned on, are there identities with excessive permissions, are there unused
-      credentials. Because the cloud exposes its whole configuration through the API, this assessment is
-      comprehensive in a way on-premises rarely is, the tool can see every resource and its settings, not a
-      sample. The output is a prioritised list of findings mapped to the resources and accounts they affect.
+      Cloud APIs are authenticated by **keys, tokens and roles** rather than passwords at a console. Long-lived
+      **access keys** are a frequent weakness, leaked in source code, in a public repository, or on a
+      compromised developer laptop, they give an attacker direct API access with whatever permissions the key
+      carries. Short-lived tokens and role assumption are safer, and the principle of least privilege matters
+      intensely here because an over-permissioned identity turns a single leaked credential into full control.
+      Attackers who gain API access typically **enumerate** first (listing resources, permissions and other
+      identities), then act, creating new credentials for persistence, widening their own permissions, or
+      reaching the data.
 
-      The skill, as always, is **prioritisation and remediation**, not drowning in findings. A public bucket
-      holding customer data is an emergency; the same setting on an empty test bucket is noise, so findings
-      are triaged by the sensitivity and exposure of what they affect, not the raw rule. The strongest
-      programmes shift this left, checking infrastructure-as-code templates before deployment so the
-      misconfiguration never reaches production, and wiring CSPM alerts into the SOC so a newly public bucket
-      raises an alarm in minutes. The lesson is that in the cloud, configuration *is* security: watching and
-      fixing posture continuously prevents the single most common way organisations get breached.
+      Because all of this flows through the API, the **control-plane audit log** (CloudTrail and its
+      equivalents) is the single most important telemetry source in the cloud, and monitoring it is essential.
+      The tells of compromise are specific: API calls from an unfamiliar location or identity, a sudden burst
+      of enumeration calls, creation of new access keys or users, changes to permissions and policies,
+      disabling of logging, or security-group changes opening access. As always a hit is a lead confirmed
+      against normal behaviour, the CI system legitimately makes many API calls, but the management plane is
+      where cloud compromise becomes visible, so detections on control-plane activity are the backbone of cloud
+      threat detection.
     examples:
-      - title: The classic cloud breach
+      - title: One credential, the whole environment
         body: |
-          storage bucket: "public read" + customer data inside
-          one wrong setting -> data exposed at internet scale
-          No exploit required; the misconfiguration is the breach.
-      - title: Prioritising posture findings
+          leaked access key (over-permissioned) -> API access
+          -> enumerate resources -> create new user (persistence) -> read all buckets
+          No lateral movement across hosts needed; the API reaches everything.
+      - title: Control-plane tells in the audit log
         body: |
-          Public bucket, empty test data   -> low (noise)
-          Public bucket, customer PII       -> EMERGENCY
-          Triage by sensitivity + exposure, not the raw rule count.
+          CreateAccessKey by an unfamiliar identity -> persistence?
+          AuthorizeSecurityGroupIngress 0.0.0.0/0 -> opening access
+          StopLogging on the audit trail -> evasion
+          Each is a lead confirmed against normal activity.
     exercise:
-      title: Assess cloud posture and remediate misconfigurations
-      environment: A cloud free tier or a provided set of cloud configuration/CSPM findings
-      tools: [A cloud account or sample config/findings, a CSPM tool or a CIS benchmark checklist, a notes file]
+      title: Secure cloud API access and monitor the control plane
+      environment: A cloud free tier or provided IAM policies, access-key inventory and sample control-plane (CloudTrail-style) logs
+      tools: [A cloud account or sample IAM/logs, a notes file, a least-privilege reference]
       steps:
-        - Explain why misconfiguration, rather than exploitation, causes most cloud breaches.
-        - Review a set of resources (or CSPM findings) against a baseline and list the misconfigurations found.
-        - Identify the highest-risk finding by the sensitivity and exposure of the resource it affects, not the raw rule.
-        - Write the remediation for that finding and describe how you would verify it is fixed.
-        - Describe how checking infrastructure-as-code before deployment would have prevented one finding.
-        - Propose one CSPM alert to wire into the SOC (for example a newly public bucket) and why it matters.
-      deliverable: A posture assessment listing the misconfigurations, the highest-risk one with its remediation and verification, a prevent-at-deploy example, and one SOC alert to add.
+        - Explain why the management plane is the highest-value target in a cloud environment.
+        - Review how API access is authenticated (keys, tokens, roles) and identify one long-lived access key that should be short-lived or least-privileged.
+        - Describe how a leaked, over-permissioned credential turns into full control, and the least-privilege fix.
+        - Review sample control-plane logs and identify one enumeration burst and one persistence or evasion action worth alerting on.
+        - State how you would confirm a suspicious API call against normal activity (for example CI systems) before acting.
+        - Propose two control-plane detections (new access key, logging disabled, security-group opened) and why each matters.
+      deliverable: A control-plane security review with an access-key/least-privilege fix, a leaked-credential impact explanation, a log review flagging enumeration and persistence, and two proposed detections.
     expected_outcome: >
-      You can explain why misconfiguration drives most cloud breaches, use posture management to check
-      resources against a baseline, and prioritise and remediate the misconfigurations that actually expose
-      sensitive data.
+      You can explain why the cloud management plane is the highest-value target, how its APIs are
+      authenticated and abused, and monitor control-plane audit logs for the enumeration, persistence and
+      evasion that reveal cloud compromise.
     quiz:
-      - prompt: The leading cause of cloud breaches is
+      - prompt: The cloud management plane is the highest-value target because
         options:
-          - Zero-day exploits
-          - Misconfiguration, such as public storage or over-permissive access
-          - Slow networks
-          - Weak encryption algorithms
+          - It stores backups
+          - A single set of control-plane credentials can create, change or delete every resource through the API
+          - It is rarely used
+          - It only handles billing
         answer: 1
-        explanation: Most cloud breaches stem from wrong settings exposing data, not sophisticated exploits.
-      - prompt: Cloud security posture management (CSPM) works by
+        explanation: The API reaches everything, so control-plane access is effectively control of the environment.
+      - prompt: A frequent weakness in cloud API authentication is
         options:
-          - Scanning network ports from outside
-          - Continuously evaluating cloud resources via the API against a secure baseline
-          - Reading application source code
-          - Testing user passwords
+          - Short-lived tokens
+          - Long-lived access keys leaked in code or on compromised laptops
+          - Role assumption
+          - Least privilege
         answer: 1
-        explanation: CSPM uses the cloud API to check every resource's configuration against best-practice baselines.
-      - prompt: Posture findings should be prioritised by
+        explanation: Leaked long-lived keys give direct API access with whatever permissions they carry.
+      - prompt: The most important telemetry source for detecting cloud compromise is
         options:
-          - The raw number of rules broken
-          - The sensitivity and exposure of the resources they affect
+          - The billing report
+          - The control-plane audit log (such as CloudTrail)
+          - The uptime monitor
+          - The DNS cache
+        answer: 1
+        explanation: Because all actions flow through the API, the control-plane log records the activity that reveals compromise.
+      - prompt: An API call that disables the audit logging is
+        options: [Routine, A likely evasion step to confirm and alert on, A billing event, A performance tweak]
+        answer: 1
+        explanation: Turning off logging is a classic evasion move and a high-value detection on the control plane.
+  - slug: cloud-compliance-benchmarks
+    title: Cloud Compliance and Security Benchmarks
+    order: 10
+    difficulty: intermediate
+    summary: Use security benchmarks and compliance frameworks to measure a cloud environment against a known-good standard, turning "is our cloud secure" into a concrete, checkable question.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:5.1", "cysa:2.1", "sc900:2"]
+    learning_objectives:
+      - Explain how benchmarks turn cloud security into a measurable standard
+      - Describe common cloud benchmarks and frameworks and what they cover
+      - Assess a cloud environment against a benchmark and prioritise the gaps
+    theory: |
+      "Is our cloud secure?" is unanswerable until you define *against what*, and that is what **benchmarks** and
+      **compliance frameworks** provide: a concrete, known-good standard to measure against. Rather than relying
+      on each engineer's opinion of good configuration, a benchmark lists specific, checkable requirements, is
+      multi-factor enforced on the root account, is storage encryption on, is logging enabled in every region,
+      so cloud security becomes measurable and comparable over time. This is the backbone of both security
+      assurance and regulatory compliance in the cloud.
+
+      Several standards matter. The **CIS Benchmarks** for each cloud provider are the common technical baseline,
+      hundreds of specific configuration checks drawn from consensus best practice. Provider frameworks (the
+      cloud vendors' own well-architected and security pillars) give architectural guidance. And broader
+      compliance regimes, PCI DSS for card data, HIPAA for health, SOC 2, ISO 27001, impose requirements that map
+      onto cloud controls when regulated data lives there. These overlap heavily: meeting the CIS benchmark
+      satisfies much of what the compliance regimes also demand, which is why teams often adopt a benchmark as the
+      technical foundation and layer specific regulatory requirements on top.
+
+      In practice, benchmarks are assessed **continuously and automatically**. Posture-management tooling checks
+      the environment against the chosen benchmark and reports each control as pass or fail, producing a
+      compliance **score** and a list of gaps. The skill is then the familiar one of **prioritisation**: not
+      every failed check is equally urgent, so gaps are triaged by the risk they represent, an open root account
+      without MFA outranks a cosmetic tagging rule, rather than chased in benchmark order. The analyst should also
+      understand that a passing benchmark is a floor, not a ceiling, compliance means meeting a standard, not that
+      no risk remains, so it is a measurable baseline to build on rather than proof of security. Used this way,
+      benchmarks turn a vague question into an actionable, trackable program.
+    examples:
+      - title: A benchmark makes security checkable
+        body: |
+          vague:  "is our cloud secure?"
+          benchmark: root MFA on? encryption on? logging in every region? (pass/fail each)
+          -> a compliance score and a concrete gap list.
+      - title: Prioritising benchmark gaps
+        body: |
+          FAIL: root account without MFA   -> urgent (full-control risk)
+          FAIL: resource missing a cost tag -> cosmetic, low priority
+          Triage by risk, not benchmark order.
+    exercise:
+      title: Assess a cloud environment against a benchmark
+      environment: A cloud free tier or a provided benchmark assessment / posture report for a cloud account
+      tools: [A cloud account or sample benchmark report, a CIS benchmark or framework reference, a notes file]
+      steps:
+        - Explain why a benchmark is needed to make "is our cloud secure" a measurable question.
+        - Identify which benchmark or framework fits the environment (CIS, a provider framework, or a compliance regime) and what it covers.
+        - Review an assessment of the environment against the benchmark and summarise the compliance score and the failed checks.
+        - Prioritise the failed checks by the risk each represents rather than by benchmark order, justifying the top one.
+        - Explain how a technical benchmark like CIS overlaps with a compliance regime such as PCI DSS or ISO 27001.
+        - State why a passing benchmark is a floor, not proof of complete security.
+      deliverable: A benchmark assessment summarising the score and failed checks, a risk-based prioritisation of the gaps, the benchmark-to-compliance overlap, and the floor-not-ceiling caveat.
+    expected_outcome: >
+      You can use security benchmarks and compliance frameworks to measure a cloud environment against a
+      known-good standard, assess the gaps, prioritise them by risk, and treat a passing benchmark as a
+      measurable floor to build on rather than proof of security.
+    quiz:
+      - prompt: A security benchmark makes cloud security measurable by
+        options:
+          - Relying on opinions
+          - Listing specific, checkable configuration requirements to measure the environment against
+          - Deleting resources
+          - Hiding the configuration
+        answer: 1
+        explanation: Benchmarks turn "secure?" into concrete pass/fail checks and a comparable score.
+      - prompt: The CIS Benchmarks for a cloud provider are
+        options:
+          - A single password policy
+          - A consensus technical baseline of hundreds of specific configuration checks
+          - A billing report
+          - A network diagram
+        answer: 1
+        explanation: CIS Benchmarks give a detailed, consensus configuration baseline per provider.
+      - prompt: Failed benchmark checks should be prioritised by
+        options:
+          - Benchmark order
+          - The risk each represents (for example a root account without MFA outranks a tagging rule)
           - Alphabetical order
-          - The time of day
+          - The number of the check
         answer: 1
-        explanation: A public bucket of customer data is an emergency; the same on empty test data is noise.
-      - prompt: Checking infrastructure-as-code before deployment helps because
+        explanation: Risk-based triage addresses the most dangerous gaps first, not the benchmark's listing order.
+      - prompt: A passing benchmark means
         options:
-          - It is slower
-          - The misconfiguration is caught before it ever reaches production
-          - It disables logging
-          - It replaces CSPM entirely
+          - All risk is eliminated
+          - A measurable floor is met, not that no risk remains
+          - Monitoring can stop
+          - The cloud is unbreakable
         answer: 1
-        explanation: Shifting posture checks left stops bad configurations from being deployed in the first place.
+        explanation: Compliance is a baseline to build on, not proof that the environment is fully secure.
+  - slug: cloud-identity-federation
+    title: Cloud Identity Federation and Single Sign-On
+    order: 11
+    difficulty: intermediate
+    summary: Understand how federation and single sign-on let one identity provider control access across many cloud services, why that is powerful for security, and how it is attacked.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["sc900:3", "secplus:4.6", "cysa:1.1"]
+    learning_objectives:
+      - Explain identity federation and single sign-on and the protocols behind them
+      - Describe why centralised identity strengthens security
+      - Recognise how federation and SSO are attacked and monitored
+    theory: |
+      Modern organisations use dozens of cloud services, and giving each its own separate login would be both a
+      usability nightmare and a security disaster. **Federation** and **single sign-on** (SSO) solve this by
+      letting one trusted **identity provider** (IdP) authenticate users and vouch for them to many
+      applications, so a user logs in once and the IdP asserts their identity to each service. The protocols
+      that carry these assertions are **SAML** and **OpenID Connect** (OIDC, built on OAuth 2.0): the
+      application trusts a signed assertion or token from the IdP rather than handling the password itself.
+      This is the backbone of cloud identity.
+
+      Centralising identity this way is a strong security move. It means one place to enforce strong
+      authentication, MFA and conditional access apply at the IdP and protect every connected app at once; one
+      place to **disable** a departing employee's access across all services instantly; and consistent policy
+      and logging rather than scattered per-app accounts. The alternative, separate credentials everywhere,
+      guarantees password reuse, orphaned accounts and inconsistent protection. So federation is not just
+      convenient; done well it is a significant improvement to an organisation's security posture and a core
+      part of zero-trust designs that decide access per request at the identity layer.
+
+      But concentrating identity also concentrates **risk**, and attackers know it. Because the IdP is the key
+      to everything, it is a prime target: phishing that captures IdP credentials and MFA, **token theft**
+      (stealing the session token or assertion to bypass authentication entirely), **consent phishing**
+      (tricking a user into granting a malicious OAuth app access), and attacks on the federation trust itself
+      (forging assertions if signing keys are compromised, the "golden SAML" class). Monitoring therefore
+      centres on IdP logs: impossible-travel and anomalous sign-ins, MFA failures and fatigue, new or unusual
+      OAuth consents, and changes to federation configuration or signing keys. For the analyst, the lesson is
+      that federation makes identity the new perimeter, strong and centralised, but also the single most
+      important thing to protect and watch, because whoever controls the identity provider controls access to
+      everything behind it.
+    examples:
+      - title: One login, many services
+        body: |
+          user -> identity provider (authenticate once, MFA here)
+          IdP asserts identity (SAML / OIDC token) -> app A, app B, app C trust it
+          one place to enforce MFA and to disable access on offboarding.
+      - title: Attacking concentrated identity
+        body: |
+          token theft      -> reuse the session token, bypass auth entirely
+          consent phishing -> user grants a malicious OAuth app access
+          golden SAML      -> forge assertions if signing keys are stolen
+          IdP logs are where these first show.
+    exercise:
+      title: Assess a federated identity setup and its monitoring
+      environment: A described organisation using SSO/federation (or a lab IdP) and sample sign-in/consent logs
+      tools: [An IdP description or lab, sample sign-in and consent logs, a notes file]
+      steps:
+        - Explain how federation and SSO let one identity provider vouch for a user to many applications, naming SAML and OIDC.
+        - Describe three security benefits of centralising identity (MFA everywhere, instant offboarding, consistent policy/logging).
+        - Explain why centralising identity also concentrates risk and makes the IdP a prime target.
+        - Describe two attacks against federation/SSO (such as token theft and consent phishing) and how each bypasses normal login.
+        - Review sample IdP logs and identify one anomalous sign-in and one unusual OAuth consent worth investigating.
+        - State how you would confirm each against normal behaviour and one detection you would build on IdP activity.
+      deliverable: An assessment of the federated setup covering the protocols, the security benefits and concentrated risk, two attacks, and a log review flagging an anomalous sign-in and consent with a proposed detection.
+    expected_outcome: >
+      You can explain identity federation and SSO and the protocols behind them, why centralised identity
+      strengthens security while concentrating risk, and how to monitor the identity provider for the attacks
+      that target it.
+    quiz:
+      - prompt: Single sign-on with federation works by
+        options:
+          - Giving each app its own password
+          - Having one trusted identity provider authenticate the user and assert their identity to many applications
+          - Disabling authentication
+          - Storing passwords in each app
+        answer: 1
+        explanation: Federation centralises authentication at an IdP that vouches for the user to connected apps via SAML/OIDC.
+      - prompt: A security benefit of centralised identity is
+        options:
+          - More passwords to remember
+          - Enforcing MFA and disabling access across all apps from one place
+          - Scattered per-app accounts
+          - No logging
+        answer: 1
+        explanation: One identity provider means consistent strong auth and instant, complete offboarding.
+      - prompt: Token theft is dangerous because the attacker
+        options:
+          - Must still enter the password and MFA
+          - Reuses a stolen session token or assertion to bypass authentication entirely
+          - Can only read email
+          - Is blocked by SSO
+        answer: 1
+        explanation: A stolen valid token lets the attacker act as the user without authenticating again.
+      - prompt: Monitoring a federated identity setup centres on
+        options:
+          - The billing report
+          - Identity-provider logs (anomalous sign-ins, MFA issues, unusual OAuth consents, federation/key changes)
+          - Disk usage
+          - DNS caches
+        answer: 1
+        explanation: Because the IdP is the key to everything, its logs are the primary place attacks appear.
+  - slug: cloud-resource-abuse-cryptojacking
+    title: Detecting Cloud Resource Abuse and Cryptojacking
+    order: 12
+    difficulty: intermediate
+    summary: Recognise when a compromised cloud account is being abused for the attacker's gain, spinning up expensive compute to mine cryptocurrency or send spam, where the bill and the resource patterns are the detection.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:2.4", "cysa:1.4", "sc900:2"]
+    learning_objectives:
+      - Explain why cloud compromise is often monetised through resource abuse
+      - Detect cryptojacking and resource abuse from billing and activity signals
+      - Respond to and limit the impact of a resource-abuse incident
+    theory: |
+      When an attacker compromises cloud credentials, a very common goal is not data theft but **direct
+      monetisation of your resources**: using your cloud account's ability to create compute on demand to mine
+      cryptocurrency (**cryptojacking**), send spam, or host malicious infrastructure, all billed to you. This
+      is worth understanding because it is one of the most frequent outcomes of a leaked cloud key, it can run
+      up enormous costs very fast, and, helpfully for defenders, it produces distinctive signals that make it
+      detectable, the attacker's own greed drives conspicuous activity.
+
+      The signals cluster around **resources and cost**. Cryptojacking means spinning up compute, often lots of
+      it, often the most powerful (GPU or high-CPU) instance types, often in regions the organisation never
+      uses, and running it at sustained high utilisation. So the tells are: a sudden spike in the **bill** or in
+      running instances, creation of unusually powerful instance types, activity in unused regions, instances
+      launched by an unexpected identity or via the API rather than the normal deployment pipeline, and outbound
+      connections to known mining pools. **Billing and cost-anomaly alerts** are a genuinely useful security
+      signal here, not just a finance concern, an unexpected cost spike is often the first visible sign of a
+      compromised account being abused.
+
+      Detection combines these: control-plane logs showing unusual instance creation, cost anomalies, and
+      network connections to mining pools, correlated and confirmed against what the account normally does (a
+      data-science team may legitimately use GPUs). Response is urgent because the cost clock is running:
+      identify and disable the compromised credential, terminate the attacker's resources, and investigate how
+      the credential leaked, while preventing recurrence with least-privilege, short-lived credentials, budget
+      limits and quotas that cap how much damage a single compromise can do. For the analyst, resource abuse is
+      a reminder that cloud security includes watching cost and resource patterns as telemetry, because the
+      attacker who is spending your money leaves an obvious trail if you are looking at the bill.
+    examples:
+      - title: The signals of cryptojacking
+        body: |
+          sudden spike in running instances + the bill
+          unusually powerful (GPU/high-CPU) types, in regions you never use
+          launched by an unexpected identity; outbound to known mining pools.
+      - title: Cost anomaly as a security signal
+        body: |
+          unexpected cloud bill spike -> often the FIRST sign of a compromised account
+          budget/cost-anomaly alerts are security telemetry, not just finance.
+    exercise:
+      title: Detect and respond to cloud resource abuse
+      environment: A cloud free tier or provided control-plane logs, billing/cost data and resource inventory showing abuse
+      tools: [A cloud account or sample logs and cost data, a notes file]
+      steps:
+        - Explain why compromising cloud credentials is often monetised through resource abuse rather than data theft.
+        - From the data, identify the signals of cryptojacking (instance spikes, powerful types, unused regions, unexpected identity, mining-pool connections).
+        - Explain why billing and cost-anomaly alerts are a useful security signal, not only a finance concern.
+        - Confirm the finding against the account's normal behaviour (for example a legitimate GPU workload) before acting.
+        - Outline the urgent response, disable the credential, terminate the resources, investigate the leak.
+        - Recommend preventive controls (least-privilege and short-lived credentials, budget limits, quotas) that cap the damage of a compromise.
+      deliverable: An investigation identifying the resource-abuse signals, the cost-anomaly angle, the confirmation against normal use, an urgent response plan, and preventive controls that limit blast radius.
+    expected_outcome: >
+      You can recognise cloud resource abuse and cryptojacking from resource and billing signals, confirm it
+      against normal usage, respond urgently to stop the cost and the attacker, and apply controls that cap how
+      much a single compromise can spend.
+    quiz:
+      - prompt: A common goal when an attacker compromises cloud credentials is
+        options:
+          - Only reading email
+          - Monetising your resources directly, such as spinning up compute to mine cryptocurrency, billed to you
+          - Fixing your configuration
+          - Nothing
+        answer: 1
+        explanation: Cryptojacking and similar abuse turn your cloud account's compute into the attacker's profit at your expense.
+      - prompt: A distinctive signal of cryptojacking is
+        options:
+          - Lower bills
+          - A spike in powerful instance types, often in unused regions, run at sustained high utilisation
+          - Fewer instances
+          - A new password policy
+        answer: 1
+        explanation: Mining needs lots of powerful compute, producing conspicuous instance and utilisation patterns.
+      - prompt: Why are cloud cost-anomaly alerts a security signal?
+        options:
+          - They are only for finance
+          - An unexpected cost spike is often the first visible sign of a compromised account being abused
+          - They slow the cloud
+          - They prevent logins
+        answer: 1
+        explanation: Resource abuse shows up as cost, so a bill spike is frequently the earliest indicator of compromise.
+      - prompt: A control that caps the damage of a compromised cloud account is
+        options: [Unlimited quotas, Budget limits and quotas plus least-privilege, short-lived credentials, Disabling logging, Sharing one key]
+        answer: 1
+        explanation: Limits, quotas and least-privilege short-lived credentials bound how much a single compromise can spend or do.
