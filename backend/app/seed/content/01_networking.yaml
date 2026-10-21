@@ -481,3 +481,91 @@ lessons:
         options: [Is the same thing, Watches the whole network's connection graph rather than dissecting one session, Only reads payloads, Needs no baseline]
         answer: 1
         explanation: Flow analysis is about who-talks-to-whom across the network, a different altitude from one session.
+  - slug: net-wireless-access-security
+    title: Wireless and Network Access Security
+    order: 7
+    difficulty: intermediate
+    summary: Secure the edge where devices join the network, covering Wi-Fi encryption, rogue access points and port-based access control, and spot the attacks that target it.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:2.2", "secplus:4.3", "cysa:1.1"]
+    learning_objectives:
+      - Explain how modern Wi-Fi is secured and where it is still attacked
+      - Describe port-based network access control and why it matters for wired ports too
+      - Detect rogue access points and unauthorised devices joining the network
+    theory: |
+      The edge where a device joins the network is a favourite target, because an attacker who
+      gets on the LAN skips the perimeter entirely. On wireless, **WPA2** and **WPA3** encrypt the
+      link; WPA3 adds forward secrecy and resistance to offline password cracking. Enterprise Wi-Fi
+      avoids a shared passphrase altogether and authenticates each user or device with **802.1X**
+      against a RADIUS server, so access can be tied to identity and revoked individually.
+
+      The classic wireless attacks exploit trust in the network name. A **rogue access point** is an
+      unauthorised AP plugged into the corporate network; an **evil twin** is an attacker AP
+      broadcasting a familiar SSID so victims connect to it and expose traffic or credentials.
+      **Deauthentication** frames can knock clients off a legitimate AP to push them onto the evil
+      twin. Defences are network hygiene: a wireless IDS that flags unknown BSSIDs, client
+      configuration that does not auto-join open networks, and certificate-based 802.1X so a client
+      only trusts the real RADIUS server.
+
+      The same access-control idea applies to wired ports. **802.1X** on a switch port, or MAC-based
+      NAC, stops someone walking in and plugging a laptop into a conference-room jack. A SOC watches
+      for the signs of edge abuse: a new device MAC on a port that should be a phone, an AP
+      appearing with a cloned SSID, or a burst of deauth frames. As always, a hit is a lead; a new
+      device may be a legitimate replacement, so it is confirmed against asset records before action.
+    examples:
+      - title: Evil twin versus the real AP
+        body: |
+          Real AP    SSID "CorpWifi"  BSSID aa:bb:cc:...  802.1X + cert
+          Evil twin  SSID "CorpWifi"  BSSID 66:77:88:...  open or captive portal
+          A client pinned to the RADIUS cert will not hand credentials to the twin.
+      - title: A rogue device on a wired port
+        body: |
+          Port Gi1/0/14 expected: VoIP phone MAC 00:1a:...  (in asset inventory)
+          Observed: a second, unknown MAC behind it -> possible rogue switch/laptop
+          Confirm against inventory before disabling the port.
+    exercise:
+      title: Assess and monitor network access security in a lab
+      environment: A home or lab network with a configurable access point and switch (or a simulator), plus a packet capture tool
+      tools: [A Wi-Fi AP or simulator, a managed switch or NAC feature if available, Wireshark, a notes file]
+      steps:
+        - Document your test network's wireless security (WPA2 vs WPA3, whether it uses a shared key or 802.1X) and note one weakness in the current setup.
+        - Capture wireless management traffic (or review a provided capture) and identify beacon frames and any deauthentication frames.
+        - Describe how an evil twin would appear in your capture and what client setting would stop a device trusting it.
+        - On a switch or NAC simulator, enable or describe port-based access control and test what happens when an unknown device connects.
+        - Build a short list of the devices authorised on your network (by MAC or certificate) and define how you would detect a new, unlisted one.
+        - Write a detection idea for a rogue AP broadcasting your SSID and state how you would confirm it before acting.
+      deliverable: A short assessment of the network's edge security with one captured or described attack indicator, a port-access-control test result, and a rogue-device detection and confirmation plan.
+    expected_outcome: >
+      You can explain how Wi-Fi and wired access control are secured, recognise rogue-AP, evil-twin
+      and deauthentication attacks in traffic, and detect an unauthorised device joining the network
+      before confirming and acting.
+    quiz:
+      - prompt: What does WPA3 add over WPA2 for wireless security?
+        options:
+          - Nothing, they are identical
+          - Forward secrecy and resistance to offline password cracking
+          - It removes the need for a password
+          - It disables logging
+        answer: 1
+        explanation: WPA3 strengthens the handshake, adding forward secrecy and making captured traffic far harder to crack offline.
+      - prompt: An evil twin attack works by
+        options:
+          - Encrypting all traffic
+          - Broadcasting a familiar SSID so victims connect to the attacker's access point
+          - Disabling the switch
+          - Patching the client
+        answer: 1
+        explanation: The evil twin imitates a trusted network name so clients connect and expose traffic or credentials.
+      - prompt: 802.1X on a wired switch port primarily prevents
+        options:
+          - Slow network speeds
+          - An unauthorised device from gaining access just by plugging into a jack
+          - Wi-Fi interference
+          - Log tampering
+        answer: 1
+        explanation: Port-based access control authenticates the device or user before the port carries traffic, stopping walk-up access.
+      - prompt: A new, unknown MAC address behind a port expected to hold a phone should be
+        options: [Ignored, Treated as a lead and confirmed against asset inventory before action, Immediately trusted, Deleted from logs]
+        answer: 1
+        explanation: It may be a rogue device or a legitimate replacement, so it is confirmed against inventory before any action.

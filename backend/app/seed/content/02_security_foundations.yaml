@@ -522,3 +522,93 @@ lessons:
         options: [Changes the hostname, Tells you what behaviour to expect and what to check next, Deletes the alert, Encrypts the logs]
         answer: 1
         explanation: The family predicts the activity's shape, which guides what disk, process and network evidence to look for.
+  - slug: sec-data-classification-protection
+    title: Data Classification and Protection
+    order: 7
+    difficulty: beginner
+    summary: Classify data by sensitivity and protect it across its states and lifecycle, so controls like encryption and loss prevention are applied where they actually matter.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:1.2", "secplus:4.6", "sc900:2"]
+    learning_objectives:
+      - Classify data by sensitivity and explain why classification drives controls
+      - Describe protecting data at rest, in transit and in use
+      - Explain how data loss prevention and lifecycle handling reduce exposure
+    theory: |
+      You cannot protect everything equally, so protection starts with knowing what you hold.
+      **Data classification** sorts information by sensitivity, for example public, internal,
+      confidential and restricted, and that label decides the controls. A restricted customer
+      database earns encryption, strict access and monitoring; a public brochure needs none of it.
+      Classification also depends on **data types** with legal weight, such as personal data (PII),
+      health records (PHI) and cardholder data, each carrying its own handling rules.
+
+      Data has to be protected in three **states**. **At rest** it is protected by storage or disk
+      encryption and access control. **In transit** it is protected by TLS so it cannot be read or
+      altered on the wire. **In use**, while an application is processing it, is the hardest, and is
+      where techniques like tokenisation and careful memory handling apply. The right control for a
+      piece of data depends on its classification and which state it is in, which is why the label
+      has to travel with the data.
+
+      Two practices keep classified data from leaking. **Data loss prevention** (DLP) inspects email,
+      uploads and endpoints for sensitive content leaving where it should not, blocking or alerting
+      on a confidential file sent to a personal address. And **lifecycle handling** governs data from
+      creation through retention to secure disposal, because data kept past its purpose is pure risk
+      and sanitised media cannot leak. Over-classifying everything is its own failure, since if all
+      data is restricted, people route around the controls, so classification has to be realistic to
+      be followed.
+    examples:
+      - title: Classification drives the control
+        body: |
+          Public      marketing PDF        -> no encryption needed
+          Internal    org chart            -> access control, no public share
+          Restricted  customer PII export  -> encryption + DLP + access logging
+      - title: One record, three states
+        body: |
+          At rest     customer row in an encrypted database
+          In transit  same row returned over TLS to the app
+          In use      app holds it in memory -> tokenise/mask before display or logs
+    exercise:
+      title: Classify a sample data set and map its protections
+      environment: A sample set of files or records of mixed sensitivity (provided or invented) and a spreadsheet or document
+      tools: [A sample data set, a spreadsheet or document, a reference classification scheme]
+      steps:
+        - Define a simple classification scheme (for example public, internal, confidential, restricted) with one sentence on what belongs in each.
+        - Classify each sample file or record and note any that contain regulated data types such as PII or payment data.
+        - For each classification, list the control you would apply at rest, in transit and in use.
+        - Identify one piece of data that is over-classified or under-classified and correct it, explaining the impact of getting it wrong.
+        - Write one DLP rule in plain language that would stop a restricted item leaving by email, and say what it should do on a match.
+        - Define a retention and disposal rule for one data type and explain why keeping it longer increases risk.
+      deliverable: A classification table for the sample data with per-state controls, one DLP rule, and a retention and disposal rule with its rationale.
+    expected_outcome: >
+      You can classify data by sensitivity, apply the right protection for its state, and use DLP and
+      lifecycle handling to keep sensitive data from leaking, without over-classifying everything into
+      unusability.
+    quiz:
+      - prompt: Why classify data before choosing controls?
+        options:
+          - To make storage cheaper
+          - Because the sensitivity label decides which controls (encryption, access, monitoring) are warranted
+          - To delete all data
+          - Because every file needs the same protection
+        answer: 1
+        explanation: Classification matches the strength of controls to the sensitivity of the data instead of treating everything alike.
+      - prompt: Which are the three states data must be protected in?
+        options:
+          - Hot, warm and cold
+          - At rest, in transit and in use
+          - Open, closed and archived
+          - Local, remote and backup
+        answer: 1
+        explanation: Data at rest, in transit and in use each need different protections such as storage encryption, TLS and tokenisation.
+      - prompt: Data loss prevention (DLP) primarily
+        options:
+          - Encrypts disks
+          - Detects or blocks sensitive data leaving where it should not
+          - Backs up data
+          - Classifies CPUs
+        answer: 1
+        explanation: DLP inspects content in email, uploads and endpoints to stop sensitive data exfiltration.
+      - prompt: Keeping data long past its purpose is a problem because
+        options: [It speeds up queries, It is pure risk since data that no longer needs to exist can still leak, It improves classification, It is required by all laws]
+        answer: 1
+        explanation: Retained-but-unneeded data is exposure with no benefit, which is why lifecycle disposal matters.

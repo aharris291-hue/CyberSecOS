@@ -533,3 +533,100 @@ lessons:
         options: [Run everything as root, Least privilege on the workload's identity so a compromise is contained, Disable logging, Use the largest instance]
         answer: 1
         explanation: Running with only the permissions the job needs limits what a compromised workload can do.
+  - slug: cloud-network-segmentation
+    title: Cloud Network Security and Segmentation
+    order: 7
+    difficulty: intermediate
+    summary: Design and monitor cloud network boundaries with virtual networks, security groups, private endpoints and egress control, so a compromised workload cannot roam freely.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives: ["secplus:3.1", "secplus:4.1", "sc200:1"]
+    learning_objectives:
+      - Explain how cloud virtual networks and security groups segment workloads
+      - Use private endpoints and egress control to limit exposure and exfiltration
+      - Monitor flow logs to detect lateral movement and unexpected connections
+    theory: |
+      Cloud networking is software-defined, which makes segmentation both easier and easier to get
+      wrong. Workloads live in a **virtual network** (VPC or VNet) carved into subnets, and traffic
+      between them is governed by **security groups** and network ACLs, stateful rules that say which
+      sources, ports and destinations are allowed. The default posture should be deny, with access
+      opened deliberately, so a web tier can reach the app tier and the app tier can reach the
+      database, but nothing can reach the database directly from the internet. Good segmentation means
+      a compromise of one workload does not hand the attacker the whole environment.
+
+      Two controls cut exposure sharply. **Private endpoints** let workloads reach managed services
+      (storage, databases, key vaults) over the provider's private network instead of the public
+      internet, so the service never needs a public face. **Egress control** governs outbound traffic,
+      which is what most designs neglect, and it is the path data exfiltration and command-and-control
+      take. Restricting outbound to known destinations, through a controlled egress point, turns a quiet
+      data theft into a blocked connection and an alert. A storage bucket or database reachable from the
+      public internet is the classic cloud breach, and segmentation plus private access is what prevents
+      it.
+
+      Segmentation is only trustworthy if you can **see** the traffic. Cloud **flow logs** (VPC Flow
+      Logs, NSG flow logs) record the connections allowed and denied, and they are where a SOC spots
+      lateral movement, an internal host suddenly talking to many others, or a workload reaching an
+      external IP it never used before. As elsewhere, a finding is a lead: a new connection may be a
+      legitimate deployment, so it is checked against expected architecture before action. Design the
+      boundaries, enforce least-exposure, and monitor the flows that cross them.
+    examples:
+      - title: Tiered segmentation with default deny
+        body: |
+          Internet -> web subnet (443 only)
+          web      -> app subnet (app port only)
+          app      -> db subnet  (db port only)    db NOT reachable from internet
+          Each hop is an explicit allow; everything else is denied.
+      - title: Egress control catching exfiltration
+        body: |
+          Open egress:    workload can send data anywhere -> silent exfil possible
+          Controlled:     outbound only to approved endpoints; a new destination is blocked + logged
+          The blocked connection becomes an alert instead of a breach.
+    exercise:
+      title: Design and review cloud network segmentation
+      environment: A cloud free tier or a diagram tool, plus sample flow logs (provided or exported)
+      tools: [A cloud account free tier or a diagram tool, sample VPC/NSG flow logs, a notes file]
+      steps:
+        - Design a three-tier virtual network (web, app, data) and write the security-group rules that allow only the necessary traffic between tiers, defaulting to deny.
+        - Confirm the data tier has no path from the public internet and explain how a private endpoint would protect a managed service it uses.
+        - Define an egress-control rule that limits outbound traffic and state what it should do when a workload contacts an unapproved destination.
+        - Review a sample of flow logs and identify one allowed connection and one denied connection, explaining what each tells you.
+        - Spot one flow-log pattern that would suggest lateral movement or exfiltration and describe how you would confirm it against the expected architecture.
+        - Note one common misconfiguration (such as a publicly reachable storage bucket) and the segmentation change that prevents it.
+      deliverable: A segmentation design with security-group rules, the private-endpoint and egress-control decisions, and a flow-log review identifying a normal and a suspicious pattern with how you would confirm it.
+    expected_outcome: >
+      You can design cloud network segmentation with least-exposure security groups, private endpoints
+      and egress control, and monitor flow logs to detect lateral movement and exfiltration while
+      confirming findings against the intended architecture.
+    quiz:
+      - prompt: The default posture for cloud security-group rules should be
+        options:
+          - Allow all, then block problems
+          - Deny by default, opening only the access deliberately needed
+          - Open to the internet
+          - Random
+        answer: 1
+        explanation: Default-deny with deliberate allows limits what a compromised workload can reach.
+      - prompt: A private endpoint improves security by
+        options:
+          - Making the service public
+          - Letting workloads reach a managed service over the private network so it needs no public face
+          - Encrypting the CPU
+          - Removing flow logs
+        answer: 1
+        explanation: Private endpoints keep managed services off the public internet, cutting their exposure.
+      - prompt: Why is egress (outbound) control important in the cloud?
+        options:
+          - It speeds up downloads
+          - It is the path data exfiltration and command-and-control take, so restricting it blocks and reveals them
+          - It is never needed
+          - It replaces security groups
+        answer: 1
+        explanation: Controlling outbound traffic turns silent exfiltration into a blocked, alerted connection.
+      - prompt: Cloud flow logs are mainly used to
+        options:
+          - Store files
+          - Record allowed and denied connections so lateral movement and odd traffic can be detected
+          - Replace security groups
+          - Bill customers
+        answer: 1
+        explanation: Flow logs give the visibility to spot lateral movement and unexpected connections across the network.
