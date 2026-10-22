@@ -15,22 +15,24 @@ progress is kept because lessons are matched by `slug`.
 | # | Course | Domain | Lessons |
 |---|---|---|---|
 | 1 | Networking Foundations for SOC Analysts | Networking | 22 |
-| 2 | Security Foundations | Security Foundations | 23 |
+| 2 | Security Foundations | Security Foundations | 24 |
 | 3 | Windows Security Monitoring | Windows Security | 23 |
-| 4 | Linux Security Operations | Linux Security | 22 |
+| 4 | Linux Security Operations | Linux Security | 23 |
 | 5 | SIEM Fundamentals | SIEM | 20 |
-| 6 | Vulnerability Management | Vulnerability Management | 22 |
+| 6 | Vulnerability Management | Vulnerability Management | 23 |
 | 7 | Threat Hunting | Threat Hunting | 18 |
 | 8 | Incident Response | Incident Response | 23 |
 | 9 | Detection Engineering | Detection Engineering | 19 |
 | 10 | Security Architecture | Security Architecture | 23 |
 | 11 | Cloud Security Operations | Cloud Security | 23 |
-| 12 | Governance, Risk and Compliance | Governance, Risk and Compliance | 20 |
+| 12 | Governance, Risk and Compliance | Governance, Risk and Compliance | 21 |
 | 13 | Microsoft Security Operations (SC-900 and SC-200) | Microsoft Security | 6 |
 
-13 courses, 264 lessons (~290 hours), about 18% theory and 82% lab time overall. The first twelve courses were built out on a deliberate per-course split (weighted by certification-objective coverage and distinct material) toward the 300-hour target. Each was taken to the point where its genuinely distinct SOC material ran out rather than padded: Threat Hunting caps at 18, Detection Engineering at 19, SIEM and GRC at 20, Networking, Linux and Vulnerability Management at 22, and Security Foundations, Windows, Incident Response, Security Architecture and Cloud at 23. That distinct-material ceiling for the vendor-neutral courses (~283 hours) sits a little short of the literal 300-hour target; closing the last gap would mean repeating topics, so the build stopped there rather than padding.
+13 courses, 268 lessons (~294 hours), about 18% theory and 82% lab time overall. The first twelve courses were built out on a deliberate per-course split (weighted by certification-objective coverage and distinct material) toward the 300-hour target. Each was taken to the point where its genuinely distinct SOC material ran out rather than padded: Threat Hunting caps at 18, Detection Engineering at 19, SIEM and GRC at 20, Networking, Linux and Vulnerability Management at 22, and Security Foundations, Windows, Incident Response, Security Architecture and Cloud at 23. That distinct-material ceiling for the vendor-neutral courses (~283 hours) sits a little short of the literal 300-hour target; closing the last gap would mean repeating topics, so the build stopped there rather than padding.
 
 Course 13 is a focused, product-specific track for the two Microsoft exams (SC-900 fundamentals and SC-200 operations), added after the certification gap audit (`14_CERTIFICATION_GAP_AUDIT.md`) found those exams need Microsoft-product depth a vendor-neutral catalog cannot give. Its six lessons cover the Microsoft stack, Entra ID identity and governance, Defender XDR, Microsoft Sentinel and Microsoft Purview.
+
+Four further lessons were added after the audit to deepen objectives that rested on only one or two lessons, each a distinct topic rather than a repeat: security scripting and automation (Linux, Security+ 4.7), the asset lifecycle and secure disposal (Security Foundations, Security+ 4.2), vendor assessment and third-party agreements (GRC, Security+ 5.3), and recommending controls for common attacks and vulnerabilities (Vulnerability Management, CySA+ 2.4). Thirteen existing lessons whose content already taught those objectives were re-tagged to them.
 
 The catalog is being built out toward a target of roughly 300 hours of lesson
 time in total (about 66 minutes per lesson), steered by the official exam

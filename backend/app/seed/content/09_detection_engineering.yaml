@@ -475,7 +475,7 @@ lessons:
     summary: Manage detections like software with version control, review and CI validation.
     theory_minutes: 12
     lab_minutes: 54
-    objectives: ["secplus:4.4", "cysa:1.5", "cysa:3.1", "sc200:2"]
+    objectives: ["secplus:4.4", "cysa:1.5", "cysa:3.1", "sc200:2", "secplus:4.7"]
     learning_objectives:
       - Explain why detections are managed as code once there are many of them
       - Describe the detection lifecycle from proposal through review, CI and deprecation

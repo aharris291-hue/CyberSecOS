@@ -529,7 +529,7 @@ lessons:
     summary: Classify data by sensitivity and protect it across its states and lifecycle, so controls like encryption and loss prevention are applied where they actually matter.
     theory_minutes: 12
     lab_minutes: 54
-    objectives: ["secplus:1.2", "secplus:4.6", "sc900:2"]
+    objectives: ["secplus:1.2", "secplus:4.6", "sc900:2", "secplus:4.2"]
     learning_objectives:
       - Classify data by sensitivity and explain why classification drives controls
       - Describe protecting data at rest, in transit and in use
@@ -1784,7 +1784,7 @@ lessons:
     summary: Understand how modern systems depend on a vast supply chain of third-party software, libraries and vendors, why this creates a major attack surface, and the practices that manage supply-chain risk.
     theory_minutes: 12
     lab_minutes: 54
-    objectives: ["secplus:2.3", "secplus:5.1", "cysa:1.3"]
+    objectives: ["secplus:2.3", "secplus:5.1", "cysa:1.3", "secplus:5.3"]
     learning_objectives:
       - Explain why the software and vendor supply chain is a major risk
       - Describe common supply-chain attack patterns
@@ -2197,3 +2197,112 @@ lessons:
           - Alerts are always accurate
         answer: 1
         explanation: Analyst attention is limited, so excessive noise must be tuned down to find real incidents.
+  - slug: sec-asset-lifecycle-disposal
+    title: 'Asset Lifecycle: Procurement, Inventory and Secure Disposal'
+    order: 24
+    difficulty: beginner
+    summary: Follow hardware, software and data assets from procurement to disposal, keep an inventory that stays true, and choose the right sanitisation method.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives:
+    - secplus:4.2
+    - cysa:2.1
+    learning_objectives:
+    - Describe the security tasks at each stage of the asset lifecycle, from acquisition to decommissioning
+    - Build and reconcile an asset inventory with owners and classifications
+    - Choose between clearing, purging and destruction and evidence disposal with a certificate
+    theory: |
+      Every control in this catalog assumes you know what you own. **Asset management** makes that true by
+      following each hardware, software and data asset through its whole **lifecycle**, and Security+ tests
+      the security task at each stage.
+
+      **Acquisition and procurement** is where security is cheapest. Buy from approved vendors and channels so
+      hardware is genuine and untampered, check that software is supported and licensed, and require security
+      features (TPM, secure boot, update support) before the purchase rather than after. **Assignment and
+      accounting** gives every asset an **owner**, the person accountable for it, and a **classification**
+      that sets how it must be protected. An asset without an owner is one nobody patches.
+
+      **Monitoring and asset tracking** keeps the record true. The **inventory**, often a configuration
+      management database (CMDB), lists each asset with owner, location, classification, software versions and
+      status. **Enumeration** keeps it current by discovering what is really there, through network discovery
+      scans, endpoint agents, cloud APIs and identity logs, then **reconciling** that against the inventory.
+      The gaps are the findings: a device the scan sees but the CMDB does not is unmanaged, and a CMDB entry
+      nobody can find may be lost or stolen. Software inventory matters as much as hardware, because
+      unlicensed or unapproved software is both a legal and a vulnerability risk.
+
+      **Disposal and decommissioning** ends the lifecycle safely. Data must not leave with the hardware. NIST SP
+      800-88 names three levels of **sanitisation**: **clear** (overwrite through normal interfaces, fine for
+      reuse inside the organisation), **purge** (cryptographic erase or block erase that defeats lab recovery,
+      for media leaving your control), and **destroy** (shred, disintegrate or incinerate, for the most
+      sensitive media or failed drives). A third party that destroys media should issue a **certificate of
+      destruction** as **certification** that it happened. **Data retention** rules decide what must be kept
+      before anything is wiped, so disposal never destroys records you are legally required to hold. Finally,
+      update the inventory and revoke the asset's accounts, certificates and network access, because a
+      decommissioned server that still has a valid certificate is still a way in.
+    examples:
+    - title: Reconciling discovery against the CMDB
+      body: |
+        Discovered on network     In CMDB?   Owner        Finding
+        10.2.4.17  ws-fin-022     yes        J. Patel     ok
+        10.2.4.51  (no hostname)  NO         -            unmanaged device -> identify, enrol or remove
+        10.2.7.9   srv-legacy-03  yes        (left org)   orphaned owner -> reassign
+        -          lt-hr-118      yes        A. Moreno    in CMDB, not seen for 60 days -> lost or stolen?
+    - title: Choosing a sanitisation method
+      body: |
+        Laptop SSD reissued to a new employee         -> clear (or purge) and reimage
+        Server disks returned to a leasing company    -> purge (cryptographic erase), record serials
+        Failed drive that held regulated data         -> destroy (shred), certificate of destruction
+        Before any of the above                       -> check the retention schedule and legal holds
+    exercise:
+      title: Run an asset reconciliation and plan a decommission
+      environment: A Linux VM on a lab network or home network you own, plus a spreadsheet acting as the CMDB
+      tools:
+      - nmap
+      - a spreadsheet
+      - arp or ip neigh
+      - a text editor
+      steps:
+      - Create a small CMDB sheet with columns for asset, owner, location, classification, OS and status, and fill it from what you believe you own.
+      - Run an nmap ping sweep (nmap -sn) of your own lab or home subnet and record every live host.
+      - Reconcile the scan against the CMDB and label each difference as unmanaged, orphaned or missing.
+      - Write the procurement security requirements you would add for the next laptop purchase.
+      - Pick one asset to decommission and choose clear, purge or destroy with a reason tied to its classification and destination.
+      - List the accounts, certificates, DNS records and firewall rules that must be revoked when it is retired.
+      - Draft the evidence you would keep, including a certificate of destruction if a third party is used.
+      deliverable: A reconciled inventory with each discrepancy labelled, a procurement requirements list, and a decommissioning plan with the chosen sanitisation method and evidence.
+    expected_outcome: |
+      You can explain the security tasks at each asset lifecycle stage, keep an inventory honest by reconciling
+      discovery against it, and choose and evidence the right sanitisation method when an asset is retired.
+    quiz:
+    - prompt: A discovery scan finds a host that is not in the CMDB. What is it?
+      options:
+      - An unmanaged asset that needs to be identified and enrolled or removed
+      - A false positive to ignore
+      - Proof the CMDB is complete
+      - A decommissioned asset
+      answer: 0
+      explanation: 'Reconciliation gaps are findings: an unknown device is unmanaged and unprotected.'
+    - prompt: Server disks are being returned to a leasing company. Which NIST SP 800-88 level is appropriate?
+      options:
+      - Clear
+      - Purge
+      - No action, the lessor wipes them
+      - Reformat only
+      answer: 1
+      explanation: Media leaving your control needs purge, which defeats laboratory recovery.
+    - prompt: What should be checked before any media is sanitised?
+      options:
+      - The vendor's marketing material
+      - The data retention schedule and any legal holds
+      - The asset's purchase price
+      - Nothing, faster disposal is safer
+      answer: 1
+      explanation: Disposal must not destroy records the organisation is required to keep.
+    - prompt: Why does every asset need a named owner?
+      options:
+      - It is required for warranty claims only
+      - Ownership sets accountability for patching, classification and eventual disposal
+      - Owners pay for the asset
+      - It lets the scanner skip the asset
+      answer: 1
+      explanation: An asset nobody owns is an asset nobody patches or retires properly.

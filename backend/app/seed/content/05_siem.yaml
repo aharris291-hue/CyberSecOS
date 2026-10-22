@@ -574,7 +574,7 @@ lessons:
     summary: Turn a repeatable alert response into a SOAR playbook that enriches, contains and escalates while keeping the analyst in control.
     theory_minutes: 12
     lab_minutes: 54
-    objectives: ["secplus:4.4", "sc200:4", "cysa:1.5"]
+    objectives: ["secplus:4.4", "sc200:4", "cysa:1.5", "secplus:4.7"]
     learning_objectives:
       - Explain what SOAR adds on top of a SIEM and when automation is worth it
       - Design a playbook that enriches, decides and acts with a human checkpoint

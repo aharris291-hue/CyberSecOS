@@ -1266,7 +1266,7 @@ lessons:
     summary: Learn to read web server access and error logs to spot attacks, and to harden a Linux web server, since public web servers are among the most attacked systems.
     theory_minutes: 12
     lab_minutes: 54
-    objectives: ["secplus:3.2", "secplus:4.1", "cysa:1.1"]
+    objectives: ["secplus:3.2", "secplus:4.1", "cysa:1.1", "cysa:2.4"]
     learning_objectives:
       - Read web server access and error logs to identify attacks
       - Recognise common web attack signatures in logs
@@ -2075,3 +2075,123 @@ lessons:
           - Never
         answer: 1
         explanation: Volatile memory is lost at shutdown, so it must be acquired, carefully, while the system runs.
+  - slug: linux-security-scripting
+    title: Scripting Security Automation with Bash and Python
+    order: 23
+    difficulty: intermediate
+    summary: Write small, safe scripts that automate routine security operations tasks, and weigh when automation helps and when it adds risk.
+    theory_minutes: 12
+    lab_minutes: 54
+    objectives:
+    - secplus:4.7
+    - cysa:1.3
+    learning_objectives:
+    - Identify security operations tasks that are good candidates for scripting and orchestration
+    - Write a Bash or Python script that calls an API, checks a control and raises a ticket
+    - Weigh the benefits of automation against complexity, cost, technical debt and single points of failure
+    theory: |
+      Most of a security team's week is repetitive: checking that a control is still on, pulling the same
+      context for every alert, creating and removing accounts, opening a ticket when something drifts. A short
+      **script** turns each of those into a task that runs the same way every time. Security+ groups this under
+      **automation and orchestration**: automation does one task without a person, and orchestration chains
+      several automated tasks, often across tools, into a workflow such as a SOAR playbook or a CI pipeline.
+
+      Good **use cases** share three traits: the task is frequent, well understood and low in judgement. The
+      exam's list is a useful checklist. **User and resource provisioning** creates and, just as important,
+      **deprovisions** accounts and access from the HR record, so leavers lose access on their last day.
+      **Guard rails** stop an unsafe change before it lands, for example a pipeline check that rejects a public
+      storage bucket. **Security groups** and firewall rules are applied from code rather than by hand.
+      **Ticket creation** and **escalation** open a case with the evidence attached and route it by severity.
+      **Enabling or disabling services and access** responds to an event, such as disabling a compromised
+      account. **Continuous integration and testing** runs checks on every change, and **integrations and
+      APIs** let one script talk to the identity provider, the SIEM and the ticketing system together.
+
+      The **benefits** are efficiency and time saved, **enforced baselines** and standard configurations, secure
+      scaling, better **employee retention** because skilled staff stop doing drudgery, faster **reaction
+      time**, and acting as a **workforce multiplier**. The **considerations** are real too. Automation adds
+      **complexity**, has a build and run **cost**, can become a **single point of failure** (one broken script
+      silently stops deprovisioning for everyone), accrues **technical debt** when nobody maintains it, and
+      needs ongoing **supportability**. So treat scripts like code: keep them in version control, run them with
+      a least-privilege service identity, never hard-code secrets, log what they did, fail loudly rather than
+      silently, and add a dry-run mode so a change can be previewed before it is applied.
+    examples:
+    - title: A guard-rail check in Bash
+      body: |
+        #!/usr/bin/env bash
+        set -euo pipefail                      # stop on any error, unset variable or failed pipe
+        # Flag world-writable files under /etc and open a ticket if any are found
+        found=$(find /etc -xdev -type f -perm -0002 2>/dev/null || true)
+        if [[ -n "$found" ]]; then
+          echo "$found" > /tmp/ww_files.txt
+          ./open_ticket.sh --severity medium --title "World-writable files in /etc" --attach /tmp/ww_files.txt
+        fi
+    - title: Deprovisioning from an HR export in Python (dry run first)
+      body: |
+        import csv, os, requests
+        DRY_RUN = os.environ.get("DRY_RUN", "1") == "1"
+        TOKEN = os.environ["IDP_TOKEN"]               # from the secrets manager, never in the file
+        for row in csv.DictReader(open("leavers.csv")):
+            user = row["upn"]
+            if DRY_RUN:
+                print(f"would disable {user}")
+                continue
+            r = requests.patch(f"https://idp.example/api/users/{user}",
+                               json={"enabled": False},
+                               headers={"Authorization": f"Bearer {TOKEN}"}, timeout=10)
+            r.raise_for_status()                       # fail loudly, never silently
+            print(f"disabled {user}")
+    exercise:
+      title: Automate a control check and its ticket
+      environment: A Linux VM or WSL with Bash and Python 3; a local file standing in for an HR leaver export and a stub ticket script
+      tools:
+      - bash
+      - python3
+      - find
+      - requests or curl
+      - a text editor
+      steps:
+      - List five recurring tasks from a SOC or IT week and mark which are frequent, well understood and low in judgement.
+      - Write a Bash script with set -euo pipefail that checks one control (for example world-writable files or an SSH setting) and exits non-zero on failure.
+      - Extend it to call a stub ticket script with the evidence attached when the check fails.
+      - Write a Python deprovisioning script that reads a leaver CSV and supports a DRY_RUN mode that only prints what it would do.
+      - Move any credential into an environment variable and confirm the script refuses to run without it.
+      - Add logging of every action with a timestamp so the run leaves an audit trail.
+      - 'Write a short note on the risks of your automation: what happens if it fails silently, who maintains it, and what single point of failure it creates.'
+      deliverable: Two working scripts (a control check with ticket creation and a dry-run deprovisioning script) plus a one-page note on use cases, benefits and the risks you mitigated.
+    expected_outcome: |
+      You can pick security tasks that suit automation, write small Bash and Python scripts that check a control,
+      call an API and raise a ticket safely, and explain the benefits and the costs of automation and
+      orchestration in the terms Security+ uses.
+    quiz:
+    - prompt: Which task is the best first candidate for automation?
+      options:
+      - Deciding whether a novel alert is a true positive
+      - Disabling accounts for leavers listed in the daily HR export
+      - Negotiating a vendor contract
+      - Writing the incident report narrative
+      answer: 1
+      explanation: Deprovisioning from an authoritative feed is frequent, well understood and low in judgement.
+    - prompt: A pipeline check that rejects a change creating a public storage bucket is an example of a
+      options:
+      - Guard rail
+      - Compensating control
+      - Honeypot
+      - Tabletop exercise
+      answer: 0
+      explanation: Guard rails stop unsafe changes automatically before they land.
+    - prompt: One deprovisioning script failed silently for three weeks and leavers kept access. Which automation consideration does this illustrate?
+      options:
+      - Workforce multiplier
+      - Employee retention
+      - Single point of failure
+      - Enforced baselines
+      answer: 2
+      explanation: When one automated process carries a control, its failure removes the control everywhere.
+    - prompt: Where should an automation script get its API token from?
+      options:
+      - Hard-coded in the script so it always works
+      - A comment at the top of the file
+      - A secrets manager or environment variable at run time, with least-privilege scope
+      - The analyst's personal account
+      answer: 2
+      explanation: Secrets stay out of code, and the script runs with a scoped service identity.

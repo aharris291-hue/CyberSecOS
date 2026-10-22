@@ -1,9 +1,10 @@
 # Certification Objective Gap Audit
 
-This audit checks the lesson catalog (258 lessons, ~283 hours across 12 courses)
-against the official exam objectives of the four priority certifications, and
-lists the remaining gaps. It is the "thread check against each certification's
-objectives" step of the catalog build-out.
+This audit checks the lesson catalog against the official exam objectives of
+the four priority certifications, and lists the remaining gaps. It was first run
+on 258 lessons (~283 hours, 12 courses). The counts below are refreshed for the
+current catalog: 268 lessons (~294 hours, 13 courses), after the Microsoft track
+and the depth-gap pass described under each certification.
 
 ## Method and scope
 
@@ -39,23 +40,26 @@ objectives" step of the catalog build-out.
 
 ## Security+ (SY0-701) — coverage by objective
 
-Lessons mapped per objective (28 objectives, all covered):
+Lessons mapped per objective (28 objectives, all covered). The three
+objectives that were thin in the first audit are in bold, with their original
+count in brackets:
 
 | Obj | Lessons | Obj | Lessons | Obj | Lessons |
 |---|---|---|---|---|---|
 | 1.1 | 2 | 2.5 | 11 | 4.5 | 6 |
-| 1.2 | 5 | 3.1 | 41 | 4.6 | 18 |
-| 1.3 | 2 | 3.2 | 15 | 4.7 | **1** |
-| 1.4 | 10 | 3.3 | 3 | 4.8 | 33 |
+| 1.2 | 7 | 3.1 | 41 | 4.6 | 20 |
+| 1.3 | 2 | 3.2 | 15 | **4.7** | **6** (1) |
+| 1.4 | 10 | 3.3 | 4 | 4.8 | 34 |
 | 2.1 | 4 | 3.4 | 2 | 4.9 | 10 |
 | 2.2 | 5 | 4.1 | 33 | 5.1 | 24 |
-| 2.3 | 9 | 4.2 | **1** | 5.2 | 4 |
-| 2.4 | 17 | 4.3 | 19 | 5.3 | **1** |
-| 2.5 | 11 | 4.4 | 60 | 5.4 | 11 |
-|  |  |  |  | 5.5 | 4 |
+| 2.3 | 10 | **4.2** | **5** (1) | 5.2 | 4 |
+| 2.4 | 17 | 4.3 | 19 | **5.3** | **4** (1) |
+|  |  | 4.4 | 61 | 5.4 | 13 |
+|  |  |  |  | 5.5 | 5 |
 |  |  |  |  | 5.6 | 3 |
 
-**Thinly covered (one lesson each) — the real Security+ gaps:**
+**First audit: thinly covered (one lesson each).** These were the real Security+
+gaps; each is now closed, see "Depth-gap pass" below.
 
 - **4.7 — Automation and orchestration for secure operations.** Only one lesson
   (SIEM SOAR playbooks) is tagged to it. SOAR, detection-as-code and
@@ -81,9 +85,32 @@ management), 3.4 (resilience and recovery). These are each genuinely covered;
 own objective and the catalog treats it mainly inside the GRC change-management
 lesson.
 
+**Depth-gap pass (closed).** Lessons whose content already taught these
+objectives were re-tagged, and a distinct lesson was added only for the
+sub-bullets nothing taught:
+
+- **4.7, now 6 lessons.** Re-tagged: SIEM SOAR playbooks, detection-as-code,
+  GRC compliance automation (alongside the GRC risk/automation lesson and the
+  Microsoft Sentinel lesson). New: *Scripting Security Automation with Bash and
+  Python* (Linux), covering the exam's use cases (provisioning and
+  deprovisioning, guard rails, security groups, ticketing and escalation,
+  enabling/disabling services, CI and APIs), benefits and considerations.
+- **4.2, now 5 lessons.** Re-tagged: attack surface management (enumeration),
+  data governance (ownership, retention, disposal) and data classification.
+  New: *Asset Lifecycle: Procurement, Inventory and Secure Disposal* (Security
+  Foundations), covering procurement, assignment and accounting, CMDB
+  reconciliation, NIST SP 800-88 clear/purge/destroy and certificates of
+  destruction.
+- **5.3, now 4 lessons.** Re-tagged: supply-chain security and SOC 2
+  attestation (reading a vendor's report). New: *Vendor Assessment, Selection
+  and Third-Party Agreements* (GRC), covering tiering, questionnaires,
+  independent assessments, right to audit, due diligence and conflicts of
+  interest, SLA/MOA/MOU/MSA/SOW/NDA/BPA, monitoring, rules of engagement and
+  offboarding.
+
 **Heaviest coverage** (as intended for a SOC-analyst catalog): 4.4 security
-alerting and monitoring (60), 3.1 architecture models (41), 4.1 securing
-compute resources (33), 4.8 incident response (33), 5.1 governance (24).
+alerting and monitoring (61), 3.1 architecture models (41), 4.8 incident
+response (34), 4.1 securing compute resources (33), 5.1 governance (24).
 
 ## CySA+ (CS0-003) — coverage by objective
 
@@ -91,16 +118,16 @@ compute resources (33), 4.8 incident response (33), 5.1 governance (24).
 |---|---|---|---|---|---|
 | 1.1 | 45 | 2.2 | 5 | 3.3 | 5 |
 | 1.2 | 33 | 2.3 | 4 | 4.1 | 16 |
-| 1.3 | 45 | 2.4 | **2** | 4.2 | 6 |
+| 1.3 | 46 | **2.4** | **8** (2) | 4.2 | 6 |
 | 1.4 | 40 | 2.5 | 7 |  |  |
 | 1.5 | 8 | 3.1 | 28 |  |  |
-| 2.1 | 16 | 3.2 | 19 |  |  |
+| 2.1 | 17 | 3.2 | 20 |  |  |
 
 CySA+ is the best-covered exam: its Domain 1 (security operations: architecture,
 malicious-activity analysis, tools/techniques, threat intel and hunting) is the
 catalog's centre of gravity, and incident response (3.1, 3.2) is deep.
 
-**Thinnest spot:**
+**Thinnest spot in the first audit (now closed):**
 
 - **2.4 — Recommend controls to mitigate attacks and software vulnerabilities.**
   Two lessons. Mitigation/remediation is present across the vulnerability-
@@ -108,6 +135,15 @@ catalog's centre of gravity, and incident response (3.1, 3.2) is deep.
   the control" framing is lightly tagged. Re-tagging the remediation, secure-
   coding and compensating-control content to 2.4, or a dedicated
   mitigation-recommendation lesson, would close it.
+  **Closed, now 8 lessons.** Re-tagged: web application scanning (OWASP
+  classes), secure application and API design, WAF and API gateway (virtual
+  patching), patch remediation (compensating controls) and web server
+  hardening. New: *Recommending Controls for Common Attacks and
+  Vulnerabilities* (Vulnerability Management), which pairs each CS0-003 attack
+  class (injection, XSS, CSRF, SSRF, traversal and file inclusion, overflows,
+  broken access control, cryptographic failures, data poisoning, privilege
+  escalation, RCE) with its root-cause fix, layered controls and a time-bound
+  compensating control.
 - Moderately light: 2.2 (analyze scan output, 5), 2.3 (prioritize
   vulnerabilities, 4), 3.3 (preparation and post-incident phases, 5). All are
   covered by named lessons; worth a second lesson each only if depth is desired.
@@ -116,10 +152,11 @@ catalog's centre of gravity, and incident response (3.1, 3.2) is deep.
 
 Both Microsoft exams map fully at the domain level:
 
-- **SC-900:** 1 (security/compliance/identity concepts) 9, 2 (Microsoft Entra)
-  9, 3 (Microsoft security solutions) 12, 4 (Microsoft compliance solutions) 23.
-- **SC-200:** 1 (manage the SecOps environment) 17, 2 (configure protections
-  and detections) 50, 3 (manage incident response) 16, 4 (threat hunting) 26.
+- **SC-900:** 1 (security/compliance/identity concepts) 12, 2 (Microsoft
+  Entra) 11, 3 (Microsoft security solutions) 13, 4 (Microsoft compliance
+  solutions) 24.
+- **SC-200:** 1 (manage the SecOps environment) 19, 2 (configure protections
+  and detections) 53, 3 (manage incident response) 17, 4 (threat hunting) 27.
 
 **The gap here is vendor specificity, not concepts.** These two exams are
 heavily tied to specific Microsoft products, and the catalog is deliberately
@@ -158,18 +195,23 @@ test.
 1. **SC-900 / SC-200 Microsoft-product specificity** — biggest gap; **addressed**
    by the new course 13, a Microsoft-specific track (Entra, Defender XDR,
    Sentinel, Purview) with four graded labs.
-2. **Security+ 4.7 (automation and orchestration)** — add or re-tag to give it
-   more than one lesson.
-3. **Security+ 4.2 (asset management)** and **5.3 (third-party risk)** — one
-   lesson each; add a lesson or re-tag existing relevant content (supply chain,
-   secure config, data governance).
-4. **CySA+ 2.4 (recommend mitigating controls)** — lightly tagged; re-tag
-   remediation/secure-coding content or add a lesson.
-5. **Hours vs target** — catalog is at ~283h of distinct material against the
-   ~300h target; the remaining ~17h would be repetition. Treat ~283h as the
-   realistic ceiling for genuinely distinct SOC content, or relax the "no topic
-   repeats" rule if the literal 300h is required.
+2. **Security+ 4.7 (automation and orchestration)** — **addressed**: 1 → 6
+   lessons (three re-tags plus a new security scripting lesson).
+3. **Security+ 4.2 (asset management)** and **5.3 (third-party risk)** —
+   **addressed**: 4.2 1 → 5 (three re-tags plus a new asset lifecycle lesson),
+   5.3 1 → 4 (two re-tags plus a new vendor assessment and agreements lesson).
+4. **CySA+ 2.4 (recommend mitigating controls)** — **addressed**: 2 → 8 (five
+   re-tags plus a new mitigation-recommendation lesson).
+5. **Hours vs target** — the vendor-neutral courses reached ~283h of distinct
+   material; with the Microsoft track and the four depth-gap lessons the
+   catalog is ~294h. Each addition taught material no lesson covered, so the
+   "no topic repeats" rule still holds.
 
-None of these are missing-objective gaps — every objective is covered and most
-deeply. They are depth and vendor-coverage refinements, several of which can be
-closed by re-tagging existing lessons rather than writing new ones.
+**Still worth watching** (covered, but by two lessons): Security+ 1.1 (control
+types), 1.3 (change management) and 3.4 (resilience and recovery), and CySA+
+2.3 (prioritise vulnerabilities, 4). These are adequately taught today; they are
+the next candidates if more depth is wanted.
+
+None of the original gaps were missing-objective gaps. Every objective is covered,
+and the four thin spots have now been deepened, mostly by re-tagging lessons that
+already taught the material and adding a lesson only where nothing did.

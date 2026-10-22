@@ -300,7 +300,7 @@ lessons:
     summary: Build security into an application and its APIs instead of bolting it on.
     theory_minutes: 12
     lab_minutes: 54
-    objectives: ["secplus:3.1", "secplus:2.3", "secplus:4.1"]
+    objectives: ["secplus:3.1", "secplus:2.3", "secplus:4.1", "cysa:2.4"]
     learning_objectives:
       - Apply secure-design principles such as least privilege and defence in depth at the app layer
       - Explain how input validation, authentication and authorisation defend an API
@@ -1646,7 +1646,7 @@ lessons:
     summary: Understand how web application firewalls and API gateways protect and manage application and API traffic at the edge, what each does, and how they fit into a layered application security architecture.
     theory_minutes: 12
     lab_minutes: 54
-    objectives: ["secplus:3.1", "secplus:2.3", "cysa:1.1"]
+    objectives: ["secplus:3.1", "secplus:2.3", "cysa:1.1", "cysa:2.4"]
     learning_objectives:
       - Explain what a web application firewall does and its limits
       - Explain what an API gateway does for security and management
