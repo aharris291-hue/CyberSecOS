@@ -6,6 +6,9 @@ namespace CyberSecOS.Desktop.Behaviors;
 /// <summary>
 /// PasswordBox.Password is not a dependency property, so it cannot be bound.
 /// This attached property mirrors it both ways so view models stay view-agnostic.
+/// The default is null, not "", so the first binding of an empty view-model
+/// password still counts as a change and hooks PasswordChanged; with an empty
+/// default the hook was never attached and typing never reached the view model.
 /// </summary>
 public static class PasswordBoxAssistant
 {
@@ -13,12 +16,12 @@ public static class PasswordBoxAssistant
         "BoundPassword",
         typeof(string),
         typeof(PasswordBoxAssistant),
-        new FrameworkPropertyMetadata(string.Empty, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, OnBoundPasswordChanged));
+        new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, OnBoundPasswordChanged));
 
     private static readonly DependencyProperty IsUpdatingProperty =
         DependencyProperty.RegisterAttached("IsUpdating", typeof(bool), typeof(PasswordBoxAssistant));
 
-    public static string GetBoundPassword(DependencyObject d) => (string)d.GetValue(BoundPasswordProperty);
+    public static string? GetBoundPassword(DependencyObject d) => (string?)d.GetValue(BoundPasswordProperty);
 
     public static void SetBoundPassword(DependencyObject d, string value) => d.SetValue(BoundPasswordProperty, value);
 
