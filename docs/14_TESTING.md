@@ -57,6 +57,7 @@ does not build it). Creating the converter outputs needs no display or UI thread
 tests run headless on the CI runner.
 
 - `ConvertersTests`: the pure value converters — visibility from empty/null/bool, the inverse-bool and status-label maps, the Markdown-stripping plain-text converter, enum-name matching, and the exam countdown — plus that each one-way converter's `ConvertBack` throws.
+- `PasswordBoxAssistantTests`: a real `PasswordBox` on an STA thread, bound to a view model whose password starts empty: typing reaches the view model, and clearing the view model clears the box.
 - `ChartConvertersTests`: `ChartSeriesConverter` mapping `ChartData` to stacked-column, row and pie series (including the empty result for non-chart data and unknown parameters, and that pie drops zero-sum series), and `ChartAxisConverter` building category and value axes (labels, hidden separators, a zero floor and the max-value cap, and the empty-data fallback).
 
 `LessonStatusBrushConverter` resolves an `Application` resource, so it is left to the manual

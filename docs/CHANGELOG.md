@@ -1,5 +1,9 @@
 # Changelog
 
+## Phase 2 - Fix account creation and sign-in on Windows
+
+- Typing in a password box never reached the app, so **Create account** (and **Sign in**) stayed disabled on a real Windows install. The password binding helper only hooked the box's changes when the bound value changed from its default, and both were empty. Its default is now unset, so the hook is always attached. This also fixes the change-password fields on the Profile page.
+- Tests: new `PasswordBoxAssistantTests` (Windows CI) drive a real `PasswordBox` bound to an empty view-model password.
 ## Phase 2 - Microsoft certification track (SC-900 and SC-200)
 
 ### Course 13: Microsoft Security Operations
